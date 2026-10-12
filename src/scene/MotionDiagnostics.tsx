@@ -8,6 +8,13 @@ interface MotionStats {
   maximum: string;
   longFrames: string;
   frames: string;
+  multiDraw: string;
+  deviceDpr: string;
+  renderDpr: string;
+  buffer: string;
+  viewport: string;
+  contextAlpha: string;
+  contextAntialias: string;
 }
 
 function value(raw: string | undefined, digits = 1): string {
@@ -39,7 +46,12 @@ export function MotionDiagnostics({ host }: { host: RefObject<HTMLDivElement | n
       setStats({ target: value(data.sceneTargetFps, 0), measured: value(data.sceneMeasuredFps),
         median: value(data.sceneIntervalP50), p95: value(data.sceneIntervalP95),
         maximum: value(data.sceneIntervalMax), longFrames: value(data.sceneLongFrames, 0),
-        frames: value(data.sceneFrames, 0) });
+        frames: value(data.sceneFrames, 0), multiDraw: data.sceneMultiDraw === '1' ? 'available' : data.sceneMultiDraw === '0' ? 'unavailable' : '—',
+        deviceDpr: value(data.sceneDeviceDpr, 2), renderDpr: value(data.sceneRenderDpr, 2),
+        buffer: `${value(data.sceneBufferWidth, 0)} × ${value(data.sceneBufferHeight, 0)}`,
+        viewport: `${value(data.sceneCssWidth, 0)} × ${value(data.sceneCssHeight, 0)}`,
+        contextAlpha: data.sceneContextAlpha === '0' ? 'opaque' : data.sceneContextAlpha === '1' ? 'transparent' : '—',
+        contextAntialias: data.sceneContextAntialias === '0' ? 'off' : data.sceneContextAntialias === '1' ? 'on' : '—' });
     };
     sample();
     const timer = window.setInterval(sample, 1000);
@@ -51,6 +63,10 @@ export function MotionDiagnostics({ host }: { host: RefObject<HTMLDivElement | n
     <p>Target {stats?.target ?? '—'} FPS · measured {stats?.measured ?? '—'} FPS</p>
     <p>Frame interval: median {stats?.median ?? '—'} ms · p95 {stats?.p95 ?? '—'} ms</p>
     <p>Longest {stats?.maximum ?? '—'} ms · long frames {stats?.longFrames ?? '—'} · rendered {stats?.frames ?? '—'}</p>
+    <p>GPU multi-draw: {stats?.multiDraw ?? '—'}</p>
+    <p>Pixel ratio: display {stats?.deviceDpr ?? '—'} · scene {stats?.renderDpr ?? '—'}</p>
+    <p>Scene buffer {stats?.buffer ?? '—'} px · viewport {stats?.viewport ?? '—'} CSS px</p>
+    <p>Canvas {stats?.contextAlpha ?? '—'} · MSAA {stats?.contextAntialias ?? '—'} · FXAA off</p>
     <small>Recent renderer timing only. Nothing is saved or sent.</small>
   </aside>;
 }

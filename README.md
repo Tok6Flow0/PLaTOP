@@ -95,6 +95,19 @@ ln -s "$PWD/skills/platop" "${CODEX_HOME:-$HOME/.codex}/skills/platop"
 The link command refuses to replace an existing installation. Installation
 alone does not observe chats or create a recurring automation.
 
+The skill can report through the optional local MCP server. Register it with
+Codex from this checkout:
+
+```sh
+codex mcp add platop -- node "$PWD/scripts/platop-mcp.mjs"
+```
+
+New MCP sessions expose `platop_status` and `platop_set_activity`. Add the skill
+to each authorized team automation so it reports active while working, sends
+heartbeats during long tasks, and reports its final state. Existing sessions can
+use the local CLI fallback until they load the MCP server. This does not give an
+automation permission to start work outside its original instructions.
+
 ## Small and local
 
 Visible animation uses a display-synchronized cinematic 30 fps cadence, including
@@ -103,9 +116,16 @@ Walking paths ease into work, turns are bounded, and authored actions blend rath
 than snapping between poses. Hidden or minimized windows stop rendering; neutral,
 paused, and reduced-motion scenes use frames only when needed. A brief transition
 can finish before a newly inactive scene settles. Window view renders only its
-selected room and pauses when covered or hidden. Pixel density is capped. One
+selected room and pauses when covered or hidden. The 3D canvas uses one backing
+pixel per CSS pixel with native antialiasing in an opaque canvas; interface text
+retains the display's native pixel density. Retina scenes can look slightly softer
+than the previous 1.5-pixel budget, especially tiny text within the room. Static transforms and colors are cached, and compatible animated
+parts share multi-draw submissions when the device supports them. The original
+instanced rendering path remains available on other devices. One
 small static shadow map, contact textures and modest lamp glows create soft
-lighting without a ray-tracing renderer or a continuous postprocessing pass. These are rendering budgets, not whole-device CPU/GPU measurements.
+lighting. An opaque canvas avoids transparent compositing, and the cached warm
+background preserves the office palette. These are rendering budgets, not
+whole-device CPU/GPU measurements.
 
 The bridge binds to loopback and accepts only public team IDs, activity states,
 and fixed source labels; it assigns timestamps locally. Chat contents, contacts, private thread IDs,
@@ -117,7 +137,8 @@ and public-asset boundaries. Live weather is optional and contacts Open-Meteo;
 the office and activity bridge run locally without it.
 
 For a local timing check, press **Control + Option + P** (Ctrl + Alt + P on other
-platforms). The hidden-by-default overlay shows recent renderer frame intervals;
+platforms). The hidden-by-default overlay shows recent renderer frame intervals,
+render-buffer dimensions and multi-draw availability;
 it saves and sends nothing. Press the shortcut again to close it. Frame timing
 does not measure GPU execution or guarantee the screen's presented refresh rate.
 

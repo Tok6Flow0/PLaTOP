@@ -71,11 +71,12 @@ fi
 PLAYGROUND_URL="http://127.0.0.1:$PORT_NUMBER"
 
 cd "$ROOT_DIR"
-if [[ ! -f "$ROOT_DIR/dist/index.html" ]]; then
+if ! "$NODE_BIN" "$ROOT_DIR/scripts/build-fingerprint.mjs" --check; then
   if [[ ! -d "$ROOT_DIR/node_modules" ]]; then
     printf '%s\n' 'Run npm install once before opening the desktop playground.' >&2
     exit 1
   fi
+  printf '%s\n' 'Building the current playground source and assets.'
   npm run build
 fi
 if [[ ! -x "$APP_BINARY" || "$ROOT_DIR/native/PLaTOP.swift" -nt "$APP_BINARY" || "$ROOT_DIR/native/Info.plist" -nt "$APP_DIR/Contents/Info.plist" || "$ROOT_DIR/scripts/build-macos.sh" -nt "$APP_BINARY" ]]; then

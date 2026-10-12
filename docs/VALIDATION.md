@@ -130,3 +130,65 @@ reproduced the old failures before passing with the fixes. The Node suite now
 passes **48 tests** and the production TypeScript/Vite build succeeds. Optional
 live weather remains an external provider request, explicitly described in
 [PRIVACY.md](PRIVACY.md); the playground and activity bridge remain local.
+
+## Renderer efficiency and local activity follow-up — 2026-10-12
+
+The final renderer preserves the cinematic 30 FPS cadence. It caches static
+transforms and colors, freezes unbound authored mesh leaves, skips fully
+represented render subtrees, and combines compatible moving geometry when
+`WEBGL_multi_draw` is available. Actor floor contacts share one draw while
+preserving the original transparent painter order. Static furnishings and
+cutaway wall fades retain their existing render paths.
+
+The canvas now uses an explicitly created opaque WebGL2 context with native
+MSAA. A cached sRGB background reproduces the warm workspace gradient, including
+the heading offset; window view keeps its original solid background. Rendering
+uses one scene pass without a framebuffer copy or FXAA. The scene pixel-ratio
+cap is 1; interface text keeps native density. This reduces Retina backing pixels
+but can soften very small in-room details compared with the previous 1.5 cap.
+
+At matched DPR 1, fixed-pose comparisons with committed baseline `bfbcee8`
+retained the original colors, shading and lamp glow: campus mean RGB difference
+was 0.0175/255; HR and Beacon were 99.985% and 99.990% pixel-identical. Motion,
+pause, hidden-window stopping, resize, context recovery and disposal passed.
+Context recovery retains a pre-existing transient VSM cleanup warning also
+reproduced on the baseline; visible recovery succeeds with no steady GL errors.
+
+Native CPU comparisons used the same full-screen window, 30 FPS target,
+diagnostics closed, and three 13-second samples following a 20-second warmup.
+The values below sum CPU time for the app, its WebContent process and its GPU
+process, expressed as a percentage of one CPU core. They are not GPU execution
+time, whole-machine utilization or battery measurements.
+
+| Native view | Baseline median | Final median | Observed reduction |
+| --- | ---: | ---: | ---: |
+| Simulated active campus | 37.98% | 36.35% | 4.3% |
+| Sleeping Beacon window | 25.20% | 23.35% | 7.3% |
+
+Samples varied and overlapped. **The requested additional 20–30% CPU reduction
+was not demonstrated.** Changes that altered lamp compositing or increased
+sampled CPU work were excluded. Native timing still showed 30.0 FPS, median
+33 ms, p95 34 ms, maximum 35 ms and no intervals above 50.5 ms in the recent
+120-interval sample; this measures render starts rather than guaranteed display
+presentation.
+
+The dependency-free local stdio MCP exposes only status and closed-vocabulary
+activity updates through the authenticated loopback bridge. Tests cover
+initialization, tool validation, bounded messages/responses, redirect rejection,
+private-data rejection and recovery. Six local automations retain their business
+instructions and schedules while reporting active/heartbeat/sleeping/waiting
+states through the PLaTOP skill, preferring MCP with a CLI fallback. Fresh native
+chat observations were published and read back through the registered MCP.
+Existing chats have not yet loaded the new registration; the CLI fallback
+remains available until the host reloads it. No private chat IDs, token,
+coordinates or personal paths are included in the repository.
+
+The launcher now verifies deterministic source and output fingerprints before
+reusing frontend files and updates the existing native bundle in place. The
+final Node suite passes **84 tests**, the production TypeScript/Vite build
+succeeds, and independent correctness/privacy reviews found no material issue.
+The updated ad hoc signed native bundle passes strict signature verification.
+The previous app, GPU and WebContent processes exited before relaunch; the new
+instance loaded the fingerprint-verified frontend, repeated the 36.35% campus
+CPU median and the reported 30 FPS timing, and was left in the live Beacon
+desktop-background view with preview and diagnostics off.

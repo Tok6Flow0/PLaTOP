@@ -12,8 +12,9 @@ npm install
 npm run desktop
 ```
 
-The launcher builds the frontend if `dist/index.html` is missing, compiles the
-native app when needed, and starts the bridge on `http://127.0.0.1:4317` if a
+The launcher verifies the frontend against its source, assets and build settings,
+rebuilds missing or outdated content, compiles the native app when needed, and
+starts the bridge on `http://127.0.0.1:4317` if a
 healthy PLaTOP bridge is not already there. The generated app is
 `build/PLaTOP.app`. Logs and a record of the launcher-owned bridge process stay
 in `.local/`. Both folders are ignored by Git.
@@ -29,9 +30,11 @@ PLATOP_PORT=4318 npm run desktop
 Quit the companion before changing its port; reopening an existing macOS app
 keeps that instance's original launch arguments.
 
-Rebuild the frontend after changing its source with `npm run build`; an existing
-`dist/` is treated as the user's chosen build. Compile the native bundle alone
-with `npm run desktop:build`. Verify the launcher and bridge without opening a
+`npm run build` records a deterministic source and output fingerprint under
+`dist/`. The launcher also detects missing or modified output files. Private
+`.local/` settings never enter that fingerprint, and the existing app bundle is
+updated in place. Compile the native bundle alone with `npm run desktop:build`.
+Verify the launcher and bridge without opening a
 window with:
 
 ```sh
@@ -57,8 +60,11 @@ npm run desktop -- --no-open
   It does not replace the system wallpaper or add autostart.
 - **⌘R** reloads the local playground. **⌘Q** quits the native companion.
 - **Control–Option–P** opens or closes a local motion check in the interactive
-  window. It shows recent frame timing, keeps only a bounded sample in memory,
-  and saves or sends nothing. Visible animation targets cinematic 30 FPS.
+  window. It shows recent frame timing, render-buffer dimensions and multi-draw
+  availability, keeps only a bounded sample in memory, and saves or sends nothing.
+  Visible animation targets cinematic 30 FPS; 3D uses one backing pixel per CSS
+  pixel with native antialiasing while interface text keeps the display's native
+  density. Tiny in-room text can look softer on Retina than the previous budget.
 
 Quitting the companion leaves the bridge running so local agents can continue
 reporting their state. To stop a bridge started by this launcher:

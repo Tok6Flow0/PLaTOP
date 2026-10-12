@@ -5,8 +5,13 @@ import { CLIP_NAMES, fetchCharacter, fetchManifest, type ClipName } from './scen
 import { disposeObject, SceneKit } from './scene/primitives';
 import { animateCharacter, makeProxy } from './scene/proxies';
 import { makeCampus, makeRoom, type Room } from './scene/rooms';
-import { SceneBatches } from './scene/performanceBatching';
+import { ActorContactBatch, freezeStaticAuthoredMeshes, SceneBatches } from './scene/performanceBatching';
 import { FramePacer } from './scene/framePacing';
+import { FrameOutput } from './scene/frameOutput';
+
+// Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
+// text and controls still use the display's full native pixel density.
+const SCENE_PIXEL_RATIO_CAP = 1;
 
 interface ProxyPose {
   object: THREE.Object3D;
@@ -67,7 +72,12 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   onError?: (message: string) => void): SceneHandle {
   let renderer: THREE.WebGLRenderer;
   try {
-    renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+    // Three creates an alpha-enabled context internally. Supply the explicit
+    // opaque context so the browser can skip blending the whole 3D canvas.
+    const surface = document.createElement('canvas');
+    const context = surface.getContext('webgl2', { antialias: true, alpha: false, powerPreference: 'low-power' });
+    if (!context) throw new Error('WebGL2 unavailable.');
+    renderer = new THREE.WebGLRenderer({ canvas: surface, context, antialias: true, alpha: false, powerPreference: 'low-power' });
   } catch {
     const notice = document.createElement('p');
     notice.className = 'scene-fallback';
@@ -77,7 +87,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     onError?.('WebGL unavailable. Showing team details without the 3D workspace.');
     return { update() {}, resetCamera() {}, zoom() {}, rotate() {}, tilt() {}, pan() {}, setNavigationMode() {}, setIdleView() {}, dispose() { notice.remove(); } };
   }
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO_CAP));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.04;
@@ -97,6 +107,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   host.append(canvas);
 
   const scene = new THREE.Scene();
+  const output = new FrameOutput(renderer, scene, host);
   const camera = new THREE.PerspectiveCamera(23, 1, 0.1, 180);
   camera.position.set(0, 38, 27);
   camera.lookAt(0, 0.7, 0);
@@ -225,6 +236,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const queryDiagnostics = new URLSearchParams(window.location.search).get('motion-debug') === '1';
   let diagnosticsEnabled = false;
   const diagnosticFields = ['sceneFrames', 'sceneMeasuredFps', 'sceneIntervalP50', 'sceneIntervalP95', 'sceneIntervalMax', 'sceneLongFrames', 'sceneTargetFps'] as const;
+  const resolutionFields = ['sceneDeviceDpr', 'sceneRenderDpr', 'sceneBufferWidth', 'sceneBufferHeight', 'sceneCssWidth', 'sceneCssHeight'] as const;
+  const contextFields = ['sceneContextAlpha', 'sceneContextAntialias'] as const;
   const frameIntervals: number[] = [];
   let diagnosticFrameCount = 0;
   let diagnosticLastFrame: number | undefined;
@@ -312,9 +325,40 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     wake(true);
   }
   fadeWalls();
-  const batches = new SceneBatches(scene);
-  batches.rebuild();
   const animatedRoots = new Set<THREE.Object3D>(actors.flatMap((actor) => [actor.root, actor.contact]));
+  // Proxy joints and eyes move; their many ceramic mesh surfaces keep the same
+  // local transform. Reuse those local matrices while parents animate them.
+  for (const actor of actors) {
+    const personality = actor.model.userData.personality as {
+      body: THREE.Object3D; head: THREE.Object3D; arms: THREE.Object3D[];
+      feet: THREE.Object3D[]; wings: THREE.Object3D[]; eyes: THREE.Object3D[];
+    } | undefined;
+    if (!personality) continue;
+    const joints = new Set([personality.body, personality.head, ...personality.arms, ...personality.feet,
+      ...personality.wings, ...personality.eyes]);
+    actor.model.traverse((object) => {
+      if (joints.has(object)) return;
+      object.updateMatrix();
+      object.matrixAutoUpdate = false;
+    });
+  }
+  const prunableRoots = new Set<THREE.Object3D>(actors.map((actor) => actor.model));
+  // Visibility of the campus, rooms and decoration containers is public state.
+  // Their static descendants are owned here and never toggle independently.
+  // Include only those descendants, so pruning cannot mask a later room toggle.
+  const visibilityRoots = new Set<THREE.Object3D>([campus, ...rooms.values()].flatMap((entry) =>
+    entry instanceof THREE.Object3D ? [entry] : [entry.root, entry.outline, ...Object.values(entry.decorations)]));
+  function collectStaticPrunable(object: THREE.Object3D): void {
+    if (animatedRoots.has(object)) return;
+    if (!visibilityRoots.has(object)) prunableRoots.add(object);
+    object.children.forEach(collectStaticPrunable);
+  }
+  campus.children.forEach(collectStaticPrunable);
+  rooms.forEach((room) => room.root.children.forEach(collectStaticPrunable));
+  const multiDraw = !!renderer.getContext().getExtension('WEBGL_multi_draw');
+  const batches = new SceneBatches(scene, animatedRoots, prunableRoots, multiDraw);
+  batches.rebuild();
+  const contacts = new ActorContactBatch(scene, actors.map((actor) => actor.contact));
   function freezeEnvironment(object: THREE.Object3D): void {
     if (animatedRoots.has(object)) return;
     object.updateMatrix();
@@ -411,22 +455,26 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
 
   function renderFrame(): void {
     if (!visible() || width <= 0 || height <= 0) return;
-    // Only resize the GPU drawing buffer when its dimensions or the static
-    // pixel budget change. Every moving scene shares the cinematic cadence.
-    const dpr = Math.min(window.devicePixelRatio || 1, cadence() >= 24 ? 1.5 : 1);
+    // A steady resolution avoids reallocating the drawing buffer on activity
+    // or input changes. Every moving scene shares the cinematic cadence.
+    const dpr = Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO_CAP);
     if (bufferDpr !== dpr || bufferWidth !== width || bufferHeight !== height) {
       if (bufferDpr !== dpr) renderer.setPixelRatio(dpr);
       renderer.setSize(width, height, false);
       bufferDpr = dpr;
       bufferWidth = width;
       bufferHeight = height;
+      if (diagnosticsEnabled) resolutionDiagnostics();
     }
     batches.sync();
-    const renderStart = performance.now();
-    renderer.render(scene, camera);
-    host.dataset.sceneDrawCalls = String(renderer.info.render.calls);
-    host.dataset.sceneTriangles = String(renderer.info.render.triangles);
-    host.dataset.sceneRenderMs = (performance.now() - renderStart).toFixed(2);
+    contacts.sync(camera);
+    const renderStart = diagnosticsEnabled ? performance.now() : 0;
+    output.render(camera, !!idleTeamId);
+    if (diagnosticsEnabled) {
+      host.dataset.sceneDrawCalls = String(renderer.info.render.calls);
+      host.dataset.sceneTriangles = String(renderer.info.render.triangles);
+      host.dataset.sceneRenderMs = (performance.now() - renderStart).toFixed(2);
+    }
   }
   function cancelFrame(): void {
     if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame);
@@ -449,13 +497,41 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       diagnosticFrameCount = 0;
       resetFrameObservations();
       diagnosticFields.forEach((field) => { delete host.dataset[field]; });
+      if (enabled) {
+        host.dataset.sceneMultiDraw = multiDraw ? '1' : '0';
+        const attributes = renderer.getContext().getContextAttributes();
+        if (attributes) {
+          host.dataset.sceneContextAlpha = attributes.alpha ? '1' : '0';
+          host.dataset.sceneContextAntialias = attributes.antialias ? '1' : '0';
+        }
+        resolutionDiagnostics();
+      } else {
+        delete host.dataset.sceneMultiDraw;
+        delete host.dataset.sceneDrawCalls;
+        delete host.dataset.sceneTriangles;
+        delete host.dataset.sceneRenderMs;
+        delete host.dataset.sceneCpuMs;
+        resolutionFields.forEach((field) => { delete host.dataset[field]; });
+        contextFields.forEach((field) => { delete host.dataset[field]; });
+      }
     }
     return enabled;
   }
+  function resolutionDiagnostics(): void {
+    const values = [window.devicePixelRatio || 1, bufferDpr, canvas.width, canvas.height, width, height];
+    resolutionFields.forEach((field, index) => {
+      const value = values[index];
+      if (Number.isFinite(value)) host.dataset[field] = String(value);
+      else delete host.dataset[field];
+    });
+  }
   function schedule(eventDriven = false): void {
     const fps = cadence();
-    host.dataset.sceneFps = String(fps);
-    if (motionDiagnostics()) host.dataset.sceneTargetFps = String(fps);
+    const fpsLabel = String(fps);
+    if (host.dataset.sceneFps !== fpsLabel) {
+      host.dataset.sceneFps = String(fps);
+    }
+    if (motionDiagnostics() && host.dataset.sceneTargetFps !== fpsLabel) host.dataset.sceneTargetFps = fpsLabel;
     if (!visible()) { cancelFrame(); return; }
     if (eventDriven) framePacer.invalidate();
     if (!framePacer.needsFrame(fps > 0) || animationFrame !== undefined) return;
@@ -495,7 +571,9 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       if (wasAnimating !== isAnimating) resetFrameObservations();
       wasAnimating = isAnimating;
       renderFrame();
-      host.dataset.sceneCpuMs = (performance.now() - frameStart).toFixed(2);
+      if (diagnosticsEnabled) {
+        host.dataset.sceneCpuMs = (performance.now() - frameStart).toFixed(2);
+      }
       recordFrame(frameStart);
     }
     schedule();
@@ -514,6 +592,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     schedule(true);
   }
   function resize(): void {
+    output.invalidateBackground();
     if (disposed) return;
     width = host.clientWidth;
     height = host.clientHeight;
@@ -669,6 +748,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       : campusLabel);
     campus.visible = !teamId;
     rooms.forEach((room, id) => { room.root.visible = !teamId || id === teamId; });
+    batches.invalidateVisibility();
     host.dataset.idleTeam = teamId ?? '';
     controls.minPolarAngle = teamId ? 0 : THREE.MathUtils.degToRad(25);
     controls.maxPolarAngle = teamId ? Math.PI : THREE.MathUtils.degToRad(55);
@@ -769,6 +849,10 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
             actor.root.userData.assetStatus = 'authored-model';
             actor.mixer = new THREE.AnimationMixer(gltf.scene);
             actor.actions = {};
+            const runtimeClips = CLIP_NAMES.map((name) => gltf.animations.find((candidate) => candidate.name === asset.clips[name]));
+            if (runtimeClips.every((clip): clip is THREE.AnimationClip => !!clip)) {
+              freezeStaticAuthoredMeshes(gltf.scene, runtimeClips);
+            }
             CLIP_NAMES.forEach((name) => {
               const clip = gltf.animations.find((candidate) => candidate.name === asset.clips[name]);
               if (clip) actor.actions![name] = actor.mixer!.clipAction(clip);
@@ -808,6 +892,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       if (nextDecorationSignature !== decorationSignature) {
         decorationSignature = nextDecorationSignature;
         renderer.shadowMap.needsUpdate = true;
+        batches.invalidateVisibility();
       }
       rooms.forEach((room, id) => {
         room.outline.visible = id === state.selectedTeam;
@@ -842,7 +927,9 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       canvas.removeEventListener('webglcontextlost', lost);
       canvas.removeEventListener('webglcontextrestored', restored);
       actors.forEach((actor) => { actor.mixer?.stopAllAction(); actor.mixer?.uncacheRoot(actor.model); });
+      contacts.dispose();
       batches.dispose();
+      output.dispose();
       const resources = new THREE.Group();
       resources.add(scene, retiredProxies);
       disposeObject(resources);
@@ -860,8 +947,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.sceneTriangles;
       delete host.dataset.sceneRenderMs;
       delete host.dataset.sceneCpuMs;
+      delete host.dataset.sceneMultiDraw;
       delete host.dataset.idleTeam;
       diagnosticFields.forEach((field) => { delete host.dataset[field]; });
+      resolutionFields.forEach((field) => { delete host.dataset[field]; });
+      contextFields.forEach((field) => { delete host.dataset[field]; });
     }
   };
 }

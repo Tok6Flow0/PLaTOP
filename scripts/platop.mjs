@@ -4,31 +4,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { MAX_BODY_BYTES, SOURCES, TEAM_IDS, parseUpdate, parseUpdates } from '../server/protocol.mjs';
-
-const ROOT = process.env.PLATOP_ROOT ?? fileURLToPath(new URL('../', import.meta.url));
-const port = Number(process.env.PLATOP_PORT ?? 4317);
-const baseURL = `http://127.0.0.1:${port}`;
+import { requestActivity as request } from '../server/client.mjs';
 const USAGE = `PLaTOP local activity\n\n  node scripts/platop.mjs status\n  node scripts/platop.mjs set <team> <state> [--source skill|codex|demo|manual]\n  node scripts/platop.mjs snapshot <public-snapshot.json>\n  node scripts/platop.mjs run <team> [--source skill|codex|demo|manual] -- <command> [args...]\n\nTeams: merchant, hr, intake, support, reflection, email\nStates: active, sleeping, waiting, unknown\n`;
-
-async function request(payload) {
-  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid local port.');
-  const headers = {};
-  if (payload) {
-    const tokenFile = path.join(ROOT, '.local', 'token');
-    const stat = await lstat(tokenFile);
-    if (!stat.isFile() || stat.isSymbolicLink() || stat.size > 128) throw new Error('Local token unavailable.');
-    const token = (await readFile(tokenFile, 'utf8')).trim();
-    if (!/^[a-f0-9]{64}$/.test(token)) throw new Error('Local token unavailable.');
-    headers.Authorization = `Bearer ${token}`;
-    headers['Content-Type'] = 'application/json';
-  }
-  const response = await fetch(`${baseURL}/api/${payload ? 'events' : 'state'}`, {
-    method: payload ? 'POST' : 'GET', headers,
-    ...(payload ? { body: JSON.stringify(payload) } : {}), signal: AbortSignal.timeout(5000),
-  });
-  if (!response.ok) throw new Error('Local bridge rejected the request.');
-  return response.json();
-}
 
 function sourceOption(args) {
   if (args.length === 0) return 'skill';
