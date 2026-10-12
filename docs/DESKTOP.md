@@ -56,6 +56,9 @@ npm run desktop -- --no-open
   windows so returning from the click-through desktop preserves working controls.
   It does not replace the system wallpaper or add autostart.
 - **⌘R** reloads the local playground. **⌘Q** quits the native companion.
+- **Control–Option–P** opens or closes a local motion check in the interactive
+  window. It shows recent frame timing, keeps only a bounded sample in memory,
+  and saves or sends nothing. Visible animation targets cinematic 30 FPS.
 
 Quitting the companion leaves the bridge running so local agents can continue
 reporting their state. To stop a bridge started by this launcher:

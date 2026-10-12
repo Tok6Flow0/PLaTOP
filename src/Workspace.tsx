@@ -3,6 +3,7 @@ import { createScene } from './scene';
 import { teams } from './teams';
 import type { SceneHandle, SceneState } from './types';
 import { Icon } from './icons';
+import { MotionDiagnostics } from './scene/MotionDiagnostics';
 
 interface WorkspaceProps {
   state: SceneState;
@@ -52,5 +53,6 @@ export function Workspace({ state, onSelect, preview, idleTeam = null, children 
       <span className="scene-hint">{navigation === 'pan' ? 'Drag to move' : 'Drag to rotate and tilt'} · scroll to zoom</span>
     </>}
     {children}
+    <MotionDiagnostics host={host} />
   </section>;
 }

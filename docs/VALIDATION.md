@@ -91,3 +91,42 @@ both location usage descriptions; this is not notarization. Coordinates are
 rounded before the native-to-web response and remain in local browser storage,
 not repository files. Permission waiting is bounded at ninety seconds, followed
 by a twenty-second fix deadline, with cancellation and visible progress.
+
+## Cinematic motion and local privacy follow-up — 2026-10-12
+
+The renderer now uses display-synchronized `requestAnimationFrame` with a
+30 FPS animation target and coalesced input up to 60 FPS. The device's current
+display runs at 60 Hz, so it cannot present 102 distinct frames per second.
+Sleeping and close-up scenes share the 30 FPS cadence; hidden, paused and
+reduced-motion scenes stop continuous rendering. Actors ease into and out of
+travel, turn at a bounded rate, and blend procedural joints and authored clips.
+Inactive transitions receive a bounded settling period before static rendering.
+
+The production build was exercised in native WKWebView at 1920 × 1080 full
+screen on Apple M4. Both the sleeping office and simulated active campus
+reported **30.0 FPS**, median render-start interval **33 ms**, p95 **34 ms**,
+maximum **35 ms**, and zero intervals above 50.5 ms in the recent 120-interval
+sample. Native pause changed the target to zero and cleared timing samples.
+These are recent renderer timings, not GPU execution times or a guarantee of
+presentation under every workload. The opt-in Control–Option–P overlay holds
+only bounded numbers in memory; it saves and sends nothing.
+
+A separate matched Metal browser comparison measured old sleeping cadence
+7.87 FPS versus 29.49 FPS. Headless Chromium's own refresh clock was irregular,
+so its frame spacing was not used to claim native smoothness. Tested maximum
+position jumps fell from 34.5 cm to 3.65 cm, and heading jumps from 77.4° to
+4.69°. Those are maxima from the sampled motion windows, not universal bounds.
+Nine focused camera/lifecycle checks passed. Matched static renders preserved
+the reviewed appearance: mean RGB difference 0.111/255, 99.23% identical pixels.
+Seventeen additional targeted assertions verified both deferred-settling
+orderings, completion of Idle fades, authored clip phase across pause/resume,
+and stopping diagnostic collection when its query-opened panel is closed.
+
+The public-file review covered 139 tracked files and 160 unique history blobs
+without finding personal filesystem paths, private chat IDs, credential patterns
+or actual device coordinates. The bridge additionally rejects cross-site browser
+requests without Origin headers and hidden build files. Two regression tests
+reproduced the old failures before passing with the fixes. The Node suite now
+passes **48 tests** and the production TypeScript/Vite build succeeds. Optional
+live weather remains an external provider request, explicitly described in
+[PRIVACY.md](PRIVACY.md); the playground and activity bridge remain local.

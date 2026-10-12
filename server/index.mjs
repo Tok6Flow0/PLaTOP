@@ -77,8 +77,13 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
       const allowedHosts = [`127.0.0.1:${boundPort}`, `localhost:${boundPort}`];
       if (!allowedHosts.includes(request.headers.host)) return sendJSON(response, 403, { error: 'Local access only.' });
       if (request.headers.origin && !allowedHosts.map(host => `http://${host}`).includes(request.headers.origin)) return sendJSON(response, 403, { error: 'Local origin required.' });
+      // Cross-site image/navigation GETs can omit Origin. Do not let another
+      // website trigger the optional weather proxy or access local app routes.
+      const fetchSite = request.headers['sec-fetch-site'];
+      if (fetchSite && !['same-origin', 'none'].includes(fetchSite)) return sendJSON(response, 403, { error: 'Local origin required.' });
       let pathname;
       try { pathname = safePath(request.url ?? '/'); } catch { return sendJSON(response, 400, { error: 'Invalid path.' }); }
+      if (pathname.split('/').some(segment => segment.startsWith('.'))) return sendJSON(response, 404, { error: 'Build file not found.' });
       if (pathname === '/api/state' && request.method === 'GET') return sendJSON(response, 200, store.snapshot());
       if (await handleWeatherRequest(request, response, new URL(request.url, `http://127.0.0.1:${boundPort}`))) return;
       if (pathname === '/api/events' && request.method === 'GET') {

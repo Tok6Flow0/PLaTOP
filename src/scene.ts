@@ -6,6 +6,13 @@ import { disposeObject, SceneKit } from './scene/primitives';
 import { animateCharacter, makeProxy } from './scene/proxies';
 import { makeCampus, makeRoom, type Room } from './scene/rooms';
 import { SceneBatches } from './scene/performanceBatching';
+import { FramePacer } from './scene/framePacing';
+
+interface ProxyPose {
+  object: THREE.Object3D;
+  position: THREE.Vector3;
+  quaternion: THREE.Quaternion;
+}
 
 interface Actor {
   character: Character;
@@ -22,6 +29,7 @@ interface Actor {
   actions?: Partial<Record<ClipName, THREE.AnimationAction>>;
   clip?: ClipName;
   authoredSleepFx?: boolean;
+  proxyPose?: ProxyPose[];
 }
 type InteractiveRoom = Room & {
   actorHomes?: THREE.Vector3[];
@@ -143,6 +151,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       const home = room.actorHomes?.[index]?.clone()
         ?? new THREE.Vector3((index - (team.members.length - 1) / 2) * 0.9, 0.1, 0.55 + (index % 2) * 0.16);
       root.position.copy(home);
+      root.rotation.y = room.actorFacing?.[index] ?? 0;
       const sleep = sleepIndicator();
       sleep.position.set(0.2, sleepHeight, 0);
       sleep.visible = false;
@@ -194,13 +203,14 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   let documentVisible = !document.hidden;
   const motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
   let systemReducedMotion = motionPreference.matches;
-  let timer: number | undefined;
-  let timerDeadline = Infinity;
+  const framePacer = new FramePacer();
+  let animationFrame: number | undefined;
   let lastTick = performance.now();
-  let lastRenderAt = -Infinity;
   let wasAnimating = false;
   let wasVisible = false;
   let motionTime = 0;
+  let settlingRemaining = 0;
+  let deferredCampusSettle = false;
   let zoomLevel = 1;
   let fittedDistance = 48;
   let width = 0;
@@ -212,6 +222,13 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   let idleTeamId: string | null = null;
   let navigationMode: 'pan' | 'rotate' = 'pan';
   let campusPose: { position: THREE.Vector3; target: THREE.Vector3; zoom: number } | undefined;
+  const queryDiagnostics = new URLSearchParams(window.location.search).get('motion-debug') === '1';
+  let diagnosticsEnabled = false;
+  const diagnosticFields = ['sceneFrames', 'sceneMeasuredFps', 'sceneIntervalP50', 'sceneIntervalP95', 'sceneIntervalMax', 'sceneLongFrames', 'sceneTargetFps'] as const;
+  const frameIntervals: number[] = [];
+  let diagnosticFrameCount = 0;
+  let diagnosticLastFrame: number | undefined;
+  let diagnosticLastReport = -Infinity;
   const assetAbort = new AbortController();
   const raycaster = new THREE.Raycaster();
   raycaster.layers.enable(1);
@@ -314,9 +331,10 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const activity = (id: string): Activity => state.activity[id] ?? 'unknown';
   function cadence(): number {
     if (!visible() || still()) return 0;
-    if (idleTeamId) return activity(idleTeamId) === 'active' ? 24 : activity(idleTeamId) === 'sleeping' ? 8 : 6;
-    if (teams.some((team) => activity(team.id) === 'active')) return 48;
-    if (teams.some((team) => activity(team.id) === 'sleeping')) return 8;
+    if (idleTeamId || settlingRemaining > 0 || teams.some((team) => {
+      const status = activity(team.id);
+      return status === 'active' || status === 'sleeping';
+    })) return 30;
     return 0;
   }
 
@@ -324,12 +342,34 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     if (!actor.mixer || !actor.actions || actor.clip === clip) return;
     const action = actor.actions[clip] ?? actor.actions.Idle;
     const previous = actor.clip ? actor.actions[actor.clip] : undefined;
-    previous?.stop();
-    if (action) {
-      action.reset().setLoop(THREE.LoopRepeat, Infinity).play();
-      actor.mixer.update(0);
+    if (action && action !== previous) {
+      action.reset().setEffectiveWeight(1).setEffectiveTimeScale(1).setLoop(THREE.LoopRepeat, Infinity).play();
+      if (previous) previous.crossFadeTo(action, 0.3, false);
+      else actor.mixer.update(0);
     }
     actor.clip = clip;
+  }
+
+  function smoothProxyPose(actor: Actor, delta: number): void {
+    // Only the few animated joints need interpolation; mesh geometry and eye
+    // blinks remain untouched. This softens walking/work gesture changes.
+    if (!actor.proxyPose) {
+      const personality = actor.model.userData.personality as {
+        body: THREE.Object3D; head: THREE.Object3D; arms: THREE.Object3D[];
+        feet: THREE.Object3D[]; wings: THREE.Object3D[];
+      } | undefined;
+      if (!personality) return;
+      actor.proxyPose = [personality.body, personality.head, ...personality.arms, ...personality.feet, ...personality.wings]
+        .map((object) => ({ object, position: object.position.clone(), quaternion: object.quaternion.clone() }));
+      return;
+    }
+    const blend = 1 - Math.exp(-Math.max(0, delta) / 0.09);
+    for (const pose of actor.proxyPose) {
+      pose.position.lerp(pose.object.position, blend);
+      pose.quaternion.slerp(pose.object.quaternion, blend);
+      pose.object.position.copy(pose.position);
+      pose.object.quaternion.copy(pose.quaternion);
+    }
   }
 
   function updateActors(delta: number): void {
@@ -340,33 +380,39 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       const phase = (motionTime + actor.index * 2.1) % 13;
       const moving = status === 'active' && phase < 5.2 && !frozen;
       const angle = motionTime * 0.95 + actor.index * 1.6;
-      const floating = actor.character.kind === 'swift' && moving ? 0.18 : 0;
-      if (status !== 'active' || frozen) {
-        actor.root.position.copy(actor.home);
-        actor.root.rotation.set(0, actor.facing, 0);
-      } else if (moving) {
-        actor.root.position.set(actor.home.x + Math.sin(angle) * 0.28, actor.home.y + floating,
-          actor.home.z + Math.cos(angle) * 0.3);
-        actor.root.rotation.set(0, Math.atan2(Math.cos(angle), -Math.sin(angle)), 0);
-      } else {
-        actor.root.position.copy(actor.home);
-        actor.root.rotation.set(0, actor.facing + 0.08 * Math.sin(motionTime * 0.5 + actor.index), 0);
-      }
-      if (!actor.mixer) {
-        animateCharacter(actor.model, status, motionTime, actor.index, moving, frozen);
+      // Reach home before the walk/work boundary, rather than teleporting from
+      // the edge of the path. The same envelope starts each lap gently.
+      const travel = moving ? THREE.MathUtils.smoothstep(phase, 0, 0.65)
+        * (1 - THREE.MathUtils.smoothstep(phase, 4.55, 5.2)) : 0;
+      if (!frozen) {
+        const blend = 1 - Math.exp(-Math.max(0, delta) / 0.12);
+        const floating = actor.character.kind === 'swift' ? 0.18 * travel : 0;
+        actor.root.position.x = THREE.MathUtils.lerp(actor.root.position.x, actor.home.x + Math.sin(angle) * 0.28 * travel, blend);
+        actor.root.position.y = THREE.MathUtils.lerp(actor.root.position.y, actor.home.y + floating, blend);
+        actor.root.position.z = THREE.MathUtils.lerp(actor.root.position.z, actor.home.z + Math.cos(angle) * 0.3 * travel, blend);
+        const deskFacing = actor.facing + (status === 'active' ? 0.08 * Math.sin(motionTime * 0.5 + actor.index) : 0);
+        const pathFacing = Math.atan2(Math.cos(angle), -Math.sin(angle));
+        const pathTurn = Math.atan2(Math.sin(pathFacing - deskFacing), Math.cos(pathFacing - deskFacing));
+        const facing = deskFacing + pathTurn * travel;
+        const turn = Math.atan2(Math.sin(facing - actor.root.rotation.y), Math.cos(facing - actor.root.rotation.y));
+        actor.root.rotation.y += THREE.MathUtils.clamp(turn * blend, -3 * delta, 3 * delta);
+        if (!actor.mixer) {
+          animateCharacter(actor.model, status, motionTime, actor.index, moving, false);
+          smoothProxyPose(actor, delta);
+        }
       }
       actor.sleep.visible = status === 'sleeping' && !actor.authoredSleepFx;
-      actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' && !frozen ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
+      if (!frozen) actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
       actor.contact.position.set(actor.root.position.x, actor.home.y + 0.008, actor.root.position.z);
-      selectClip(actor, status === 'sleeping' ? 'Sleep' : status === 'active' ? moving ? 'Move' : 'Work' : 'Idle');
-      if (actor.mixer && !frozen && (status === 'active' || status === 'sleeping' || idleTeamId === actor.teamId)) actor.mixer.update(delta);
+      if (!frozen) selectClip(actor, status === 'sleeping' ? 'Sleep' : status === 'active' ? moving ? 'Move' : 'Work' : 'Idle');
+      if (actor.mixer && !frozen && (status === 'active' || status === 'sleeping' || idleTeamId === actor.teamId || settlingRemaining > 0)) actor.mixer.update(delta);
     });
   }
 
   function renderFrame(): void {
     if (!visible() || width <= 0 || height <= 0) return;
-    // Sleep-only and static scenes also use fewer pixels. Only resize the GPU
-    // drawing buffer when its dimensions or the activity pixel budget change.
+    // Only resize the GPU drawing buffer when its dimensions or the static
+    // pixel budget change. Every moving scene shares the cinematic cadence.
     const dpr = Math.min(window.devicePixelRatio || 1, cadence() >= 24 ? 1.5 : 1);
     if (bufferDpr !== dpr || bufferWidth !== width || bufferHeight !== height) {
       if (bufferDpr !== dpr) renderer.setPixelRatio(dpr);
@@ -382,53 +428,90 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     host.dataset.sceneTriangles = String(renderer.info.render.triangles);
     host.dataset.sceneRenderMs = (performance.now() - renderStart).toFixed(2);
   }
-  function cancelTimer(): void {
-    if (timer !== undefined) window.clearTimeout(timer);
-    timer = undefined;
-    timerDeadline = Infinity;
+  function cancelFrame(): void {
+    if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame);
+    animationFrame = undefined;
+    framePacer.reset();
   }
-  function schedule(eventDriven = false, interactive = false): void {
+  function resetFrameObservations(): void {
+    diagnosticLastFrame = undefined;
+    diagnosticLastReport = -Infinity;
+    frameIntervals.length = 0;
+    for (const field of diagnosticFields) {
+      if (field !== 'sceneFrames' && field !== 'sceneTargetFps') delete host.dataset[field];
+    }
+  }
+  function motionDiagnostics(): boolean {
+    const enabled = host.dataset.motionDebug === '1'
+      || (host.dataset.motionDebug === undefined && queryDiagnostics);
+    if (enabled !== diagnosticsEnabled) {
+      diagnosticsEnabled = enabled;
+      diagnosticFrameCount = 0;
+      resetFrameObservations();
+      diagnosticFields.forEach((field) => { delete host.dataset[field]; });
+    }
+    return enabled;
+  }
+  function schedule(eventDriven = false): void {
     const fps = cadence();
     host.dataset.sceneFps = String(fps);
-    if (!visible() || (!fps && !eventDriven)) { cancelTimer(); return; }
-    // Coalesce updates, wheel input and resizes as well as animation frames.
-    // One pending timeout always represents the latest state; bursts cannot
-    // exceed the scene cap or keep restarting the animation clock.
-    const limit = interactive ? 60 : fps || 60;
-    const now = performance.now();
-    const deadline = Math.max(now, lastRenderAt + 1000 / limit);
-    if (timer !== undefined) {
-      // Keep an already-due frame in the queue. Replacing it on every incoming
-      // event could otherwise starve drawing under a sustained event burst.
-      if (timerDeadline <= now || Math.abs(timerDeadline - deadline) < 1) return;
-      cancelTimer();
-    }
-    timerDeadline = deadline;
-    timer = window.setTimeout(tick, Math.ceil(Math.max(0, deadline - now)));
+    if (motionDiagnostics()) host.dataset.sceneTargetFps = String(fps);
+    if (!visible()) { cancelFrame(); return; }
+    if (eventDriven) framePacer.invalidate();
+    if (!framePacer.needsFrame(fps > 0) || animationFrame !== undefined) return;
+    animationFrame = window.requestAnimationFrame(tick);
   }
-  function tick(): void {
-    timer = undefined;
-    timerDeadline = Infinity;
+  function recordFrame(now: number): void {
+    if (!motionDiagnostics()) return;
+    diagnosticFrameCount += 1;
+    host.dataset.sceneFrames = String(diagnosticFrameCount);
+    if (diagnosticLastFrame !== undefined && cadence() > 0) {
+      frameIntervals.push(now - diagnosticLastFrame);
+      if (frameIntervals.length > 120) frameIntervals.shift();
+    }
+    diagnosticLastFrame = cadence() > 0 ? now : undefined;
+    if (now - diagnosticLastReport < 500 || !frameIntervals.length) return;
+    diagnosticLastReport = now;
+    const sorted = [...frameIntervals].sort((a, b) => a - b);
+    const percentile = (fraction: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))];
+    const total = frameIntervals.reduce((sum, interval) => sum + interval, 0);
+    host.dataset.sceneMeasuredFps = (1000 * frameIntervals.length / total).toFixed(2);
+    host.dataset.sceneIntervalP50 = percentile(0.5).toFixed(2);
+    host.dataset.sceneIntervalP95 = percentile(0.95).toFixed(2);
+    host.dataset.sceneIntervalMax = sorted[sorted.length - 1].toFixed(2);
+    host.dataset.sceneLongFrames = String(frameIntervals.filter((interval) => interval > 50.5).length);
+  }
+  function tick(now: number): void {
+    animationFrame = undefined;
     if (!visible()) return;
-    const now = performance.now();
-    const delta = cadence() ? Math.min((now - lastTick) / 1000, 0.3) : 0;
-    lastTick = now;
-    motionTime += delta;
-    const frameStart = performance.now();
-    updateActors(delta);
-    lastRenderAt = now;
-    renderFrame();
-    host.dataset.sceneCpuMs = (performance.now() - frameStart).toFixed(2);
+    if (framePacer.shouldRender(now, cadence() > 0)) {
+      const delta = cadence() ? Math.min(Math.max(0, now - lastTick) / 1000, 0.1) : 0;
+      lastTick = now;
+      motionTime += delta;
+      const frameStart = performance.now();
+      updateActors(delta);
+      settlingRemaining = Math.max(0, settlingRemaining - delta);
+      const isAnimating = cadence() > 0;
+      if (wasAnimating !== isAnimating) resetFrameObservations();
+      wasAnimating = isAnimating;
+      renderFrame();
+      host.dataset.sceneCpuMs = (performance.now() - frameStart).toFixed(2);
+      recordFrame(frameStart);
+    }
     schedule();
   }
-  function wake(interactive = false): void {
+  function wake(_interactive = false): void {
     if (disposed) return;
     const isAnimating = cadence() > 0;
     const isVisible = visible();
-    if ((!wasAnimating && isAnimating) || (!wasVisible && isVisible)) lastTick = performance.now();
+    if (wasAnimating !== isAnimating || wasVisible !== isVisible) {
+      lastTick = performance.now();
+      framePacer.reset();
+      resetFrameObservations();
+    }
     wasAnimating = isAnimating;
     wasVisible = isVisible;
-    schedule(true, interactive);
+    schedule(true);
   }
   function resize(): void {
     if (disposed) return;
@@ -571,6 +654,13 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function setIdleView(teamId: string | null): void {
     if (disposed || (teamId !== null && !rooms.has(teamId)) || teamId === idleTeamId) return;
     if (teamId && !idleTeamId) campusPose = { position: camera.position.clone(), target: controls.target.clone(), zoom: zoomLevel };
+    // An offscreen actor cannot finish its return-home pose while another
+    // office is selected. Resume that bounded transition when campus returns.
+    if (teamId && settlingRemaining > 0) deferredCampusSettle = true;
+    if (!teamId && deferredCampusSettle) {
+      settlingRemaining = Math.max(settlingRemaining, 1);
+      deferredCampusSettle = false;
+    }
     idleTeamId = teamId;
     controls.enabled = !teamId;
     canvas.style.cursor = teamId ? 'default' : 'grab';
@@ -611,7 +701,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function lost(event: Event): void {
     event.preventDefault();
     contextLost = true;
-    cancelTimer();
+    cancelFrame();
     host.dataset.sceneFps = '0';
     onError?.('The 3D context was interrupted. Team status remains available.');
   }
@@ -706,6 +796,13 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   return {
     update(next) {
       if (disposed) return;
+      const newlyInactive = teams.filter((team) => {
+        const previous = activity(team.id);
+        const following = next.activity[team.id] ?? 'unknown';
+        return (previous === 'active' || previous === 'sleeping') && following !== 'active' && following !== 'sleeping';
+      });
+      if (newlyInactive.length) settlingRemaining = 1;
+      if (idleTeamId && newlyInactive.some((team) => team.id !== idleTeamId)) deferredCampusSettle = true;
       state = { ...next, activity: { ...next.activity }, decorations: { ...next.decorations } };
       const nextDecorationSignature = teams.map((team) => `${team.id}:${(state.decorations[team.id] ?? []).join(',')}`).join('|');
       if (nextDecorationSignature !== decorationSignature) {
@@ -730,7 +827,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       if (disposed) return;
       disposed = true;
       assetAbort.abort();
-      cancelTimer();
+      cancelFrame();
       observer.disconnect();
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('platop:visibility', nativeVisibility);
@@ -764,6 +861,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.sceneRenderMs;
       delete host.dataset.sceneCpuMs;
       delete host.dataset.idleTeam;
+      diagnosticFields.forEach((field) => { delete host.dataset[field]; });
     }
   };
 }

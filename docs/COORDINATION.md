@@ -132,3 +132,18 @@ layout, walls, lighting and character shapes in future art deliveries. All
 character assets remain subject to the existing explicit approval manifest.
 This follow-up preserves Claude's separate sound/name commit without changing
 its audio behavior. Performance measurements and their limits are in VALIDATION.md.
+
+## Cinematic motion follow-up — 2026-10-12
+
+Codex replaced unsynchronized timer animation with a display-synchronized 30 FPS
+cadence, eased character paths and turns, and blended joint/clip transitions.
+The native Mac check reached 30.0 FPS with p95 render-start spacing of 34 ms in
+the sampled office and active campus views. Preserve the approved environment,
+the existing character files, and this transition behavior in future asset work.
+No asset rebake was required; reviewed runtime clip endpoints were continuous.
+
+The local-only timing overlay is explicitly opt-in and stores no history.
+Public source contains no device-specific location, private chat mapping or
+personal filesystem path. Optional weather's provider request and local storage
+boundaries are documented in PRIVACY.md. Keep future private references and
+personalization outside public assets and tracked source.

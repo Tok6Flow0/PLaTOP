@@ -97,11 +97,13 @@ alone does not observe chats or create a recurring automation.
 
 ## Small and local
 
-The scene caps active rendering at 48 fps and sleep animation at 8 fps. Hidden
-or minimized windows stop rendering; neutral, paused, and reduced-motion scenes
-use frames only when needed. Camera interactions redraw at up to 60 fps while
-sleeping characters keep their 8 fps cadence. Window view renders only its
-selected room at up to 24 fps (8 fps while sleeping) and pauses when covered or hidden. Pixel density is capped. One
+Visible animation uses a display-synchronized cinematic 30 fps cadence, including
+sleeping characters and window views. Camera interactions redraw at up to 60 fps.
+Walking paths ease into work, turns are bounded, and authored actions blend rather
+than snapping between poses. Hidden or minimized windows stop rendering; neutral,
+paused, and reduced-motion scenes use frames only when needed. A brief transition
+can finish before a newly inactive scene settles. Window view renders only its
+selected room and pauses when covered or hidden. Pixel density is capped. One
 small static shadow map, contact textures and modest lamp glows create soft
 lighting without a ray-tracing renderer or a continuous postprocessing pass. These are rendering budgets, not whole-device CPU/GPU measurements.
 
@@ -110,6 +112,14 @@ and fixed source labels; it assigns timestamps locally. Chat contents, contacts,
 and credentials are not published. The local token and latest sanitized state
 stay in ignored `.local/`; the app does not read private Codex databases or
 transcripts. This playground visualizes work; it does not run the teams' workflows.
+See [local data and optional network use](docs/PRIVACY.md) for storage, permission
+and public-asset boundaries. Live weather is optional and contacts Open-Meteo;
+the office and activity bridge run locally without it.
+
+For a local timing check, press **Control + Option + P** (Ctrl + Alt + P on other
+platforms). The hidden-by-default overlay shows recent renderer frame intervals;
+it saves and sends nothing. Press the shortcut again to close it. Frame timing
+does not measure GPU execution or guarantee the screen's presented refresh rate.
 
 ## Art and ownership
 

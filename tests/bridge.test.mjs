@@ -60,6 +60,34 @@ test('rejects unauthenticated writes, cross-origin requests, and rebinding hosts
   assert.equal((await request('/api/events', { method: 'POST', body, auth: true, headers: { Origin: `http://127.0.0.1:${bridge.port}` } })).status, 200);
 });
 
+test('rejects cross-site browser requests even when a GET has no Origin header', async t => {
+  const { request } = await fixture(t);
+  for (const site of ['cross-site', 'same-site']) {
+    const headers = { 'Sec-Fetch-Site': site };
+    assert.equal((await request('/api/state', { headers })).status, 403);
+    // Invalid input avoids any provider request if this guard regresses.
+    assert.equal((await request('/api/weather?latitude=100&longitude=2', { headers })).status, 403);
+    assert.equal((await request('/', { headers })).status, 403);
+  }
+  for (const site of ['same-origin', 'none']) {
+    assert.equal((await request('/api/state', { headers: { 'Sec-Fetch-Site': site } })).status, 200);
+  }
+  // Native clients and the local command-line bridge do not send Fetch Metadata.
+  assert.equal((await request('/api/state')).status, 200);
+});
+
+test('does not serve hidden files accidentally copied into the build', async t => {
+  const { root, request } = await fixture(t);
+  await writeFile(path.join(root, 'dist', '.env'), 'PRIVATE_BUILD_DATA');
+  await mkdir(path.join(root, 'dist', '.local'));
+  await writeFile(path.join(root, 'dist', '.local', 'token'), 'PRIVATE_BUILD_DATA');
+  for (const url of ['/.env', '/.local/token']) {
+    const response = await request(url);
+    assert.equal(response.status, 404);
+    assert.ok(!response.text.includes('PRIVATE_BUILD_DATA'));
+  }
+});
+
 test('accepts closed-vocabulary batches atomically and persists no history or extra fields', async t => {
   const { root, request, token } = await fixture(t);
   const response = await request('/api/events', { method: 'POST', auth: true, body: { teams: [
