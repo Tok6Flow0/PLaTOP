@@ -1,0 +1,4 @@
+interface:
+  display_name: "PLaTOP"
+  short_description: "Bring local AI team activity into a tiny 3D office"
+  default_prompt: "Use $platop to show the current activity of my selected Codex teams in the local playground."

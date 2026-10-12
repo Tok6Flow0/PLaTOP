@@ -1,0 +1,25 @@
+node_modules/
+dist/
+build/
+.build/
+.local/
+.env*
+!.env.example
+.DS_Store
+*.log
+*.tsbuildinfo
+qa/
+art-direction/
+.playwright-cli/
+
+# Local cross-agent handoffs and review benches
+CODEX-HANDOFF.md
+portrait-references/
+bench/
+
+# Optional local voice delivery was outside the authorized public graphics release
+src/audio/
+assets-src/voice/
+public/assets/audio/
+docs/SOUND.md
+docs/NAME.md

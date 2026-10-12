@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>PLaTOP character bench</title>
+<style>
+  :root { --bg: #f4efe4; --ink: #2f3a36; --muted: #7b847d; --chip: #fffaf0; --line: #e2d8c6; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font: 14px/1.4 ui-rounded, "SF Pro Rounded", system-ui, sans-serif; }
+  #bar { position: fixed; inset: 0 0 auto 0; display: flex; flex-wrap: wrap; gap: 6px; padding: 10px 14px; align-items: center; z-index: 2; }
+  #bar b { margin-right: 8px; letter-spacing: .02em; }
+  button { border: 1px solid var(--line); background: var(--chip); color: var(--ink); border-radius: 999px; padding: 5px 11px; font: inherit; cursor: pointer; }
+  button.on { background: var(--ink); color: var(--chip); border-color: var(--ink); }
+  #stage { position: fixed; inset: 0; }
+  #labels { position: fixed; inset: 0; pointer-events: none; }
+  .label { position: absolute; transform: translate(-50%, 0); font-size: 12px; color: var(--muted); white-space: nowrap; text-align: center; }
+  .label strong { display: block; color: var(--ink); font-size: 13px; }
+</style>
+<script type="importmap">
+{ "imports": { "three": "/node_modules/three/build/three.module.js", "three/addons/": "/node_modules/three/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div id="stage"></div>
+<div id="labels"></div>
+<div id="bar"><b>PLaTOP bench</b></div>
+<script type="module">
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+// URL params: ?ids=a,b&clip=Idle&t=0.5&spin=0&cols=4&zoom=1
+const q = new URLSearchParams(location.search);
+const CLIPS = ['Idle', 'Move', 'Work', 'Talk', 'Emote', 'Sleep'];
+let clip = q.get('clip') || 'Idle';
+const freeze = q.has('t') ? parseFloat(q.get('t')) : null;
+let turntable = q.get('spin') === '1';
+
+const base = await fetch('/public/assets/characters/manifest.json', { method: 'HEAD' }).then((r) => (r.ok ? '/public' : '')).catch(() => '');
+const decor = q.has('decor');
+const manifest = decor
+  ? ((m) => ({ characters: Object.fromEntries(Object.entries(m.items).map(([k, v]) => [k, { path: v.path, extras: { name: k, height: v.size[1] } }])) }))(await (await fetch(base + '/assets/decor/manifest.json', { cache: 'no-store' })).json())
+  : await (await fetch(base + '/assets/characters/manifest.json', { cache: 'no-store' })).json();
+let ids = q.get('ids') ? q.get('ids').split(',') : Object.keys(manifest.characters);
+ids = ids.filter((id) => manifest.characters[id]);
+const cols = parseInt(q.get('cols') || String(Math.min(ids.length, ids.length > 8 ? 6 : 4)), 10);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.getElementById('stage').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#f4efe4');
+scene.add(new THREE.HemisphereLight('#fff6e8', '#cdbb9f', 1.9));
+const key = new THREE.DirectionalLight('#fff1dc', 2.2); key.position.set(-3, 6, 5); scene.add(key);
+const rim = new THREE.DirectionalLight('#dfe8ff', 0.7); rim.position.set(4, 3, -4); scene.add(rim);
+
+const spacing = 1.45;
+const rows = Math.ceil(ids.length / cols);
+const camera = new THREE.PerspectiveCamera(26, 1, 0.1, 100);
+const zoom = parseFloat(q.get('zoom') || '1');
+const iso = q.get('view') === 'iso';
+
+const shadowTex = (() => {
+  const c = document.createElement('canvas'); c.width = c.height = 64;
+  const g = c.getContext('2d'); const r = g.createRadialGradient(32, 32, 2, 32, 32, 31);
+  r.addColorStop(0, 'rgba(70,55,35,0.32)'); r.addColorStop(1, 'rgba(70,55,35,0)');
+  g.fillStyle = r; g.fillRect(0, 0, 64, 64); return new THREE.CanvasTexture(c);
+})();
+
+const loader = new GLTFLoader();
+const actors = [];
+await Promise.all(ids.map(async (id, i) => {
+  const entry = manifest.characters[id];
+  const gltf = await loader.loadAsync(base + entry.path + '?v=' + Date.now());
+  const x = (i % cols - (cols - 1) / 2) * spacing;
+  const z = (Math.floor(i / cols) - (rows - 1) / 2) * spacing * (rows > 1 ? 1.7 : 1.15);
+  gltf.scene.position.set(x, 0, z);
+  scene.add(gltf.scene);
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(0.9, 0.9), new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false }));
+  sh.rotation.x = -Math.PI / 2; sh.position.set(x, 0.002, z); scene.add(sh);
+  const mixer = new THREE.AnimationMixer(gltf.scene);
+  const actions = Object.fromEntries(gltf.animations.map((a) => [a.name, mixer.clipAction(a)]));
+  const label = document.createElement('div'); label.className = 'label';
+  label.innerHTML = `<strong>${entry.extras?.name ?? id}</strong>${id}`;
+  document.getElementById('labels').appendChild(label);
+  actors.push({ id, root: gltf.scene, mixer, actions, label, x, z, h: entry.extras?.height ?? 1 });
+}));
+
+function play(name) {
+  clip = name;
+  document.querySelectorAll('#bar button[data-clip]').forEach((b) => b.classList.toggle('on', b.dataset.clip === name));
+  for (const a of actors) {
+    const next = a.actions[name];
+    if (!next) continue;
+    const prev = a.current;
+    next.reset();
+    next.setLoop(name === 'Emote' ? THREE.LoopRepeat : THREE.LoopRepeat, Infinity);
+    next.play();
+    if (prev && prev !== next && freeze === null) prev.crossFadeTo(next, 0.3, false); else if (prev && prev !== next) prev.stop();
+    a.current = next;
+  }
+}
+CLIPS.forEach((name) => {
+  const b = document.createElement('button'); b.textContent = name; b.dataset.clip = name;
+  b.onclick = () => play(name); document.getElementById('bar').appendChild(b);
+});
+const tb = document.createElement('button'); tb.textContent = 'turntable'; tb.onclick = () => { turntable = !turntable; tb.classList.toggle('on', turntable); };
+document.getElementById('bar').appendChild(tb);
+play(clip);
+
+function frame() {
+  const w = innerWidth, h = innerHeight;
+  renderer.setSize(w, h, false); renderer.domElement.style.width = w + 'px'; renderer.domElement.style.height = h + 'px';
+  camera.aspect = w / h;
+  const span = Math.max(cols * spacing / camera.aspect, rows * spacing * (rows > 1 ? 1.4 : 1.15)) * 1.25 / zoom + 0.6;
+  const dist = span / (2 * Math.tan(THREE.MathUtils.degToRad(camera.fov / 2)));
+  if (iso) camera.position.set(dist * 0.62, dist * 0.78, dist * 0.62); else camera.position.set(0, dist * (rows > 1 ? 0.62 : 0.32), dist);
+  camera.lookAt(0, iso ? 0.3 : rows > 1 ? 0.2 : 0.45, 0);
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', frame); frame();
+
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = clock.getDelta();
+  for (const a of actors) {
+    if (freeze !== null) { a.mixer.setTime(freeze * (a.current?.getClip().duration ?? 1)); }
+    else a.mixer.update(dt);
+    if (turntable) a.root.rotation.y += dt * 0.6;
+    const v = new THREE.Vector3(a.x, -0.02, a.z + 0.35).project(camera);
+    a.label.style.left = ((v.x + 1) / 2 * innerWidth) + 'px';
+    a.label.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
+  }
+  renderer.render(scene, camera);
+});
+window.__bench = { actors, play, THREE };
+</script>
+</body>
+</html>

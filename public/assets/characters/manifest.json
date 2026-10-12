@@ -1,0 +1,646 @@
+{
+  "schemaVersion": 1,
+  "generator": "assets-src/build-characters.mjs",
+  "characters": {
+    "support-beacon": {
+      "path": "/assets/characters/support-beacon.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Beacon",
+        "team": "support",
+        "height": 1.189,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.9,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.2,
+          "Move": 0.72,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.08,
+          "bubble": 1.309
+        },
+        "voice": {
+          "preset": "lantern-soft"
+        }
+      }
+    },
+    "email-owl": {
+      "path": "/assets/characters/email-owl.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Courier",
+        "team": "email",
+        "height": 0.946,
+        "footprint": 0.36,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.75,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.6,
+          "Move": 0.8,
+          "Work": 2.6,
+          "Emote": 1.4,
+          "Talk": 1.6,
+          "Sleep": 4.2
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.06,
+          "bubble": 1.066
+        },
+        "voice": {
+          "preset": "owl-warm"
+        }
+      }
+    },
+    "email-swift": {
+      "path": "/assets/characters/email-swift.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Swift",
+        "team": "email",
+        "height": 0.415,
+        "footprint": 0.22,
+        "locomotion": "fly",
+        "airborne": true,
+        "moveSpeed": 1.25,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 2.8,
+          "Move": 0.5,
+          "Work": 2.2,
+          "Emote": 1.4,
+          "Talk": 1.2,
+          "Sleep": 3.6
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 0.62,
+          "bubble": 0.535
+        },
+        "voice": {
+          "preset": "swift-chirp"
+        }
+      }
+    },
+    "intake-beacon": {
+      "path": "/assets/characters/intake-beacon.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Beacon",
+        "team": "intake",
+        "height": 1.146,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.9,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.7,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.104,
+          "bubble": 1.266
+        },
+        "voice": {
+          "preset": "robot-bright"
+        }
+      }
+    },
+    "intake-jarvis": {
+      "path": "/assets/characters/intake-jarvis.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Jarvis",
+        "team": "intake",
+        "height": 1.229,
+        "footprint": 0.36,
+        "locomotion": "glide",
+        "airborne": false,
+        "moveSpeed": 0.9,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 1,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.148,
+          "bubble": 1.349
+        },
+        "voice": {
+          "preset": "robot-lead"
+        }
+      }
+    },
+    "intake-relay": {
+      "path": "/assets/characters/intake-relay.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Relay",
+        "team": "intake",
+        "height": 1.174,
+        "footprint": 0.34,
+        "locomotion": "hop",
+        "airborne": false,
+        "moveSpeed": 1,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.6,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.104,
+          "bubble": 1.294
+        },
+        "voice": {
+          "preset": "robot-bouncy"
+        }
+      }
+    },
+    "intake-compass": {
+      "path": "/assets/characters/intake-compass.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Compass",
+        "team": "intake",
+        "height": 1.137,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.85,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.76,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.104,
+          "bubble": 1.257
+        },
+        "voice": {
+          "preset": "robot-curious"
+        }
+      }
+    },
+    "hr-lens": {
+      "path": "/assets/characters/hr-lens.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Lens",
+        "team": "hr",
+        "height": 1.081,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.8,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.78,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.071,
+          "bubble": 1.201
+        },
+        "voice": {
+          "preset": "robot-careful"
+        }
+      }
+    },
+    "hr-compass": {
+      "path": "/assets/characters/hr-compass.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Compass",
+        "team": "hr",
+        "height": 1.124,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.9,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.7,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.114,
+          "bubble": 1.244
+        },
+        "voice": {
+          "preset": "robot-calm"
+        }
+      }
+    },
+    "hr-relay": {
+      "path": "/assets/characters/hr-relay.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Relay",
+        "team": "hr",
+        "height": 1.081,
+        "footprint": 0.34,
+        "locomotion": "hop",
+        "airborne": false,
+        "moveSpeed": 1,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.6,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.071,
+          "bubble": 1.201
+        },
+        "voice": {
+          "preset": "robot-bouncy"
+        }
+      }
+    },
+    "bridge-jarvis": {
+      "path": "/assets/characters/bridge-jarvis.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Jarvis",
+        "team": "merchant",
+        "height": 1.164,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.9,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.7,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.153,
+          "bubble": 1.284
+        },
+        "voice": {
+          "preset": "robot-warm"
+        }
+      }
+    },
+    "bridge-scout": {
+      "path": "/assets/characters/bridge-scout.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Scout",
+        "team": "merchant",
+        "height": 0.95,
+        "footprint": 0.3,
+        "locomotion": "hop",
+        "airborne": false,
+        "moveSpeed": 1.05,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.55,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 0.941,
+          "bubble": 1.07
+        },
+        "voice": {
+          "preset": "robot-bright"
+        }
+      }
+    },
+    "bridge-keeper": {
+      "path": "/assets/characters/bridge-keeper.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Keeper",
+        "team": "merchant",
+        "height": 1.083,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.8,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.4,
+          "Move": 0.8,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.073,
+          "bubble": 1.203
+        },
+        "voice": {
+          "preset": "robot-soft"
+        }
+      }
+    },
+    "reflection-lumen": {
+      "path": "/assets/characters/reflection-lumen.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Lumen",
+        "team": "reflection",
+        "height": 0.759,
+        "footprint": 0.3,
+        "locomotion": "float",
+        "airborne": true,
+        "moveSpeed": 0.7,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3,
+          "Move": 1.2,
+          "Work": 2.4,
+          "Emote": 1.3,
+          "Talk": 1.6,
+          "Sleep": 4.2
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 0.88,
+          "bubble": 0.879
+        },
+        "voice": {
+          "preset": "lantern-hum"
+        }
+      }
+    },
+    "reflection-echo": {
+      "path": "/assets/characters/reflection-echo.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Echo",
+        "team": "reflection",
+        "height": 0.908,
+        "footprint": 0.34,
+        "locomotion": "hop",
+        "airborne": false,
+        "moveSpeed": 0.8,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.6,
+          "Move": 0.6,
+          "Work": 2.6,
+          "Emote": 1.4,
+          "Talk": 1.6,
+          "Sleep": 4.2
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 1.018,
+          "bubble": 1.028
+        },
+        "voice": {
+          "preset": "owl-soft"
+        }
+      }
+    },
+    "reflection-quill": {
+      "path": "/assets/characters/reflection-quill.glb",
+      "clips": {
+        "Idle": "Idle",
+        "Move": "Move",
+        "Work": "Work",
+        "Sleep": "Sleep"
+      },
+      "extras": {
+        "name": "Quill",
+        "team": "reflection",
+        "height": 0.88,
+        "footprint": 0.34,
+        "locomotion": "waddle",
+        "airborne": false,
+        "moveSpeed": 0.75,
+        "clips": {
+          "Emote": "Emote",
+          "Talk": "Talk"
+        },
+        "clipDurations": {
+          "Idle": 3.6,
+          "Move": 0.8,
+          "Work": 2.6,
+          "Emote": 1.4,
+          "Talk": 1.6,
+          "Sleep": 4.2
+        },
+        "oneShot": [
+          "Emote"
+        ],
+        "sockets": {
+          "zzz": 0.986,
+          "bubble": 1
+        },
+        "voice": {
+          "preset": "owl-bright"
+        }
+      }
+    }
+  }
+}

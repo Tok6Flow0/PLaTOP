@@ -1,0 +1,189 @@
+{
+  "schemaVersion": 1,
+  "generator": "assets-src/build-decor.mjs",
+  "note": "Origins: floor items stand on y=0; wall art hangs with its back at z=0 facing +Z, centred on its own origin.",
+  "items": {
+    "plant-leafy": {
+      "path": "/assets/decor/plant-leafy.glb",
+      "kind": "plant",
+      "slot": "floor",
+      "size": [
+        0.577,
+        0.792,
+        0.64
+      ]
+    },
+    "plant-snake": {
+      "path": "/assets/decor/plant-snake.glb",
+      "kind": "plant",
+      "slot": "floor",
+      "size": [
+        0.505,
+        1.287,
+        0.505
+      ]
+    },
+    "plant-palm": {
+      "path": "/assets/decor/plant-palm.glb",
+      "kind": "plant",
+      "slot": "floor",
+      "size": [
+        0.752,
+        1.278,
+        0.752
+      ]
+    },
+    "lamp-floor-cream": {
+      "path": "/assets/decor/lamp-floor-cream.glb",
+      "kind": "lamp",
+      "slot": "floor",
+      "size": [
+        0.42,
+        1.57,
+        0.42
+      ]
+    },
+    "lamp-floor-sage": {
+      "path": "/assets/decor/lamp-floor-sage.glb",
+      "kind": "lamp",
+      "slot": "floor",
+      "size": [
+        0.42,
+        1.57,
+        0.42
+      ]
+    },
+    "lamp-floor-teal": {
+      "path": "/assets/decor/lamp-floor-teal.glb",
+      "kind": "lamp",
+      "slot": "floor",
+      "size": [
+        0.42,
+        1.57,
+        0.42
+      ]
+    },
+    "lamp-lantern-green": {
+      "path": "/assets/decor/lamp-lantern-green.glb",
+      "kind": "lamp",
+      "slot": "floor",
+      "size": [
+        0.345,
+        0.755,
+        0.34
+      ]
+    },
+    "lamp-lighthouse": {
+      "path": "/assets/decor/lamp-lighthouse.glb",
+      "kind": "lamp",
+      "slot": "floor",
+      "size": [
+        0.36,
+        1.25,
+        0.36
+      ]
+    },
+    "lamp-hurricane": {
+      "path": "/assets/decor/lamp-hurricane.glb",
+      "kind": "lamp",
+      "slot": "floor",
+      "size": [
+        0.4,
+        0.849,
+        0.4
+      ]
+    },
+    "art-merchant-bridge": {
+      "path": "/assets/decor/art-merchant-bridge.glb",
+      "kind": "art",
+      "slot": "wall",
+      "size": [
+        1.08,
+        0.7,
+        0.089
+      ]
+    },
+    "art-hr-clearpath": {
+      "path": "/assets/decor/art-hr-clearpath.glb",
+      "kind": "art",
+      "slot": "wall",
+      "size": [
+        0.91,
+        0.88,
+        0.071
+      ]
+    },
+    "art-intake-sundisc": {
+      "path": "/assets/decor/art-intake-sundisc.glb",
+      "kind": "art",
+      "slot": "wall",
+      "size": [
+        0.94,
+        0.94,
+        0.097
+      ]
+    },
+    "art-support-bubble": {
+      "path": "/assets/decor/art-support-bubble.glb",
+      "kind": "art",
+      "slot": "wall",
+      "size": [
+        0.9,
+        0.729,
+        0.095
+      ]
+    },
+    "art-reflection-moon": {
+      "path": "/assets/decor/art-reflection-moon.glb",
+      "kind": "art",
+      "slot": "wall",
+      "size": [
+        0.78,
+        0.94,
+        0.078
+      ]
+    },
+    "art-email-halo": {
+      "path": "/assets/decor/art-email-halo.glb",
+      "kind": "art",
+      "slot": "wall",
+      "size": [
+        0.88,
+        0.88,
+        0.075
+      ]
+    }
+  },
+  "teams": {
+    "merchant": {
+      "plant": "plant-leafy",
+      "lamp": "lamp-floor-cream",
+      "art": "art-merchant-bridge"
+    },
+    "hr": {
+      "plant": "plant-palm",
+      "lamp": "lamp-floor-sage",
+      "art": "art-hr-clearpath"
+    },
+    "intake": {
+      "plant": "plant-snake",
+      "lamp": "lamp-lighthouse",
+      "art": "art-intake-sundisc"
+    },
+    "support": {
+      "plant": "plant-leafy",
+      "lamp": "lamp-lantern-green",
+      "art": "art-support-bubble"
+    },
+    "reflection": {
+      "plant": "plant-snake",
+      "lamp": "lamp-hurricane",
+      "art": "art-reflection-moon"
+    },
+    "email": {
+      "plant": "plant-palm",
+      "lamp": "lamp-floor-teal",
+      "art": "art-email-halo"
+    }
+  }
+}
