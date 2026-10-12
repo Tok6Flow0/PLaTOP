@@ -8,6 +8,7 @@ import { makeCampus, makeRoom, type Room } from './scene/rooms';
 import { ActorContactBatch, freezeStaticAuthoredMeshes, SceneBatches } from './scene/performanceBatching';
 import { FramePacer } from './scene/framePacing';
 import { FrameOutput } from './scene/frameOutput';
+import { enableFlatMappedWallSinglePass } from './scene/flatMappedWalls';
 
 // Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -288,6 +289,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         };
         renderable.material = Array.isArray(renderable.material) ? renderable.material.map(clone) : clone(renderable.material);
       });
+      enableFlatMappedWallSinglePass(wall.root);
       wallFades.push({ normal: wall.normal.clone().transformDirection(room.root.matrixWorld), twoSided: !!wall.twoSided, materials: [...clones.values()].map((material) => ({ material, opacity: material.opacity, depthWrite: material.depthWrite })) });
     }
   });
@@ -356,7 +358,15 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   campus.children.forEach(collectStaticPrunable);
   rooms.forEach((room) => room.root.children.forEach(collectStaticPrunable));
   const multiDraw = !!renderer.getContext().getExtension('WEBGL_multi_draw');
-  const batches = new SceneBatches(scene, animatedRoots, prunableRoots, multiDraw);
+  let mapArrayLimits: { maxTextureSize: number; maxLayers: number } | undefined;
+  try {
+    const context = renderer.getContext() as WebGL2RenderingContext;
+    if (typeof context.texImage3D === 'function') mapArrayLimits = {
+      maxTextureSize: renderer.capabilities.maxTextureSize,
+      maxLayers: context.getParameter(context.MAX_ARRAY_TEXTURE_LAYERS) as number,
+    };
+  } catch { /* Unsupported array capabilities retain the original mapped planes. */ }
+  const batches = new SceneBatches(scene, animatedRoots, prunableRoots, multiDraw, mapArrayLimits);
   batches.rebuild();
   const contacts = new ActorContactBatch(scene, actors.map((actor) => actor.contact));
   function freezeEnvironment(object: THREE.Object3D): void {

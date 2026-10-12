@@ -20,15 +20,29 @@ export function useActivity() {
   const [connected, setConnected] = useState(false);
   useEffect(() => {
     let alive = true;
+    let streamAuthoritative = false;
     const controller = new AbortController();
     function receive(value: unknown) {
       const parsed = parseSnapshot(value);
-      if (alive && parsed) { setSnapshot(parsed); setConnected(true); }
+      if (!alive || !parsed) return false;
+      setSnapshot(parsed);
+      setConnected(true);
+      return true;
     }
-    fetch('/api/state', { signal: controller.signal }).then(r => { if (!r.ok) throw new Error('Bridge unavailable'); return r.json(); }).then(receive).catch(() => { if (alive) setConnected(false); });
+    fetch('/api/state', { signal: controller.signal }).then(r => { if (!r.ok) throw new Error('Bridge unavailable'); return r.json(); }).then(value => {
+      // The initial request can finish after a newer stream snapshot or error.
+      // Once the stream reports its state, only it may change this connection.
+      if (!streamAuthoritative) receive(value);
+    }).catch(() => {
+      // This one-shot request may fail after the stream has already connected.
+      // Let stream errors report disconnection without discarding healthy SSE.
+    });
     const stream = new EventSource('/api/events');
-    stream.addEventListener('state', event => { try { receive(JSON.parse((event as MessageEvent).data)); } catch { /* Ignore malformed bridge events. */ } });
-    stream.onerror = () => { if (alive) setConnected(false); };
+    stream.addEventListener('state', event => {
+      try { if (receive(JSON.parse((event as MessageEvent).data))) streamAuthoritative = true; }
+      catch { /* Ignore malformed bridge events. */ }
+    });
+    stream.onerror = () => { streamAuthoritative = true; if (alive) setConnected(false); };
     return () => { alive = false; controller.abort(); stream.close(); };
   }, []);
   return { snapshot, connected };

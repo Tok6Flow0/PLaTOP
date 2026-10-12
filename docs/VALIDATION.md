@@ -184,11 +184,119 @@ remains available until the host reloads it. No private chat IDs, token,
 coordinates or personal paths are included in the repository.
 
 The launcher now verifies deterministic source and output fingerprints before
-reusing frontend files and updates the existing native bundle in place. The
-final Node suite passes **84 tests**, the production TypeScript/Vite build
+reusing frontend files and updates the existing native bundle in place. At that checkpoint, the
+Node suite passes **84 tests**, the production TypeScript/Vite build
 succeeds, and independent correctness/privacy reviews found no material issue.
 The updated ad hoc signed native bundle passes strict signature verification.
 The previous app, GPU and WebContent processes exited before relaunch; the new
 instance loaded the fingerprint-verified frontend, repeated the 36.35% campus
 CPU median and the reported 30 FPS timing, and was left in the live Beacon
 desktop-background view with preview and diagnostics off.
+
+## Additional renderer and lifecycle measurements — 2026-10-12
+
+Compatible rigid character surfaces now share merged geometry across offices,
+with per-part transform, linear-color and surface-factor palettes. Static
+surfaces also share compatible draws: ordinary meshes keep CPU-composed
+view/normal matrices, while former instances retain their original Float32
+world transforms and normal path. The renderer uses ordinary draws on devices
+with or without `WEBGL_multi_draw`. Transparent effects, source picking,
+authored animation, and cutaway wall fades retain their existing paths.
+Original models retain ownership of their source resources; rebuild and
+disposal release only the combined resources.
+
+Deterministic Metal comparisons against `dceec86` covered 33 views and 76
+animation states. Every view was at least 99.95685% pixel-identical; the largest
+mean RGB difference was 0.001415/255. Differences were sparse edge/occlusion
+pixels, with no reviewed feature regression. Supported and extension-disabled
+candidate images matched exactly. All 76 sampled actor matrices and clip states
+matched both references; 23 functional and lifecycle checks covered hidden-office
+return, individual parts, current colors, picking, pause/hidden states, context
+recovery and disposal, with no steady GL errors. The global grouping alone
+changed steady campus submissions from 100 to 83; Beacon stayed at 21.
+View-change shadow refreshes were measured separately. Against the preceding
+mixed batching checkpoint, all views were at least 99.99513% identical.
+
+Ten canonical flat mapped wall planes now use a single transparent pass, retaining
+DoubleSide lighting, opacity, depth and painter order. All 33 standard views and
+six corrected front/back/grazing views were pixel-exact against the preceding
+renderer. Unsegmented, unchanged planes and stock materials are required;
+volumes, edited geometry, custom shaders and mixed material users retain the
+original path. This removed ten steady campus submissions and two in Beacon.
+
+Twenty-one immutable canvas-textured planes share three sRGB texture arrays.
+Their original linear mip filters, anisotropy, UVs, source pixels and alpha tests
+are retained in color and VSM shadow shaders. Repeat textures remain separate.
+The bounded pool reuses copies across rebuilds and disposes only owned copies;
+unavailable pixels or insufficient texture capabilities keep the original draws.
+The current arrays retain 21.36 MiB of CPU pixel copies and approximately
+28.48 MiB of GPU mipmapped data. The base-copy budget is 24 MiB; this is not a
+measurement of whole-process memory or a claim of zero allocation overhead.
+
+Final array comparisons covered 44 views: the original 33, six corrected wall
+angles and five surface close-ups. Against the pre-array renderer every view
+was at least 99.99672% pixel-identical; maximum mean RGB difference was
+0.000014/255, with no reviewed feature regression. Extension-disabled output
+matched exactly, and capability-zero fallback matched the reference exactly.
+All 76 animation states and 32 functional/resource checks passed. Runtime
+compilation exercised color and VSM depth shaders; the distance-shader hook has
+source/unit coverage because the scene has no point-light shadow pass.
+Steady submissions are now 55 for campus and 18 for Beacon, down from 100 and
+21 in the reference build. Texture source-pixel equality, cutouts, hidden-room
+return, context recovery, rebuild reuse and owned-resource disposal passed.
+
+An offscreen static-room cache was prototyped and rejected. Plant/shelf edges
+showed visible color/occlusion errors despite valid GPU calls. No offscreen room
+cache, additional framebuffer allocation, or cache fallback is included.
+
+Native measurements used the same app, GPU-process and WebContent launch
+identities, fixed preview activity mix, DPR 1, opaque MSAA and cinematic 30 FPS
+budget. Fullscreen campus retained a 1244 × 840 scene buffer; the fullscreen
+Beacon office used 1920 × 1080. Diagnostics and QA GPU work were closed during
+CPU sampling. Cumulative process counters were converted using the host Mach
+timebase, bound to launch identities and exact frontend fingerprints, and
+sampled in three 13-second windows after a 26-second warmup per capture.
+These are group CPU percentages of one core, not whole-machine CPU, GPU
+execution, power or battery measurements.
+
+The restored reference campus medians were 34.32%, 33.67% and 34.12% of one
+core. The final renderer's campus medians were 26.29% and 26.98%. Comparing
+median capture values gives a 21.9% reduction (34.12% to 26.63%); the two
+matched comparisons were 23.4% and 20.9%. Capture-to-capture variation remains. The matched
+fullscreen Beacon office median fell from 21.12% to 19.55%, a 7.5% reduction. The campus
+measurement meets the additional 20% target; this does **not** establish a
+20–30% reduction in every view or a matched desktop-background measurement.
+
+Separate recent-window native diagnostics for both final views reported
+30.0 FPS, median 33 ms, p95 34 ms, maximum 35 ms and zero frames above
+50.5 ms. These diagnostics measure renderer timing, not guaranteed display
+presentation or GPU execution. The local 60 Hz display cannot present 102
+unique frames per second.
+
+Two reload races were also reproduced and fixed. A failed initial state request
+or late successful initial state request can no longer overwrite a newer
+activity stream state; actual stream errors still disconnect and fresh valid
+events recover. Native fullscreen state is persisted and reconciled after listeners attach, including an event arriving
+between React render and effect setup. Twelve focused regression tests cover both
+races, late successful responses, real errors, recovery, unmount cleanup and
+browser fullscreen behavior.
+The relevant race tests fail against the preceding implementation.
+
+All six existing automation prompts still invoke the PLaTOP skill, prefer its
+registered local MCP and retain the CLI fallback. Genuine intake and email runs
+were observed publishing active and sleeping updates through that fallback.
+Registered stdio MCP initialization and status readback succeed; registration
+alone does not prove that existing chats have loaded its tools. Schedules,
+notification settings and business authority were preserved.
+
+The final local suite passes **118 tests**, the production TypeScript/Vite build
+succeeds, and independent visual, renderer-resource and privacy reviews found
+no material issue. The existing native app bundle was rebuilt and updated in
+place, passed strict ad hoc signature verification, and loaded the final
+fingerprint-verified frontend after the preceding processes exited. No duplicate
+installed bundle was found.
+
+After matched sampling, the final app was restored to the live Beacon desktop
+background with preview and diagnostics off, animation unpaused and the local
+status bridge connected. Temporary QA browsers and preview servers were closed;
+the live bridge and updated native instance remain running.

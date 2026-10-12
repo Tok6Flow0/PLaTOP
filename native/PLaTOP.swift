@@ -179,7 +179,7 @@ final class PlaygroundDelegate: NSObject, NSApplicationDelegate, NSWindowDelegat
         configuration.preferences.javaScriptCanOpenWindowsAutomatically = false
         configuration.userContentController.add(self, name: "platop")
         configuration.userContentController.addUserScript(WKUserScript(
-            source: "window.__PLATOP_NATIVE__ = true; window.__PLATOP_DESKTOP_MODE__ = false; window.__PLATOP_DESKTOP_VISIBLE__ = true;",
+            source: "window.__PLATOP_NATIVE__ = true; window.__PLATOP_DESKTOP_MODE__ = false; window.__PLATOP_FULLSCREEN__ = false; window.__PLATOP_DESKTOP_VISIBLE__ = true;",
             injectionTime: .atDocumentStart, forMainFrameOnly: true))
         webView = WKWebView(frame: .zero, configuration: configuration)
         webView.navigationDelegate = self
@@ -390,6 +390,7 @@ final class PlaygroundDelegate: NSObject, NSApplicationDelegate, NSWindowDelegat
         webView.evaluateJavaScript("""
             window.__PLATOP_NATIVE__ = true;
             window.__PLATOP_DESKTOP_MODE__ = \(desktop);
+            window.__PLATOP_FULLSCREEN__ = \(fullscreen);
             window.dispatchEvent(new CustomEvent('platop:native', {detail: {desktop: \(desktop), fullscreen: \(fullscreen)}}));
             """, completionHandler: nil)
     }

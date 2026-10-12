@@ -6,6 +6,7 @@ declare global {
   interface Window {
     __PLATOP_NATIVE__?: boolean;
     __PLATOP_DESKTOP_MODE__?: boolean;
+    __PLATOP_FULLSCREEN__?: boolean;
     webkit?: { messageHandlers?: { platop?: { postMessage: (message: NativeMessage) => void } } };
   }
 }
@@ -16,22 +17,28 @@ export function useViewMode() {
     try { return localStorage.getItem('platop.view') === 'window'; } catch { return false; }
   });
   const [desktop, setDesktop] = useState(window.__PLATOP_DESKTOP_MODE__ === true);
-  const [fullscreen, setFullscreen] = useState(Boolean(document.fullscreenElement));
+  const [fullscreen, setFullscreen] = useState(() => window.__PLATOP_NATIVE__
+    ? window.__PLATOP_FULLSCREEN__ === true : Boolean(document.fullscreenElement));
   const [error, setError] = useState('');
   const native = window.__PLATOP_NATIVE__ === true;
   useEffect(() => { try { localStorage.setItem('platop.view', idle ? 'window' : 'workspace'); } catch { /* View changes still work for this visit. */ } }, [idle]);
   useEffect(() => {
     const changed = () => setFullscreen(Boolean(document.fullscreenElement));
-    const nativeChanged = (event: Event) => {
-      const detail = (event as CustomEvent<{ desktop?: boolean; fullscreen?: boolean }>).detail;
+    const applyNativeState = (detail: { desktop?: boolean; fullscreen?: boolean }) => {
       if (typeof detail?.desktop === 'boolean') {
         setDesktop(detail.desktop);
         if (detail.desktop) setIdle(true);
       }
       if (typeof detail?.fullscreen === 'boolean') setFullscreen(detail.fullscreen);
     };
+    const nativeChanged = (event: Event) => applyNativeState((event as CustomEvent<{ desktop?: boolean; fullscreen?: boolean }>).detail);
     document.addEventListener('fullscreenchange', changed);
     window.addEventListener('platop:native', nativeChanged);
+    // didFinish can publish before React commits its listener, including on reload.
+    if (window.__PLATOP_NATIVE__) applyNativeState({
+      desktop: window.__PLATOP_DESKTOP_MODE__ === true,
+      fullscreen: window.__PLATOP_FULLSCREEN__ === true,
+    });
     return () => {
       document.removeEventListener('fullscreenchange', changed);
       window.removeEventListener('platop:native', nativeChanged);
