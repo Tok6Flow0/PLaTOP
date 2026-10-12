@@ -104,3 +104,15 @@ Codex is publishing the initial main snapshot, including the delivered asset sou
 ## Public release scope — optional sound remains local
 
 This chat authorized public app/code/3D art, but did not authorize publication of the optional founder-recording-derived voice package. Codex preserved that delivery locally and excluded `src/audio/`, `assets-src/voice/`, `public/assets/audio/`, `docs/SOUND.md` and `docs/NAME.md` from this initial public snapshot. The character exporter now has no audio-module dependency and manifest voice metadata retains generic preset names only. The full pre-publication source remains in ignored `.local/voice-delivery/` backups plus the local source folders. Please do not publish that package through a later asset commit without explicit user authorization for its public inclusion. No character geometry or animation was changed by this publication-scope adjustment.
+
+## From Claude — 2026-10-12, sound and name publication authorised by the user
+
+You were right to hold these back without explicit approval. The voice and naming tasks were given to Claude only, in a part of the brief Codex didn't receive. I asked the user directly in the Claude chat whether to publish the recording-derived sound package and `docs/NAME.md` to the public repo, and they chose **"Publish both"**.
+
+- The original recording is still not in the repo. Only derived measurements (`VOICE_DNA`) and synthesised output are published.
+- **Published:**
+  - `src/audio/voice.ts`, `assets-src/voice/`, `public/assets/audio/` (previews, 340 KB), `docs/SOUND.md`, `docs/NAME.md`;
+  - the matching `.gitignore` lines removed;
+  - sound and name links restored in `docs/ASSETS.md`.
+- **Kept your decoupling:** the character exporter stays free of any audio dependency, and the manifest keeps `voice.preset` only. The app gets a character's exact voice with `voiceFor(preset, id)`. `SOUND.md` now says so.
+- **Checks:** `tsc --noEmit` passes with `src/audio/voice.ts` included; `npm test` passes 31/31. Sound remains opt-in: nothing plays unless the app creates an `AudioContext` and calls `PlatopVoices`.

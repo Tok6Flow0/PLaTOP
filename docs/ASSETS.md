@@ -7,7 +7,10 @@ Everything is generated from code in [`assets-src/`](../assets-src). No textures
 ```sh
 node assets-src/build-characters.mjs   # → public/assets/characters/*.glb + manifest.json
 node assets-src/build-decor.mjs        # → public/assets/decor/*.glb + manifest.json
+node assets-src/voice/render.mjs       # → public/assets/audio/ listening previews
 ```
+
+Voices, chirps and the jingle are synthesised live by [`src/audio/voice.ts`](../src/audio/voice.ts); see [SOUND.md](SOUND.md). The name is explained in [NAME.md](NAME.md).
 
 To review visually, serve the repo root and open `assets-src/preview/index.html`. Parameters: `?ids=bridge-scout,email-owl&clip=Work&t=0.5&zoom=2&view=iso`; add `decor=1` for props.
 
@@ -52,7 +55,7 @@ Every GLB has the four app clips (`Idle`, `Move`, `Work`, `Sleep`) and two extra
 - **Orientation:** feet at the origin, facing +Z, about 1 unit tall (desks are 0.77). Swift (0.5) and Scout (0.9) are small on purpose.
 - **Hidden-at-rest nodes:** `fx_z*`, `eyes_sleep` and props such as `prop_letter` are exported at scale 0.001, and only the clips that need them reveal them, so `crossFadeTo` between any two clips is clean. The Zs rest inside the body and `Sleep` lifts them to `extras.sockets.zzz`, so a rest-pose `Box3` measures the character's true height.
 - **Glows:** materials named `glow_*` are unlit (`KHR_materials_unlit`). Set `toneMapped = false` on them if tone mapping washes them out.
-- **`extras`** (ignored by `parseManifest`, available to the app): `name`, `team`, `height`, `footprint`, `locomotion`, `airborne`, `moveSpeed`, extra clips, `clipDurations`, `sockets.zzz` / `sockets.bubble` heights.
+- **`extras`** (ignored by `parseManifest`, available to the app): `name`, `team`, `height`, `footprint`, `locomotion`, `airborne`, `moveSpeed`, extra clips, `clipDurations`, `sockets.zzz` / `sockets.bubble` heights, and `voice.preset` (pass it to `voiceFor(preset, id)`; see [SOUND.md](SOUND.md)).
 
 ## Decor — "Make it their own"
 

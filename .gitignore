@@ -16,10 +16,3 @@ art-direction/
 CODEX-HANDOFF.md
 portrait-references/
 bench/
-
-# Optional local voice delivery was outside the authorized public graphics release
-src/audio/
-assets-src/voice/
-public/assets/audio/
-docs/SOUND.md
-docs/NAME.md
