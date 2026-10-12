@@ -4,6 +4,8 @@ set -euo pipefail
 ROOT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)"
 APP_DIR="$ROOT_DIR/build/PLaTOP.app"
 APP_BINARY="$APP_DIR/Contents/MacOS/PLaTOP"
+APP_ICON="$APP_DIR/Contents/Resources/PLaTOP.icns"
+ICON_MASTER="$ROOT_DIR/public/brand/platop-logo.png"
 LOCAL_DIR="$ROOT_DIR/.local"
 PID_FILE="$LOCAL_DIR/server.pid"
 OWNER_FILE="$LOCAL_DIR/server.started-at"
@@ -79,7 +81,7 @@ if ! "$NODE_BIN" "$ROOT_DIR/scripts/build-fingerprint.mjs" --check; then
   printf '%s\n' 'Building the current playground source and assets.'
   npm run build
 fi
-if [[ ! -x "$APP_BINARY" || "$ROOT_DIR/native/PLaTOP.swift" -nt "$APP_BINARY" || "$ROOT_DIR/native/Info.plist" -nt "$APP_DIR/Contents/Info.plist" || "$ROOT_DIR/scripts/build-macos.sh" -nt "$APP_BINARY" ]]; then
+if [[ ! -x "$APP_BINARY" || ! -s "$APP_ICON" || ! -f "$ICON_MASTER" || "$ICON_MASTER" -nt "$APP_ICON" || "$ROOT_DIR/native/PLaTOP.swift" -nt "$APP_BINARY" || "$ROOT_DIR/native/Info.plist" -nt "$APP_DIR/Contents/Info.plist" || "$ROOT_DIR/scripts/build-macos.sh" -nt "$APP_BINARY" ]]; then
   bash "$ROOT_DIR/scripts/build-macos.sh"
 fi
 

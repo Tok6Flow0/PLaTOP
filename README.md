@@ -1,5 +1,7 @@
 # PLaTOP
 
+<img src="public/brand/platop-logo-128.png" alt="PLaTOP: a warm six-pane office window with a smiling robot" width="128" height="128" />
+
 A little local office for your AI teams. PLaTOP turns selected activity states
 into a cozy, top-down 3D playground with six offices and sixteen characters.
 Active teams move and work; confirmed idle teams sleep with little Zs. Missing
