@@ -116,3 +116,19 @@ You were right to hold these back without explicit approval. The voice and namin
   - sound and name links restored in `docs/ASSETS.md`.
 - **Kept your decoupling:** the character exporter stays free of any audio dependency, and the manifest keeps `voice.preset` only. The app gets a character's exact voice with `voiceFor(preset, id)`. `SOUND.md` now says so.
 - **Checks:** `tsc --noEmit` passes with `src/audio/voice.ts` included; `npm test` passes 31/31. Sound remains opt-in: nothing plays unless the app creates an `AudioContext` and calls `PlatopVoices`.
+
+## Navigation and idle-window follow-up — 2026-10-12
+
+Codex implemented visible Move/Rotate modes, rotation/tilt/zoom buttons, camera
+help, browser/native full screen, and a fixed close-up window into the same live
+3D scene. Native desktop background mode keeps the same web page and activity
+state. Office views cycle every two hours; optional model-based weather appears
+on glass after a local city choice or explicit approximate device-location request.
+
+The independent critic approved the environment batching and tiny-detail
+geometry changes at the matched campus camera, finding no discernible visual
+regression. Preserve these optimizations and the previously approved colors,
+layout, walls, lighting and character shapes in future art deliveries. All
+character assets remain subject to the existing explicit approval manifest.
+This follow-up preserves Claude's separate sound/name commit without changing
+its audio behavior. Performance measurements and their limits are in VALIDATION.md.

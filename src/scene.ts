@@ -5,6 +5,7 @@ import { CLIP_NAMES, fetchCharacter, fetchManifest, type ClipName } from './scen
 import { disposeObject, SceneKit } from './scene/primitives';
 import { animateCharacter, makeProxy } from './scene/proxies';
 import { makeCampus, makeRoom, type Room } from './scene/rooms';
+import { SceneBatches } from './scene/performanceBatching';
 
 interface Actor {
   character: Character;
@@ -66,7 +67,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     notice.setAttribute('role', 'status');
     host.append(notice);
     onError?.('WebGL unavailable. Showing team details without the 3D workspace.');
-    return { update() {}, resetCamera() {}, zoom() {}, dispose() { notice.remove(); } };
+    return { update() {}, resetCamera() {}, zoom() {}, rotate() {}, tilt() {}, pan() {}, setNavigationMode() {}, setIdleView() {}, dispose() { notice.remove(); } };
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -80,7 +81,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const canvas = renderer.domElement;
   canvas.setAttribute('role', 'img');
   canvas.tabIndex = 0;
-  canvas.setAttribute('aria-label', 'Six connected 3D team offices. Drag to pan; right-drag or shift-drag to orbit and tilt; scroll to zoom. When focused, arrow keys pan, shift and arrows orbit, plus and minus zoom, and Home resets. Use the team list to select an office.');
+  const campusLabel = 'Six connected 3D team offices. Drag to pan; right-drag or shift-drag to orbit and tilt; scroll to zoom. When focused, arrow keys pan, shift and arrows orbit, plus and minus zoom, and Home resets. Use the team list to select an office.';
+  canvas.setAttribute('aria-label', campusLabel);
   canvas.style.display = 'block';
   canvas.style.width = '100%';
   canvas.style.height = '100%';
@@ -108,7 +110,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   sunlight.shadow.camera.bottom = -16;
   scene.add(sunlight);
   const kit = new SceneKit();
-  scene.add(makeCampus(kit));
+  const campus = makeCampus(kit);
+  scene.add(campus);
   const rooms = new Map<string, InteractiveRoom>();
   const actors: Actor[] = [];
   const retiredProxies = new THREE.Group();
@@ -206,10 +209,15 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   let bufferHeight = 0;
   let bufferDpr = 0;
   let decorationSignature = '';
+  let idleTeamId: string | null = null;
+  let navigationMode: 'pan' | 'rotate' = 'pan';
+  let campusPose: { position: THREE.Vector3; target: THREE.Vector3; zoom: number } | undefined;
   const assetAbort = new AbortController();
   const raycaster = new THREE.Raycaster();
+  raycaster.layers.enable(1);
   const pointer = new THREE.Vector2();
-  const pickRoots = [...rooms.values()].map((room) => room.root);
+  const pickBounds = [...rooms].map(([id, room]) => ({ id, room, bounds: new THREE.Box3().setFromObject(room.root) }));
+  const roomHit = new THREE.Vector3();
   const controls = new OrbitControls(camera, canvas);
   controls.target.copy(defaultTarget);
   controls.cursor.copy(defaultTarget);
@@ -266,6 +274,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   const gestures = new Map<number, { x: number; y: number; dragged: boolean }>();
   function cameraChanged(): void {
+    if (idleTeamId) { camera.updateMatrixWorld(); fadeWalls(); wake(true); return; }
     const clamped = controls.target.clone();
     clamped.x = THREE.MathUtils.clamp(clamped.x, worldBounds.min.x + 0.7, worldBounds.max.x - 0.7);
     clamped.z = THREE.MathUtils.clamp(clamped.z, worldBounds.min.z + 0.7, worldBounds.max.z - 0.7);
@@ -286,14 +295,28 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     wake(true);
   }
   fadeWalls();
+  const batches = new SceneBatches(scene);
+  batches.rebuild();
+  const animatedRoots = new Set<THREE.Object3D>(actors.flatMap((actor) => [actor.root, actor.contact]));
+  function freezeEnvironment(object: THREE.Object3D): void {
+    if (animatedRoots.has(object)) return;
+    object.updateMatrix();
+    object.matrixAutoUpdate = false;
+    object.children.forEach(freezeEnvironment);
+  }
+  freezeEnvironment(scene);
+  // SceneBatches synchronizes animation transforms once before drawing. Avoid
+  // the renderer repeating the same scene traversal after that explicit pass.
+  scene.matrixWorldAutoUpdate = false;
 
   const visible = () => documentVisible && nativeVisible && !contextLost && !disposed;
   const still = () => state.paused || state.reducedMotion || systemReducedMotion;
   const activity = (id: string): Activity => state.activity[id] ?? 'unknown';
   function cadence(): number {
     if (!visible() || still()) return 0;
-    if (teams.some((team) => activity(team.id) === 'active')) return 24;
-    if (teams.some((team) => activity(team.id) === 'sleeping')) return 4;
+    if (idleTeamId) return activity(idleTeamId) === 'active' ? 24 : activity(idleTeamId) === 'sleeping' ? 8 : 6;
+    if (teams.some((team) => activity(team.id) === 'active')) return 48;
+    if (teams.some((team) => activity(team.id) === 'sleeping')) return 8;
     return 0;
   }
 
@@ -312,6 +335,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function updateActors(delta: number): void {
     const frozen = still();
     actors.forEach((actor) => {
+      if (idleTeamId && actor.teamId !== idleTeamId) return;
       const status = activity(actor.teamId);
       const phase = (motionTime + actor.index * 2.1) % 13;
       const moving = status === 'active' && phase < 5.2 && !frozen;
@@ -335,7 +359,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' && !frozen ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
       actor.contact.position.set(actor.root.position.x, actor.home.y + 0.008, actor.root.position.z);
       selectClip(actor, status === 'sleeping' ? 'Sleep' : status === 'active' ? moving ? 'Move' : 'Work' : 'Idle');
-      if (actor.mixer && !frozen && (status === 'active' || status === 'sleeping')) actor.mixer.update(delta);
+      if (actor.mixer && !frozen && (status === 'active' || status === 'sleeping' || idleTeamId === actor.teamId)) actor.mixer.update(delta);
     });
   }
 
@@ -343,7 +367,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     if (!visible() || width <= 0 || height <= 0) return;
     // Sleep-only and static scenes also use fewer pixels. Only resize the GPU
     // drawing buffer when its dimensions or the activity pixel budget change.
-    const dpr = Math.min(window.devicePixelRatio || 1, cadence() === 24 ? 1.5 : 1);
+    const dpr = Math.min(window.devicePixelRatio || 1, cadence() >= 24 ? 1.5 : 1);
     if (bufferDpr !== dpr || bufferWidth !== width || bufferHeight !== height) {
       if (bufferDpr !== dpr) renderer.setPixelRatio(dpr);
       renderer.setSize(width, height, false);
@@ -351,7 +375,12 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       bufferWidth = width;
       bufferHeight = height;
     }
+    batches.sync();
+    const renderStart = performance.now();
     renderer.render(scene, camera);
+    host.dataset.sceneDrawCalls = String(renderer.info.render.calls);
+    host.dataset.sceneTriangles = String(renderer.info.render.triangles);
+    host.dataset.sceneRenderMs = (performance.now() - renderStart).toFixed(2);
   }
   function cancelTimer(): void {
     if (timer !== undefined) window.clearTimeout(timer);
@@ -365,7 +394,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     // Coalesce updates, wheel input and resizes as well as animation frames.
     // One pending timeout always represents the latest state; bursts cannot
     // exceed the scene cap or keep restarting the animation clock.
-    const limit = interactive ? 24 : fps || 24;
+    const limit = interactive ? 60 : fps || 60;
     const now = performance.now();
     const deadline = Math.max(now, lastRenderAt + 1000 / limit);
     if (timer !== undefined) {
@@ -385,9 +414,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     const delta = cadence() ? Math.min((now - lastTick) / 1000, 0.3) : 0;
     lastTick = now;
     motionTime += delta;
+    const frameStart = performance.now();
     updateActors(delta);
     lastRenderAt = now;
     renderFrame();
+    host.dataset.sceneCpuMs = (performance.now() - frameStart).toFixed(2);
     schedule();
   }
   function wake(interactive = false): void {
@@ -404,6 +435,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     width = host.clientWidth;
     height = host.clientHeight;
     const aspect = Math.max(width, 1) / Math.max(height, 1);
+    if (idleTeamId) { camera.aspect = aspect; applyIdleCamera(); wake(true); return; }
     // Perspective corner fit preserves the reference's narrow back / wider front.
     const framingCamera = camera.clone();
     framingCamera.position.copy(defaultPosition);
@@ -436,25 +468,29 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     const bounds = canvas.getBoundingClientRect();
     if (!bounds.width || !bounds.height) return;
     pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
-    scene.updateMatrixWorld();
     raycaster.setFromCamera(pointer, camera);
-    for (const hit of raycaster.intersectObjects(pickRoots, true)) {
-      let node: THREE.Object3D | null = hit.object;
-      while (node) {
-        if (typeof node.userData.teamId === 'string') return node.userData.teamId;
-        node = node.parent;
-      }
+    let nearest = Infinity;
+    let teamId: string | undefined;
+    // Selecting an office does not need hundreds of thousands of triangle
+    // tests. Its cached room volume is the stable, generous pointer target.
+    for (const room of pickBounds) {
+      if (!room.room.root.visible || !raycaster.ray.intersectBox(room.bounds, roomHit)) continue;
+      const distance = raycaster.ray.origin.distanceToSquared(roomHit);
+      if (distance < nearest) { nearest = distance; teamId = room.id; }
     }
+    return teamId;
   }
   function click(event: PointerEvent): void {
     const gesture = gestures.get(event.pointerId);
     gestures.delete(event.pointerId);
-    canvas.style.cursor = 'grab';
-    if (event.button !== 0 || disposed || gesture?.dragged || event.shiftKey || event.ctrlKey || event.metaKey) return;
+    canvas.style.cursor = idleTeamId ? 'default' : 'grab';
+    if (event.button !== 0 || disposed || idleTeamId || gesture?.dragged || event.shiftKey || event.ctrlKey || event.metaKey) return;
     const teamId = teamAt(event);
     if (teamId) onSelect(teamId);
   }
   function pointerDown(event: PointerEvent): void {
+    if (idleTeamId) return;
+    controls.mouseButtons.LEFT = event.shiftKey || event.ctrlKey || event.metaKey || navigationMode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
     if (event.pointerType !== 'touch') canvas.focus({ preventScroll: true });
     gestures.set(event.pointerId, { x: event.clientX, y: event.clientY, dragged: false });
     if (gestures.size > 1) gestures.forEach((gesture) => { gesture.dragged = true; });
@@ -462,12 +498,13 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   function pointerCancel(event: PointerEvent): void { gestures.delete(event.pointerId); canvas.style.cursor = 'grab'; }
   function hover(event: PointerEvent): void {
+    if (idleTeamId) { canvas.style.cursor = 'default'; return; }
     const gesture = gestures.get(event.pointerId);
     if (gesture && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 5) gesture.dragged = true;
     canvas.style.cursor = gestures.size ? 'grabbing' : teamAt(event) ? 'pointer' : 'grab';
   }
   function setZoom(factor: number): void {
-    if (disposed || !Number.isFinite(factor) || factor <= 0) return;
+    if (disposed || idleTeamId || !Number.isFinite(factor) || factor <= 0) return;
     const direction = camera.position.clone().sub(controls.target);
     const distance = THREE.MathUtils.clamp(direction.length() / factor, controls.minDistance, controls.maxDistance);
     camera.position.copy(controls.target).addScaledVector(direction.normalize(), distance);
@@ -475,7 +512,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     wake(true);
   }
   function resetView(): void {
-    if (disposed) return;
+    if (disposed || idleTeamId) return;
     zoomLevel = 1;
     controls.reset();
     camera.position.copy(defaultPosition);
@@ -486,7 +523,79 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     fadeWalls();
     wake(true);
   }
+  function rotateView(radians: number): void {
+    if (disposed || idleTeamId || !Number.isFinite(radians)) return;
+    const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
+    spherical.theta += radians;
+    camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    controls.update();
+    wake(true);
+  }
+  function tiltView(radians: number): void {
+    if (disposed || idleTeamId || !Number.isFinite(radians)) return;
+    const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
+    spherical.phi = THREE.MathUtils.clamp(spherical.phi - radians, controls.minPolarAngle, controls.maxPolarAngle);
+    camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
+    controls.update();
+    wake(true);
+  }
+  function panView(dx: number, dz: number): void {
+    if (disposed || idleTeamId || !Number.isFinite(dx) || !Number.isFinite(dz)) return;
+    const offset = new THREE.Vector3(dx, 0, dz);
+    camera.position.add(offset);
+    controls.target.add(offset);
+    controls.update();
+    wake(true);
+  }
+  function setNavigationMode(mode: 'pan' | 'rotate'): void {
+    if (mode !== 'pan' && mode !== 'rotate') return;
+    navigationMode = mode;
+    controls.mouseButtons.LEFT = mode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+    canvas.dataset.navigationMode = mode;
+  }
+  function applyIdleCamera(): void {
+    const room = idleTeamId ? rooms.get(idleTeamId) : undefined;
+    if (!room) return;
+    const homes = room.actorHomes ?? [];
+    const deskZ = homes.length ? homes.reduce((sum, home) => sum + home.z, 0) / homes.length : 0;
+    const halfWidth = Math.max(1.4, ...homes.map((home) => Math.abs(home.x) + 0.65));
+    camera.fov = 38;
+    camera.clearViewOffset();
+    const distance = Math.max(4.4 - deskZ, halfWidth / (Math.tan(THREE.MathUtils.degToRad(19)) * camera.aspect) * 1.05);
+    controls.target.copy(room.center).add(new THREE.Vector3(0, 1.4, deskZ));
+    camera.position.copy(room.center).add(new THREE.Vector3(0, 2.5, deskZ + distance));
+    camera.updateProjectionMatrix();
+    controls.update();
+    fadeWalls();
+  }
+  function setIdleView(teamId: string | null): void {
+    if (disposed || (teamId !== null && !rooms.has(teamId)) || teamId === idleTeamId) return;
+    if (teamId && !idleTeamId) campusPose = { position: camera.position.clone(), target: controls.target.clone(), zoom: zoomLevel };
+    idleTeamId = teamId;
+    controls.enabled = !teamId;
+    canvas.style.cursor = teamId ? 'default' : 'grab';
+    canvas.setAttribute('aria-label', teamId
+      ? `Fixed close-up view into the ${teams.find((team) => team.id === teamId)?.name ?? teamId} office. Camera locked; use the window view controls to choose another office or return to the campus.`
+      : campusLabel);
+    campus.visible = !teamId;
+    rooms.forEach((room, id) => { room.root.visible = !teamId || id === teamId; });
+    host.dataset.idleTeam = teamId ?? '';
+    controls.minPolarAngle = teamId ? 0 : THREE.MathUtils.degToRad(25);
+    controls.maxPolarAngle = teamId ? Math.PI : THREE.MathUtils.degToRad(55);
+    controls.minDistance = teamId ? 0.1 : controls.minDistance;
+    controls.maxDistance = teamId ? 180 : controls.maxDistance;
+    if (teamId) applyIdleCamera();
+    else {
+      camera.fov = 23;
+      if (campusPose) { camera.position.copy(campusPose.position); controls.target.copy(campusPose.target); zoomLevel = campusPose.zoom; }
+      resize();
+      campusPose = undefined;
+    }
+    renderer.shadowMap.needsUpdate = true;
+    wake(true);
+  }
   function keyboard(event: KeyboardEvent): void {
+    if (idleTeamId) return;
     if (event.key === '+' || event.key === '=') { event.preventDefault(); setZoom(1.15); }
     else if (event.key === '-' || event.key === '_') { event.preventDefault(); setZoom(1 / 1.15); }
     else if (event.key === 'Home') { event.preventDefault(); resetView(); }
@@ -508,7 +617,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   function restored(): void { contextLost = false; bufferDpr = 0; renderer.shadowMap.needsUpdate = true; onError?.(''); wake(); }
   controls.addEventListener('change', cameraChanged);
-  canvas.addEventListener('pointerdown', pointerDown);
+  canvas.addEventListener('pointerdown', pointerDown, { capture: true });
   canvas.addEventListener('pointerup', click);
   canvas.addEventListener('pointercancel', pointerCancel);
   canvas.addEventListener('pointermove', hover);
@@ -580,6 +689,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
             }
             host.dataset.loadedCharacters = String(actors.filter((candidate) => candidate.mixer).length);
             host.dataset.proxyCount = String(actors.filter((candidate) => !candidate.mixer).length);
+            batches.rebuild();
             wake();
           } catch (error) {
             if (!disposed && !assetAbort.signal.aborted) onError?.(error instanceof Error ? error.message : 'Character model could not load.');
@@ -611,6 +721,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     },
     resetCamera: resetView,
     zoom: setZoom,
+    rotate: rotateView,
+    tilt: tiltView,
+    pan: panView,
+    setNavigationMode,
+    setIdleView,
     dispose() {
       if (disposed) return;
       disposed = true;
@@ -622,7 +737,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       motionPreference.removeEventListener('change', motionChanged);
       controls.removeEventListener('change', cameraChanged);
       controls.dispose();
-      canvas.removeEventListener('pointerdown', pointerDown);
+      canvas.removeEventListener('pointerdown', pointerDown, { capture: true });
       canvas.removeEventListener('pointerup', click);
       canvas.removeEventListener('pointercancel', pointerCancel);
       canvas.removeEventListener('pointermove', hover);
@@ -630,6 +745,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       canvas.removeEventListener('webglcontextlost', lost);
       canvas.removeEventListener('webglcontextrestored', restored);
       actors.forEach((actor) => { actor.mixer?.stopAllAction(); actor.mixer?.uncacheRoot(actor.model); });
+      batches.dispose();
       const resources = new THREE.Group();
       resources.add(scene, retiredProxies);
       disposeObject(resources);
@@ -643,6 +759,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.sceneFps;
       delete host.dataset.loadedCharacters;
       delete host.dataset.proxyCount;
+      delete host.dataset.sceneDrawCalls;
+      delete host.dataset.sceneTriangles;
+      delete host.dataset.sceneRenderMs;
+      delete host.dataset.sceneCpuMs;
+      delete host.dataset.idleTeam;
     }
   };
 }

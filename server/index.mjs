@@ -5,6 +5,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createStore, ensureToken } from './store.mjs';
 import { MAX_BODY_BYTES, parseUpdates } from './protocol.mjs';
+import { handleWeatherRequest } from './weather.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.mjs': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.webp': 'image/webp', '.ico': 'image/x-icon', '.woff': 'font/woff', '.woff2': 'font/woff2', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json', '.bin': 'application/octet-stream', '.mp4': 'video/mp4' };
@@ -79,6 +80,7 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
       let pathname;
       try { pathname = safePath(request.url ?? '/'); } catch { return sendJSON(response, 400, { error: 'Invalid path.' }); }
       if (pathname === '/api/state' && request.method === 'GET') return sendJSON(response, 200, store.snapshot());
+      if (await handleWeatherRequest(request, response, new URL(request.url, `http://127.0.0.1:${boundPort}`))) return;
       if (pathname === '/api/events' && request.method === 'GET') {
         if (clients.size >= 12) return sendJSON(response, 503, { error: 'Local connection limit reached.' });
         response.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });

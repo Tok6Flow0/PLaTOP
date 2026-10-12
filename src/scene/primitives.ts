@@ -1,7 +1,8 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
-export type Primitive = 'box' | 'roundedBox' | 'sphere' | 'cylinder' | 'cone' | 'octahedron' | 'capsule';
+export type Primitive = 'box' | 'roundedBox' | 'sphere' | 'cylinder' | 'cone' | 'octahedron' | 'capsule'
+  | 'roundedDetail' | 'detailSphere' | 'detailCylinder';
 
 /** Shared low-resolution surfaces keep the tiny office inexpensive to draw. */
 export class SceneKit {
@@ -22,9 +23,12 @@ export class SceneKit {
     if (!geometry) {
       geometry = kind === 'box' ? new THREE.BoxGeometry(1, 1, 1)
         : kind === 'roundedBox' ? new RoundedBoxGeometry(1, 1, 1, 2, 0.16)
+        : kind === 'roundedDetail' ? new RoundedBoxGeometry(1, 1, 1, 1, 0.16)
         : kind === 'capsule' ? new THREE.CapsuleGeometry(0.32, 0.36, 4, 12)
         : kind === 'sphere' ? new THREE.SphereGeometry(0.5, 20, 14)
+        : kind === 'detailSphere' ? new THREE.SphereGeometry(0.5, 12, 8)
         : kind === 'cylinder' ? new THREE.CylinderGeometry(0.5, 0.5, 1, 20)
+        : kind === 'detailCylinder' ? new THREE.CylinderGeometry(0.5, 0.5, 1, 8)
         : kind === 'cone' ? new THREE.ConeGeometry(0.5, 1, 4)
         : new THREE.OctahedronGeometry(0.5);
       this.shapes.set(kind, geometry);

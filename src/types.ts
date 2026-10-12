@@ -5,4 +5,14 @@ export interface Team { id: string; name: string; role: string; color: string; f
 export interface TeamState { teamId: string; state: Activity; updatedAt: string | null; source: string; }
 export interface Snapshot { teams: TeamState[]; serverTime: string; }
 export interface SceneState { selectedTeam: string; activity: Record<string, Activity>; decorations: Record<string, Decoration[]>; paused: boolean; reducedMotion: boolean; }
-export interface SceneHandle { update: (state: SceneState) => void; resetCamera: () => void; zoom: (factor: number) => void; dispose: () => void; }
+export interface SceneHandle {
+  update: (state: SceneState) => void;
+  resetCamera: () => void;
+  zoom: (factor: number) => void;
+  rotate: (radians: number) => void;
+  tilt: (radians: number) => void;
+  pan: (dx: number, dz: number) => void;
+  setNavigationMode: (mode: 'pan' | 'rotate') => void;
+  setIdleView: (teamId: string | null) => void;
+  dispose: () => void;
+}

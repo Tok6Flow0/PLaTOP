@@ -36,8 +36,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const walls: Room['walls'] = [];
   const interior = new THREE.Group();
   root.add(interior);
-  beveledBlock(root, kit, '#d2bfa4', [0, -0.03, -rearExtension / 2], [6.12, 0.22, 5.9 + depthGain + rearExtension]);
-  floorSurface(root, '#dec9ac', [0, 0.087, -rearExtension / 2], [5.94, 5.7 + depthGain + rearExtension]);
+  beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -rearExtension / 2], [6.12, 0.22, 5.9 + depthGain + rearExtension]);
+  floorSurface(interior, '#dec9ac', [0, 0.087, -rearExtension / 2], [5.94, 5.7 + depthGain + rearExtension]);
   rug(interior, kit, palette.rug, 0, 0.35, isFoyer ? 4.1 : 4.55, 4.2);
 
   function wall(kind: 'back' | 'left' | 'right', x: number, z: number, width: number, depth: number): THREE.Group {
@@ -136,7 +136,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   kit.mesh(decorations.art, 'roundedBox', '#b4946e', [-2.5, 1.43, -1.05], [0.075, 0.83, 0.76]);
   kit.mesh(decorations.art, 'box', '#f0e5ce', [-2.451, 1.43, -1.05], [0.01, 0.67, 0.59]);
   kit.mesh(decorations.art, 'sphere', '#8fa17e', [-2.43, 1.46, -1.12], [0.015, 0.29, 0.28]);
-  Object.values(decorations).forEach((decoration) => { decoration.visible = false; root.add(decoration); });
+  Object.values(decorations).forEach((decoration) => { tidyStaticMeshes(decoration); decoration.visible = false; root.add(decoration); });
   tidyStaticMeshes(interior);
   walls.forEach(({ root: wallRoot }) => tidyStaticMeshes(wallRoot));
   return { root, center, outline, decorations, actorHomes, walls };

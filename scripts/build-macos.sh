@@ -18,10 +18,12 @@ mkdir -p "$APP_DIR/Contents/MacOS" "$APP_DIR/Contents/Resources"
 "$SWIFTC_BIN" -O -whole-module-optimization \
   -sdk "$SDK_PATH" -target "$ARCHITECTURE-apple-macosx12.0" \
   -module-name PLaTOP "$ROOT_DIR/native/PLaTOP.swift" \
-  -framework AppKit -framework WebKit -o "$TEMP_BINARY"
+  -framework AppKit -framework WebKit -framework CoreLocation -o "$TEMP_BINARY"
 cp "$ROOT_DIR/native/Info.plist" "$APP_DIR/Contents/Info.plist"
 /usr/bin/plutil -lint "$APP_DIR/Contents/Info.plist"
 mv -f "$TEMP_BINARY" "$APP_DIR/Contents/MacOS/PLaTOP"
 chmod +x "$APP_DIR/Contents/MacOS/PLaTOP"
+/usr/bin/codesign --force --sign - --identifier com.platop.desktop "$APP_DIR"
+/usr/bin/codesign --verify --strict "$APP_DIR"
 touch "$APP_DIR"
 printf 'Built %s\n' "$APP_DIR"

@@ -45,6 +45,16 @@ npm run desktop -- --no-open
 - The yellow title bar button or **⌘M** minimizes it normally.
 - The close button or **⌘W** hides it. **Open Playground** in the menu bar icon,
   the app menu, or the Dock reopens it.
+- **Full screen** in the header, the green title bar control, or **⌃⌘F** opens
+  a native full-screen Space. Use **⌃⌘F** again to return.
+- **Window view** locks a close-up camera into a live office, viewed through
+  glass. Offices cycle every two hours, with manual previous/next controls.
+- **Desktop background**, in Window view or the native menu, places that live
+  scene behind desktop icons on the window’s current display. It is click-through.
+  The menu bar icon’s **Open Playground** (or **⌘O**) restores the interactive
+  window and its floating preference. The same live web view moves between two
+  windows so returning from the click-through desktop preserves working controls.
+  It does not replace the system wallpaper or add autostart.
 - **⌘R** reloads the local playground. **⌘Q** quits the native companion.
 
 Quitting the companion leaves the bridge running so local agents can continue
@@ -62,7 +72,12 @@ If the bridge is offline, the companion shows a friendly native recovery screen
 with a retry button. Start the bridge again and choose **Wake it up** or **⌘R**.
 The native shell permits only HTTP navigation to `localhost` or `127.0.0.1` on
 its configured port. External navigation, file URLs, and popup windows are blocked.
-There is no native filesystem or command-execution API exposed to the page.
+The page can request full screen, desktop background, window restoration and an
+explicit one-time location fix through a main-frame loopback-checked native
+bridge. The weather button uses macOS Location Services at kilometer accuracy;
+coordinates are rounded to two decimals before returning to the page. Requests
+stop on success, cancellation, failure or timeout. No filesystem or command
+execution is exposed.
 
 ## Visibility and rendering
 

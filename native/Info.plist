@@ -13,6 +13,10 @@
     <key>LSApplicationCategoryType</key><string>public.app-category.productivity</string>
     <key>NSPrincipalClass</key><string>NSApplication</string>
     <key>NSHighResolutionCapable</key><true/>
+    <key>NSLocationUsageDescription</key>
+    <string>PLaTOP uses approximate device location for weather on your office window. Approximate coordinates are sent to Open-Meteo.</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>PLaTOP uses approximate device location for weather on your office window. Approximate coordinates are sent to Open-Meteo.</string>
     <key>NSAppTransportSecurity</key>
     <dict>
         <key>NSAllowsLocalNetworking</key><true/>

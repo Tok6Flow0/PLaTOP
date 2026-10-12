@@ -31,8 +31,9 @@ Open [the local playground](http://127.0.0.1:4317). For frontend development, us
 `npm run dev`; keep the bridge running in another terminal for activity updates.
 Run `npm test` for the local protocol and delivered-asset contract checks.
 
-Drag the office to pan. Right-drag or Shift-drag to rotate and tilt; scroll to
-zoom toward the pointer. Touch uses one finger to pan and two to orbit/pinch.
+Choose **Move** or **Rotate** above the office, then drag. The visible bottom
+controls also rotate, tilt and zoom. Right-drag or Shift-drag rotates in either
+mode; scroll to zoom toward the pointer. Touch uses one finger to pan and two to orbit/pinch.
 Camera tilt, distance and ground clearance are bounded, and front-facing walls
 fade from view. **Reset view** returns to the starting composition. With the
 canvas focused, arrows pan, Shift+arrows orbit, +/- zoom, and Home resets.
@@ -44,10 +45,25 @@ npm run desktop
 ```
 
 The small AppKit/WKWebView companion can float, minimize, or hide in the menu
-bar. It uses the system web view instead of an Electron runtime. Quitting the
+bar. **Full screen** works in the browser and native app (⌃⌘F on Mac).
+**Window view** looks through glass into a fixed close-up of one live office,
+cycling to the next office every two hours. Choose a room manually at any time.
+In the Mac companion, **Desktop background** places that view behind desktop
+icons; the menu bar’s **Open Playground** brings it back. It uses the system web view instead of an Electron runtime. Quitting the
 window app leaves the local bridge available; `npm run desktop -- --stop-server`
 stops a bridge owned by its launcher. See [desktop controls](docs/DESKTOP.md).
 No login item or autostart service is installed.
+
+## Weather at your window
+
+In **Window view → Weather**, choose a city or request approximate device
+location. Nothing requests location automatically. Conditions refresh from
+[Open-Meteo](https://open-meteo.com/) every 15 minutes while visible, with rain
+on the glass, snow and time-of-day tint. These are weather-model conditions,
+not a sensor outside your window. Without a chosen location or available
+provider, the live office continues with clear glass. Location preferences stay
+in this browser on this device; approximate coordinates go to Open-Meteo through
+the loopback bridge. Weather does not require an API key.
 
 ## Report activity
 
@@ -81,10 +97,11 @@ alone does not observe chats or create a recurring automation.
 
 ## Small and local
 
-The scene caps active rendering at 24 fps and sleep animation at 4 fps. Hidden
+The scene caps active rendering at 48 fps and sleep animation at 8 fps. Hidden
 or minimized windows stop rendering; neutral, paused, and reduced-motion scenes
-use frames only when needed. Camera interactions redraw at up to 24 fps while
-sleeping characters keep their 4 fps cadence. Pixel density is capped. One
+use frames only when needed. Camera interactions redraw at up to 60 fps while
+sleeping characters keep their 8 fps cadence. Window view renders only its
+selected room at up to 24 fps (8 fps while sleeping) and pauses when covered or hidden. Pixel density is capped. One
 small static shadow map, contact textures and modest lamp glows create soft
 lighting without a ray-tracing renderer or a continuous postprocessing pass. These are rendering budgets, not whole-device CPU/GPU measurements.
 
