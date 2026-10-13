@@ -24,3 +24,8 @@
 [data-theme=dark] .observer-invite,[data-theme=dark] .observer-toolbar,[data-theme=dark] .observer-movement,[data-theme=dark] .observer-look {background:#24343def;border-color:#4e625f;color:#e2e7df}
 [data-theme=dark] .observer-invite p,[data-theme=dark] .observer-presence small,[data-theme=dark] .observer-hint {color:#b9c7bd}
 [data-theme=dark] .observer-enter,[data-theme=dark] .observer-exit {background:#395049;border-color:#597468;color:#e2e7df}
+[data-theme=dark] .observer-perspective {border-color:#597468}
+[data-theme=dark] .observer-navigation-toggle,[data-theme=dark] .observer-movement button,[data-theme=dark] .observer-look button {background:#2b403f;border-color:#597468;color:#e2e7df}
+[data-theme=dark] .observer-perspective button[aria-pressed=true],[data-theme=dark] .observer-perspective button:hover,[data-theme=dark] .observer-navigation-toggle[aria-expanded=true],[data-theme=dark] .observer-movement button:hover,[data-theme=dark] .observer-look button:hover {background:#466256;color:#f5f6ee}
+[data-theme=dark] .observer-hint {background:#24343def}
+[data-theme=dark] .observer-movement>span,[data-theme=dark] .observer-look>span {color:#b9c7bd}

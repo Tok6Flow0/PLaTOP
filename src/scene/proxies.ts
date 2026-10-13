@@ -13,6 +13,7 @@ interface Personality {
   highlights: THREE.Object3D[];
   wings: THREE.Group[];
   glow?: THREE.MeshStandardMaterial;
+  warmth?: THREE.PointLight;
   headY: number;
   bodyY: number;
   restHead?: THREE.Euler;
@@ -71,8 +72,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       // The source is a little standing book, including actual recessed pages,
       // rounded covers, folded corner and the seedling volume held in its arms.
       sculpt(body, 'book', '#e7d8b8', [.015, .18, .020], [.615, 1.06, .405], undefined, 'paper').name='page-block';
-      sculpt(body, 'book', '#efe3c7', [0, .18, .232], [.70, 1.12, .046], undefined, 'paper').name='front-cover';
-      sculpt(body, 'book', '#d5bd96', [0, .18, -.190], [.70, 1.12, .046], undefined, 'paper').name='back-cover';
+      const cover=sculpt(body, 'bowedCover', '#efe3c7', [0, .18, .232], [.70, 1.12, .046], undefined, 'paper');cover.name='front-cover';
+      sculpt(body, 'bowedCover', '#d5bd96', [0, .18, -.190], [.70, 1.12, .046], [0,Math.PI,0], 'paper').name='back-cover';
       sculpt(body, 'book', '#d2b994', [-.326, .18, .018], [.43, 1.10, .061], [0, Math.PI/2, 0], 'paper').name='book-spine';
       // Separate leaf edges remain visible between the thin covers, including
       // along the top, instead of painting lines onto a padded solid block.
@@ -84,11 +85,14 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       // The warm binding stays readable at roster size while the broad pages
       // and face keep Keeper's pale-paper identity.
       stroke(body, '#bda783', [[-.323, -.32, .235], [-.328, .08, .235], [-.312, .62, .235]], .005, 'clay');
-      sculpt(head,'book','#e6d7b9',[0,-.021,.263],[.48,.31,.011],undefined,'paper');
+      const facePanel=sculpt(head,'bowedCover','#e6d7b9',[0,-.021,.263],[.48,.31,.011],undefined,'paper');
+      fitCharacterRelief(facePanel,cover,.002,.006);
       eyes(head, .112, .018, .276, true, ink, 1.12);
-      sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
+      data.eyes.forEach(eye=>fitCharacterRelief(eye,facePanel,.002,.006));
+      const corner=sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
+      fitCharacterRelief(corner,cover,.003,.025);
       limbs(cream, cream, true);
-      const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
+      const book = joint(body, 'seedling-book', [0, .015, .325]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
       sculpt(book, 'book', '#d8c69b', [0, 0, 0], [.31, .34, .07]);
       sculpt(book, 'book', '#36574f', [0, 0, .025], [.28, .32, .04], undefined, 'glaze');
       stroke(book, gold, [[0, -.11, .052], [0, -.025, .052], [.035, .052, .052]], .007);
@@ -96,7 +100,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(book, 'tuft', gold, [.035, .055, .055], [.065, .10, .017], [0, 0, -.6], 'brass');
       data.arms.forEach((arm, index) => {
         const sign=index?1:-1;
-        arm.position.z=.29;arm.position.y=.13;arm.position.x=sign*.285;
+        arm.position.z=.325;arm.position.y=.13;arm.position.x=sign*.285;
         const forearm=arm.children[0],palm=arm.children[1];
         forearm.position.set(-sign*.0225,-.1375,.0225);forearm.scale.set(.22,.27,.22);forearm.rotation.z=-sign*1.03;
         palm.position.set(-sign*.11,-.19,.045);palm.scale.set(.20,.20,.14);
@@ -181,7 +185,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
           if(id==='intake-jarvis') {
             sculpt(body, 'cape', '#263b4d', [0, 0, 0], [1,1,1], undefined, 'cloth');
             [-1,1].forEach(sign=>{
-              const trim=Array.from({length:9},(_,i)=>{const t=i/8,a=sign*(.20+1.05*Math.sin(t*Math.PI/2));return navigatorCapePoint(t,a,-.005)});
+              const trim=Array.from({length:9},(_,i)=>{const t=i/8,a=sign*(.035+1.23*Math.sin(t*Math.PI/2));return navigatorCapePoint(t,a,-.005)});
               stroke(body,'#bd985c',trim,.008).name='cape-trim';
             });
           }
@@ -242,8 +246,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7',false,wayfinder);
       if(wayfinder) [-1,1].forEach(sign=>{
         const navigator=id==='intake-jarvis';
-        const arm=joint(body,sign<0?'arm_l':'arm_r',[sign*(navigator?.41:.375),.10,navigator?.05:.025]);
-        const shell=sculpt(arm,'bean',navigator?'#2d4250':bodyColor,[0,-.15,0],[navigator?.14:.19,.53,.31],undefined,navigator?'clay':'glaze');
+        const arm=joint(body,sign<0?'arm_l':'arm_r',[sign*.375,navigator?.08:.10,navigator?-.03:.025]);
+        // Jarvis's arms sit beneath the mantle, not as two exposed padded
+        // tubes beside it. The existing joints still carry agent-chosen poses.
+        const shell=sculpt(arm,'bean',navigator?'#2d4250':bodyColor,[0,-.15,0],navigator?[.125,.40,.22]:[.19,.53,.31],undefined,navigator?'clay':'glaze');
         if(!navigator){
           const inset=sculpt(arm,'detail','#2d4250',[0,-.065,.15],[.095,.22,.016],undefined,'clay');
           fitCharacterRelief(inset,shell,.006);
@@ -271,7 +277,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(head, 'lanternHousing', green, [0, 0, 0], [1,1,1], undefined, 'clay');
       const radii: [number, number, number] = [.410, .375, .305];
       sculpt(head,'lanternBezel','#c19445',[0,0,0],[1,1,1],undefined,'brass');
-      const light = curvedFace(kit, head, '#efbc66', .554, .419, -.009, [0, -.002, 0], 'amber', radii, true);
+      const light = curvedFace(kit, head, '#fff1cc', .554, .419, -.009, [0, -.002, 0], 'amber', radii, true);
       data.glow = light.material as THREE.MeshStandardMaterial;
       [-1,1].forEach(sign=>data.eyes.push(characterEyeArc(kit,head,'#274e38',[sign*.119,.015,.310],.040,.024,'clay',.017)));
       sculpt(head, 'lanternCap', green, [0, .376, -.008], [.55, .19, .48], undefined, 'clay');
@@ -285,7 +291,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     } else {
       head.position.y = .49; data.headY = .49; body.position.y = .115; data.bodyY = .115;
       sculpt(body, 'hexBase', '#a88449', [0, 0, 0], [.56, .13, .53], undefined, 'brass');
-      const light = sculpt(head, 'hexGlass', '#efc075', [0, 0, 0], [.55, .61, .50], undefined, 'amber'); data.glow = light.material;
+      const light = sculpt(head, 'hexGlass', '#fff1cc', [0, 0, 0], [.55, .61, .50], undefined, 'amber'); data.glow = light.material;
       // Every corner is framed, including the rear: the same tapered rails
       // sit on the actual six glass edges, without character point lights.
       for(let corner=0;corner<6;corner++){
@@ -309,10 +315,18 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       });
       group.scale.setScalar(.95);
     }
+    // A lantern illuminates nearby real surfaces. Only these two luminous
+    // embodiments add a short-range, shadow-free light; no per-avatar lights.
+    const warmth=new THREE.PointLight('#ffc46d',support?.32:.82,support?1.4:2.4,2);
+    warmth.name='Lantern surface warmth';warmth.position.set(0,0,.20);
+    head.add(warmth);data.warmth=warmth;
   } else if (kind === 'owl') {
     const navy = id === 'email-owl', feathers = navy ? '#293b51' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
     body.position.y = navy?.49:.41; data.bodyY = body.position.y; head.position.y = navy?.91:.81; data.headY = head.position.y;
-    head.position.z=.025;
+    // The facial shield overlaps the breast, like the original owl. Keeping
+    // both volumes on one vertical axis lets the chest cut its heart-shaped
+    // chin into a straight horizontal edge.
+    head.position.z=navy?.13:.025;
     sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, 0], [.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
     sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
     if(!navy){
@@ -331,7 +345,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       if(iris&&facialDisc){iris.name='owl-iris';facialDisc.name=`owl-facial-disc:${sign}`;fitCharacterRelief(iris,facialDisc,.001);}
       if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?-.002:.011, navy?.290:.195], [navy ? .100 : .083, navy ? .118 : .098, navy?.023:.024], undefined, 'ink'); data.eyes.push(eye);
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?-.002:.011, navy?.290:.195], [navy ? .115 : .083, navy ? .130 : .098, navy?.030:.024], undefined, 'ink'); data.eyes.push(eye);
         const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - .012, navy?.031:.043, navy?.305:.208], [navy?.019:.020, navy?.023:.022, .006], undefined, 'glaze');
         if(iris){fitCharacterRelief(eye,iris,.001);fitCharacterRelief(highlight,eye,.001);}
         data.highlights.push(highlight);
@@ -525,4 +539,5 @@ export function animateCharacter(model: THREE.Object3D, status: Activity, time: 
   p.eyes.forEach(eye => { eye.scale.y = eye.userData.restEyeY * (asleep ? 0.13 : blink ? 0.09 : 1); });
   p.highlights.forEach(highlight => { highlight.visible = !asleep && !blink; });
   if (p.glow) p.glow.emissiveIntensity = asleep ? 0.24 + Math.sin(t * 1.4) * 0.04 : 0.65 + Math.sin(t * 2) * 0.08;
+  if(p.warmth)p.warmth.intensity=(model.name.startsWith('support-')?.32:.82)*(asleep?.38:1);
 }

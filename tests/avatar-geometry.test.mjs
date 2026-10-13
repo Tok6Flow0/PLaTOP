@@ -27,7 +27,7 @@ const { SceneKit, disposeObject } = await load('scene/primitives.ts');
 const { makeProxy, animateCharacter } = await load('scene/proxies.ts');
 const { characterGeometry, characterMaterial, navigatorCapePoint } = await load('scene/characterGeometry.ts');
 const { refineCharacterSurface } = await load('scene/characterSurface.ts');
-const { surfaceData, refineCharacterModel, CharacterDetail, MAX_DETAILED_CHARACTERS } = await load('scene/characterDetail.ts');
+const { surfaceData, surfaceGeometry, refineCharacterModel, CharacterDetail, MAX_DETAILED_CHARACTERS } = await load('scene/characterDetail.ts');
 const members = teams.flatMap(team => team.members);
 
 function meshes(root) {
@@ -187,6 +187,13 @@ test('Keeper has separate thin covers around a recessed page block and a bound s
   assert.ok(front.scale.z<pages.scale.z*.15&&back.scale.z<pages.scale.z*.15,'covers are thin, not solid padded book volumes');
   assert.ok(front.position.z>pages.position.z&&back.position.z<pages.position.z,'leaves sit between the two covers');
   assert.ok(front.scale.x>pages.scale.x&&back.scale.y>pages.scale.y,'pages are recessed inside the cover edge');
+  const cover=characterGeometry(kit,'bowedCover'),p=cover.attributes.position,layer=cover.userData.coverSkinVertices;
+  assert.ok(p.getZ(0)-p.getZ(1+32*6)>.5,'the thin cover has real central bow');
+  for(let i=0;i<layer;i++)assert.ok(Math.abs(p.getZ(i)-p.getZ(i+layer)-.92)<1e-6,'both cover skins preserve thickness');
+  const shell=new THREE.Mesh(cover,new THREE.MeshBasicMaterial());shell.updateMatrixWorld(true);
+  assert.ok(new THREE.Raycaster(new THREE.Vector3(0,0,2),new THREE.Vector3(0,0,-1)).intersectObject(shell).length,'front skin faces outward');
+  assert.ok(new THREE.Raycaster(new THREE.Vector3(0,0,-2),new THREE.Vector3(0,0,1)).intersectObject(shell).length,'rear skin faces outward');
+  shell.material.dispose();
   disposeObject(model);kit.dispose();
 });
 
@@ -241,6 +248,26 @@ test('shallow owl irises follow their curved facial discs without clipping throu
   disposeObject(model);kit.dispose();
 });
 
+test('the owl facial shield keeps its lower heart silhouette in front of the breast',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  model.updateMatrixWorld(true);
+  const ray=new THREE.Raycaster(),point=new THREE.Vector3();
+  for(const sign of [-1,1]){
+    const disc=model.getObjectByName(`owl-facial-disc:${sign}`),p=disc.geometry.attributes.position;
+    let tested=0;
+    for(let i=0;i<p.count;i++){
+      if(p.getY(i)>-.17||Math.abs(p.getX(i))>.07)continue;
+      point.fromBufferAttribute(p,i).applyMatrix4(disc.matrixWorld);
+      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+      const hit=ray.intersectObject(model,true)[0];
+      assert.ok(hit&&hit.point.z<=point.z+.004,'breast cannot cut a horizontal shelf across the facial shield');
+      tested++;
+    }
+    assert.ok(tested>3,'sample the real lower shield, not only its eye centre');
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('feather barbs use bounded local UVs and one scene-owned texture for every layered surface',()=>{
   const kit=new SceneKit();
   const texture=characterMaterial(kit,'#293e54','plumage').bumpMap;
@@ -260,6 +287,8 @@ test('feather barbs use bounded local UVs and one scene-owned texture for every 
 test('visible breast feather planes stay outside the curved owl body',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   const shell=model.getObjectByName('owlBody'),plumage=model.getObjectByName('breastFeathers');
+  const coarseShell=shell.geometry;
+  shell.geometry=surfaceGeometry(refineCharacterSurface(surfaceData(coarseShell),'feather'));
   model.updateMatrixWorld(true);
   const positions=plumage.geometry.attributes.position,normals=plumage.geometry.attributes.normal;
   const point=new THREE.Vector3(),normal=new THREE.Vector3(),vertex=new THREE.Vector3();
@@ -267,7 +296,7 @@ test('visible breast feather planes stay outside the curved owl body',()=>{
     point.set(0,0,0);normal.set(0,0,0);
     for(let j=0;j<3;j++){point.add(vertex.fromBufferAttribute(positions,i+j));normal.add(vertex.fromBufferAttribute(normals,i+j));}
     point.multiplyScalar(1/3);
-    if(Math.abs(point.y)>.20)continue;
+    if(point.y>.30)continue;
     const direction=new THREE.Vector3(point.x,0,point.z).normalize();
     if(normal.normalize().dot(direction)<.2)continue;
     const centre=new THREE.Vector3(0,point.y,0).applyMatrix4(plumage.matrixWorld);
@@ -276,6 +305,7 @@ test('visible breast feather planes stay outside the curved owl body',()=>{
     const hit=ray.intersectObject(shell,false)[0];
     assert.ok(hit&&point.distanceTo(centre)>hit.point.distanceTo(centre)+.002,'outward-facing feather triangle clears its supporting body');
   }
+  shell.geometry.dispose();shell.geometry=coarseShell;
   disposeObject(model);kit.dispose();
 });
 
@@ -520,11 +550,13 @@ test('mirroring continuous arms preserves smooth normals instead of introducing 
   right.dispose();left.dispose();kit.dispose();
 });
 
-test('robot cuffs join feet to their torso and lantern warmth adds no real lights', () => {
+test('robot cuffs join feet and only the two lanterns own bounded shadow-free warmth', () => {
   const kit = new SceneKit(), all = new THREE.Group();
   for (const character of members) {
     const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
-    assert.equal(model.getObjectsByProperty('isLight', true).length, 0, `${character.id} adds no shadow or light passes`);
+    const lights=model.getObjectsByProperty('isLight', true);
+    assert.equal(lights.length,character.kind==='lantern'?1:0,`${character.id} light budget`);
+    for(const light of lights){assert.equal(light.castShadow,false);assert.ok(light.distance<=2.4&&light.intensity<=.82);}
     if (character.kind === 'robot') {
       const torso = model.userData.personality.body.children.find(child => child.isMesh);
       const torsoBounds = new THREE.Box3().setFromObject(torso);

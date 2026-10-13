@@ -26,6 +26,8 @@ not asked for a desired score or instructed to approve.
 | 11 | Portraits 8.3/10 — B+; campus 7.0/10 — C+ | Intrusive corridor rectangle, orange wash, sparse furnishings |
 | 14 | Portraits 8.4/10 — B+; campus 7.5/10 — B | Paper neck transitions, broad feather scales, fitted cape |
 | 16 | Portraits 8.4/10 — B+; campus 7.6/10 — B | Notched breast vanes, stiff cape folds, edge-on residents, material variation |
+| 20 | Portraits 8.5/10 — B+; campus 7.8/10 — B | Broad feather plates, concealed seating, facial construction, paper joins, material distinction |
+| 23 | Portraits 8.4/10 — B+; campus 8.0/10 — B | Broken feather overlaps, lantern-to-paper warmth, paper neck joins, furniture/foliage variety |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -59,10 +61,53 @@ ledger is a separate historical series.
   isolated bridge remains empty; no live chat activity was created. No console
   warning or error was observed. Initial shader compilation is not instant.
 
-The latest independent review still asks for softer short breast feathers versus
+The pass-16 independent review asked for softer short breast feathers versus
 long wing vanes, a cape that spreads from its fastening point, more readable
 neutral campus orientations, and stronger material distinction. These are open
 visual tasks, not passed checks. No staged work was added to obtain the scores.
+
+## Verification through surface pass 23
+
+- 281 tests pass; production build passes with the existing chunk-size warning.
+- Keeper has thin bowed covers and a fitted subdivided face. Split rim normals
+  remove the sharp lip and triangular shading introduced in internal pass 19.
+- Intake's arms sit beneath its mantle; breast plumage uses six staggered rows
+  of tapered vanes. The owl's heart-shaped facial shield now clears the breast,
+  including a ray-tested lower edge; its eyes are larger and sockets warmer.
+- Neutral arrival headings belong to the real motors. They do not schedule a
+  turn, work gesture, or path. Agent-chosen work retains its original desk facing.
+- Botanical silhouettes use 44 vertices and the same 56 triangles per leaf.
+  Floor joins are more legible and whiteboard writing is larger.
+- The two upper three-member rooms have visible empty stools with real blockers
+  and a shifted front cross aisle. Lower-room stools remain beneath their desks;
+  exposing them obstructed decorated routes. All sixteen avatars still reach
+  every desk, prop, door, lounge and exit with decorations both on and off.
+- The latest campus submissions include identical-viewport noon/night captures
+  using the existing development-only clock fixture and the actual App/scene.
+  These are fixed-clock visual checks, not production clock overrides or agent
+  activity. Pass 23's independent review remains below the requested A.
+
+The pass-23 built bundle loaded the local worker without console warnings or
+errors. Savor Bridge reported one detailed avatar, zero pending requests and
+74 draws / 822,161 triangles. Mist entry, both perspectives, exit and reset were
+checked on the isolated production server; its bridge remained empty. The
+390 × 844 night check found pale selected/navigation buttons. Pass 24 supplies
+explicit dark-theme backgrounds and readable labels for perspective, navigation,
+movement and hints, retaining the 44-pixel touch targets.
+
+## Verification through surface pass 25
+
+- 281 tests and the production build pass. The 100× ratio, route clearance and
+  agent-only action tests remain intact.
+- A dense-shell regression check now covers the lower owl body. Its hidden
+  support retains its fitted contour rather than inflating through plumage;
+  vane widths follow angular spacing around the narrowing belly.
+- Only the two lantern embodiments add a bounded, shadow-free point light
+  (range at most 2.4 units). Their glass is lighter and smoother, and paper
+  chest folds are shallower. This is real nearby illumination, not a new action.
+- The compiled application opens both Savor Bridge and The Lantern Desk windows
+  without observed console errors. No live bridge data or chat was changed.
+- Pass 25 has been submitted for independent visual review; it is not an A.
 
 ## Performance observations
 
@@ -94,10 +139,19 @@ and is not treated as close-up evidence.
 | Baseline campus | 49.81 | 2.54 / 4.10 ms | 93 / 329,483 | 0 |
 | Pass 14 campus | 56.70 | 1.24 / 2.90 ms | 100 / 336,131 | 0 |
 | Pass 17 campus | 46.90 | 2.90 / 4.20 ms | 100 / 339,703 | 0 |
+| Pass 23 campus | 49.11 | 2.53 / 4.20 ms | 101 / 341,251 | 0 |
+| Pass 24 campus | 50.70 | 2.50 / 4.30 ms | 101 / 341,251 | 0 |
+| Pass 25 campus | 51.20 | 2.19 / 4.00 ms | 101 / 341,251 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
+| Pass 23 full-face close | 49.50 | 2.33 / 4.10 ms | 132 / 2,381,349 | 3 |
+| Pass 24 full-face close | 49.49 | 2.55 / 4.30 ms | 132 / 2,381,349 | 3 |
+| Pass 25 full-face close | 54.20 | 2.07 / 4.00 ms | 132 / 2,381,349 | 3 |
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for
 the distant campus. JavaScript submission time is not GPU completion time.
+An additional pass-25 close run overlapped a production-window change and fell
+to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
+from the matched table; the uninterrupted rerun above does not hide that caveat.

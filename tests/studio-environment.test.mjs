@@ -54,7 +54,7 @@ test('unsupported environment allocation keeps daylight intact and respects anot
 test('cupped botanical leaves have continuous normals, pointed ends and a bounded triangle budget', () => {
   for (const options of [[false, false, false], [true, false, false], [false, true, false], [false, false, true]]) {
     const geometry = leafGeometry(...options);
-    assert.equal(geometry.getAttribute('position').count, 37);
+    assert.equal(geometry.getAttribute('position').count, 44);
     assert.equal(geometry.index.count / 3, 56);
     const positions = geometry.getAttribute('position');
     const normal = geometry.getAttribute('normal');
@@ -68,9 +68,9 @@ test('cupped botanical leaves have continuous normals, pointed ends and a bounde
       const a = point(geometry.index.getX(triangle)), b = point(geometry.index.getX(triangle + 1)), c = point(geometry.index.getX(triangle + 2));
       assert.ok(new THREE.Vector3().crossVectors(b.sub(a), c.sub(a)).lengthSq() > 1e-14, 'no collapsed triangle at a pointed end');
     }
-    for (let row = 0; row < 7; row++) {
-      const start = 1 + row * 5;
-      for (let side = 0; side < 4; side++) {
+    for (let row = 0; row < 14; row++) {
+      const start = 1 + row * 3;
+      for (let side = 0; side < 2; side++) {
         assert.ok(point(start + side).x < point(start + side + 1).x, 'the cup does not fold over itself');
         const a = new THREE.Vector3().fromBufferAttribute(normal, start + side), b = new THREE.Vector3().fromBufferAttribute(normal, start + side + 1);
         assert.ok(a.dot(b) > 0.7, 'adjacent ribs shade as a continuous leaf');

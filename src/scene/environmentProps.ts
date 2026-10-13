@@ -36,7 +36,7 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
       const timber = new THREE.Color(color);
       for (let row = 0; row < 10; row++) for (let column = -1; column < 4; column++) {
         const x = column * 171 + (row % 2) * 85, y = row * 51.2;
-        context.fillStyle = timber.clone().multiplyScalar(0.93 + random() * 0.105).getStyle();
+        context.fillStyle = timber.clone().multiplyScalar(0.91 + random() * 0.18).getStyle();
         context.fillRect(x, y, 171, 51.2);
         for (let line = 0; line < 7; line++) {
           const grainY = y + 4 + line * 6.2, curl = random() * 2.4;
@@ -58,7 +58,7 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
       cloud.addColorStop(1, 'rgba(120,100,75,0)');
       context.fillStyle = cloud; context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
     }
-    context.lineWidth = tile ? 0.7 : 0.8; context.strokeStyle = tile ? 'rgba(99,77,52,.045)' : 'rgba(99,77,52,.065)';
+    context.lineWidth = tile ? 0.7 : 0.8; context.strokeStyle = tile ? 'rgba(99,77,52,.07)' : 'rgba(99,77,52,.13)';
     const rows = tile ? 4 : 10;
     for (let row = 0; row <= rows; row++) {
       const y = row * 512 / rows;
@@ -159,7 +159,7 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   const texture = canvasTexture(800, 360, (context) => {
     context.fillStyle = '#e9e4d7'; context.fillRect(0, 0, 800, 360); context.fillStyle = 'rgba(122,112,91,.13)'; context.fillRect(18, 17, 764, 3);
     context.fillStyle = `#${new THREE.Color(textColor).multiplyScalar(0.58).getHexString()}`;
-    context.font = '46px Kalam, cursive'; lines.forEach((line, i) => context.fillText(line, 76, 93 + i * 75, 485)); drawSymbol(context, symbol);
+    context.font = '61px Kalam, cursive'; lines.forEach((line, i) => context.fillText(line, 76, 93 + i * 75, 485)); drawSymbol(context, symbol);
     context.fillStyle = '#bfb5a3'; for (const px of [23, 777]) for (const py of [23, 337]) { context.beginPath(); context.arc(px, py, 4, 0, Math.PI * 2); context.fill(); }
   });
   texturedPlane(parent, texture, [x, y, z + 0.059], 2.55, 1.57);
@@ -298,8 +298,8 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   } else {
     const colors = ['#526847', '#dfcfa3', '#516a69', '#9c6242', '#c1ba9e'];
     for (let level = 0; level < 3; level++) for (let book = 0; book < 4; book++) {
-      const bookHeight = 0.24 + ((book + level + variant) % 3) * 0.035;
-      kit.mesh(parent, 'roundedDetail', colors[(book + level + variant) % colors.length], [x - 0.31 + book * 0.15, 0.25 + level * 0.42 + bookHeight / 2, z + 0.2], [0.12, bookHeight, 0.28], [0, 0, book === 3 ? -0.08 : 0]);
+      const bookHeight = 0.23 + ((book * 3 + level + variant) % 5) * 0.025;
+      kit.mesh(parent, 'roundedDetail', colors[(book + level + variant) % colors.length], [x - 0.31 + book * 0.15, 0.25 + level * 0.42 + bookHeight / 2, z + 0.17+(book+level)%3*.012], [0.12, bookHeight, 0.28], [0, 0, book === 3 ? -0.08 : book===0?.035:0]);
       kit.mesh(parent, 'box', '#e8dab7', [x - 0.31 + book * 0.15, 0.31 + level * 0.42, z + 0.348], [0.074, 0.014, 0.003]);
     }
     for (let level = 0; level < 2; level++) for (let book = 0; book < 3; book++) kit.mesh(parent, 'roundedDetail', book % 2 ? '#e4d7b4' : '#73816b', [x + 0.31, 0.27 + level * 0.42 + book * 0.05, z + 0.19], [0.23, 0.045, 0.31], [0, book * 0.07, 0]);
@@ -315,20 +315,20 @@ export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THR
     return [width * across + Math.sin(Math.PI * t) * Math.sin(t * 2.1) * 0.012,
       t * length + 0.012 * cup, bend - 0.035 * cup];
   };
-  // Five shared ribs describe a soft cup instead of a folded-paper crease.
-  // Each pointed end is one vertex, avoiding zero-area triangles and split
-  // tip normals. The entire leaf is still only 37 vertices / 56 triangles.
+  // Spend the same 56 triangles along the silhouette: fifteen longitudinal
+  // sections remove the polygonal paddle edge, while three ribs keep a cup.
+  // Each pointed end is one vertex, avoiding zero-area triangles.
   positions.push(...vertex(0, 0)); uvs.push(0.5, 0);
-  for (let row = 1; row < 8; row++) for (let column = 0; column < 5; column++) {
-    positions.push(...vertex(row / 8, column / 2 - 1)); uvs.push(column / 4, row / 8);
+  for (let row = 1; row < 15; row++) for (let column = 0; column < 3; column++) {
+    positions.push(...vertex(row / 15, column - 1)); uvs.push(column / 2, row / 15);
   }
   positions.push(...vertex(1, 0)); uvs.push(0.5, 1);
-  for (let side = 0; side < 4; side++) indices.push(0, 1 + side, 2 + side);
-  for (let row = 0; row < 6; row++) for (let side = 0; side < 4; side++) {
-    const first = 1 + row * 5 + side, next = first + 5;
+  for (let side = 0; side < 2; side++) indices.push(0, 1 + side, 2 + side);
+  for (let row = 0; row < 13; row++) for (let side = 0; side < 2; side++) {
+    const first = 1 + row * 3 + side, next = first + 3;
     indices.push(first, next, next + 1, first, next + 1, first + 1);
   }
-  for (let side = 0; side < 4; side++) indices.push(31 + side, 36, 32 + side);
+  for (let side = 0; side < 2; side++) indices.push(40 + side, 43, 41 + side);
   const colors: number[] = [];
   for (let index = 0; index < uvs.length; index += 2) {
     const across = Math.abs(uvs[index] * 2 - 1), t = uvs[index + 1];
@@ -353,7 +353,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   const lip = new THREE.Mesh(new THREE.TorusGeometry(0.199, 0.017, 6, 24), kit.material(clay, 'ceramic'));
   lip.name = 'Pot rolled lip'; lip.position.y = 0.39; lip.rotation.x = Math.PI / 2; lip.castShadow = lip.receiveShadow = true; group.add(lip);
   const soil = kit.mesh(group, 'cylinder', '#514630', [0, 0.385, 0], [0.354, 0.008, 0.354]); soil.name = 'Plant soil';
-  const shades = ['#58753f', '#43643a', '#748b4c'];
+  const shades = ['#647c4b', '#526e40', '#819658'];
   const materials = shades.map(color => {
     const material = kit.material(color).clone(); material.side = THREE.DoubleSide; material.vertexColors = true; return material;
   });

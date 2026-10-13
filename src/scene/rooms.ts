@@ -268,11 +268,16 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const sideSeating = index < 2;
   table(interior, kit, tableX, tableZ, tableWidth, 1.4);
   if(index<2||isFoyer||index===5){
-    // Unoccupied furniture is not simulated work. Tuck the spare seat wholly
-    // beneath the certified desk footprint so no walking aisle is narrowed.
-    const spare=new THREE.Group();spare.name='Tucked spare stool';
-    spare.position.set(tableX,0,tableZ+.41);spare.scale.set(.8,.85,.8);interior.add(spare);
+    // A visible empty seat is furniture, not simulated work. Its actual
+    // footprint participates in navigation just like every occupied chair.
+    const spare=new THREE.Group();spare.name='Empty spare stool';
+    // Lower-room side doors need the full front cross aisle. Their stools
+    // stay under the table; the upper rooms have space for an exposed seat.
+    const tucked=isFoyer||index===5;
+    const spareX=tableX+(index===0?-.18:index===1?.12:0),spareZ=tableZ+(tucked?.41:1.16),spareRadius=tucked?.28:.34;
+    spare.position.set(spareX,0,spareZ);spare.scale.set(tucked?.8:.9,.92,tucked?.8:.9);interior.add(spare);
     stool(spare,kit,0,0,palette.rug);
+    blockers.push({bounds:[spareX-spareRadius,spareZ-spareRadius,spareX+spareRadius,spareZ+spareRadius]});
   }
   blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - 0.7, tableX + tableWidth / 2, tableZ + 0.7] });
   const seats: NavigationPoint[] = isFoyer ? [[-1.15, -0.7], [0.25, -0.8], [1.85, 0.1]]
@@ -310,7 +315,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       ...(isFoyer || standingSide || index === 5 ? { seatHeight: OFFICE_FLOOR_Y } : character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
   });
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
-  const actorFacing = desks.map(desk => desk.facing);
+  // These are neutral arrival silhouettes, not work poses. Keep the real desk
+  // facing on the navigation anchor so an agent's chosen work turns to its task.
+  const actorFacing = desks.map((desk,i) => isFoyer && i===2 ? -.42
+    : sideSeating && i!==1 ? (i===0?.32:-.38) : desk.facing);
   const paperX = Math.min(1, tableWidth / 2 - 0.32), mugX = Math.min(1.12, tableWidth / 2 - 0.27);
   paper(interior, kit, tableX - paperX, tableZ + 0.06, 0.08);
   paper(interior, kit, tableX + paperX, tableZ + 0.04, -0.2);
@@ -354,7 +362,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   tidyStaticMeshes(interior);
   walls.forEach(({ root: wallRoot }) => tidyStaticMeshes(wallRoot));
   const door: NavigationPoint = index < 3 ? [0, 3.65] : isFoyer ? [doorX, backZ] : [index === 3 ? 3 : -3, sideDoorZ];
-  const frontCross = isFoyer || lowerRoom ? tableZ + 1.47 : Math.max(...desks.map(desk => desk.egress[1]), tableZ + 2.1);
+  const frontCross = isFoyer || lowerRoom ? tableZ + 1.47 : Math.max(...desks.map(desk => desk.egress[1]), tableZ + (index<2?2.5:2.1));
   const rearCross = index === 2 ? backZ + 1.8 : Math.min(...desks.map(desk => desk.egress[1]), tableZ - 2.1);
   // Interaction stops face real props and share the certified walking aisles.
   const cabinetStop: NavigationPoint = isFoyer ? [1.5, -3.4] : index === 5 ? [1.7, 1.8]

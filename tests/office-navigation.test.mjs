@@ -408,7 +408,7 @@ test('real sixteen-avatar layout connects every assigned desk, interaction stop,
 });
 
 test('three-member side places use their real floor-height homes beside a full-width desk without imaginary chairs', async t => {
-  const { rooms, kit, disposeObject } = await realLayout();
+  const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
   t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
   for (const officeId of ['merchant', 'hr']) {
     const room = rooms.get(officeId), { desks, blockers, floorY } = room.navigation;
@@ -423,7 +423,14 @@ test('three-member side places use their real floor-height homes beside a full-w
       assert.ok(Math.abs(desk.position[1] - tableZ) < .2, `${officeId}/${memberIndex} is beside the table, not along its front edge`);
       assert.ok(memberIndex === 0 ? desk.position[0] < x0 : desk.position[0] > x1, `${officeId}/${memberIndex} is outside the tabletop`);
       assert.equal(blockers.some(blocker => blocker.deskIndex === memberIndex), false, `${officeId}/${memberIndex} has no unrendered side chair`);
-      assert.equal(room.actorFacing[memberIndex], desk.facing, `${officeId}/${memberIndex} keeps the same physical and visual facing`);
+      const character=teams.find(team=>team.id===officeId).members[memberIndex];
+      const motor=new OfficeMotor(character.id,officeId,.61,navigator,navigator.desk(character.id));
+      motor.heading=room.actorFacing[memberIndex];
+      assert.equal(motor.pending,false,'neutral authored facing does not schedule a turn');
+      assert.equal(motor.mode,'idle');
+      assert.equal(motor.heading,memberIndex===0?.32:-.38,'neutral pose remains the actual physical motor heading');
+      assert.equal(motor.restore({id:`chosen-work-${memberIndex}`,actorId:character.id,kind:'work'}),true);
+      assert.equal(motor.heading,desk.facing,'only a chosen work action restores desk-facing pose');
     }
     assert.ok(desks[1].position[1] < z0, `${officeId} center resident remains behind the desk`);
     assert.ok(blockers.some(blocker => blocker.deskIndex === 1), `${officeId} center resident retains a real chair`);
@@ -439,7 +446,7 @@ test('all sixteen bodies retain clearance and settle with every chosen pace and 
     const home = navigator.desk(character.id), target = { officeId: teams[(index + 1) % teams.length].id, place: 'whiteboard' };
     for (const pace of ['unhurried', 'steady', 'brisk']) for (const route of ['direct', 'roomy']) {
       const motor = new OfficeMotor(character.id, team.id, radius, navigator, home);
-      assert.equal(motor.apply({ id: 'chosen', actorId: character.id, kind: 'walk_to', target, motion: { pace, route } }), true);
+      assert.equal(motor.apply({ id: 'chosen', actorId: character.id, kind: 'walk_to', target, motion: { pace, route } }), true, `${character.id} ${pace}/${route} reaches ${target.officeId}/${target.place}`);
       for (let frame = 0; frame < 4000 && motor.pending; frame++) {
         const from = [motor.x, motor.z]; motor.update(1 / 30);
         const chairException = navigator.pointClear(from, radius) ? undefined : home;

@@ -218,8 +218,9 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       // Swift's folded transit pose is bounded separately from its spread idle wings.
       const radius = character.kind === 'swift' ? 0.6 : character.kind === 'owl' ? 0.7 : 0.61;
       const motor = new OfficeMotor(character.id, team.id, radius, navigator, desk);
+      motor.heading = room.actorFacing?.[index] ?? motor.heading;
       root.position.copy(home);
-      root.rotation.y = desk.facing ?? 0;
+      root.rotation.y = motor.heading;
       const sleep = sleepIndicator(sharedSleepMaterial ??= makeSleepMaterial());
       sleep.position.set(0.2, sleepHeight, 0);
       sleep.visible = false;

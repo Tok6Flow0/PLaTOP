@@ -6,7 +6,7 @@ Current result: the stricter character-level reference pass is implemented and f
 
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md): the latest
-independent result is **8.4/10 B+ for portraits and 7.6/10 B for the campus**, not
+independent result is **8.4/10 B+ for portraits and 8.0/10 B for the campus**, not
 the requested A. The original sections below describe the earlier checkpoint.
 
 All sixteen procedural characters now have exactly 100× authored triangles in
@@ -16,15 +16,16 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The current suite passes **280 tests** and the production build passes. The
+The current suite passes **281 tests** and the production build passes. The
 existing bundle-size warning remains. Matched full-face camera checks measured
-48.99 submitted scene fps with three dense avatars versus 45.29 baseline; these
+49.50 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
 claim. Mobile header mask icons were repaired without removing their labels.
 
 Remaining work includes character primary-shape refinement, paper head/body
-transitions, short breast versus long wing feather layering, diagonal cape drape,
-and neutral orientations that show the characters more clearly in the campus.
+transitions, clean feather overlaps, localized lantern warmth and furnishing
+variety. The independent review acknowledged the clearer neutral orientations,
+heart-shaped owl face, bowed book covers and visible seating.
 Live agent actions remain the only source of work gestures and locomotion.
 
 ## Earlier checkpoint evidence

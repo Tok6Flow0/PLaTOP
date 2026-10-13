@@ -4,7 +4,7 @@ import { owlEyeRecess, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'bowedCover' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass';
@@ -189,6 +189,51 @@ function roundedBook(): THREE.BufferGeometry {
   geometry.translate(0, 0, -.4); return geometry;
 }
 
+/** A flexible thin cover has a gently bowed face, not a padded cuboid. Both
+ * skins share the bow and join at their edge; the page block stays separate. */
+function bowedCover():THREE.BufferGeometry {
+  const shape=new THREE.Shape(),r=.13;
+  shape.moveTo(-.5+r,-.5);shape.lineTo(.5-r,-.5);shape.quadraticCurveTo(.5,-.5,.5,-.5+r);
+  shape.lineTo(.5,.5-r);shape.quadraticCurveTo(.5,.5,.5-r,.5);shape.lineTo(-.5+r,.5);
+  shape.quadraticCurveTo(-.5,.5,-.5,.5-r);shape.lineTo(-.5,-.5+r);shape.quadraticCurveTo(-.5,-.5,-.5+r,-.5);
+  const boundary=shape.getSpacedPoints(32).slice(0,-1),rings=7,count=boundary.length;
+  const positions:number[]=[],uv:number[]=[],indices:number[]=[];
+  const add=(x:number,y:number,side:number)=>{
+    positions.push(x,y,side*.46+.65*Math.cos(x*Math.PI)*Math.cos(y*Math.PI));uv.push(x+.5,y+.5);
+  };
+  for(const side of [1,-1]){
+    const start=positions.length/3;add(0,0,side);
+    for(let row=1;row<=rings;row++)for(const p of boundary)add(p.x*row/rings,p.y*row/rings,side);
+    const triangle=(a:number,b:number,c:number)=>indices.push(...(side>0?[a,b,c]:[a,c,b]));
+    for(let col=0;col<count;col++){
+      const next=(col+1)%count;triangle(start,start+1+col,start+1+next);
+      for(let row=1;row<rings;row++){
+        const a=start+1+(row-1)*count+col,b=start+1+(row-1)*count+next,c=a+count,d=b+count;
+        triangle(a,c,d);triangle(a,d,b);
+      }
+    }
+  }
+  const layer=1+count*rings;
+  // The cut edge is a separate normal domain. Sharing it with the very thin
+  // bowed skins exaggerates the rim after non-uniform scaling.
+  const rim=positions.length/3;
+  for(const side of [1,-1])for(const p of boundary)add(p.x,p.y,side);
+  for(let col=0;col<count;col++){
+    const a=rim+col,b=rim+(col+1)%count;
+    indices.push(a,a+count,b+count,a,b+count,b);
+  }
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();
+  const normals=geometry.attributes.normal,normal=new THREE.Vector3();
+  for(let i=0;i<layer*2;i++){
+    const x=positions[i*3],y=positions[i*3+1],sign=i<layer?1:-1;
+    normal.set(.65*Math.PI*Math.sin(x*Math.PI)*Math.cos(y*Math.PI),.65*Math.PI*Math.cos(x*Math.PI)*Math.sin(y*Math.PI),1).multiplyScalar(sign).normalize();
+    normals.setXYZ(i,normal.x,normal.y,normal.z);
+  }
+  geometry.userData.coverSkinVertices=layer;
+  return geometry;
+}
+
 function smallHeart(): THREE.BufferGeometry {
   const shape = new THREE.Shape();
   shape.moveTo(0, -.5);
@@ -206,10 +251,10 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t)-.045*Math.sin(angle)**2*(1-t)**2,normalized=(y+.005)/1.06;
   let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
   const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
-  // Gravity makes the folds lengthwise. A Gaussian shoulder bulge inflated
-  // the old cloth into a padded shell instead of a thin hanging garment.
-  const fold=(.023*Math.sin(angle*5+.4)+.008*Math.sin(angle*9+.3))*Math.pow(t,.75);
-  const drape=.40+.075*t;
+  // The cloth spreads from its neck fastening before hanging in broad folds.
+  // Sweeping the pleats diagonally avoids a row of stiff vertical tubes.
+  const fold=(.024*Math.sin(angle*3.0+t*.75)+.006*Math.sin(angle*6-t))*Math.sin(t*Math.PI*.85);
+  const drape=.265+.225*THREE.MathUtils.smoothstep(t,0,.6);
   // The lining remains inset even at the silhouette limit. Clamping both
   // layers together would erase their thickness at the outermost pleats.
   return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape+fold))-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78+fold))-inset)];
@@ -237,7 +282,7 @@ function embracingArm():THREE.BufferGeometry {
 function cape(): THREE.BufferGeometry {
   const vertices: number[] = [], indices: number[] = [], columns = 28, rows = 13;
   for (let row = 0; row <= rows; row++) {
-    const t = row / rows,bound=.20+1.05*Math.sin(t*Math.PI/2);
+    const t = row / rows,bound=.035+1.23*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
       const angle = bound + column / columns * (Math.PI*2-bound*2);
       vertices.push(...navigatorCapePoint(t,angle));
@@ -251,7 +296,7 @@ function cape(): THREE.BufferGeometry {
   // and lapels. Both sides remain visible from the close observer camera.
   const outer=vertices.length/3,front=[...indices];
   for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
-    const t=row/rows,bound=.20+1.05*Math.sin(t*Math.PI/2),angle=bound+col/columns*(Math.PI*2-bound*2);
+    const t=row/rows,bound=.035+1.23*Math.sin(t*Math.PI/2),angle=bound+col/columns*(Math.PI*2-bound*2);
     vertices.push(...navigatorCapePoint(t,angle,.014));
   }
   for(let i=0;i<front.length;i+=3)indices.push(front[i]+outer,front[i+2]+outer,front[i+1]+outer);
@@ -509,9 +554,9 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       // Overlapping plumage wraps the entire oval. Each small feather is
       // tangential to the body, including its sides and rear, with staggered
       // rows. One cached mesh replaces the old front-only breast panel.
-      const row=Math.floor(featherIndex/12),column=featherIndex%12;
-      const variation=Math.sin(column*2.7+row*1.91),tilt=.16*Math.sin(column*1.7+row*2.2);
-      const angle=(column+.5+(row%2?.5:0)+.17*variation)/12*Math.PI*2,y=.235-row*.080+.011*Math.sin(column*2.1+row);
+      const row=Math.floor(featherIndex/14),column=featherIndex%14;
+      const variation=Math.sin(column*2.7+row*1.91),tilt=.055*Math.sin(column*1.7+row*2.2);
+      const angle=(column+.5+(row%2?.5:0)+.055*variation)/14*Math.PI*2,y=.22-row*.095+.004*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
@@ -522,13 +567,15 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         colours.push(tone,tone,tone);
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
-        const length=(row===6?.14:.24+.018*Math.sin(featherIndex*2.17));
+        const length=(row===5?.145:.23+.015*Math.sin(featherIndex*2.17));
         const py=y+point.y*length+point.x*tilt*.10,normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
-        const vaneWidth=(row===6?.105:row===5?.14:.157)*(1+.08*variation);
-        const theta=angle+(point.x*vaneWidth+point.y*tilt*.08)/Math.max(.12,radius*.70);
-        const relief=(.004+point.z*.020+(6-row)*.0014)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
+        // Angular, not fixed physical width: near the belly pole a fixed
+        // width wraps across several neighbours and produces broken patches.
+        // Tips overlap the staggered row below, not adjacent equal-depth vanes.
+        const theta=angle+point.x*(Math.PI*2/14)*1.38+point.y*tilt*.08;
+        const relief=(.006+point.z*.016+(5-row)*.0024)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
@@ -575,7 +622,13 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'owlHead': return helmet(true);
     // The shell is almost entirely covered by feathers. Spend its triangles
     // on the visible overlapping layers instead of an invisible dense core.
-    case 'owlBody': return softLathe(owlProfile,12,16);
+    case 'owlBody': {
+      // This is a hidden support under fitted plumage. Independently rounding
+      // the support at the dense tier pierces the lower feather sheets.
+      const geometry=softLathe(owlProfile,12,16);
+      geometry.scale(.985,1,.985);geometry.userData.characterFitted=true;
+      return geometry;
+    }
     case 'embracingBody': {
       const geometry=softLathe([[0,-.5],[.17,-.485],[.36,-.40],[.49,-.15],[.48,.15],[.35,.41],[0,.5]]),p=geometry.attributes.position;
       for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),weight=THREE.MathUtils.smoothstep(-y,.25,.50);p.setY(i,y+.14*Math.exp(-(x*x)/.012)*weight);}
@@ -599,6 +652,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'neckBand': return lathe([[.46,-.5],[.5,-.3],[.5,.3],[.46,.5],[.44,.3],[.44,-.3],[.46,-.5]],16);
     case 'heart': return smallHeart();
     case 'book': return roundedBook();
+    case 'bowedCover': return bowedCover();
     case 'envelope': return folded([[-.46,-.5],[.46,-.5],[.5,-.44],[.5,.44],[.46,.5],[-.46,.5],[-.5,.44],[-.5,-.44]],.9,.02);
     case 'cloak': return softLathe([[0, -.5], [.36, -.49], [.5, -.39], [.48, -.20], [.34, .12], [.21, .36], [.09, .49], [0, .54]]);
     case 'cape': return cape();
@@ -607,8 +661,8 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'featherCore': return new THREE.SphereGeometry(.5,8,5);
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return paperOwlBody();
-    case 'paperChestL': return foldedSheet([[-.015,.46,.28],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.36]],[-.17,-.03,.38],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
-    case 'paperChestR': return foldedSheet([[.02,.46,.28],[.37,.31,.10],[.28,-.50,.11],[.10,-.43,.34]],[.08,-.01,.43],['#ead3ad','#dac09a','#ccb089','#dfc49d']);
+    case 'paperChestL': return foldedSheet([[-.015,.46,.20],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.24]],[-.17,-.03,.27],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
+    case 'paperChestR': return foldedSheet([[.02,.46,.20],[.37,.31,.10],[.28,-.50,.11],[.10,-.43,.24]],[.08,-.01,.29],['#ead3ad','#dac09a','#ccb089','#dfc49d']);
     case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.28,-.50,.14],[.065,-.32,.29]],[-.21,.015,.36],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
@@ -757,7 +811,7 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .16 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'brass' ? .52 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
     });
@@ -851,8 +905,8 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
         // Cream barbs darken into the recessed amber eye socket. The colour
         // belongs to the disc, not an extra flat ring placed over the eye.
         const r=((Math.abs(px)-.13)/.108)**2+((py-.002)/.123)**2;
-        const warm=Math.exp(-r*1.8);
-        colours.push(1-.08*warm,1-.23*warm,1-.38*warm);
+        const warm=Math.exp(-r*.9);
+        colours.push(1-.32*warm,1-.52*warm,1-.70*warm);
       }
     };
     add(0, 0);
