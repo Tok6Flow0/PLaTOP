@@ -3,9 +3,9 @@ import type { SceneKit } from './primitives';
 
 export type CharacterForm = 'torso' | 'helmet' | 'owlBody' | 'owlHead' | 'wing' | 'tuft'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart'
-  | 'book' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'toe' | 'paperBody' | 'paperWing' | 'paperTail' | 'paperDisc' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'toe' | 'paperBody' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftWingL' | 'swiftWingR'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -140,11 +140,11 @@ function smallHeart(): THREE.BufferGeometry {
 function cape(): THREE.BufferGeometry {
   const vertices: number[] = [], indices: number[] = [], columns = 18, rows = 6;
   for (let row = 0; row <= rows; row++) {
-    const t = row / rows, radius = .23 + .16 * t;
+    const t = row / rows, radius = .31 + .15 * t,bound=.20+1.05*t;
     for (let column = 0; column <= columns; column++) {
-      const angle = Math.PI * (.37 + column / columns * 1.26);
-      vertices.push(Math.sin(angle) * radius, .34 - t * .70,
-        Math.cos(angle) * radius * .81 - .025 + Math.sin(t * Math.PI) * .018);
+      const angle = bound + column / columns * (Math.PI*2-bound*2);
+      vertices.push(Math.sin(angle) * radius, .29 - t * .72,
+        Math.cos(angle) * radius * .80 + .08);
       if (row < rows && column < columns) {
         const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
         indices.push(a, d, b, a, c, d);
@@ -164,16 +164,35 @@ function feather(): THREE.BufferGeometry {
   return smoothDeformedSurface(geometry);
 }
 
-function polyhedron(vertices: Tuple[], faces: number[][]): THREE.BufferGeometry {
+function polyhedron(vertices: Tuple[], faces: number[][],faceColors?: string[]): THREE.BufferGeometry {
   const positions: number[] = [];
+  const colors: number[]=[];
   const centre=vertices.reduce((sum,p)=>sum.add(new THREE.Vector3(...p)),new THREE.Vector3()).divideScalar(vertices.length);
-  for (const face of faces) for (let i = 1; i < face.length - 1; i++) {
+  for (const [f,face] of faces.entries()) for (let i = 1; i < face.length - 1; i++) {
     const a=new THREE.Vector3(...vertices[face[0]]),b=new THREE.Vector3(...vertices[face[i]]),c=new THREE.Vector3(...vertices[face[i+1]]);
     const outward=b.clone().sub(a).cross(c.clone().sub(a)).dot(a.clone().add(b).add(c).multiplyScalar(1/3).sub(centre));
-    for (const index of outward<0?[face[0],face[i+1],face[i]]:[face[0], face[i], face[i + 1]]) positions.push(...vertices[index]);
+    for (const index of outward<0?[face[0],face[i+1],face[i]]:[face[0], face[i], face[i + 1]]) {positions.push(...vertices[index]);if(faceColors)colors.push(...new THREE.Color(faceColors[f]).toArray());}
   }
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  if(faceColors)geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
   geometry.computeVertexNormals(); return geometry;
+}
+
+function swiftHead(): THREE.BufferGeometry {
+  // The head and tapered throat are one folded profile. A softly rolled paper
+  // crown joins deliberate flat cheeks, rather than a low-poly spherical bead.
+  const shape=new THREE.Shape();shape.moveTo(.13,-.055);shape.lineTo(.17,.055);
+  shape.bezierCurveTo(.18,.17,.08,.215,-.035,.195);
+  shape.bezierCurveTo(-.12,.175,-.145,.12,-.145,.04);
+  shape.lineTo(-.105,-.16);shape.lineTo(.045,-.245);shape.lineTo(.09,-.11);shape.closePath();
+  const geometry=new THREE.ExtrudeGeometry(shape,{depth:.19,steps:1,bevelEnabled:true,bevelSize:.012,bevelThickness:.016,bevelSegments:2,curveSegments:7});
+  geometry.translate(0,0,-.095);geometry.rotateY(-Math.PI/2);return geometry;
+}
+
+function swiftWing(): THREE.BufferGeometry {
+  const vertices: Tuple[]=[[0,.10,.10],[.07,.28,-.40],[.09,-.29,-.31],[.11,-.10,-.005],[.14,.005,-.06],[-.009,.10,.10],[.061,.28,-.40],[.081,-.29,-.31],[.101,-.10,-.005]];
+  return polyhedron(vertices,[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],
+    ['#e0b15e','#d5a24e','#bd893b','#e5bc74','#3c6d68','#b38948','#47736b','#3b6e65','#c59854']);
 }
 
 function reflect(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
@@ -194,6 +213,18 @@ function spiritHood(relay = false): THREE.BufferGeometry {
     const y = position.getY(i), upper = Math.max(0, y + .10);
     position.setXYZ(i, position.getX(i) + (relay ? -.24 : -.14) * upper ** 1.3,
       y + (relay ? .10 : .04) * position.getX(i), position.getZ(i) + upper * .035);
+  }
+  return smoothDeformedSurface(geometry);
+}
+
+function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
+  const profile: Array<[number,number]>=[[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75]];
+  profile.push(...(variant==='compass'?[[.12,.84],[.055,.93],[0,1.03]]:[[.09,.80],[0,.81]]) as Array<[number,number]>);
+  const geometry=softLathe(profile),p=geometry.attributes.position;
+  for(let i=0;i<p.count;i++){
+    const y=p.getY(i),hem=Math.pow(Math.max(0,(.23-y)/.847),1.25);
+    const theta=Math.atan2(p.getX(i),p.getZ(i)),fold=.012*hem*Math.sin(theta*3+y*5);
+    p.setXYZ(i,p.getX(i)+Math.sin(theta)*fold+(variant==='compass'?0:variant==='lens'?-.17:.17)*hem,y,p.getZ(i)+Math.cos(theta)*fold);
   }
   return smoothDeformedSurface(geometry);
 }
@@ -263,9 +294,12 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'feather': return feather();
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return folded([[-.34, -.5], [.31, -.5], [.5, -.13], [.38, .31], [0, .5], [-.4, .29], [-.5, -.1]], .78, .13);
+    case 'paperEchoHead': return folded([[-.35,-.40],[.28,-.5],[.50,-.08],[.43,.33],[.26,.53],[-.29,.47],[-.50,.16]],.78,.13);
+    case 'paperQuillHead': return folded([[-.36,-.4],[.30,-.45],[.50,-.08],[.48,.29],[.61,.52],[.22,.38],[-.12,.42],[-.60,.58],[-.43,.1],[-.50,-.16]],.78,.13);
     case 'paperWing': return folded([[-.50, .43], [-.18, -.50], [.35, -.34], [.50, .36], [.12, .18]], .16, .14);
     case 'paperTail': return folded([[-.5, -.5], [0, -.26], [.5, -.5], [.27, .5], [-.27, .5]], .12, .07);
     case 'paperDisc': return folded([[-.48,.08],[-.37,.34],[-.12,.49],[.19,.45],[.41,.26],[.49,-.10],[.20,-.50],[-.23,-.43],[-.42,-.22]], .06, .023);
+    case 'paperDiscL': return reflect(makeGeometry('paperDisc'));
     case 'pageFold': return folded([[-.5, .5], [.5, .5], [.5, -.5]], .04, .04);
     case 'hoodTip': return lathe([[0, -.5], [.49, -.5], [.43, -.32], [.30, -.12], [.21, .15], [.13, .36], [0, .6]], 16);
     case 'scroll': return new THREE.CylinderGeometry(.5, .5, 1, 12, 1, false, .12, Math.PI * 1.78);
@@ -273,14 +307,16 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .16], [.50, .32], [.42, .46], [0, .5]]);
-    case 'swiftBody': return polyhedron([[0, -.30, .16], [-.20, .11, .03], [.20, .11, .03], [0, .29, .04], [0, -.23, -.24], [0, .08, -.31], [0, -.02, .27]], [[0, 1, 6], [1, 3, 6], [3, 2, 6], [2, 0, 6], [0, 4, 1], [1, 4, 5], [1, 5, 3], [3, 5, 2], [2, 5, 4], [2, 4, 0]]);
-    case 'swiftHead': { const g=new THREE.SphereGeometry(.19,12,8);const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,p.getZ(i)+(p.getY(i)<0?-.015:0));const faceted=g.toNonIndexed();g.dispose();faceted.computeVertexNormals();return faceted; }
+    case 'swiftBody': return polyhedron([[0,-.25,.13],[-.13,-.17,.05],[.13,-.17,.05],[-.16,.12,0],[.16,.12,0],[0,.24,.08],[0,-.08,-.29],[0,-.17,-.20],[0,.04,.20]],[[0,1,8],[1,3,8],[3,5,8],[5,4,8],[4,2,8],[2,0,8],[1,7,6,3],[3,6,5],[5,6,4],[4,6,7,2],[0,2,7,1]]);
+    case 'swiftHead': return swiftHead();
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
-    case 'swiftWingR': return polyhedron([[0,.13,.13],[.18,.34,-.46],[.09,-.24,-.30],[.08,-.015,-.075],[0,.11,.12],[.17,.325,-.455],[.08,-.25,-.295]],[[0,3,1],[1,3,2],[2,3,0],[4,5,6],[0,1,5,4],[1,2,6,5],[2,0,4,6]]);
+    case 'swiftWingR': return swiftWing();
     case 'paperBeak': return polyhedron([[-.065,-.025,0],[.065,-.025,0],[0,.035,.24],[0,.065,0],[0,-.04,.19]],[[0,3,2],[3,1,2],[0,2,4],[2,1,4],[0,4,1],[0,1,3]]);
     case 'pageCorner': return polyhedron([[-.5,.5,0],[.5,-.5,0],[.5,.5,-.10],[.12,.12,.34]],[[0,3,2],[3,1,2],[0,1,3]]);
     case 'merchantBase': return softLathe([[0,-.5],[.44,-.5],[.5,-.28],[.5,.08],[.46,.38],[.33,.5],[0,.5]]);
-    case 'spiritFigure': return softLathe([[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75],[.09,.80],[0,.81]]);
+    case 'spiritFigure': return spiritFigure('compass');
+    case 'spiritLens': return spiritFigure('lens');
+    case 'spiritRelay': return spiritFigure('relay');
     case 'owlBrowL': return sweptBrow(true);
     case 'owlBrowR': return sweptBrow();
     case 'featherFanL': return featherFan(-1);
@@ -290,6 +326,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'hexCap': {const source=new THREE.CylinderGeometry(.08,.5,1,6),g=source.toNonIndexed();source.dispose();g.computeVertexNormals();return g;}
     case 'fineRing': return new THREE.TorusGeometry(.5, .027, 6, 28);
     case 'compassStar': return folded([[0, .5], [.07, .13], [.32, .32], [.13, .07], [.5, 0], [.13, -.07], [.32, -.32], [.07, -.13], [0, -.5], [-.07, -.13], [-.32, -.32], [-.13, -.07], [-.5, 0], [-.13, .07], [-.32, .32], [-.07, .13]], .03, .025);
+    case 'compassNeedle': return folded([[0,.5],[.085,.09],[.33,0],[.085,-.09],[0,-.5],[-.085,-.09],[-.33,0],[-.085,.09]],.03,.035);
   }
 }
 
@@ -345,10 +382,9 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit) } : {}),
     });
     if (finish === 'ink') material.envMapIntensity = .65;
-    if (finish === 'paper') material.envMapIntensity = .35;
-    if (finish === 'feather') material.envMapIntensity = .42;
     if (['clay','glaze','paper','feather'].includes(finish)) {
-      material.bumpMap=surfaceGrain(kit);material.bumpScale=finish==='glaze'?.008:finish==='feather'?.017:.012;
+      material.envMapIntensity=.5;
+      material.bumpMap=surfaceGrain(kit);material.bumpScale=.010;
       material.map=material.bumpMap;
     }
     cache.set(key, material);
@@ -358,7 +394,14 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
 
 export function characterMesh(kit: SceneKit, parent: THREE.Object3D, form: CharacterForm, color: string,
   position: Tuple, scale: Tuple, rotation?: Tuple, finish: CharacterFinish = 'clay'): THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial> {
-  const mesh = new THREE.Mesh(characterGeometry(kit, form), characterMaterial(kit, color, finish));
+  const geometry=characterGeometry(kit,form);
+  let material=characterMaterial(kit,color,finish);
+  if(geometry.attributes.color) {
+    const cache=owned(kit).material,key=`${finish}:${color}:vertex-colour`;
+    if(!cache.has(key)){const variant=material.clone();variant.vertexColors=true;cache.set(key,variant)}
+    material=cache.get(key)!;
+  }
+  const mesh = new THREE.Mesh(geometry,material);
   mesh.name = form;
   mesh.position.set(...position); mesh.scale.set(...scale);
   if (rotation) mesh.rotation.set(...rotation);
@@ -368,9 +411,9 @@ export function characterMesh(kit: SceneKit, parent: THREE.Object3D, form: Chara
 /** Fit an inset to its helmet or pear belly, sharing its curvature and normals. */
 export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string, width: number, height: number,
   offset: number, centre: Tuple = [0, 0, 0], finish: CharacterFinish = 'ink', surfaceRadii: Tuple = [.461, .38, .345], bubble = false,
-  torsoSurface?: [number, number, number, number], cornerRatio = .43): THREE.Mesh {
+  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0): THREE.Mesh {
   const cache = owned(kit).geometry;
-  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}`;
+  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}`;
   let geometry = cache.get(key);
   if (!geometry) {
     // Four continuous arcs give a rounded boundary at close range while using
@@ -378,16 +421,29 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     const radius = Math.min(width, height) * cornerRatio, boundary: Array<[number, number]> = [];
     const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
     corners.forEach(([sx, sy], corner) => {
+      if(bubble&&corner===3) {
+        const tail=new THREE.Path();tail.moveTo(width/2-radius,-height/2);
+        tail.quadraticCurveTo(width*.28,-height*.5,width*.32,-height*.57);
+        tail.bezierCurveTo(width*.48,-height*.72,width*.48,-height*.55,width*.445,-height*.505);
+        tail.bezierCurveTo(width*.39,-height*.46,width*.51,-height*.41,width*.5,-height/2+radius);
+        tail.getSpacedPoints(12).forEach(p=>boundary.push([p.x,p.y]));return;
+      }
       for (let step = 0; step < 8; step++) {
         const angle = (corner + step / 7) * Math.PI / 2;
         let x = sx * (width / 2 - radius) + Math.cos(angle) * radius;
         let y = sy * (height / 2 - radius) + Math.sin(angle) * radius;
-        // A soft speech-tail continues the lower-right arc rather than adding
-        // a second hard corner that pierces the lantern shell.
-        if (bubble && corner === 3) { const tail=Math.sin(step/7*Math.PI)**4; x += width*.025*tail; y -= height*.12*tail; }
         boundary.push([x, y]);
       }
     });
+    if(owlSign){
+      const disc=new THREE.Path();disc.moveTo(-.169,.06);
+      disc.bezierCurveTo(-.14,.16,-.09,.27,.035,.252);
+      disc.bezierCurveTo(.12,.24,.18,.15,.183,.045);
+      disc.bezierCurveTo(.188,-.10,.08,-.155,-.169,-.245);
+      disc.bezierCurveTo(-.169,-.15,-.169,-.03,-.169,.06);
+      boundary.length=0;disc.getSpacedPoints(31).forEach(p=>boundary.push([p.x*owlSign,p.y]));
+    }
+    const area=boundary.reduce((sum,[x,y],i)=>{const next=boundary[(i+1)%boundary.length];return sum+x*next[1]-next[0]*y},0);if(area<0)boundary.reverse();
     const vertices: number[] = [], normals: number[] = [], indices: number[] = [], rings = 6;
     const contour = torsoSurface ? new THREE.SplineCurve(torsoProfile.map(([r, y]) => new THREE.Vector2(r, y))).getPoints(16) : undefined;
     const add = (x: number, y: number) => {

@@ -224,7 +224,7 @@ test('continuous clay surfaces keep matching normals across duplicated UV seams 
   const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
   const expectedTriangles = { torso: 768, owlBody: 768, lanternGlass: 336, lanternCap: 384,
     lanternBase: 384, limb: 224, beak: 192, helmet: 1216, owlHead: 1216, wing: 352, tuft: 168,
-    spiritBody: 768, cloak: 768, merchantTorso: 768 };
+    spiritBody: 768, spiritFigure:768, spiritLens:768, spiritRelay:768, cloak: 768, merchantTorso: 768 };
   for (const [form, count] of Object.entries(expectedTriangles)) {
     const geometry = characterGeometry(kit, form), position = geometry.attributes.position;
     const uv = geometry.attributes.uv, normal = geometry.attributes.normal;
@@ -277,14 +277,14 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'bridge-jarvis':['merchantTorso','helmet','ring'],
     'bridge-scout':['helmet','compass-emblem','ring'],
     'bridge-keeper':['book','pageCorner','seedling-book'],
-    'hr-compass':['spiritFigure','hoodTip','compass-emblem'],
-    'hr-lens':['spiritFigure','ring'],
-    'hr-relay':['spiritFigure','wing'],
+    'hr-compass':['spiritFigure','compassNeedle','compass-emblem'],
+    'hr-lens':['spiritLens','ring'],
+    'hr-relay':['spiritRelay','detail'],
     'intake-jarvis':['torso','cape','hoodTip','compass-emblem'],
     'intake-beacon':['torso','lanternCap'],
     'intake-relay':['torso','scroll','book'],
     'intake-compass':['torso','tuft','circuit-bib'],
-    'support-beacon':['torso','lanternCap','ring'],
+    'support-beacon':['owlBody','lanternCap','ring'],
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
     'reflection-echo':['paperBody','paperDisc','ring'],
     'reflection-quill':['paperBody','pageFold','quill-pencil'],

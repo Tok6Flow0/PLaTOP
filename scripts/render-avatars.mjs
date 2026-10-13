@@ -41,14 +41,14 @@ const portraits=await page.evaluate(async()=>{
  const {OutputPass}=await import('/node_modules/three/examples/jsm/postprocessing/OutputPass.js');
  const {teams}=await import('/src/teams.ts');
  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true,preserveDrawingBuffer:true});
- renderer.setPixelRatio(1);renderer.setClearColor(0x000000,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
+ renderer.setPixelRatio(2);renderer.setClearColor(0x000000,0);renderer.outputColorSpace=THREE.SRGBColorSpace;
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.VSMShadowMap;
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1,.1,40),kit=new SceneKit();
  const studio=new StudioEnvironment(renderer,scene);
  const ambient=new THREE.HemisphereLight('#fff8ee','#8c725a',.42);scene.add(ambient);
  const key=new THREE.DirectionalLight('#fff2dd',2.5);key.position.set(-3,5,5);key.castShadow=true;
- key.shadow.mapSize.set(1024,1024);key.shadow.radius=12;key.shadow.blurSamples=12;key.shadow.bias=-.0003;
+ key.shadow.mapSize.set(2048,2048);key.shadow.radius=12;key.shadow.blurSamples=12;key.shadow.bias=-.0003;key.shadow.normalBias=.012;
  Object.assign(key.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:20});scene.add(key);
  const fill=new THREE.DirectionalLight('#dde8e1',.18);fill.position.set(4,2,3);scene.add(fill);
  const owned=new THREE.Group(),images={};
@@ -65,6 +65,7 @@ const portraits=await page.evaluate(async()=>{
  kit.mesh(backdrop,'cone','#eee0c3',[-.9,2.1,-2.5],[.32,.4,.32]);
  kit.mesh(backdrop,'detailCylinder','#746347',[-.9,2.55,-2.5],[.018,.55,.018]);
  const composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(512,480,{samples:4,type:THREE.HalfFloatType}));
+ composer.setPixelRatio(2);
  const beauty=new RenderPass(scene,camera),bokeh=new BokehPass(scene,camera,{focus:5,aperture:.008,maxblur:.04}),output=new OutputPass();
  const contact=new GTAOPass(scene,camera,512,480,undefined,{radius:.16,thickness:1,distanceExponent:2});contact.blendIntensity=.65;
  composer.addPass(beauty);composer.addPass(contact);composer.addPass(bokeh);composer.addPass(output);
@@ -119,7 +120,9 @@ const portraits=await page.evaluate(async()=>{
   camera.updateProjectionMatrix();
   if(team){composer.setSize(...size);bokeh.uniforms.focus.value=camera.position.distanceTo(group.position.clone().add(new THREE.Vector3(0,.9,.15)));composer.render();}
   else renderer.render(scene,camera);
-  images[name]=renderer.domElement.toDataURL('image/png');
+  const portrait=document.createElement('canvas');portrait.width=size[0];portrait.height=size[1];
+  const raster=portrait.getContext('2d');raster.imageSmoothingEnabled=true;raster.imageSmoothingQuality='high';
+  raster.drawImage(renderer.domElement,0,0,...size);images[name]=portrait.toDataURL('image/png');
   scene.remove(group);owned.add(group);
  }
  for(const team of teams){for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);render('team-'+team.id+'-night',team.members,true,true);}

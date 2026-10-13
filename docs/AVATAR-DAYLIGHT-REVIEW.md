@@ -19,6 +19,7 @@ The reviewer received no requested score and no instructions to approve.
 | Starting models | 4.3/10 | 2.7/10 | D+ |
 | Pass 1 | 6.0/10 | 7.1/10 | C+ |
 | Pass 2 | 6.8/10 | 7.5/10 | B− |
+| Pass 3 | Pending | Pending | Pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 The requested acceptance threshold has not yet been met. Pass 1 restored the
@@ -29,6 +30,11 @@ The pass-2 review still finds the folded bird and paper owls too coarse, the
 cape disconnected, the speech-bubble tail too subtle and several small edge
 artifacts. Lighting scores 7.5/10: night is cohesive, but dawn and sunset need
 stronger directional distinction. These remain open, not waived by test results.
+Pass 3 joins robes and navigator capes, integrates the paper ears and folded
+bird's wing, reshapes the owl's facial discs and Beacon's speech-bubble face,
+and distinguishes cool dawn from amber sunset. Portrait exports are rendered
+at twice their final dimensions then downsampled; this does not affect live
+scene cost. All 252 tests and the production build pass for this submission.
 
 ## Local-clock atmosphere
 
@@ -55,6 +61,8 @@ test suites were stopped during the samples.
 | Pass 1 night | 60.00 | 3.8 ms | 98 | 322,883 |
 | Pass 2 noon | 60.00 | 3.0 ms | 94 | 322,662 |
 | Pass 2 night | 60.00 | 3.2 ms | 94 | 322,662 |
+| Pass 3 noon | 59.99 | 3.8 ms | 86 | 319,168 |
+| Pass 3 night | 60.00 | 3.8 ms | 86 | 319,168 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
