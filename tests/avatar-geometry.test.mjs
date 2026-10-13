@@ -220,11 +220,27 @@ test('walking and explicit resting suppress stationary gestures until the charac
   disposeObject(all); kit.dispose();
 });
 
+test('continuous robed faces remain rigidly attached to their shell through agent gestures and walking',()=>{
+  const kit=new SceneKit(),all=new THREE.Group();
+  for(const member of members.filter(member=>member.id.startsWith('hr-'))){
+    const model=makeProxy(member,kit);all.add(model);model.updateMatrixWorld(true);
+    const p=model.userData.personality,face=model.getObjectByName('head');
+    const relative=()=>new THREE.Matrix4().copy(p.body.matrixWorld).invert().multiply(face.matrixWorld).elements;
+    const rest=relative();
+    for(const gesture of ['work','think','file','talk','wait'])for(const moving of [false,true]){
+      animateCharacter(model,'active',1.3,0,moving,false,{phase:1.3,speed:.7,seatLift:0,celebration:0,gesture});
+      model.updateMatrixWorld(true);
+      relative().forEach((v,i)=>assert.ok(Math.abs(v-rest[i])<1e-10,`${member.id}/${gesture}: face follows its shell`));
+    }
+  }
+  disposeObject(all);kit.dispose();
+});
+
 test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
   const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
   const expectedTriangles = { torso: 768, owlBody: 768, lanternGlass: 336, lanternCap: 384,
     lanternBase: 384, limb: 224, beak: 192, helmet: 1216, owlHead: 1216, wing: 352, tuft: 168,
-    spiritBody: 768, spiritFigure:768, spiritLens:768, spiritRelay:768, cloak: 768, merchantTorso: 768 };
+    spiritBody: 768, spiritFigure:2048, spiritLens:2048, spiritRelay:2048, cloak: 768, merchantTorso: 768 };
   for (const [form, count] of Object.entries(expectedTriangles)) {
     const geometry = characterGeometry(kit, form), position = geometry.attributes.position;
     const uv = geometry.attributes.uv, normal = geometry.attributes.normal;
@@ -289,7 +305,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'reflection-echo':['paperBody','paperDisc','ring'],
     'reflection-quill':['paperBody','pageFold','quill-pencil'],
     'email-owl':['owlHead','owlBody','featherFanL','featherFanR','breastFeathers'],
-    'email-swift':['swiftHead','swiftBody','swiftWingL','swiftWingR','paperTail'],
+    'email-swift':['swiftHead','swiftBody','swiftWingL','swiftWingR','swiftTail'],
   };
   for (const character of members) {
     const model=makeProxy(character,kit);all.add(model);

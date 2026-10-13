@@ -4,7 +4,7 @@ import type { SceneKit } from './primitives';
 export type CharacterForm = 'torso' | 'helmet' | 'owlBody' | 'owlHead' | 'wing' | 'tuft'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart'
   | 'book' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'toe' | 'paperBody' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
-  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftWingL' | 'swiftWingR'
+  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather';
 type Tuple = [number, number, number];
@@ -52,10 +52,10 @@ function smoothDeformedSurface(geometry: THREE.BufferGeometry): THREE.BufferGeom
 }
 
 /** Densely sample only broad clay contours; paper folds and metal lips stay authored. */
-function softLathe(profile: Array<[number, number]>): THREE.BufferGeometry {
+function softLathe(profile: Array<[number, number]>, rows=16, columns=24): THREE.BufferGeometry {
   const curve = new THREE.SplineCurve(profile.map(([radius, y]) => new THREE.Vector2(radius, y)));
-  const points = curve.getPoints(16).map(point => [Math.max(0, point.x), point.y] as [number, number]);
-  return lathe(points);
+  const points = curve.getPoints(rows).map(point => [Math.max(0, point.x), point.y] as [number, number]);
+  return lathe(points,columns);
 }
 
 /** A soft, slightly squared helmet, with a continuous crown and cheeks. */
@@ -140,11 +140,11 @@ function smallHeart(): THREE.BufferGeometry {
 function cape(): THREE.BufferGeometry {
   const vertices: number[] = [], indices: number[] = [], columns = 18, rows = 6;
   for (let row = 0; row <= rows; row++) {
-    const t = row / rows, radius = .31 + .15 * t,bound=.20+1.05*t;
+    const t = row / rows, radius = .31 + .15 * t,bound=.20+1.05*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
       const angle = bound + column / columns * (Math.PI*2-bound*2);
       vertices.push(Math.sin(angle) * radius, .29 - t * .72,
-        Math.cos(angle) * radius * .80 + .08);
+        Math.cos(angle) * radius * .80 + .08 + .014*Math.sin(angle*5)*Math.sin(Math.PI*t));
       if (row < rows && column < columns) {
         const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
         indices.push(a, d, b, a, c, d);
@@ -190,9 +190,39 @@ function swiftHead(): THREE.BufferGeometry {
 }
 
 function swiftWing(): THREE.BufferGeometry {
-  const vertices: Tuple[]=[[0,.10,.10],[.07,.28,-.40],[.09,-.29,-.31],[.11,-.10,-.005],[.14,.005,-.06],[-.009,.10,.10],[.061,.28,-.40],[.081,-.29,-.31],[.101,-.10,-.005]];
+  const vertices: Tuple[]=[[0,.10,.10],[.07,.27,-.36],[.09,-.23,-.25],[.11,-.10,-.005],[.14,.005,-.06],[-.009,.10,.10],[.061,.27,-.36],[.081,-.23,-.25],[.101,-.10,-.005]];
   return polyhedron(vertices,[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],
     ['#e0b15e','#d5a24e','#bd893b','#e5bc74','#3c6d68','#b38948','#47736b','#3b6e65','#c59854']);
+}
+
+/** Folded volumes close into a tapered back, not an extruded cardboard slab. */
+function paperOwlHead(quill=false): THREE.BufferGeometry {
+  const outline:Array<[number,number]>=quill?
+    [[-.41,-.26],[-.30,-.45],[.22,-.45],[.47,-.13],[.45,.24],[.54,.51],[.19,.34],[-.08,.39],[-.48,.53],[-.44,.14]]:
+    [[-.44,-.22],[-.27,-.43],[.25,-.44],[.47,-.10],[.42,.28],[.23,.48],[-.23,.44],[-.47,.14]];
+  const vertices:Tuple[]=outline.map(([x,y])=>[x,y,.30+(.4-Math.abs(x))*.12]);
+  vertices.push(...outline.map(([x,y])=>[x*.87,y*.88,-.29] as Tuple));
+  vertices.push([-.025,.06,.52],[0,.03,-.39]);
+  const n=outline.length,faces:number[][]=[];
+  for(let i=0;i<n;i++){const j=(i+1)%n;faces.push([i,j,2*n],[i,n+i,n+j],[i,n+j,j],[n+j,n+i,2*n+1]);}
+  return polyhedron(vertices,faces);
+}
+
+function paperOwlBody(): THREE.BufferGeometry {
+  const rings:Tuple[][]=[
+    [[-.26,-.5,.17],[.25,-.5,.17],[.39,-.36,-.04],[.21,-.5,-.28],[-.22,-.5,-.28],[-.42,-.34,-.04]],
+    [[-.40,-.03,.34],[.39,-.08,.34],[.50,.02,-.06],[.26,-.03,-.43],[-.29,.03,-.43],[-.50,.08,-.08]],
+    [[-.27,.34,.27],[.26,.35,.27],[.34,.36,-.03],[.17,.36,-.29],[-.20,.35,-.30],[-.35,.32,-.02]],
+  ];
+  const vertices=rings.flat();vertices.push([0,.49,0],[0,-.5,-.04],[-.04,-.24,.36],[-.04,.20,.38]);
+  const faces:number[][]=[];
+  for(let r=0;r<2;r++)for(let i=0;i<6;i++){
+    const j=(i+1)%6;
+    if(i===0){const centre=20+r;faces.push([r*6,r*6+1,centre],[r*6+1,(r+1)*6+1,centre],[(r+1)*6+1,(r+1)*6,centre],[(r+1)*6,r*6,centre]);}
+    else faces.push([r*6+i,r*6+j,(r+1)*6+j],[(r+1)*6+j,(r+1)*6+i,r*6+i]);
+  }
+  for(let i=0;i<6;i++){const j=(i+1)%6;faces.push([12+i,12+j,18],[j,i,19]);}
+  return polyhedron(vertices,faces);
 }
 
 function reflect(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
@@ -220,10 +250,10 @@ function spiritHood(relay = false): THREE.BufferGeometry {
 function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
   const profile: Array<[number,number]>=[[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75]];
   profile.push(...(variant==='compass'?[[.12,.84],[.055,.93],[0,1.03]]:[[.09,.80],[0,.81]]) as Array<[number,number]>);
-  const geometry=softLathe(profile),p=geometry.attributes.position;
+  const geometry=softLathe(profile,32,32),p=geometry.attributes.position;
   for(let i=0;i<p.count;i++){
     const y=p.getY(i),hem=Math.pow(Math.max(0,(.23-y)/.847),1.25);
-    const theta=Math.atan2(p.getX(i),p.getZ(i)),fold=.012*hem*Math.sin(theta*3+y*5);
+    const theta=Math.atan2(p.getX(i),p.getZ(i)),fold=.018*hem*Math.sin(theta*3+y*5);
     p.setXYZ(i,p.getX(i)+Math.sin(theta)*fold+(variant==='compass'?0:variant==='lens'?-.17:.17)*hem,y,p.getZ(i)+Math.cos(theta)*fold);
   }
   return smoothDeformedSurface(geometry);
@@ -254,13 +284,13 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
     const row = Math.floor(featherIndex / 3), column = featherIndex % 3;
     const x = breast ? (column - 1) * .135 : sign * (column * .045 - .035);
-    quaternion.setFromEuler(new THREE.Euler(0, breast ? -x * 1.3 : 0, breast ? -x * .55 : -sign * (.20 + column * .18)));
-    matrix.compose(new THREE.Vector3(x, breast ? .13 - row * .11 - Math.abs(x)*.18 : .12 - row * .11,
+    quaternion.setFromEuler(new THREE.Euler(0, breast ? -x * 1.3 : 0, breast ? -x * 2.0 : -sign * (.20 + column * .18)));
+    matrix.compose(new THREE.Vector3(x, breast ? .16 - row * .13 - Math.abs(x)*.18 : .12 - row * .11,
       breast ? .012 - Math.abs(x)*.34 - row*.016 : .102 + column*.012 - row*.018), quaternion,
-    new THREE.Vector3(breast ? .215 : .14, breast ? .225 : .30, .036)); normalMatrix.getNormalMatrix(matrix);
+    new THREE.Vector3(breast ? .205 : .14, breast ? .265 : .30, breast?.013:.022)); normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
       point.fromBufferAttribute(source.attributes.position, i).applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
-      if(breast)point.z=.285*Math.sqrt(Math.max(.04,1-(point.x/.37)**2-(point.y/.52)**2))+.028+point.z-(.012-Math.abs(x)*.34-row*.016);
+      if(breast)point.z=.285*Math.sqrt(Math.max(.04,1-(point.x/.37)**2-(point.y/.52)**2))+.013+point.z-(.012-Math.abs(x)*.34-row*.016);
       vertices.push(point.x, point.y, point.z); normals.push(normal.x, normal.y, normal.z);
     }
   }
@@ -293,9 +323,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'capePanel': return folded([[-.5, .5], [.5, .20], [.45, -.5], [-.15, -.09]], .08, .018);
     case 'feather': return feather();
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
-    case 'paperBody': return folded([[-.34, -.5], [.31, -.5], [.5, -.13], [.38, .31], [0, .5], [-.4, .29], [-.5, -.1]], .78, .13);
-    case 'paperEchoHead': return folded([[-.35,-.40],[.28,-.5],[.50,-.08],[.43,.33],[.26,.53],[-.29,.47],[-.50,.16]],.78,.13);
-    case 'paperQuillHead': return folded([[-.36,-.4],[.30,-.45],[.50,-.08],[.48,.29],[.61,.52],[.22,.38],[-.12,.42],[-.60,.58],[-.43,.1],[-.50,-.16]],.78,.13);
+    case 'paperBody': return paperOwlBody();
+    case 'paperEchoHead': return paperOwlHead();
+    case 'paperQuillHead': return paperOwlHead(true);
     case 'paperWing': return folded([[-.50, .43], [-.18, -.50], [.35, -.34], [.50, .36], [.12, .18]], .16, .14);
     case 'paperTail': return folded([[-.5, -.5], [0, -.26], [.5, -.5], [.27, .5], [-.27, .5]], .12, .07);
     case 'paperDisc': return folded([[-.48,.08],[-.37,.34],[-.12,.49],[.19,.45],[.41,.26],[.49,-.10],[.20,-.50],[-.23,-.43],[-.42,-.22]], .06, .023);
@@ -309,6 +339,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .16], [.50, .32], [.42, .46], [0, .5]]);
     case 'swiftBody': return polyhedron([[0,-.25,.13],[-.13,-.17,.05],[.13,-.17,.05],[-.16,.12,0],[.16,.12,0],[0,.24,.08],[0,-.08,-.29],[0,-.17,-.20],[0,.04,.20]],[[0,1,8],[1,3,8],[3,5,8],[5,4,8],[4,2,8],[2,0,8],[1,7,6,3],[3,6,5],[5,6,4],[4,6,7,2],[0,2,7,1]]);
     case 'swiftHead': return swiftHead();
+    case 'swiftTail': return polyhedron([[0,.09,.09],[-.09,.07,.03],[.09,.07,.03],[-.16,-.11,-.28],[.16,-.11,-.28],[0,-.03,-.19],[0,.022,-.12]],[[0,1,3,6],[0,6,4,2],[3,5,6],[4,6,5],[0,2,1],[1,2,4,5,3]],['#cda24d','#dfb65d','#386a65','#386a65','#bd964c','#b88b39']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
     case 'swiftWingR': return swiftWing();
     case 'paperBeak': return polyhedron([[-.065,-.025,0],[.065,-.025,0],[0,.035,.24],[0,.065,0],[0,-.04,.19]],[[0,3,2],[3,1,2],[0,2,4],[2,1,4],[0,4,1],[0,1,3]]);
@@ -522,17 +553,39 @@ export function characterEyeArc(kit: SceneKit, parent: THREE.Object3D, color: st
 }
 
 /** Stamp a thin ornamental relief onto a curved shell once, never per frame. */
-export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012): void {
+export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012, conformPaper=false): void {
   shell.parent!.updateWorldMatrix(true,true);mark.updateWorldMatrix(true,true);
   const ray=new THREE.Raycaster(),point=new THREE.Vector3(),inverse=new THREE.Matrix4();
   const bounds=new THREE.Box3().setFromObject(mark);
   mark.traverse(object=>{
     const mesh=object as THREE.Mesh;if(!mesh.isMesh)return;
-    const geometry=mesh.geometry.clone(),position=geometry.attributes.position;
+    let geometry=mesh.geometry.clone();
+    if(conformPaper) {
+      if(geometry.index){const flat=geometry.toNonIndexed();geometry.dispose();geometry=flat;}
+      // Broad folded face panels cross several planes of the paper head.
+      // Subdivide before projection so an interpolated triangle cannot cut
+      // through a ridge between its otherwise correctly fitted endpoints.
+      for(let level=0;level<2;level++){
+        const next=new THREE.BufferGeometry();
+        for(const [name,attribute] of Object.entries(geometry.attributes)){
+          const values:number[]=[];
+          for(let i=0;i<attribute.count;i+=3){
+            const a=Array.from({length:attribute.itemSize},(_,j)=>attribute.array[i*attribute.itemSize+j]);
+            const b=Array.from({length:attribute.itemSize},(_,j)=>attribute.array[(i+1)*attribute.itemSize+j]);
+            const c=Array.from({length:attribute.itemSize},(_,j)=>attribute.array[(i+2)*attribute.itemSize+j]);
+            const ab=a.map((v,j)=>(v+b[j])/2),bc=b.map((v,j)=>(v+c[j])/2),ca=c.map((v,j)=>(v+a[j])/2);
+            for(const v of [a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca])values.push(...v);
+          }
+          next.setAttribute(name,new THREE.Float32BufferAttribute(values,attribute.itemSize));
+        }
+        geometry.dispose();geometry=next;
+      }
+    }
+    const position=geometry.attributes.position;
     inverse.copy(mesh.matrixWorld).invert();
     for(let i=0;i<position.count;i++) {
       point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
-      const relief=Math.max(0,point.z-bounds.min.z);
+      const relief=conformPaper?0:Math.max(0,point.z-bounds.min.z);
       ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
       const hit=ray.intersectObject(shell,false)[0];
       if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}

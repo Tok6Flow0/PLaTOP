@@ -73,7 +73,7 @@ const portraits=await page.evaluate(async()=>{
   ambient.color.set(night?'#91a9c3':'#fff8ee');ambient.groundColor.set(night?'#292536':'#8c725a');ambient.intensity=night?.22:.42;
   key.color.set(night?'#ffc77e':'#fff2dd');key.intensity=night?1.65:2.5;
   key.position.set(...(night?[-2,3,3]:[-3,5,5]));
-  fill.color.set(night?'#819bce':'#dde8e1');fill.intensity=night?.35:.18;
+  fill.color.set(night?'#9eb8dd':'#dde8e1');fill.intensity=night?.48:.18;
   scene.environmentIntensity=night?.12:.32;wall.material.color.set(night?'#243441':'#b3a18b');
   const group=new THREE.Group();
   members.forEach((member,index)=>{

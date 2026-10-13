@@ -19,7 +19,8 @@ The reviewer received no requested score and no instructions to approve.
 | Starting models | 4.3/10 | 2.7/10 | D+ |
 | Pass 1 | 6.0/10 | 7.1/10 | C+ |
 | Pass 2 | 6.8/10 | 7.5/10 | B− |
-| Pass 3 | Pending | Pending | Pending |
+| Pass 3 | 7.4/10 | 7.9/10 | 7.7/10 — B |
+| Pass 4 | 7.6/10 | 7.9/10 | 7.8/10 — B |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 The requested acceptance threshold has not yet been met. Pass 1 restored the
@@ -35,6 +36,12 @@ bird's wing, reshapes the owl's facial discs and Beacon's speech-bubble face,
 and distinguishes cool dawn from amber sunset. Portrait exports are rendered
 at twice their final dimensions then downsampled; this does not affect live
 scene cost. All 252 tests and the production build pass for this submission.
+Pass 4 reshapes Scout and Keeper, thins the navy owl's feathers, joins the
+paper head and body volumes, adds Swift's swept tail, and keeps continuous
+robed faces attached during real gestures. All 253 tests and the build pass.
+The independent review still finds the paper construction uneven, HR cloaks
+too plain, and the intake cape insufficiently dimensional. Nighttime dark
+surfaces need more separation. The acceptance threshold remains unmet.
 
 ## Local-clock atmosphere
 
@@ -63,14 +70,21 @@ test suites were stopped during the samples.
 | Pass 2 night | 60.00 | 3.2 ms | 94 | 322,662 |
 | Pass 3 noon | 59.99 | 3.8 ms | 86 | 319,168 |
 | Pass 3 night | 60.00 | 3.8 ms | 86 | 319,168 |
+| Pass 4 noon | 59.80 | 1.8 ms | 86 | 324,476 |
+| Pass 4 night | 60.00 | 1.6 ms | 86 | 324,476 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
-cadence but do not show identical CPU cost, native WebKit performance, battery
+cadence; sample-to-sample submission variation means they do not establish
+identical CPU cost, native WebKit performance, battery
 life, or sustained thermal behavior. Those claims would need separate evidence.
 The extra portrait-only contact pass is baked offline and adds no live pass.
 Character meshes remain under 9,000 triangles each and within tested motor
 clearances. Grain textures and geometry are scene-owned and reused.
+
+At 390 × 844, the dark app has equal client/scroll widths of 390 pixels. Close
+zoom reveals the optional mist invitation, and both observer perspectives
+switch correctly. The tested desktop console reports no runtime errors.
 
 The dev-only `tools/graphics-lab.html` and `tools/clock-review.html?hour=23`
 provide repeatable performance and screenshot fixtures. They are not linked
