@@ -84,10 +84,37 @@ test('interact requires the agent-chosen gesture and named target, with no gestu
     { ...action, kind: 'work' }, { ...action, private: 'PRIVATE' }]) assert.throws(() => parseOfficeSnapshot({ actions: { 'hr-compass': invalid } }));
 });
 
+test('optional public journey choices are bounded, copied and preserved in snapshots', () => {
+  for (const pace of ['unhurried', 'steady', 'brisk']) for (const route of ['direct', 'roomy']) {
+    for (const motion of [{ pace }, { route }, { route, pace }]) {
+      const parsed = parseAction({ ...ACTION, motion });
+      assert.deepEqual(parsed.motion, motion); assert.notEqual(parsed.motion, motion);
+      const action = { id: '00000000-0000-4000-8000-000000000001', actorId: parsed.actorId, kind: parsed.kind, target: parsed.target, motion };
+      assert.deepEqual(parseOfficeSnapshot({ actions: { [action.actorId]: action } }).actions[action.actorId], action);
+    }
+  }
+  for (const motion of [{}, null, [], 'brisk', { pace: 99 }, { pace: 'PRIVATE' }, { route: 'random' },
+    { pace: 'steady', thought: 'PRIVATE' }, { speed: 100 }, { waypoints: [[0, 0]] }]) {
+    assert.throws(() => parseAction({ ...ACTION, motion }));
+    assert.throws(() => parseOfficeSnapshot({ actions: { 'bridge-jarvis': {
+      id: '00000000-0000-4000-8000-000000000001', actorId: 'bridge-jarvis', kind: 'work', motion,
+    } } }));
+  }
+  assert.throws(() => parseAction({ teamId: 'hr', kind: 'celebrate', motion: { pace: 'brisk' } }));
+  const input = { ...ACTION, motion: { pace: 'unhurried' } }, parsed = parseAction(input);
+  input.motion.pace = 'PRIVATE'; assert.deepEqual(parsed.motion, { pace: 'unhurried' });
+  let reads = 0;
+  const captured = parseAction({ ...ACTION, motion: { get pace() { return reads++ === 0 ? 'steady' : 'PRIVATE'; } } });
+  assert.equal(reads, 1); assert.deepEqual(captured.motion, { pace: 'steady' });
+  assert.deepEqual(parseOfficeCommand('action', ['merchant', 'walk_to', JSON.stringify({ target: ACTION.target, motion: { route: 'roomy' } })]).arguments.motion, { route: 'roomy' });
+});
+
 test('interactions preserve the chosen gesture in current private persistence and sanitized restart readback', async t => {
   const { root, request, client } = await fixture(t);
   for (const [place, gesture] of [['whiteboard', 'think'], ['cabinet', 'file'], ['lounge', 'wait']]) {
-    const snapshot = await requestAction({ teamId: 'hr', actorId: 'hr-lens', kind: 'interact', target: { officeId: 'hr', place }, gesture }, client);
+    const motion = { pace: 'unhurried', route: 'roomy' };
+    const snapshot = await requestAction({ teamId: 'hr', actorId: 'hr-lens', kind: 'interact', target: { officeId: 'hr', place }, gesture, motion }, client);
+    assert.deepEqual(snapshot.actions['hr-lens'].motion, motion);
     assert.equal(snapshot.actions['hr-lens'].gesture, gesture);
     assert.equal(snapshot.actions['hr-lens'].target.place, place);
     assert.match(snapshot.actions['hr-lens'].id, UUID);

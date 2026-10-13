@@ -109,6 +109,10 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
   assert.equal(action.inputSchema.additionalProperties, false);
   assert.deepEqual(action.inputSchema.properties.kind.enum, ['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave', 'interact']);
   assert.deepEqual(action.inputSchema.properties.gesture.enum, ['work', 'think', 'file', 'talk', 'wait']);
+  assert.deepEqual(action.inputSchema.properties.motion.properties.pace.enum, ['unhurried', 'steady', 'brisk']);
+  assert.deepEqual(action.inputSchema.properties.motion.properties.route.enum, ['direct', 'roomy']);
+  assert.equal(action.inputSchema.properties.motion.additionalProperties, false);
+  assert.equal(action.inputSchema.properties.motion.minProperties, 1);
   assert.deepEqual(action.inputSchema.properties.target.properties.place.enum, ['desk', 'door', 'lounge', 'whiteboard', 'cabinet']);
   assert.equal(decorate.inputSchema.properties.parts.maxItems, 24);
   assert.equal(decorate.inputSchema.properties.parts.items.additionalProperties, false);
@@ -117,7 +121,9 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
   assert.equal(arrived.structuredContent.actions['email-owl'].kind, 'arrive');
   assert.deepEqual(arrived.structuredContent.actions['email-owl'].target, { officeId: 'email', place: 'door' });
   for (const [place, gesture] of [['whiteboard', 'think'], ['cabinet', 'file'], ['lounge', 'talk'], ['desk', 'work'], ['door', 'wait']]) {
-    const interacted = (await request('tools/call', { name: 'platop_action', arguments: { teamId: 'email', kind: 'interact', target: { officeId: 'email', place }, gesture } })).result;
+    const motion = { pace: 'brisk', route: 'direct' };
+    const interacted = (await request('tools/call', { name: 'platop_action', arguments: { teamId: 'email', kind: 'interact', target: { officeId: 'email', place }, gesture, motion } })).result;
+    assert.deepEqual(interacted.structuredContent.actions['email-owl'].motion, motion);
     assert.equal(interacted.isError, false);
     assert.equal(interacted.structuredContent.actions['email-owl'].gesture, gesture);
     assert.equal(interacted.structuredContent.actions['email-owl'].target.place, place);

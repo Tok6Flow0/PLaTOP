@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
+import { ACTION_KINDS, ACTION_GESTURES, MOTION_PACES, MOTION_ROUTES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
 import { sanitizedSnapshot } from '../server/client.mjs';
 
@@ -107,6 +107,14 @@ export async function callPlatopMcp(name, args = {}) {
           if (args.gesture && JSON.stringify(actionProperties?.gesture?.enum) !== JSON.stringify(ACTION_GESTURES)) throw fail();
           if (args.target && !PLACES.slice(0, 3).includes(args.target.place)
             && !actionPlaces?.includes(args.target.place)) throw fail();
+          if (args.motion) {
+            const motionSchema = actionProperties?.motion;
+            if (motionSchema?.additionalProperties !== false) throw fail();
+            for (const [key, allowed] of [['pace', MOTION_PACES], ['route', MOTION_ROUTES]]) if (args.motion[key]) {
+              const advertised = motionSchema?.properties?.[key]?.enum;
+              if (!boundedEnum(advertised, allowed) || !advertised.includes(args.motion[key])) throw fail();
+            }
+          }
         }
         if (tools.has('platop_decorate') && JSON.stringify(tools.get('platop_decorate').inputSchema?.properties?.slot?.enum) !== JSON.stringify(DECOR_SLOTS)) throw fail();
         if (tools.has('platop_style') && JSON.stringify(tools.get('platop_style').inputSchema?.properties?.lighting?.properties?.mode?.enum) !== JSON.stringify(ROOM_LIGHT_MODES)) throw fail();
@@ -144,7 +152,8 @@ export async function callPlatopMcp(name, args = {}) {
         }
         if (name === 'platop_action') {
           const action = snapshot.actions?.[args.actorId];
-          if (!action || action.kind !== args.kind || action.gesture !== args.gesture || JSON.stringify(action.target) !== JSON.stringify(args.target)) throw fail();
+          if (!action || action.kind !== args.kind || action.gesture !== args.gesture || JSON.stringify(action.target) !== JSON.stringify(args.target)
+            || JSON.stringify(action.motion) !== JSON.stringify(args.motion)) throw fail();
         }
         if (name === 'platop_decorate') {
           const asset = snapshot.assets?.[args.teamId]?.[args.slot];
@@ -200,7 +209,7 @@ export async function callPlatopMcp(name, args = {}) {
 export async function main(args = process.argv.slice(2)) {
   const [command = 'status', ...rest] = args;
   if (['--help', '-h', 'help'].includes(command) && rest.length === 0) {
-    console.log('PLaTOP local MCP\n\n  node scripts/platop-mcp-client.mjs status\n  node scripts/platop-mcp-client.mjs set <team> <state>\n  node scripts/platop-mcp-client.mjs action <team> <kind> [<actor-target-and-gesture-json>]\n  node scripts/platop-mcp-client.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop-mcp-client.mjs style <team> <palette-and-lighting-json>\n\ninteract requires target and gesture; other kinds reject gesture. Only bounded public activity and office data are accepted; no files, URLs or commands.');
+    console.log('PLaTOP local MCP\n\n  node scripts/platop-mcp-client.mjs status\n  node scripts/platop-mcp-client.mjs set <team> <state>\n  node scripts/platop-mcp-client.mjs action <team> <kind> [<action-options-json>]\n  node scripts/platop-mcp-client.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop-mcp-client.mjs style <team> <palette-and-lighting-json>\n\ninteract requires target and gesture; other kinds reject gesture. Optional motion accepts pace (unhurried/steady/brisk) and/or route (direct/roomy); celebrate rejects motion. Only bounded public activity and office data are accepted; no files, URLs or commands.');
     return 0;
   }
   if (command === 'status' && rest.length === 0) {

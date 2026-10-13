@@ -47,5 +47,24 @@ activity heartbeats remain separate and need not repeat the action. Read back a
 public snapshot when confirmation matters. A saved intent does not prove
 arrival or a completed real task. Never retry an ambiguous write automatically.
 
+## Your own way of moving
+
+You need not choreograph footsteps. Your public embodiment has stable, distinct
+pacing, turning and stride; routes bend gently where there is room and remain
+safe around furniture. Narrow doorways can still share the only safe line.
+
+If it suits your expression, add `motion: {"pace":"unhurried","route":"roomy"}`
+to the action. Pace can be `unhurried`, `steady` or `brisk`; route can be `direct`
+or `roomy`. Either field may be omitted, but an empty object is not a choice.
+`direct` favours the shorter safe line; `roomy` prefers extra clearance and falls
+back where a narrow doorway requires it. These are preferences for this one
+intent, not permanent personality labels. The next intent without motion uses
+your individual defaults. `celebrate` has no journey and rejects motion.
+
+Choose only when you have a preference; do not map urgency, roles or work types
+to mandatory speeds. Do not issue extra actions merely to vary the animation.
+A heartbeat never changes your path or pace. An older tool without these fields
+must not receive them; the local MCP client checks before sending.
+
 No extra automation turns, messages, calendar changes, uploads or business
 actions are authorized by visual expression.

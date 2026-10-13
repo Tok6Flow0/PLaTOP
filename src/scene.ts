@@ -9,7 +9,7 @@ import { ActorContactBatch, freezeStaticAuthoredMeshes, SceneBatches } from './s
 import { FramePacer } from './scene/framePacing';
 import { FrameOutput } from './scene/frameOutput';
 import { enableFlatMappedWallSinglePass } from './scene/flatMappedWalls';
-import { OfficeMotor, OfficeNavigator, makeOfficeMap, WALK_SPEED } from './scene/officeNavigation';
+import { OfficeMotor, OfficeNavigator, makeOfficeMap } from './scene/officeNavigation';
 import { OfficeAssetsRenderer } from './scene/officeAssets';
 import { StudioEnvironment, StudioRoomFinishes, roomLightingFactor } from './scene/studioEnvironment';
 import { StaticContacts, actorContactHeight } from './scene/staticContacts';
@@ -645,7 +645,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       }
       const status: Activity = expression === 'rest' ? 'sleeping' : expression === 'idle' ? 'waiting' : 'active';
       const gesture = expression === 'work' || expression === 'think' || expression === 'file' || expression === 'talk' || expression === 'wait' ? expression : undefined;
-      const floating = actor.character.kind === 'swift' ? 0.18 * Math.min(1, motor.speed / WALK_SPEED) : 0;
+      const floating = actor.character.kind === 'swift' ? 0.18 * Math.min(1, motor.speed / motor.profile.speed) : 0;
       const cheer = expression === 'celebrate' ? Math.abs(Math.sin(motionTime * 7)) * motor.celebration * 0.08 : 0;
       // A paused view switch reveals the latest motor snapshot coherently; it
       // does not advance that snapshot or leave the contact at another place.
@@ -683,11 +683,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         // Authored locomotion stays synchronized to real travelled distance.
         const move = actor.actions?.Move;
         if (move) {
-          const rate = motor.speed / WALK_SPEED;
+          const duration = move.getClip().duration;
+          const rate = motor.speed / motor.profile.stride * duration;
           move.setEffectiveTimeScale(rate);
           if (actor.clip === 'Move') {
-            const duration = move.getClip().duration;
-            move.time = ((motor.distance / WALK_SPEED - delta * rate) % duration + duration) % duration;
+            move.time = ((motor.walkPhase / (Math.PI * 2) * duration - delta * rate) % duration + duration) % duration;
           }
         }
         if (actor.mixer && (status === 'active' || status === 'sleeping' || (actor.poseSettling ?? 0) > 0 || !!idleTeamId)) {

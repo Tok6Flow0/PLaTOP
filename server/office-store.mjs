@@ -53,9 +53,9 @@ export async function createOfficeStore({ localDirectory }) {
   return {
     snapshot,
     action(value) {
-      const { actorId, kind, target, gesture } = parseAction(value);
+      const { actorId, kind, target, gesture, motion } = parseAction(value);
       return update(candidate => {
-        candidate.actions[actorId] = { id: randomUUID(), actorId, kind, ...(target ? { target } : {}), ...(gesture ? { gesture } : {}) };
+        candidate.actions[actorId] = { id: randomUUID(), actorId, kind, ...(target ? { target } : {}), ...(gesture ? { gesture } : {}), ...(motion ? { motion } : {}) };
         return true;
       });
     },

@@ -53,7 +53,13 @@ The local token and state stay in ignored `.local/`. Never display or copy the t
 
 Agents choose their office's visual personality. Use a single intent when it suits the current authorized work; do not narrate each animation frame or schedule extra chat turns for movement. Activity reporting and avatar expression are independent: an active heartbeat does not request movement, and walking or leaving never starts or stops real work. Choose a gesture yourself, or choose none. Do not fabricate a holiday, task summary, work result or chat state to justify an animation. Read [agent expression](references/agent-expression.md) only when choosing a visual intent; there is no task classifier, hidden reasoning hook or rigid workflow mapping.
 
-`platop_action` accepts `{teamId, actorId?, kind, target?, gesture?}`. Omit `actorId` for the team's primary character; an explicit public character ID must belong to that team. Kinds are `walk_to`, `work`, `rest`, `celebrate`, `arrive`, `leave`, `interact`. Named target places are `desk`, `door`, `lounge`, `whiteboard`, `cabinet`, with a public `officeId`. `walk_to` requires a target; `interact` requires a target and `gesture: work|think|file|talk|wait`. Other kinds reject gesture. `arrive` defaults to the owner's door. A visitor uses the other office's lounge rather than occupying its assigned chair. `work` and `rest` return to the assigned desk; `leave` keeps the avatar absent until `arrive`. Send an intent once when your choice changes; the scene owns routing and animation. Heartbeats do not reissue actions. A failed or unconfirmed write must not be retried automatically.
+`platop_action` accepts `{teamId, actorId?, kind, target?, gesture?, motion?}`. Omit `actorId` for the team's primary character; an explicit public character ID must belong to that team. Kinds are `walk_to`, `work`, `rest`, `celebrate`, `arrive`, `leave`, `interact`. Named target places are `desk`, `door`, `lounge`, `whiteboard`, `cabinet`, with a public `officeId`. `walk_to` requires a target; `interact` requires a target and `gesture: work|think|file|talk|wait`. Other kinds reject gesture. `arrive` defaults to the owner's door. A visitor uses the other office's lounge rather than occupying its assigned chair. `work` and `rest` return to the assigned desk; `leave` keeps the avatar absent until `arrive`. Send an intent once when your choice changes; the scene owns routing and animation. Heartbeats do not reissue actions. A failed or unconfirmed write must not be retried automatically.
+
+Your embodiment already has individual, stable movement traits. Optionally set
+`motion` with `pace: unhurried|steady|brisk` and/or `route: direct|roomy` on one
+journey. Omit it to use your individual defaults. `celebrate` rejects motion.
+These preferences do not select a destination, authorize work or create an
+automatic routine. Use them only when advertised by the current tool.
 
 Activity states never choose a route or a work/sleep pose; `rest` explicitly
 chooses sleeping. A confirmed current intent can move the avatar even while
@@ -62,7 +68,7 @@ interaction gestures. Offline scenes preserve the last position and presence. On
 load, the scene restores the last chosen place and presence without replaying
 the journey; this is not evidence that a historical journey completed.
 
-Use the new gesture and place vocabulary only when the available tool advertises
+Use the new gesture, place and motion vocabulary only when the available tool advertises
 it. If the host's schema is older and no call has been attempted, the bounded
 local MCP client can discover the current server's capabilities. It rejects
 unsupported intents before writing. An ambiguous write still stops without a

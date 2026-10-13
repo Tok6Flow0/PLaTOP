@@ -7,7 +7,8 @@ export interface TeamState { teamId: string; state: Activity; updatedAt: string 
 export type OfficeActionKind = 'walk_to' | 'work' | 'rest' | 'celebrate' | 'arrive' | 'leave' | 'interact';
 export type OfficePlace = 'desk' | 'door' | 'lounge' | 'whiteboard' | 'cabinet';
 export type OfficeGesture = 'work' | 'think' | 'file' | 'talk' | 'wait';
-export interface OfficeAction { id: string; actorId: string; kind: OfficeActionKind; target?: { officeId: string; place: OfficePlace }; gesture?: OfficeGesture; }
+export interface OfficeMotion { pace?: 'unhurried' | 'steady' | 'brisk'; route?: 'direct' | 'roomy'; }
+export interface OfficeAction { id: string; actorId: string; kind: OfficeActionKind; target?: { officeId: string; place: OfficePlace }; gesture?: OfficeGesture; motion?: OfficeMotion; }
 export type DecorSlot = 'desk' | 'shelf' | 'wall' | 'floor' | 'festive';
 export type DecorShape = 'box' | 'sphere' | 'cylinder' | 'cone' | 'torus' | 'capsule' | 'leaf' | 'arch' | 'vase' | 'cushion' | 'dome';
 export type DecorFinish = 'matte' | 'ceramic' | 'wood' | 'metal' | 'fabric' | 'stone' | 'lacquer';

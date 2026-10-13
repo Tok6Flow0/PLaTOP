@@ -4,12 +4,13 @@ import { readFile } from 'node:fs/promises';
 import ts from 'typescript';
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { ACTOR_IDS } from '../server/office-protocol.mjs';
 
 const source = await readFile(new URL('../src/scene/officeNavigation.ts', import.meta.url), 'utf8');
 const javascript = ts.transpileModule(source, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 },
 }).outputText;
-const { OfficeNavigator, OfficeMotor, makeOfficeMap, angleDifference, TURN_SPEED, WALK_ACCELERATION, WALK_SPEED } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+const { OfficeNavigator, OfficeMotor, makeOfficeMap, movementProfile, angleDifference } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
 const modules = new Map();
 async function loadScene(relative) {
   const file = new URL(`../src/${relative}`, import.meta.url);
@@ -67,6 +68,90 @@ function fixture({ chair = false } = {}) {
 }
 function run(motor, limit = 4000) { for (let index = 0; index < limit && motor.pending; index++) motor.update(1 / 30); assert.equal(motor.pending, false); }
 
+test('all sixteen public identities have stable individual pacing, turning, stride and path preferences', () => {
+  const profiles = ACTOR_IDS.map(id => movementProfile(id));
+  for (const field of ['speed', 'acceleration', 'turnSpeed', 'stride', 'phase', 'lateral']) {
+    assert.equal(new Set(profiles.map(profile => profile[field])).size, ACTOR_IDS.length, field);
+  }
+  assert.equal(new Set(profiles.map(profile => profile.side)).size, 2);
+  for (const id of [...ACTOR_IDS].reverse()) {
+    const profile = movementProfile(id);
+    assert.deepEqual(profile, profiles[ACTOR_IDS.indexOf(id)], 'construction order does not change identity');
+    assert.equal(Object.isFrozen(profile), true);
+    assert.ok(movementProfile(id, { pace: 'unhurried' }).speed < profile.speed);
+    assert.ok(movementProfile(id, { pace: 'brisk' }).speed > profile.speed);
+    assert.deepEqual(movementProfile(id, { pace: 'steady' }), profile);
+  }
+});
+
+test('the same destination permits distinct deterministic safe lines without changing the endpoint', () => {
+  const { navigator } = fixture();
+  for (const route of [undefined, 'roomy', 'direct']) {
+    const routes = ACTOR_IDS.map(id => navigator.route([-4, 0], [4, 0], .4, movementProfile(id, { route })));
+    if (route !== 'direct') assert.equal(new Set(routes.map(path => JSON.stringify(path))).size, ACTOR_IDS.length);
+    routes.forEach((path, index) => {
+      assert.ok(path?.length);
+      assert.deepEqual(path.at(-1), [4, 0]);
+      assert.deepEqual(path, navigator.route([-4, 0], [4, 0], .4, movementProfile(ACTOR_IDS[index], { route })));
+      let previous = [-4, 0];
+      for (const next of path) { assert.equal(navigator.segmentClear(previous, next, .4), true); previous = next; }
+      const length = path.reduce((sum, point, i) => sum + Math.hypot(point[0] - (i ? path[i - 1][0] : -4), point[1] - (i ? path[i - 1][1] : 0)), 0);
+      assert.ok(length < 12, 'variation must not turn a short journey into a tour');
+    });
+  }
+});
+
+test('roomy preference falls back through a narrow corridor instead of clipping or refusing a safe journey', () => {
+  const navigator = new OfficeNavigator({ zones: [{ bounds: [-5, -.45, 5, .45], floorY: 0 }],
+    blockers: [], waypoints: [], anchors: [], exit: [4, 0], floorY: 0 });
+  for (const id of ACTOR_IDS) {
+    const path = navigator.route([-4, 0], [4, 0], .4, movementProfile(id, { route: 'roomy' }));
+    assert.deepEqual(path, [[4, 0]], 'tight space legitimately shares the only safe line');
+  }
+  assert.deepEqual(navigator.route([-4, 0], [4, 0], .4, movementProfile('actor', { route: 'direct' })), [[4, 0]]);
+});
+
+test('chosen pace survives heartbeats and replan, restores without replay, and resets only on the next intent', () => {
+  const { motor } = fixture();
+  const action = { id: 'chosen', actorId: 'actor', kind: 'interact', target: { officeId: 'other', place: 'whiteboard' },
+    gesture: 'think', motion: { pace: 'unhurried', route: 'roomy' } };
+  motor.apply(action); motor.update(.1);
+  const profile = motor.profile, pose = [motor.x, motor.z, motor.walkPhase];
+  for (const status of ['active', 'waiting', 'sleeping', 'unknown']) motor.fallback(status);
+  motor.update(0); assert.equal(motor.apply(action), false);
+  assert.deepEqual([motor.x, motor.z, motor.walkPhase], pose); assert.equal(motor.profile, profile);
+  motor.replan(); assert.equal(motor.profile, profile); run(motor);
+  const restored = fixture().motor;
+  assert.equal(restored.restore(action), true); assert.deepEqual(restored.profile, profile);
+  assert.equal(restored.pending, false); assert.deepEqual([restored.x, restored.z], [motor.x, motor.z]);
+  assert.equal(motor.apply({ id: 'invalid', actorId: 'actor', kind: 'walk_to', target: { officeId: 'missing', place: 'door' }, motion: { pace: 'brisk' } }), false);
+  assert.equal(motor.profile, profile, 'invalid destination does not change current pacing');
+  motor.apply({ id: 'next', actorId: 'actor', kind: 'work' });
+  assert.deepEqual(motor.profile, movementProfile('actor')); run(motor);
+});
+
+test('all paces carry momentum through gentle waypoints and brake at the final destination', () => {
+  for (const actorId of ACTOR_IDS) for (const pace of ['unhurried', 'steady', 'brisk']) {
+    const { navigator, home } = fixture();
+    navigator.map.blockers = [];
+    const motor = new OfficeMotor(actorId, 'home', .4, navigator, { ...home, actorId, facing: Math.PI / 2 });
+    motor.apply({ id: 'journey', actorId, kind: 'walk_to', target: { officeId: 'other', place: 'lounge' }, motion: { pace } });
+    let movingCorners = 0;
+    for (let frame = 0; frame < 4000 && motor.pending; frame++) {
+      const corner = motor.pathIndex, speed = motor.speed, heading = motor.heading, from = [motor.x, motor.z];
+      motor.update(1 / 30);
+      assert.ok(motor.speed <= motor.profile.speed + 1e-9);
+      assert.ok(motor.speed - speed <= motor.profile.acceleration / 30 + 1e-9);
+      assert.ok(Math.abs(angleDifference(motor.heading, heading)) <= motor.profile.turnSpeed / 30 + 1e-9);
+      assert.equal(navigator.segmentClear(from, [motor.x, motor.z], .4), true);
+      if (motor.pathIndex !== corner && motor.pending && motor.speed > motor.profile.speed * .15) movingCorners++;
+    }
+    assert.ok(movingCorners >= 3, 'intermediate waypoints are not repeated full stops');
+    assert.equal(motor.pending, false); assert.equal(motor.speed, 0);
+    assert.deepEqual([motor.x, motor.z], [4, 0]);
+  }
+});
+
 test('switching to reduced motion settles the current chosen route once without replaying it', () => {
   const { motor, navigator } = fixture();
   const action = { id: 'current', actorId: 'actor', kind: 'interact', target: { officeId: 'other', place: 'whiteboard' }, gesture: 'think' };
@@ -101,8 +186,8 @@ test('motors cap speed and turn rate, stop at target, and never circle their cha
   for (let index = 0; index < 4000 && motor.pending; index++) {
     const previous = [motor.x, motor.z], heading = motor.heading;
     motor.update(1 / 30);
-    assert.ok(motor.speed <= WALK_SPEED + 1e-9);
-    assert.ok(Math.abs(angleDifference(motor.heading, heading)) <= TURN_SPEED / 30 + 1e-9);
+    assert.ok(motor.speed <= motor.profile.speed + 1e-9);
+    assert.ok(Math.abs(angleDifference(motor.heading, heading)) <= motor.profile.turnSpeed / 30 + 1e-9);
     assert.equal(navigator.segmentClear(previous, [motor.x, motor.z], motor.radius), true);
   }
   assert.equal(motor.pending, false);
@@ -342,6 +427,28 @@ test('three-member side places use their real floor-height homes beside a full-w
     }
     assert.ok(desks[1].position[1] < z0, `${officeId} center resident remains behind the desk`);
     assert.ok(blockers.some(blocker => blocker.deskIndex === 1), `${officeId} center resident retains a real chair`);
+  }
+});
+
+test('all sixteen bodies retain clearance and settle with every chosen pace and route in furnished rooms', async t => {
+  const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
+  t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
+  navigator.setDecorations(Object.fromEntries(teams.map(team => [team.id, ['plant', 'lamp', 'art']])));
+  for (const [index, team] of teams.entries()) for (const character of team.members) {
+    const radius = character.kind === 'owl' ? .7 : character.kind === 'swift' ? .6 : .61;
+    const home = navigator.desk(character.id), target = { officeId: teams[(index + 1) % teams.length].id, place: 'whiteboard' };
+    for (const pace of ['unhurried', 'steady', 'brisk']) for (const route of ['direct', 'roomy']) {
+      const motor = new OfficeMotor(character.id, team.id, radius, navigator, home);
+      assert.equal(motor.apply({ id: 'chosen', actorId: character.id, kind: 'walk_to', target, motion: { pace, route } }), true);
+      for (let frame = 0; frame < 4000 && motor.pending; frame++) {
+        const from = [motor.x, motor.z]; motor.update(1 / 30);
+        const chairException = navigator.pointClear(from, radius) ? undefined : home;
+        assert.equal(navigator.segmentClear(from, [motor.x, motor.z], radius, chairException), true,
+          `${character.id} ${pace}/${route} retains actual body clearance`);
+      }
+      assert.equal(motor.pending, false); assert.equal(motor.blocked, false);
+      assert.deepEqual([motor.x, motor.z], navigator.anchor(target.officeId, target.place).position);
+    }
   }
 });
 

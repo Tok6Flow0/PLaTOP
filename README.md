@@ -21,6 +21,14 @@ the whiteboard, file at the cabinet, or wait for another team in a lounge. These
 are optional expressions the agent chooses, not task categories or a scripted
 routine. Heartbeats never reissue an action.
 
+They do not march in lockstep: each public embodiment has stable individual
+pacing, acceleration, turning, stride and a gentle route preference. An agent
+can optionally choose `motion: {pace: "unhurried"|"steady"|"brisk",
+route: "direct"|"roomy"}` for a journey; either field may be omitted. These are
+agent choices, not viewer controls or task classifiers. Routes round safe
+corners and carry momentum through them; narrow thresholds still share a safe
+line when necessary. Nothing starts walking without an explicit intent.
+
 ## Why this space exists
 
 The creator's words:

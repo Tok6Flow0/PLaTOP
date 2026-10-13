@@ -13,6 +13,8 @@ export const ACTOR_IDS = Object.freeze(Object.values(TEAM_ACTORS).flat());
 export const ACTION_KINDS = Object.freeze(['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave', 'interact']);
 export const PLACES = Object.freeze(['desk', 'door', 'lounge', 'whiteboard', 'cabinet']);
 export const ACTION_GESTURES = Object.freeze(['work', 'think', 'file', 'talk', 'wait']);
+export const MOTION_PACES = Object.freeze(['unhurried', 'steady', 'brisk']);
+export const MOTION_ROUTES = Object.freeze(['direct', 'roomy']);
 export const DECOR_SLOTS = Object.freeze(['desk', 'shelf', 'wall', 'floor', 'festive']);
 export const DECOR_SHAPES = Object.freeze(['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'leaf', 'arch', 'vase', 'cushion', 'dome']);
 export const DECOR_FINISHES = Object.freeze(['matte', 'ceramic', 'wood', 'metal', 'fabric', 'stone', 'lacquer']);
@@ -72,7 +74,7 @@ export function parseRoomStyle(value) {
 }
 
 export function parseAction(value) {
-  if (!exact(value, ['teamId', 'actorId', 'kind', 'target', 'gesture'], ['teamId', 'kind'])) throw invalid();
+  if (!exact(value, ['teamId', 'actorId', 'kind', 'target', 'gesture', 'motion'], ['teamId', 'kind'])) throw invalid();
   const { teamId, kind, actorId: suppliedActor } = value;
   if (!TEAM_IDS.includes(teamId) || !ACTION_KINDS.includes(kind)) throw invalid();
   const actorId = suppliedActor === undefined ? TEAM_ACTORS[teamId][0] : suppliedActor;
@@ -91,7 +93,18 @@ export function parseAction(value) {
     gesture = value.gesture;
     if (!Object.hasOwn(value, 'gesture') || !ACTION_GESTURES.includes(gesture)) throw invalid();
   } else if (Object.hasOwn(value, 'gesture')) throw invalid();
-  return { teamId, actorId, kind, ...(target ? { target } : {}), ...(gesture ? { gesture } : {}) };
+  let motion;
+  if (Object.hasOwn(value, 'motion')) {
+    const inputMotion = value.motion;
+    if (kind === 'celebrate' || !exact(inputMotion, ['pace', 'route'], []) || !Object.keys(inputMotion).length) throw invalid();
+    motion = {};
+    for (const [key, allowed] of [['pace', MOTION_PACES], ['route', MOTION_ROUTES]]) if (Object.hasOwn(inputMotion, key)) {
+      const choice = inputMotion[key];
+      if (!allowed.includes(choice)) throw invalid();
+      motion[key] = choice;
+    }
+  }
+  return { teamId, actorId, kind, ...(target ? { target } : {}), ...(gesture ? { gesture } : {}), ...(motion ? { motion } : {}) };
 }
 
 function vector(value, fallback, minimum, maximum) {
@@ -133,10 +146,10 @@ export function parseOfficeSnapshot(value) {
     if (!record(value.actions) || Object.keys(value.actions).length > ACTOR_IDS.length) throw invalid();
     output.actions = Object.fromEntries(Object.entries(value.actions).map(([actorId, action]) => {
       const teamId = TEAM_IDS.find(team => TEAM_ACTORS[team].includes(actorId));
-      if (!teamId || !exact(action, ['id', 'actorId', 'kind', 'target', 'gesture'], ['id', 'actorId', 'kind'])
+      if (!teamId || !exact(action, ['id', 'actorId', 'kind', 'target', 'gesture', 'motion'], ['id', 'actorId', 'kind'])
         || action.actorId !== actorId || !uuid(action.id)) throw invalid();
-      const parsed = parseAction({ teamId, actorId, kind: action.kind, ...(Object.hasOwn(action, 'target') ? { target: action.target } : {}), ...(Object.hasOwn(action, 'gesture') ? { gesture: action.gesture } : {}) });
-      return [actorId, { id: action.id, actorId, kind: parsed.kind, ...(parsed.target ? { target: parsed.target } : {}), ...(parsed.gesture ? { gesture: parsed.gesture } : {}) }];
+      const parsed = parseAction({ teamId, actorId, kind: action.kind, ...(Object.hasOwn(action, 'target') ? { target: action.target } : {}), ...(Object.hasOwn(action, 'gesture') ? { gesture: action.gesture } : {}), ...(Object.hasOwn(action, 'motion') ? { motion: action.motion } : {}) });
+      return [actorId, { id: action.id, actorId, kind: parsed.kind, ...(parsed.target ? { target: parsed.target } : {}), ...(parsed.gesture ? { gesture: parsed.gesture } : {}), ...(parsed.motion ? { motion: parsed.motion } : {}) }];
     }));
   }
   if (Object.hasOwn(value, 'assets')) {

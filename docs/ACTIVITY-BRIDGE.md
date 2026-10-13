@@ -132,7 +132,7 @@ Current office state is atomically saved to ignored `.local/office.json` with
 the limit leaves the previous state intact. There is no history, transcript or arbitrary
 metadata field. Public character IDs must belong to the supplied team.
 
-- `platop_action`: `{teamId, actorId?, kind, target?, gesture?}`. Kinds are
+- `platop_action`: `{teamId, actorId?, kind, target?, gesture?, motion?}`. Kinds are
   `walk_to`, `work`, `rest`, `celebrate`, `arrive`, `leave`, `interact`. Named
   targets are `{officeId, place}` with a public team ID and `desk`, `door`,
   `lounge`, `whiteboard` or `cabinet`. `walk_to` and `interact` require a target;
@@ -141,6 +141,16 @@ metadata field. Public character IDs must belong to the supplied team.
   other kinds reject targets. Each accepted intent has a fresh server UUID;
   the motor consumes an ID once, owns routing and turn easing, and keeps
   departed characters absent until arrival.
+  Optional `motion` accepts `pace: unhurried|steady|brisk` and/or
+  `route: direct|roomy` for this intent; empty objects, extra fields and motion
+  on `celebrate` are rejected. Omission uses stable per-public-actor defaults,
+  independent of activity reports. No speed numbers or arbitrary waypoints are
+  accepted. The client requires advertised choices before writing and an exact
+  matching motion receipt. Old servers still accept old actions; unsupported
+  motion fails before `tools/call`, without a retry or silent downgrade.
+  Safe path shaping and individual stride happen only after an explicit intent;
+  heartbeats do not replan. Roomier paths fall back to ordinary body clearance
+  where necessary. Destinations and chair ownership remain exact.
 - `platop_decorate`: `{teamId, slot, parts}` replaces one of `desk`, `shelf`,
   `wall`, `floor`, `festive`. Empty parts clears the slot. Up to 24 normalized
   parts (`box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`, `arch`,

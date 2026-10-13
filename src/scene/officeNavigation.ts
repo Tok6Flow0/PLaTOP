@@ -1,4 +1,4 @@
-import type { Activity, Decoration, OfficeAction, OfficeGesture } from '../types';
+import type { Activity, Decoration, OfficeAction, OfficeGesture, OfficeMotion } from '../types';
 
 export type FloorPoint = readonly [number, number];
 export type NavigationBounds = readonly [number, number, number, number];
@@ -80,6 +80,25 @@ export const WALK_SPEED = 0.85;
 export const WALK_ACCELERATION = 1.7;
 export const TURN_SPEED = 2.6;
 export const WALK_STRIDE = 0.6;
+
+export interface MovementProfile {
+  speed: number; acceleration: number; turnSpeed: number; stride: number;
+  phase: number; lateral: number; side: number; route: 'natural' | 'direct' | 'roomy';
+}
+
+/** Identity affects how an already-chosen journey looks, never whether one
+ * happens. No random timer, status classifier, role assignment or private ID. */
+export function movementProfile(actorId: string, choice: OfficeMotion = {}): Readonly<MovementProfile> {
+  let seed = 2166136261;
+  for (const character of actorId) seed = Math.imul(seed ^ character.charCodeAt(0), 16777619) >>> 0;
+  const sample = () => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed / 4294967296; };
+  const pace = choice.pace === 'unhurried' ? .74 : choice.pace === 'brisk' ? 1.24 : 1;
+  return Object.freeze({ speed: WALK_SPEED * (.84 + .34 * sample()) * pace,
+    acceleration: WALK_ACCELERATION * (.76 + .45 * sample()) * pace,
+    turnSpeed: TURN_SPEED * (.80 + .35 * sample()), stride: WALK_STRIDE * (.80 + .35 * sample()),
+    phase: sample() * Math.PI * 2, lateral: .10 + .16 * sample(), side: sample() < .5 ? -1 : 1,
+    route: choice.route ?? 'natural' });
+}
 
 const distance = (a: FloorPoint, b: FloorPoint): number => Math.hypot(a[0] - b[0], a[1] - b[1]);
 const inBounds = (x: number, z: number, b: NavigationBounds, margin = 0): boolean =>
@@ -164,7 +183,17 @@ export class OfficeNavigator {
     return this.map.anchors.find(anchor => anchor.officeId === officeId && anchor.place === place);
   }
 
-  route(from: FloorPoint, to: FloorPoint, radius: number): FloorPoint[] | null {
+  route(from: FloorPoint, to: FloorPoint, radius: number, profile?: Readonly<MovementProfile>): FloorPoint[] | null {
+    // More elbow room is a preference, not permission to abandon a reachable
+    // doorway. The certified body clearance remains the minimum in all cases.
+    let clearance = profile?.route === 'roomy' ? radius + .10 : radius;
+    let path = this.shortestRoute(from, to, clearance, profile);
+    if (!path && clearance > radius) { clearance = radius; path = this.shortestRoute(from, to, clearance, profile); }
+    if (!path || !profile || !path.length) return path;
+    return this.shapeRoute(from, path, clearance, profile);
+  }
+
+  private shortestRoute(from: FloorPoint, to: FloorPoint, radius: number, profile?: Readonly<MovementProfile>): FloorPoint[] | null {
     if (this.segmentClear(from, to, radius)) return distance(from, to) < EPSILON ? [] : [to];
     if (!this.pointClear(from, radius) || !this.pointClear(to, radius)) return null;
     const key = radius.toFixed(4);
@@ -197,8 +226,11 @@ export class OfficeNavigator {
       if (best < 0 || !Number.isFinite(costs[best])) return null;
       if (best === finish) break;
       visited[best] = true;
-      for (const [next, length] of edges[best]) if (costs[best] + length < costs[next]) {
-        costs[next] = costs[best] + length; previous[next] = best;
+      for (const [next, length] of edges[best]) {
+        const side = ((to[0] - from[0]) * ((points[best][1] + points[next][1]) / 2 - from[1])
+          - (to[1] - from[1]) * ((points[best][0] + points[next][0]) / 2 - from[0])) / Math.max(EPSILON, distance(from, to));
+        const cost = length * (1 + (profile && profile.route !== 'direct' ? .06 * profile.side * Math.tanh(side) : 0));
+        if (costs[best] + cost < costs[next]) { costs[next] = costs[best] + cost; previous[next] = best; }
       }
     }
     if (!Number.isFinite(costs[finish])) return null;
@@ -208,6 +240,49 @@ export class OfficeNavigator {
       path.push(points[index]);
     }
     return path.reverse();
+  }
+
+  /** Gentle individual lines and rounded corners, planned once per intent.
+   * Every proposed segment is certified; tight spaces keep the shared safe line. */
+  private shapeRoute(from: FloorPoint, path: FloorPoint[], radius: number, profile: Readonly<MovementProfile>): FloorPoint[] {
+    const bowed: FloorPoint[] = [from];
+    let previous = from;
+    for (const target of path) {
+      const length = distance(previous, target);
+      if (length > 1.4 && profile.route !== 'direct') {
+        const bend = profile.lateral * profile.side * (profile.route === 'roomy' ? 1.25 : 1);
+        for (const factor of [1, .5]) {
+          const samples: FloorPoint[] = [.25, .5, .75, 1].map(t => [
+            previous[0] + (target[0] - previous[0]) * t - (target[1] - previous[1]) / length * Math.sin(Math.PI * t) * bend * factor,
+            previous[1] + (target[1] - previous[1]) * t + (target[0] - previous[0]) / length * Math.sin(Math.PI * t) * bend * factor,
+          ]);
+          samples[samples.length - 1] = target;
+          if (samples.every((point, i) => this.segmentClear(i ? samples[i - 1] : previous, point, radius))) {
+            bowed.push(...samples.slice(0, -1)); break;
+          }
+        }
+      }
+      bowed.push(target); previous = target;
+    }
+    const rounded: FloorPoint[] = [from];
+    for (let i = 1; i < bowed.length - 1; i++) {
+      const a = bowed[i - 1], b = bowed[i], c = bowed[i + 1];
+      const incoming = distance(a, b), outgoing = distance(b, c), cut = Math.min(.24, incoming * .25, outgoing * .25);
+      if (cut < .015) { rounded.push(b); continue; }
+      const entry: FloorPoint = [b[0] + (a[0] - b[0]) * cut / incoming, b[1] + (a[1] - b[1]) * cut / incoming];
+      const exit: FloorPoint = [b[0] + (c[0] - b[0]) * cut / outgoing, b[1] + (c[1] - b[1]) * cut / outgoing];
+      const curve: FloorPoint[] = [0, .25, .5, .75, 1].map(t => [
+        (1 - t) ** 2 * entry[0] + 2 * t * (1 - t) * b[0] + t * t * exit[0],
+        (1 - t) ** 2 * entry[1] + 2 * t * (1 - t) * b[1] + t * t * exit[1],
+      ]);
+      if (curve.every((point, index) => this.segmentClear(index ? curve[index - 1] : rounded[rounded.length - 1], point, radius))
+        && this.segmentClear(exit, c, radius)) rounded.push(...curve);
+      else rounded.push(b);
+    }
+    rounded.push(path[path.length - 1]);
+    // Exact destinations matter for seating and prop interaction; no random
+    // endpoint jitter or route changes from an activity heartbeat.
+    return rounded.slice(1).filter((point, index) => distance(point, rounded[index]) > EPSILON);
   }
 }
 
@@ -225,6 +300,7 @@ export class OfficeMotor {
   manual = false;
   celebration = 0;
   gesture: OfficeGesture | undefined;
+  profile: Readonly<MovementProfile>;
   private elapsedCelebration = 0;
   private handledId: string | undefined;
   private path: RoutePoint[] = [];
@@ -239,12 +315,13 @@ export class OfficeMotor {
     readonly navigator: OfficeNavigator, readonly home: OfficeAnchor) {
     this.x = home.position[0]; this.z = home.position[1];
     this.y = home.seatHeight ?? home.floorY; this.heading = home.facing ?? 0;
+    this.profile = movementProfile(actorId);
     this.segmentStart = { x: this.x, z: this.z, y: this.y };
   }
 
   get moving(): boolean { return this.speed > 0.025; }
   get pending(): boolean { return this.pathIndex < this.path.length || this.mode === 'celebrate' || (this.finalFacing !== undefined && Math.abs(angleDifference(this.finalFacing, this.heading)) > EPSILON); }
-  get walkPhase(): number { return this.distance / WALK_STRIDE * Math.PI * 2; }
+  get walkPhase(): number { return this.distance / this.profile.stride * Math.PI * 2 + this.profile.phase; }
   get floorY(): number { return this.navigator.floorAt([this.x, this.z]); }
   get officeId(): string | undefined { return this.navigator.officeAt([this.x, this.z]); }
 
@@ -280,6 +357,7 @@ export class OfficeMotor {
         || !this.navigator.route(start, goal, this.radius)) return false;
     }
     this.handledId = action.id; this.manual = true;
+    this.profile = movementProfile(this.actorId, action.motion);
     this.path = []; this.pathIndex = 0; this.speed = 0; this.distance = 0;
     this.destination = target; this.finalMode = mode; this.finalGesture = gesture;
     this.finalFacing = target?.facing; this.blocked = false;
@@ -298,19 +376,20 @@ export class OfficeMotor {
     if (action.actorId !== this.actorId || action.id === this.handledId) return false;
     this.handledId = action.id;
     this.manual = true;
+    const profile = movementProfile(this.actorId, action.motion);
     if (action.kind === 'arrive') {
       if (!this.present) {
         this.x = this.navigator.map.exit[0]; this.z = this.navigator.map.exit[1];
         this.y = this.navigator.map.floorY; this.present = true;
       }
       const target = action.target ?? { officeId: this.ownerOfficeId, place: 'desk' as const };
-      return this.goTo(this.resolve(target), target.place === 'desk' && target.officeId === this.ownerOfficeId ? 'work' : 'idle');
+      return this.goTo(this.resolve(target), target.place === 'desk' && target.officeId === this.ownerOfficeId ? 'work' : 'idle', undefined, profile);
     }
     if (!this.present) return false;
-    if (action.kind === 'walk_to') return this.goTo(action.target ? this.resolve(action.target) : undefined, 'idle');
-    if (action.kind === 'interact') return action.gesture !== undefined && this.goTo(action.target ? this.resolve(action.target) : undefined, 'interact', action.gesture);
-    if (action.kind === 'leave') return this.goTo({ officeId: '', place: 'door', position: this.navigator.map.exit, floorY: this.navigator.map.floorY }, 'away');
-    if (action.kind === 'work' || action.kind === 'rest') return this.goTo(this.home, action.kind);
+    if (action.kind === 'walk_to') return this.goTo(action.target ? this.resolve(action.target) : undefined, 'idle', undefined, profile);
+    if (action.kind === 'interact') return action.gesture !== undefined && this.goTo(action.target ? this.resolve(action.target) : undefined, 'interact', action.gesture, profile);
+    if (action.kind === 'leave') return this.goTo({ officeId: '', place: 'door', position: this.navigator.map.exit, floorY: this.navigator.map.floorY }, 'away', undefined, profile);
+    if (action.kind === 'work' || action.kind === 'rest') return this.goTo(this.home, action.kind, undefined, profile);
     this.path = []; this.pathIndex = 0; this.speed = 0;
     this.gesture = undefined; this.finalGesture = undefined; this.destination = undefined;
     this.mode = 'celebrate'; this.finalMode = 'idle'; this.finalFacing = undefined; this.elapsedCelebration = 0;
@@ -331,9 +410,10 @@ export class OfficeMotor {
     }
   }
 
-  private goTo(target: OfficeAnchor | undefined, mode: MotorMode, gesture?: OfficeGesture): boolean {
+  private goTo(target: OfficeAnchor | undefined, mode: MotorMode, gesture?: OfficeGesture, profile = this.profile): boolean {
     if (!target) { this.blocked = true; return false; }
     if (distance([this.x, this.z], target.position) < EPSILON) {
+      this.profile = profile;
       this.path = []; this.pathIndex = 0; this.destination = target;
       this.finalMode = mode; this.finalFacing = target.facing; this.finalGesture = gesture; this.gesture = undefined;
       this.blocked = false; this.finish(); return true;
@@ -349,7 +429,7 @@ export class OfficeMotor {
     }
     for (const anchor of [target]) {
       const goal = anchor.egress ?? anchor.position;
-      const planned = this.navigator.route(from, goal, this.radius);
+      const planned = this.navigator.route(from, goal, this.radius, profile);
       if (!planned) { this.blocked = true; return false; }
       planned.forEach(point => path.push({ x: point[0], z: point[1], y: this.navigator.floorAt(point) }));
       if (anchor.egress && distance(anchor.egress, anchor.position) > EPSILON) {
@@ -358,6 +438,7 @@ export class OfficeMotor {
       }
       from = anchor.position;
     }
+    this.profile = profile;
     this.path = path; this.pathIndex = 0;
     this.segmentStart = { x: this.x, z: this.z, y: this.y };
     this.destination = target; this.finalMode = mode; this.finalFacing = target.facing;
@@ -385,10 +466,14 @@ export class OfficeMotor {
       const remaining = Math.hypot(dx, dz);
       const desired = remaining > EPSILON ? Math.atan2(dx, dz) : this.heading;
       const turn = angleDifference(desired, this.heading);
-      this.heading += Math.max(-TURN_SPEED * delta, Math.min(TURN_SPEED * delta, turn));
-      const brakingSpeed = Math.sqrt(WALK_ACCELERATION ** 2 * delta ** 2 + 2 * WALK_ACCELERATION * remaining) - WALK_ACCELERATION * delta;
-      const targetSpeed = Math.abs(turn) > 0.3 ? 0 : Math.min(WALK_SPEED, brakingSpeed);
-      this.speed += Math.max(-WALK_ACCELERATION * delta, Math.min(WALK_ACCELERATION * delta, targetSpeed - this.speed));
+      const { speed: cruise, acceleration, turnSpeed } = this.profile;
+      this.heading += Math.max(-turnSpeed * delta, Math.min(turnSpeed * delta, turn));
+      const next = this.path[this.pathIndex + 1];
+      const corner = next ? Math.abs(angleDifference(Math.atan2(next.x - target.x, next.z - target.z), desired)) : Math.PI;
+      const cornerSpeed = next ? cruise * Math.max(0, 1 - corner / 1.2) : 0;
+      const brakingSpeed = Math.sqrt(acceleration ** 2 * delta ** 2 + cornerSpeed ** 2 + 2 * acceleration * remaining) - acceleration * delta;
+      const targetSpeed = Math.min(cruise, Math.max(0, brakingSpeed)) * Math.max(0, 1 - Math.abs(turn) / 1.2);
+      this.speed += Math.max(-acceleration * delta, Math.min(acceleration * delta, targetSpeed - this.speed));
       const travel = Math.min(remaining, this.speed * delta);
       if (remaining > EPSILON) { this.x += dx / remaining * travel; this.z += dz / remaining * travel; }
       this.distance += travel;
@@ -398,13 +483,13 @@ export class OfficeMotor {
       this.y = this.segmentStart.y + (target.y - this.segmentStart.y) * blend * blend * (3 - 2 * blend);
       if (remaining - travel < EPSILON) {
         this.x = target.x; this.z = target.z; this.y = target.y;
-        this.segmentStart = target; this.pathIndex++; this.speed = 0;
+        this.segmentStart = target; this.pathIndex++;
         if (this.pathIndex === this.path.length) this.finish();
       }
     } else if (this.finalFacing !== undefined) {
       const turn = angleDifference(this.finalFacing, this.heading);
-      this.heading += Math.max(-TURN_SPEED * delta, Math.min(TURN_SPEED * delta, turn));
-      if (Math.abs(turn) <= TURN_SPEED * delta) this.heading = this.finalFacing;
+      this.heading += Math.max(-this.profile.turnSpeed * delta, Math.min(this.profile.turnSpeed * delta, turn));
+      if (Math.abs(turn) <= this.profile.turnSpeed * delta) this.heading = this.finalFacing;
       if (this.mode === 'interact' && this.heading === this.finalFacing) this.gesture = this.finalGesture;
     }
     if (this.mode === 'celebrate') {

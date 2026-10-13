@@ -2,7 +2,7 @@
 import { once } from 'node:events';
 import { requestActivity, requestAction, requestDecoration, requestRoomStyle } from '../server/client.mjs';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
+import { ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, MOTION_PACES, MOTION_ROUTES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 const MAX_MESSAGE_BYTES = 16_384;
@@ -22,17 +22,19 @@ const TOOLS = [
   },
   {
     name: 'platop_action', title: 'Choose a local avatar action',
-    description: 'Choose one avatar intent; acceptance does not prove arrival. actorId must belong to teamId; omitted selects its first member. interact requires a named target and your chosen gesture. walk_to requires a target; arrive defaults to its own door. No task execution or private data.',
+    description: 'Choose one avatar intent; acceptance does not prove arrival. actorId must belong to teamId; omitted selects its first member. interact requires a named target and your chosen gesture. walk_to requires a target; arrive defaults to its own door. Optional motion chooses pace and route for this journey; omission retains individual identity-based movement. No task execution or private data.',
     inputSchema: { type: 'object', properties: {
       teamId: { type: 'string', enum: TEAM_IDS }, actorId: { type: 'string', enum: ACTOR_IDS },
       kind: { type: 'string', enum: ACTION_KINDS },
       gesture: { type: 'string', enum: ACTION_GESTURES },
+      motion: { type: 'object', properties: { pace: { type: 'string', enum: MOTION_PACES }, route: { type: 'string', enum: MOTION_ROUTES } }, minProperties: 1, additionalProperties: false },
       target: { type: 'object', properties: { officeId: { type: 'string', enum: TEAM_IDS }, place: { type: 'string', enum: PLACES } }, required: ['officeId', 'place'], additionalProperties: false },
     }, required: ['teamId', 'kind'], additionalProperties: false, oneOf: [
       { properties: { kind: { const: 'interact' } }, required: ['target', 'gesture'] },
       { properties: { kind: { const: 'walk_to' } }, required: ['target'], not: { required: ['gesture'] } },
       { properties: { kind: { const: 'arrive' } }, not: { required: ['gesture'] } },
-      { properties: { kind: { enum: ['work', 'rest', 'celebrate', 'leave'] } }, not: { anyOf: [{ required: ['target'] }, { required: ['gesture'] }] } },
+      { properties: { kind: { enum: ['work', 'rest', 'leave'] } }, not: { anyOf: [{ required: ['target'] }, { required: ['gesture'] }] } },
+      { properties: { kind: { const: 'celebrate' } }, not: { anyOf: [{ required: ['target'] }, { required: ['gesture'] }, { required: ['motion'] }] } },
     ] },
     annotations: { ...annotations, readOnlyHint: false, idempotentHint: false },
   },

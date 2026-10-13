@@ -92,6 +92,10 @@ test('local MCP client uses actual initialize/list/call protocol and authenticat
   const studio = JSON.parse((await cli(['status'], env)).stdout);
   assert.equal(studio.assets.intake.floor.parts.length, MAX_DECOR_PARTS);
   assert.deepEqual(studio.rooms.intake.lighting.ambientPosition, [-2.5, 0.6, 2.5]);
+  const motion = { pace: 'unhurried', route: 'roomy' };
+  assert.match((await cli(['action', 'intake', 'interact', JSON.stringify({ target: { officeId: 'intake', place: 'whiteboard' }, gesture: 'think', motion })], env)).stdout, /action queued/);
+  const journey = JSON.parse((await cli(['status'], env)).stdout);
+  assert.deepEqual(journey.actions['intake-jarvis'].motion, motion);
   const token = (await readFile(path.join(root, '.local/token'), 'utf8')).trim();
   assert.ok(!JSON.stringify(initial).includes(token));
 });
@@ -124,6 +128,8 @@ test('original four-tool MCP servers keep status and matte recipes compatible wi
   await assert.rejects(cli(['decorate', 'hr', 'desk', '[{"shape":"leaf"}]']), sanitized);
   await assert.rejects(cli(['action', 'hr', 'interact', '{"target":{"officeId":"hr","place":"lounge"},"gesture":"think"}']), sanitized);
   await assert.rejects(cli(['action', 'hr', 'walk_to', '{"target":{"officeId":"hr","place":"whiteboard"}}']), sanitized);
+  await assert.rejects(cli(['action', 'hr', 'work', '{"motion":{"pace":"brisk"}}']), sanitized);
+  await assert.rejects(cli(['action', 'hr', 'work', '{"motion":{"route":"roomy"}}']), sanitized);
   const messages = (await readFile(path.join(root, 'methods.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
   const call = messages.find(message => message.method === 'tools/call' && message.params.name === 'platop_decorate');
   assert.ok(call);
@@ -192,6 +198,32 @@ test('room style client validates acknowledged choices and never treats a missin
   }
 });
 
+test('journey client checks advertised capabilities before writing and requires an exact motion receipt', async t => {
+  const motionSchema = { additionalProperties: false, properties: {
+    pace: { enum: ['unhurried', 'steady', 'brisk'] }, route: { enum: ['direct', 'roomy'] },
+  } };
+  const actionTool = schema => ({ name: 'platop_action', inputSchema: { additionalProperties: false, properties: {
+    kind: { enum: ACTION_KINDS }, motion: schema,
+  } } });
+  for (const schema of [undefined, {}, { ...motionSchema, additionalProperties: true },
+    { ...motionSchema, properties: { ...motionSchema.properties, pace: { enum: ['steady'] } } }]) {
+    const { root, cli } = await fixture(t, server(`if(message.method==='tools/list')tools.push(${JSON.stringify(actionTool(schema))});`));
+    await assert.rejects(cli(['action', 'hr', 'work', '{"motion":{"pace":"brisk"}}']), sanitized);
+    const calls = (await readFile(path.join(root, 'methods.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(calls.filter(message => message.method === 'tools/call').length, 0);
+  }
+  for (const motion of [undefined, { pace: 'steady' }, { pace: 'brisk', route: 'roomy' }, { pace: 'PRIVATE' }]) {
+    const action = { id: '00000000-0000-4000-8000-000000000001', actorId: 'hr-compass', kind: 'work', ...(motion ? { motion } : {}) };
+    const { root, cli } = await fixture(t, server(`
+      if(message.method==='tools/list')tools.push(${JSON.stringify(actionTool(motionSchema))});
+      if(message.method==='tools/call'&&message.params.name==='platop_action')snapshot.actions={'hr-compass':${JSON.stringify(action)}};
+    `));
+    await assert.rejects(cli(['action', 'hr', 'work', '{"motion":{"pace":"brisk"}}']), sanitized);
+    const calls = (await readFile(path.join(root, 'methods.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+    assert.equal(calls.filter(message => message.method === 'tools/call').length, 1, 'uncertain receipt is never retried or replaced');
+  }
+});
+
 test('invalid private, path, command and source arguments are rejected before spawning', async t => {
   const { root, cli } = await fixture(t, server());
   for (const args of [
@@ -201,6 +233,8 @@ test('invalid private, path, command and source arguments are rejected before sp
     ['action', 'email', 'interact', '{"gesture":"think"}'],
     ['action', 'email', 'interact', '{"target":{"officeId":"email","place":"whiteboard"},"gesture":"PRIVATE_THOUGHT"}'],
     ['action', 'email', 'work', '{"gesture":"work"}'],
+    ['action', 'email', 'work', '{"motion":{"reasoning":"PRIVATE"}}'],
+    ['action', 'email', 'work', '{"motion":{"pace":"PRIVATE"}}'],
   ]) await assert.rejects(cli(args), sanitized);
   const clientUrl = new URL(`file://${path.join(root, 'scripts/platop-mcp-client.mjs')}`).href;
   for (const args of [
