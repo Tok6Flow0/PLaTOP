@@ -112,7 +112,8 @@ test('the actual shared floor plane clears its support and overlapping room surf
   const { makeCampus, makeRoom, OFFICE_FLOOR_Y } = await import(await moduleUrl('../src/scene/rooms.ts', { './primitives': primitives, './environmentProps': environment }));
   const { teams } = await import(await moduleUrl('../src/teams.ts'));
   const scene = new THREE.Scene(), kit = new SceneKit(), campus = makeCampus(kit);
-  scene.add(campus, makeRoom(teams[3], 3, kit).root); scene.updateMatrixWorld(true);
+  const foyer=makeRoom(teams[4],4,kit);
+  scene.add(campus, makeRoom(teams[3], 3, kit).root,foyer.root); scene.updateMatrixWorld(true);
   const meshes = root => { const result = []; root.traverse(object => { if (object.isMesh) result.push(object); }); return result; };
   const ray = new THREE.Raycaster(new THREE.Vector3(0, .2, 0), new THREE.Vector3(0, -1, 0));
   const levels = [...new Set(ray.intersectObjects(meshes(campus)).map(hit => +hit.point.y.toFixed(6)))].sort((a, b) => b - a);
@@ -132,6 +133,11 @@ test('the actual shared floor plane clears its support and overlapping room surf
     assert.ok(width <= 1e-6 || depth <= 1e-6, 'shared textures meet at edges without any coplanar area overlap');
   }
   assert.equal(OFFICE_FLOOR_Y, .1, 'visual layer separation never changes navigation or actor grounding');
+  for(const [x,z]of [[2.78,-3.4],[-2.4,-3.25],[-1.8,-3.25],[-1.3,-3.25]]){
+    ray.ray.origin.set(x,.11,foyer.center.z+z);
+    const ground=ray.intersectObjects(meshes(foyer.root)).find(hit=>Math.abs(hit.point.y-.087)<1e-5);
+    assert.ok(ground,'foyer furnishings retain a real floor when the campus is hidden in window view');
+  }
   const sourceGroups = [];
   scene.traverse(object => { if (object.userData.staticSources) sourceGroups.push(object.userData.staticSources); });
   const resources = new THREE.Group(); resources.add(scene, ...sourceGroups);

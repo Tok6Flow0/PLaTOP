@@ -135,7 +135,7 @@ test('diverse connected plants keep actual vertices inside their certified floor
         assert.ok(Math.hypot(point.x, point.z) <= bound + 1e-6, `${kind} cannot widen its navigation obstacle`);
       }
     });
-    assert.ok(leaves >= 11 && leaves <= 15);
+    assert.equal(leaves, { spear:11, herb:17, broad:17, leaf:21, ivy:14 }[kind], 'each authored canopy has a fixed leaf budget');
     group.traverse(object => {
       if (!object.isMesh) return;
       triangles += (object.geometry.index?.count ?? object.geometry.getAttribute('position').count) / 3;

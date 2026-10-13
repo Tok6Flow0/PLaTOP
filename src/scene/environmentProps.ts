@@ -182,11 +182,22 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) floorContact(parent, x + dx, 0.137, z + dz, 0.44, 0.38);
   const grain = canvasTexture(768, 384, (context) => {
     context.beginPath(); context.roundRect(0, 0, 768, 384, 54); context.clip();
-    context.fillStyle = '#946e50'; context.fillRect(0, 0, 768, 384);
-    for (let i = 0; i < 160; i++) {
-      const y = i * 2.48, phase = i * 3.7;
-      context.strokeStyle = i % 3 ? 'rgba(85,51,27,.13)' : 'rgba(237,206,153,.18)'; context.lineWidth = i % 4 ? 0.8 : 1.4;
-      context.beginPath(); context.moveTo(0, y); context.bezierCurveTo(180, y + Math.sin(phase) * 5, 450, y + Math.cos(phase) * 8, 768, y + Math.sin(phase + 1) * 4); context.stroke();
+    context.fillStyle = '#998065'; context.fillRect(0, 0, 768, 384);
+    let seed=7341;
+    const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+    // Quiet, irregular fibres and broad growth clouds replace the evenly
+    // spaced orange rules. This stays one existing baked tabletop texture.
+    for(let i=0;i<18;i++){
+      const cx=random()*768,cy=random()*384,r=45+random()*120;
+      const cloud=context.createRadialGradient(cx,cy,0,cx,cy,r);
+      cloud.addColorStop(0,i%2?'rgba(69,49,34,.07)':'rgba(255,236,201,.10)');
+      cloud.addColorStop(1,'rgba(130,108,80,0)');context.fillStyle=cloud;
+      context.fillRect(cx-r,cy-r,r*2,r*2);
+    }
+    for (let i = 0; i < 230; i++) {
+      const y=random()*384,start=random()*240-80,length=210+random()*650,bend=2+random()*9;
+      context.strokeStyle = i % 3 ? 'rgba(76,57,39,.09)' : 'rgba(243,223,186,.13)'; context.lineWidth = .35+random()*.65;
+      context.beginPath(); context.moveTo(start,y);context.bezierCurveTo(start+length*.27,y+bend,start+length*.65,y-bend*.6,start+length,y+random()*3);context.stroke();
     }
   });
   const top = texturedPlane(parent, grain, [x, 0.82, z], width - 0.16, depth - 0.14, true);
@@ -348,9 +359,14 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   });
   const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
   const geometry = leafGeometry(kind === 'spear', kind === 'herb' || kind === 'ivy', kind === 'broad');
+  // Spend the unchanged per-plant triangle budget on visible leaves. These
+  // millimetre-wide stems need only five sides and share one local geometry.
+  const stemGeometry=new THREE.CylinderGeometry(.5,.5,1,5);
   const stem = (from: THREE.Vector3, to: THREE.Vector3, radius = 0.009) => {
     const midpoint = from.clone().add(to).multiplyScalar(0.5), direction = to.clone().sub(from);
-    const mesh = kit.mesh(canopy, 'detailCylinder', '#627346', [midpoint.x, midpoint.y, midpoint.z], [radius * 2, direction.length(), radius * 2]);
+    const mesh=new THREE.Mesh(stemGeometry,kit.material('#627346'));
+    mesh.position.copy(midpoint);mesh.scale.set(radius*2,direction.length(),radius*2);
+    mesh.castShadow=mesh.receiveShadow=true;canopy.add(mesh);
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
   };
   const addLeaf = (index: number, position: Point, rotation: Point, scale: number) => {
@@ -368,7 +384,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       }
     }
   } else {
-    const count = kind === 'spear' ? 11 : kind === 'herb' ? 15 : kind === 'broad' ? 13 : 15;
+    const count = kind === 'spear' ? 11 : kind === 'herb' ? 17 : kind === 'broad' ? 17 : 21;
     const trunkHeight = kind === 'spear' || kind === 'herb' ? 0.43 : kind === 'broad' ? 1.23 : 1.25;
     const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.385, 0), new THREE.Vector3(0.025, 0.65, -0.015),
       new THREE.Vector3(-0.018, trunkHeight - 0.12, 0.02), new THREE.Vector3(0.012, trunkHeight, 0)]);
@@ -378,14 +394,14 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     }
     for (let i = 0; i < count; i++) {
       const angle = i * 2.399;
-      const origin = kind === 'spear' ? 0.405 : kind === 'herb' ? 0.405 + i % 3 * 0.045 : 0.45 + i % (kind === 'leaf' ? 5 : 4) * (kind === 'broad' ? 0.22 : 0.18);
+      const origin = kind === 'spear' ? 0.405 : kind === 'herb' ? 0.405 + i % 3 * 0.045 : 0.43 + i % (kind === 'leaf' ? 7 : 5) * (kind === 'broad' ? 0.17 : 0.125);
       const reach = kind === 'spear' ? 0.045 : kind === 'herb' ? 0.07 : kind === 'leaf' ? 0.17 : 0.09;
       const point: Point = [Math.sin(angle) * reach, origin, Math.cos(angle) * reach];
       const branchRoot = kind === 'spear' || kind === 'herb' ? new THREE.Vector3(0, 0.385, 0)
         : curve.getPoint(THREE.MathUtils.clamp((origin - 0.385) / (trunkHeight - 0.385), 0, 1));
       stem(branchRoot, new THREE.Vector3(...point));
       const scale = kind === 'herb' ? 0.62 + i % 4 * 0.105 : kind === 'spear' ? 0.68 + i % 4 * 0.15 : kind === 'leaf' ? 0.58 + i % 4 * 0.10 : 0.7 + i % 4 * 0.13;
-      addLeaf(i, point, [kind === 'herb' ? -0.18 : kind === 'leaf' ? 0.42 + i % 3 * 0.15 : i % 2 * 0.08, angle, (i % 3 - 1) * 0.12], scale);
+      addLeaf(i, point, [kind === 'herb' ? -0.18 : kind === 'leaf' ? 0.62 + i % 3 * 0.17 : kind==='broad'?.28+i%3*.14:i % 2 * 0.08, angle, (i % 3 - 1) * 0.12], scale);
     }
   }
   // Keep every actual leaf vertex within its existing navigation envelope;
@@ -415,10 +431,10 @@ export function lamp(parent: THREE.Object3D, kit: SceneKit, x: number, z: number
   });
   // Luminous translucent haze has real coverage, unlike additive ONE/ONE
   // alpha. That keeps the one-draw compositor valid even over bare background.
-  const haze = new THREE.Color('#fff8e9').multiplyScalar(2.2);
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture, color: haze, transparent: true, depthWrite: false, blending: THREE.NormalBlending, opacity: 0.95 }));
+  const haze = new THREE.Color('#fff8e9').multiplyScalar(1.6);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture, color: haze, transparent: true, depthWrite: false, blending: THREE.NormalBlending, opacity: 0.55 }));
   halo.material.userData.officeGlow = true;
-  halo.position.set(x, 1.65, z); halo.scale.set(1.8, 1.8, 1); parent.add(halo);
+  halo.position.set(x, 1.65, z); halo.scale.set(1.4, 1.4, 1); parent.add(halo);
   const bounce = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.8), new THREE.MeshBasicMaterial({ map: haloTexture, color: haze, transparent: true, depthWrite: false, blending: THREE.NormalBlending, opacity: 0.65 }));
   bounce.material.userData.officeGlow = true;
   bounce.position.set(x, 0.136, z + 0.12); bounce.rotation.x = -Math.PI / 2; parent.add(bounce);

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Decoration, Team } from '../types';
 import { SceneKit } from './primitives';
-import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, paper, plant, rug, shelf, sign, table, tidyStaticMeshes } from './environmentProps';
+import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, paper, plant, rug, shelf, sign, stool, table, tidyStaticMeshes } from './environmentProps';
 
 export type NavigationPoint = [number, number];
 export type NavigationBounds = [number, number, number, number];
@@ -110,8 +110,12 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     tidyStaticMeshes(cabinet);
     return cabinet;
   }
-  beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -rearExtension / 2], [6.12, 0.22, 5.9 + depthGain + rearExtension]);
-  floorSurface(interior, '#bc9879', [0, 0.087, -rearExtension / 2], [5.94, 5.7 + depthGain + rearExtension]);
+  // The foyer's rear furnishings stand on the shared corridor in campus view.
+  // Include their real floor in its isolated window too, instead of leaving
+  // the drafting cabinet and plants floating when the campus is hidden.
+  const floorExtension=isFoyer?.6:rearExtension;
+  beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -floorExtension / 2], [6.12, 0.22, 5.9 + depthGain + floorExtension]);
+  floorSurface(interior, '#b8aa95', [0, 0.087, -floorExtension / 2], [5.94, 5.7 + depthGain + floorExtension]);
   rug(interior, kit, palette.rug, 0, 0.35, isFoyer ? 4.1 : 4.55, 4.2);
 
   function wall(kind: 'back' | 'left' | 'right', x: number, z: number, width: number, depth: number): THREE.Group {
@@ -247,9 +251,11 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // A compact board and filing base fit the open foyer's rear aisle without
     // closing its doorway or moving its existing plants, seats or shelves.
     const whiteboard = new THREE.Group(); whiteboard.name = `${team.id}:whiteboard`;
-    whiteboard.position.set(2.78, 0.4, -3.4); whiteboard.rotation.y = -Math.PI / 2;
-    whiteboard.scale.set(0.4, 0.72, 0.75); root.add(whiteboard);
-    board(whiteboard, kit, palette.board, palette.symbol, 0, 1.84, 0, '#6a6657');
+    // A low drafting surface on the filing base preserves the open foyer
+    // silhouette. Its interaction stop stays at the same accessible location.
+    whiteboard.position.set(2.78, 1.43, -3.4); whiteboard.rotation.set(-.48, -Math.PI / 2, 0, 'YXZ');
+    whiteboard.scale.set(0.4, 0.46, 0.75); root.add(whiteboard);
+    board(whiteboard, kit, palette.board, palette.symbol, 0, 0, 0, '#6a6657');
     tidyStaticMeshes(whiteboard);
     filingCabinet(2.78, -3.4, -Math.PI / 2, false);
     blockers.push({ bounds: [2.63, -3.95, 2.9, -2.85] });
@@ -261,6 +267,13 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const tableWidth = isFoyer ? 3.15 : index === 5 ? 2.35 : 2.75;
   const sideSeating = index < 2;
   table(interior, kit, tableX, tableZ, tableWidth, 1.4);
+  if(index<2||isFoyer||index===5){
+    // Unoccupied furniture is not simulated work. Tuck the spare seat wholly
+    // beneath the certified desk footprint so no walking aisle is narrowed.
+    const spare=new THREE.Group();spare.name='Tucked spare stool';
+    spare.position.set(tableX,0,tableZ+.41);spare.scale.set(.8,.85,.8);interior.add(spare);
+    stool(spare,kit,0,0,palette.rug);
+  }
   blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - 0.7, tableX + tableWidth / 2, tableZ + 0.7] });
   const seats: NavigationPoint[] = isFoyer ? [[-1.15, -0.7], [0.25, -0.8], [1.85, 0.1]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
@@ -388,7 +401,6 @@ export function makeCampus(kit: SceneKit): THREE.Group {
     // Meet the corridor texture at z=2.35 without coplanar overlap.
     floorSurface(campus, '#9f8570', [x, 0.075, 3.25], [0.85, 1.8], true);
   }
-  rug(campus, kit, '#a99983', 0, 1.75, 1.35, 2.5);
   kit.mesh(campus, 'roundedBox', '#d4c2a8', [0, -0.08, 6.9 + depthGain + entryShift], [6.15, 0.33, 1.8]);
   floorSurface(campus, '#cec7b9', [0, 0.087, 6.85 + depthGain + entryShift], [5.85, 1.85], true);
   [-2.98, 2.98].forEach((x) => {

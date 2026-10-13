@@ -1,10 +1,11 @@
 import * as THREE from 'three';
 import type { SceneKit } from './primitives';
+import { owlEyeRecess, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
-  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
+  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
-  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'wayfinderBody'
+  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass';
 type Tuple = [number, number, number];
@@ -89,11 +90,6 @@ function helmet(owl = false,boxed=false): THREE.BufferGeometry {
   return smoothDeformedSurface(geometry);
 }
 
-/** A shallow socket nests the eye inside the facial disc, not on top of it. */
-function owlEyeRecess(x:number,y:number):number {
-  return .026*Math.exp(-(((Math.abs(x)-.13)/.072)**2+((y-.002)/.085)**2)*1.15);
-}
-
 function speechBoundary(width:number,height:number):Array<[number,number]> {
   const radius=Math.min(width,height)*.43,boundary:Array<[number,number]>=[];
   [[1,1],[-1,1],[-1,-1],[1,-1]].forEach(([sx,sy],corner)=>{
@@ -103,10 +99,10 @@ function speechBoundary(width:number,height:number):Array<[number,number]> {
       tail.quadraticCurveTo(width*.41,-height*.65,width*.42,-height*.60);
       tail.quadraticCurveTo(width*.37,-height*.44,width*.435,-height*.36);
       tail.quadraticCurveTo(width*.50,-height*.28,width*.50,-height/2+radius);
-      tail.getSpacedPoints(12).forEach(p=>boundary.push([p.x,p.y]));return;
+      tail.getSpacedPoints(20).forEach(p=>boundary.push([p.x,p.y]));return;
     }
-    for(let step=0;step<8;step++){
-      const a=(corner+step/7)*Math.PI/2;
+    for(let step=0;step<14;step++){
+      const a=(corner+step/13)*Math.PI/2;
       boundary.push([sx*(width/2-radius)+Math.cos(a)*radius,sy*(height/2-radius)+Math.sin(a)*radius]);
     }
   });
@@ -210,9 +206,13 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t)-.045*Math.sin(angle)**2*(1-t)**2,normalized=(y+.005)/1.06;
   let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
   const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
-  const fold=(.027+.037*Math.sin(angle*5+.4)+.010*Math.sin(angle*9-t))*Math.sin(Math.PI*t)+.014*Math.sin(angle*5+.4)*t*t;
-  const drape=.32+.16*Math.sin(t*Math.PI/2);
-  return [Math.sin(angle)*Math.min(.512,Math.max(r*.85+.030+.026*t,drape)-inset+fold),y,Math.cos(angle)*Math.min(.43,Math.max(r*.64+.032+.019*t,drape*.78)-inset+fold)];
+  // Gravity makes the folds lengthwise. A Gaussian shoulder bulge inflated
+  // the old cloth into a padded shell instead of a thin hanging garment.
+  const fold=(.023*Math.sin(angle*5+.4)+.008*Math.sin(angle*9+.3))*Math.pow(t,.75);
+  const drape=.40+.075*t;
+  // The lining remains inset even at the silhouette limit. Clamping both
+  // layers together would erase their thickness at the outermost pleats.
+  return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape+fold))-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78+fold))-inset)];
 }
 
 /** Continuous forearm from shoulder into a rounded inward clasp, not a pad
@@ -235,7 +235,7 @@ function embracingArm():THREE.BufferGeometry {
 
 /** Open-front lined cape follows the shoulders and flares into a rounded hem. */
 function cape(): THREE.BufferGeometry {
-  const vertices: number[] = [], indices: number[] = [], columns = 24, rows = 10;
+  const vertices: number[] = [], indices: number[] = [], columns = 28, rows = 13;
   for (let row = 0; row <= rows; row++) {
     const t = row / rows,bound=.20+1.05*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
@@ -278,7 +278,7 @@ function feather(): THREE.BufferGeometry {
 function flightFeather():THREE.BufferGeometry {
   const points:Tuple[]=[[0,.5,0]],faces:number[][]=[];
   for(const t of [.18,.40,.64,.85])for(const side of [-1,0,1]){
-    const arch=Math.sin(Math.PI*t),width=.46*Math.pow(arch,.78)*(1-.12*t);
+    const arch=Math.sin(Math.PI*t),width=.46*Math.pow(arch,.78)*(1-.36*t);
     points.push([side*width,.5-1.12*t,.065*arch+.070*arch*(1-side*side)+.04*t*t]);
   }
   points.push([0,-.62,.04]);
@@ -288,22 +288,26 @@ function flightFeather():THREE.BufferGeometry {
     faces.push([a,b,d],[a,d,c]);
   }
   faces.push([10,11,13],[11,12,13]);
+  // These cupped sheets are concave. A centroid-based convex-solid winding
+  // guess flips some vane triangles and leaves hairline silhouettes. Keep the
+  // authored front, matching back and connecting rim winding explicitly.
+  faces.forEach(face=>face.reverse());
   const count=points.length,front=faces.map(face=>[...face]);
   points.push(...points.map(([x,y,z])=>[x,y,z-.010] as Tuple));
   faces.push(...front.map(face=>face.map(i=>i+count).reverse()));
   const rim=[0,1,4,7,10,13,12,9,6,3];
   for(let i=0;i<rim.length;i++){const a=rim[i],b=rim[(i+1)%rim.length];faces.push([a,b,b+count,a+count]);}
-  return smoothDeformedSurface(polyhedron(points,faces));
+  return smoothDeformedSurface(polyhedron(points,faces,undefined,true));
 }
 
-function polyhedron(vertices: Tuple[], faces: number[][],faceColors?: string[]): THREE.BufferGeometry {
+function polyhedron(vertices: Tuple[], faces: number[][],faceColors?: string[],preserveWinding=false): THREE.BufferGeometry {
   const positions: number[] = [];
   const colors: number[]=[];
   const centre=vertices.reduce((sum,p)=>sum.add(new THREE.Vector3(...p)),new THREE.Vector3()).divideScalar(vertices.length);
   for (const [f,face] of faces.entries()) for (let i = 1; i < face.length - 1; i++) {
     const a=new THREE.Vector3(...vertices[face[0]]),b=new THREE.Vector3(...vertices[face[i]]),c=new THREE.Vector3(...vertices[face[i+1]]);
     const outward=b.clone().sub(a).cross(c.clone().sub(a)).dot(a.clone().add(b).add(c).multiplyScalar(1/3).sub(centre));
-    for (const index of outward<0?[face[0],face[i+1],face[i]]:[face[0], face[i], face[i + 1]]) {positions.push(...vertices[index]);if(faceColors)colors.push(...new THREE.Color(faceColors[f]).toArray());}
+    for (const index of !preserveWinding&&outward<0?[face[0],face[i+1],face[i]]:[face[0], face[i], face[i + 1]]) {positions.push(...vertices[index]);if(faceColors)colors.push(...new THREE.Color(faceColors[f]).toArray());}
   }
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   if(faceColors)geometry.setAttribute('color',new THREE.Float32BufferAttribute(colors,3));
@@ -347,7 +351,7 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return foldedSheet([[.015,.18,.10],[.11,-.04,.09],[.02,-.40,.10],[-.18,-.30,.22],[-.16,.01,.28]],[-.045,-.09,.32],
+  return foldedSheet([[-.025,.18,.11],[.025,-.04,.09],[.02,-.40,.10],[-.18,-.30,.22],[-.16,.01,.28]],[-.055,-.12,.24],
     ['#dbc29a','#d8bf97','#cdb089','#dfc69f','#e5ceaa']);
 }
 
@@ -390,9 +394,9 @@ function paperOwlHead(quill=false): THREE.BufferGeometry {
     const center=vertices.length;vertices.push([side?.18:-.18,-.015,.46]);
     for(let i=0;i<cheek.length;i++){const a=outline.length+side*cheek.length+i,b=outline.length+side*cheek.length+(i+1)%cheek.length;faces.push([a,b,center]);colors.push('#edd6b0');}
   }
-  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.87,y*.92,.21-Math.abs(x)*.12] as Tuple));
-  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.58,y*.70,.03] as Tuple));
-  const rearCenter=vertices.length;vertices.push([-.035,.03,.08]);
+  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.96,y*.93,.05-Math.abs(x)*.10] as Tuple));
+  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.72,y*.76,-.25] as Tuple));
+  const rearCenter=vertices.length;vertices.push([-.035,.03,-.33]);
   for(let i=0;i<outline.length;i++){
     const j=(i+1)%outline.length;faces.push([i,shoulder+i,shoulder+j],[i,shoulder+j,j],[shoulder+i,back+i,back+j],[shoulder+i,back+j,shoulder+j],[back+j,back+i,rearCenter]);
     colors.push('#c7ad8a','#d0b591','#c1a582','#c8b18c','#ba9e7a');
@@ -496,7 +500,7 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 
 /** One cached surface owns each layered fan; detail does not add pose matrices. */
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
-  const sculpt = breast?feather():flightFeather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
+  const sculpt = flightFeather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
   sculpt.dispose();
   const count = breast ? 84 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
@@ -506,23 +510,25 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       // tangential to the body, including its sides and rear, with staggered
       // rows. One cached mesh replaces the old front-only breast panel.
       const row=Math.floor(featherIndex/12),column=featherIndex%12;
-      const angle=(column+.5+(row%2?.5:0)+.04*Math.sin(column*2.7+row))/12*Math.PI*2,y=.235-row*.080+.004*Math.sin(column*2.1+row);
+      const variation=Math.sin(column*2.7+row*1.91),tilt=.16*Math.sin(column*1.7+row*2.2);
+      const angle=(column+.5+(row%2?.5:0)+.17*variation)/12*Math.PI*2,y=.235-row*.080+.011*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
       for(let i=0;i<source.attributes.position.count;i++){
         point.fromBufferAttribute(source.attributes.position,i);
         uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
-        const tone=.87+.16*(point.y+.62)/1.12+.07*Math.max(0,point.z)-.035*Math.abs(point.x)+.020*Math.sin(featherIndex*1.73);
+        const tone=.93+.075*(point.y+.62)/1.12+.035*Math.max(0,point.z)-.015*Math.abs(point.x)+.027*Math.sin(featherIndex*1.73);
         colours.push(tone,tone,tone);
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
-        const py=y+point.y*(row===6?.13:.195),normalizedY=py/.83;
+        const length=(row===6?.14:.24+.018*Math.sin(featherIndex*2.17));
+        const py=y+point.y*length+point.x*tilt*.10,normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
-        const vaneWidth=row===6?.11:row===5?.15:.195;
-        const theta=angle+point.x*vaneWidth/Math.max(.12,radius*.70);
-        const relief=(.007+point.z*.026+(6-row)*.002)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
+        const vaneWidth=(row===6?.105:row===5?.14:.157)*(1+.08*variation);
+        const theta=angle+(point.x*vaneWidth+point.y*tilt*.08)/Math.max(.12,radius*.70);
+        const relief=(.004+point.z*.020+(6-row)*.0014)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
@@ -589,6 +595,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'detail': return new THREE.SphereGeometry(.5, 12, 6);
     case 'beak': return lathe([[0, -.5], [.32, -.46], [.5, -.30], [.47, -.05], [.32, .20], [.12, .43], [0, .5]], 16);
     case 'ring': return new THREE.TorusGeometry(.5, .085, 8, 24);
+    case 'lanternHandle': return new THREE.TorusGeometry(.5,.14,12,32);
     case 'neckBand': return lathe([[.46,-.5],[.5,-.3],[.5,.3],[.46,.5],[.44,.3],[.44,-.3],[.46,-.5]],16);
     case 'heart': return smallHeart();
     case 'book': return roundedBook();
@@ -607,10 +614,15 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
     case 'paperEarR': return foldedSheet([[.16,.32,.30],[.28,.41,.24],[.54,.51,.16],[.45,.29,.43]],[.30,.33,.46],['#d1b38b','#e3c79d','#c9a980','#dec299']);
     case 'paperEarL': return reflect(makeGeometry('paperEarR'));
+    case 'paperCrownBackR': return foldedSheet([[.015,.30,.28],[.31,.20,.27],[.29,-.12,.27],[.12,-.33,.28],[-.025,-.24,.29]],[.16,.025,.38],['#c7ac85','#d7bb94','#c5a67e','#d6ba91','#dfc59e']).rotateY(Math.PI);
+    case 'paperCrownBackL': return reflect(makeGeometry('paperCrownBackR'));
     case 'paperEchoHead': return paperOwlHead();
     case 'paperQuillHead': return paperOwlHead(true);
     case 'paperOwlWingR': return paperOwlWing();
     case 'paperOwlWingL': return reflect(paperOwlWing());
+    // The wrist folds forward around the handle, with a narrow return flap.
+    // This is an authored rest pose, not a scheduled or simulated action.
+    case 'paperHoldingWing': return foldedSheet([[-.02,.17,.10],[.07,-.02,.16],[.055,-.23,.62],[-.065,-.25,.60],[-.18,-.04,.24]],[.002,-.11,.64],['#d9bd94','#e8cda4','#c6a578','#d8b98e','#e4c89f']);
     case 'paperWing': return folded([[-.50, .43], [-.18, -.50], [.35, -.34], [.50, .36], [.12, .18]], .16, .14);
     case 'paperTail': return folded([[-.5, -.5], [0, -.26], [.5, -.5], [.27, .5], [-.27, .5]], .12, .07);
     case 'paperDisc': return folded([[-.48,.08],[-.37,.34],[-.12,.49],[.19,.45],[.41,.26],[.49,-.10],[.20,-.50],[-.23,-.43],[-.42,-.22]], .06, .023);
@@ -716,8 +728,8 @@ function facialGrain(kit:SceneKit):THREE.DataTexture {
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const seed=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%101/100;
-    const barbs=Math.pow(Math.max(0,Math.sin(a*67+r*23+Math.sin(a*17)*1.1)),8);
-    const tone=242-61*barbs*Math.min(1,r*3)-24*seed;
+    const barbs=Math.pow(Math.max(0,Math.sin(a*97+r*113+Math.sin(r*43+a*13)*4)),8);
+    const tone=242-22*barbs*Math.min(1,r*3)-22*seed;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;
@@ -731,8 +743,8 @@ function plumageGrain(kit:SceneKit):THREE.DataTexture {
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const u=(x+.5)/size-.5,v=(y+.5)/size;
     const seed=((Math.imul(x+17,374761393)^Math.imul(y+29,668265263))>>>0)%101/100;
-    const barb=Math.pow(Math.max(0,Math.sin(v*137+Math.abs(u)*91+Math.sin(v*19)*2)),8);
-    const quill=Math.exp(-(u*u)/.00010),tone=235-48*barb-20*seed+12*quill;
+    const barb=Math.pow(Math.max(0,Math.sin(v*193+Math.abs(u)*117+Math.sin(v*41+u*19)*3+Math.sin(u*83+v*61)*1.3)),10);
+    const quill=Math.exp(-(u*u)/.00010),tone=242-23*barb*(.4+.6*Math.abs(u)*2)-18*seed+6*quill;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;
@@ -808,7 +820,7 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     }
     if(bubble){boundary.length=0;boundary.push(...speechBoundary(width,height));}
     const area=boundary.reduce((sum,[x,y],i)=>{const next=boundary[(i+1)%boundary.length];return sum+x*next[1]-next[0]*y},0);if(area<0)boundary.reverse();
-    const vertices: number[] = [], normals: number[] = [], indices: number[] = [], rings = 6;
+    const vertices: number[] = [], normals: number[] = [], colours:number[] = [], indices: number[] = [], rings = 6;
     const contour = torsoSurface ? wayfinderContour : undefined;
     const add = (x: number, y: number) => {
       const px = x + centre[0], py = y + centre[1];
@@ -828,13 +840,20 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
         normal.set(px / surfaceRadii[0] ** 2, py / surfaceRadii[1] ** 2, (surface+(owlSign?owlEyeRecess(px,py):0)) / surfaceRadii[2] ** 2).normalize();
         if(owlSign){
           const recess=owlEyeRecess(px,py),base=Math.max(.06,surface+recess);
-          const dx=-(surfaceRadii[2]**2)*px/(surfaceRadii[0]**2*base)+recess*2.3*(Math.abs(px)-.13)/.072**2*Math.sign(px);
-          const dy=-(surfaceRadii[2]**2)*py/(surfaceRadii[1]**2*base)+recess*2.3*(py-.002)/.085**2;
+          const dx=-(surfaceRadii[2]**2)*px/(surfaceRadii[0]**2*base)+recess*2.3*(Math.abs(px)-.13)/OWL_SOCKET_RADIUS[0]**2*Math.sign(px);
+          const dy=-(surfaceRadii[2]**2)*py/(surfaceRadii[1]**2*base)+recess*2.3*(py-.002)/OWL_SOCKET_RADIUS[1]**2;
           normal.set(-dx,-dy,1).normalize();
         }
       }
       vertices.push(px, py, surface + offset + centre[2] + .010);
       normals.push(normal.x, normal.y, normal.z);
+      if(owlSign){
+        // Cream barbs darken into the recessed amber eye socket. The colour
+        // belongs to the disc, not an extra flat ring placed over the eye.
+        const r=((Math.abs(px)-.13)/.108)**2+((py-.002)/.123)**2;
+        const warm=Math.exp(-r*1.8);
+        colours.push(1-.08*warm,1-.23*warm,1-.38*warm);
+      }
     };
     add(0, 0);
     for (let row = 1; row <= rings; row++) boundary.forEach(([x, y]) => add(x * row / rings, y * row / rings));
@@ -850,12 +869,19 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    if(owlSign)geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
     geometry.setAttribute('uv',new THREE.Float32BufferAttribute(vertices.flatMap((value,index)=>index%3===0?[(value-(owlSign?centre[0]:0))/width+.5,(vertices[index+1]-(owlSign?centre[1]:0))/height+.5]:[]),2));
     geometry.setIndex(indices);
     if(!torsoSurface)geometry.userData.characterEllipsoid={radii:surfaceRadii,owlSocket:!!owlSign};
     cache.set(key, geometry);
   }
-  const mesh = new THREE.Mesh(geometry, characterMaterial(kit, color, finish));
+  let material=characterMaterial(kit,color,finish);
+  if(owlSign){
+    const materials=owned(kit).material,key=`${finish}:${color}:vertex-colour`;
+    if(!materials.has(key)){const variant=material.clone();variant.vertexColors=true;materials.set(key,variant);}
+    material=materials.get(key)!;
+  }
+  const mesh = new THREE.Mesh(geometry, material);
   mesh.receiveShadow = true; parent.add(mesh); return mesh;
 }
 
@@ -906,7 +932,7 @@ export function characterEyeArc(kit: SceneKit, parent: THREE.Object3D, color: st
 }
 
 /** Stamp a thin ornamental relief onto a curved shell once, never per frame. */
-export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012): void {
+export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012,maxRelief=Infinity): void {
   shell.parent!.updateWorldMatrix(true,true);mark.updateWorldMatrix(true,true);
   const ray=new THREE.Raycaster(),point=new THREE.Vector3(),inverse=new THREE.Matrix4();
   const bounds=new THREE.Box3().setFromObject(mark);
@@ -917,7 +943,7 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
     inverse.copy(mesh.matrixWorld).invert();
     for(let i=0;i<position.count;i++) {
       point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
-      const relief=Math.max(0,point.z-bounds.min.z);
+      const relief=Math.min(maxRelief,Math.max(0,point.z-bounds.min.z));
       ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
       const hit=ray.intersectObject(shell,false)[0];
       if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}

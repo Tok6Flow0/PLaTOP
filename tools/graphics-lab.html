@@ -17,7 +17,7 @@ const close=document.querySelector('#close'),nearButton=document.querySelector('
 close.onclick=()=>{scene.resetCamera();scene.pan(-6.4,-7);scene.zoom(5);result.textContent='Close surfaces build in a worker. No agent actions are dispatched.'};
 reset.onclick=()=>{scene.resetCamera();result.textContent='Campus view. Dense surfaces released.'};
 async function benchmark(near=false){
- button.disabled=nearButton.disabled=close.disabled=reset.disabled=true;if(!near)scene.resetCamera();result.textContent='Warming the fixed camera workload…';
+ button.disabled=nearButton.disabled=close.disabled=reset.disabled=true;scene.resetCamera();if(near){scene.pan(-6.4,-7);scene.zoom(5);}result.textContent='Warming the fixed camera workload…';
  const intervals=[],cpu=[],render=[];let start=performance.now(),last=start,renderedStart,measuredStart;
  await new Promise(resolve=>{function frame(now){scene.rotate(near?.0001:.06);if(now-start>2000){if(renderedStart===undefined){renderedStart=Number(host.dataset.sceneFrames);measuredStart=now;}intervals.push(now-last);cpu.push(Number(host.dataset.sceneCpuMs));render.push(Number(host.dataset.sceneRenderMs))}last=now;if(now-start<12000)requestAnimationFrame(frame);else resolve()}requestAnimationFrame(frame)});
  const metrics={...host.dataset},sorted=intervals.toSorted((a,b)=>a-b);

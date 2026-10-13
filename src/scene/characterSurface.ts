@@ -3,6 +3,11 @@
  * curved Phong tessellation plus material relief, not duplicated flat faces.
  * Split normals remain split: origami folds and metal lips are never welded. */
 export const CHARACTER_SURFACE_FREQUENCY = 10;
+export const OWL_SOCKET_RADIUS = [.108, .125] as const;
+/** One socket field is shared by the shell, fitted face and worker surface. */
+export function owlEyeRecess(x: number, y: number): number {
+  return .072 * Math.exp(-(((Math.abs(x) - .13) / OWL_SOCKET_RADIUS[0]) ** 2 + ((y - .002) / OWL_SOCKET_RADIUS[1]) ** 2) * 1.15);
+}
 export interface SurfaceData {
   attributes: Record<string, { size: number; array: Float32Array }>;
   index: Uint32Array;
@@ -57,17 +62,17 @@ export function refineCharacterSurface(source: SurfaceData, finish = 'clay', fre
       if (source.ellipsoid) {
         const { radii: [rx, ry, rz], centerY = 0, shell = false, owlSocket = false } = source.ellipsoid;
         const height = (vx: number, vy: number) => rz * Math.sqrt(Math.max(shell ? 0 : .05, 1 - (vx / rx) ** 2 - ((vy - centerY) / ry) ** 2))
-          -(owlSocket?.026*Math.exp(-(((Math.abs(vx)-.13)/.072)**2+((vy-.002)/.085)**2)*1.15):0);
+          -(owlSocket ? owlEyeRecess(vx, vy) : 0);
         const heightOffset = shell ? 0 : wa * (p[a * 3 + 2] - height(p[a * 3], p[a * 3 + 1]))
           + wb * (p[b * 3 + 2] - height(p[b * 3], p[b * 3 + 1])) + wc * (p[c * 3 + 2] - height(p[c * 3], p[c * 3 + 1]));
         // Analytically evaluate fitted curved panels at every new vertex;
         // interpolating their coarse chord depths produces a scalloped bezel.
         outP[vertex * 3 + 2] = (shell && z < 0 ? -1 : 1) * height(x, y) + heightOffset;
         if(owlSocket){
-          const recess=.026*Math.exp(-(((Math.abs(x)-.13)/.072)**2+((y-.002)/.085)**2)*1.15);
+          const recess=owlEyeRecess(x,y);
           const base=Math.max(.06,height(x,y)+recess);
-          outN[offset]=rz*rz*x/(rx*rx*base)-recess*2.3*(Math.abs(x)-.13)/.072**2*Math.sign(x);
-          outN[offset+1]=rz*rz*y/(ry*ry*base)-recess*2.3*(y-.002)/.085**2;
+          outN[offset]=rz*rz*x/(rx*rx*base)-recess*2.3*(Math.abs(x)-.13)/OWL_SOCKET_RADIUS[0]**2*Math.sign(x);
+          outN[offset+1]=rz*rz*y/(ry*ry*base)-recess*2.3*(y-.002)/OWL_SOCKET_RADIUS[1]**2;
           outN[offset+2]=1;
         }
       }

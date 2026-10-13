@@ -57,6 +57,21 @@ test('all sixteen close-up characters contain exactly 100 times their authored t
   disposeObject(all); kit.dispose();
 });
 
+test('cupped feather fans are closed sheets with matching front and rear ray coverage',()=>{
+  const kit=new SceneKit(),material=new THREE.MeshBasicMaterial(),ray=new THREE.Raycaster();
+  for(const form of ['featherFanL','featherFanR']){
+    const mesh=new THREE.Mesh(characterGeometry(kit,form),material);mesh.updateMatrixWorld(true);
+    let covered=0;
+    for(let x=-.22;x<=.26;x+=.009)for(let y=-.46;y<=.24;y+=.009){
+      ray.set(new THREE.Vector3(x,y,2),new THREE.Vector3(0,0,-1));const front=ray.intersectObject(mesh,false).length>0;
+      ray.set(new THREE.Vector3(x,y,-2),new THREE.Vector3(0,0,1));const rear=ray.intersectObject(mesh,false).length>0;
+      assert.equal(front,rear,`${form} has no culled holes at ${x},${y}`);if(front)covered++;
+    }
+    assert.ok(covered>500);
+  }
+  material.dispose();kit.dispose();
+});
+
 test('dense patches improve round curvature but preserve hard folds, UVs and source arrays', () => {
   const source = new THREE.SphereGeometry(.5, 8, 6), data = surfaceData(source);
   const unchanged = data.attributes.position.array.slice();
@@ -533,6 +548,18 @@ test('robot cuffs join feet to their torso and lantern warmth adds no real light
   disposeObject(all); kit.dispose();
 });
 
+test('folded owl heads and bodies retain real side-on volume in office windows',()=>{
+  const kit=new SceneKit(),all=new THREE.Group();
+  for(const id of ['reflection-echo','reflection-quill']){
+    const model=makeProxy(members.find(member=>member.id===id),kit);all.add(model);model.updateMatrixWorld(true);
+    for(const name of ['paperBody',id==='reflection-echo'?'paperEchoHead':'paperQuillHead']){
+      const size=new THREE.Box3().setFromObject(model.getObjectByName(name)).getSize(new THREE.Vector3());
+      assert.ok(size.z/size.x>.30,`${id} ${name} is a folded volume, not a front-facing wafer`);
+    }
+  }
+  disposeObject(all);kit.dispose();
+});
+
 test('avatars preserve the distinct original portrait identities and opaque lightweight surfaces', () => {
   const kit = new SceneKit(), all = new THREE.Group();
   const expected={
@@ -546,10 +573,10 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'intake-beacon':['wayfinderBody','lanternCap'],
     'intake-relay':['wayfinderBody','scroll','book'],
     'intake-compass':['wayfinderBody','tuft','circuit-bib'],
-    'support-beacon':['embracingBody','lanternCap','ring'],
+    'support-beacon':['embracingBody','lanternCap','lanternHandle'],
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
-    'reflection-echo':['paperBody','paperEchoHead','paperOwlWingL','paperOwlWingR','ring'],
-    'reflection-quill':['paperBody','paperWing','quill-pencil'],
+    'reflection-echo':['paperBody','paperEchoHead','paperOwlWingL','paperHoldingWing','paperCrownBackL','paperCrownBackR','ring'],
+    'reflection-quill':['paperBody','paperWing','paperHoldingWing','quill-pencil'],
     'email-owl':['owlHead','owlBody','featherFanL','featherFanR','breastFeathers'],
     'email-swift':['paper-bird-expression','swiftBody','swiftWingL','swiftWingR','swiftTail'],
   };

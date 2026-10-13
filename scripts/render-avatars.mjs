@@ -73,7 +73,7 @@ const portraits=await page.evaluate(async(includeReview)=>{
  const beauty=new RenderPass(scene,camera),bokeh=new BokehPass(scene,camera,{focus:5,aperture:.008,maxblur:.04}),output=new OutputPass();
  const contact=new GTAOPass(scene,camera,512,480,undefined,{radius:.16,thickness:1,distanceExponent:2});contact.blendIntensity=.65;
  composer.addPass(beauty);composer.addPass(contact);composer.addPass(bokeh);composer.addPass(output);
- function render(name, members, team=false,night=false,angle=0) {
+ function render(name, members, team=false,night=false,angle=0,plain=false,omit=[]) {
   ambient.color.set(night?'#91a9c3':'#fff8ee');ambient.groundColor.set(night?'#292536':'#8c725a');ambient.intensity=night?.28:.42;
   key.color.set(night?'#ffc77e':'#fff2dd');key.intensity=night?1.65:2.5;
   key.position.set(...(night?[-2,3,3]:[-3,5,5]));
@@ -83,7 +83,8 @@ const portraits=await page.evaluate(async(includeReview)=>{
   members.forEach((member,index)=>{
    const model=makeProxy(member,kit);
    releaseSurfaces.push(refineCharacterModel(model));
-   model.traverse(object=>{if(object.isMesh)object.castShadow=true;});
+   model.traverse(object=>{if(object.isMesh&&!object.material.transparent)object.castShadow=true;});
+   model.traverse(object=>{if(omit.includes(object.name))object.visible=false;});
    if(team) {
     const count=members.length;
     if(members[0].id==='bridge-jarvis'){
@@ -123,8 +124,8 @@ const portraits=await page.evaluate(async(includeReview)=>{
    camera.position.copy(center).add(new THREE.Vector3(.15,.065,1).normalize().multiplyScalar(dist));camera.lookAt(center);
   }
   camera.updateProjectionMatrix();
-  if(team){composer.setSize(...size);bokeh.uniforms.focus.value=camera.position.distanceTo(group.position.clone().add(new THREE.Vector3(0,.9,.15)));composer.render();}
-  else renderer.render(scene,camera);
+  if(team&&!plain){composer.setSize(...size);bokeh.uniforms.focus.value=camera.position.distanceTo(group.position.clone().add(new THREE.Vector3(0,.9,.15)));composer.render();}
+  else {const shadows=renderer.shadowMap.enabled;if(plain)renderer.shadowMap.enabled=false;renderer.render(scene,camera);renderer.shadowMap.enabled=shadows;}
   const portrait=document.createElement('canvas');portrait.width=size[0];portrait.height=size[1];
   const raster=portrait.getContext('2d');raster.imageSmoothingEnabled=true;raster.imageSmoothingQuality='high';
   raster.drawImage(renderer.domElement,0,0,...size);images[name]=portrait.toDataURL('image/png');
@@ -136,6 +137,12 @@ const portraits=await page.evaluate(async(includeReview)=>{
  for(const team of teams){
   for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);render('team-'+team.id+'-night',team.members,true,true);
   if(includeReview){render('review-'+team.id+'-quarter',team.members,true,false,-.6);render('review-'+team.id+'-rear',team.members,true,false,2.55);}
+  if(includeReview&&['email','merchant'].includes(team.id))render('review-'+team.id+'-rear-unprocessed',team.members,true,false,2.55,true);
+  if(includeReview&&team.id==='email'){
+   render('review-email-rear-no-breast',team.members,true,false,2.55,true,['breastFeathers']);
+   render('review-email-rear-no-wings',team.members,true,false,2.55,true,['wing_l','wing_r']);
+   render('review-email-rear-no-head',team.members,true,false,2.55,true,['head']);
+  }
  }
  scene.remove(ground,backdrop);owned.add(ground,backdrop);beauty.dispose();contact.dispose();bokeh.dispose();output.dispose();composer.dispose();key.shadow.dispose();studio.dispose();disposeObject(owned);kit.dispose();renderer.dispose();return images;
 },Boolean(reviewDir));
