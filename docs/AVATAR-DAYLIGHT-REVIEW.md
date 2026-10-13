@@ -23,9 +23,11 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 4 | 7.6/10 | 7.9/10 | 7.8/10 — B |
 | Pass 5 | 7.8/10 | 7.9/10 | 7.9/10 — B |
 | Pass 6 | 7.8/10 | 8.0/10 | 7.9/10 — B |
-| Pass 7 | Pending | Pending | Independent review pending |
+| Pass 7 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
+| Pass 8 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
+Craft/fidelity columns average the six team scores when no aggregate was supplied.
 The requested acceptance threshold has not yet been met. Pass 1 restored the
 book keeper, robed guardians, navigator identities and folded bird. Pass 2
 addresses silhouette, connected robes, shorter Scout proportions, surface-fitted
@@ -61,6 +63,12 @@ Pass 7 joins Swift's head and torso, integrates the paper owls' facial planes
 into their head mesh, adds folded shoulder wings, and brings out the intake
 companions' side panels and belly seams. It retains the geometry, clearance,
 and gesture constraints. All 253 tests and the production build pass.
+The seventh review still found the paper profiles boxy and the robe/cape
+construction simplified. Pass 8 adds three-quarter/rear inspection exports,
+fixes a cape that was buried inside the torso, closes its lining and rims,
+and refines paper depth, inward head posture, cloth folds and ceramic finish.
+Two new tests verify the cape's closed winding and clearance around the body.
+All 255 tests and the production build pass.
 
 ## Local-clock atmosphere
 
@@ -97,6 +105,8 @@ test suites were stopped during the samples.
 | Pass 6 night | 60.00 | 2.2 ms | 87 | 326,622 |
 | Pass 7 noon | 60.00 | 3.1 ms | 87 | 328,332 |
 | Pass 7 night | 60.00 | 3.2 ms | 87 | 328,332 |
+| Pass 8 noon | 60.00 | 3.2 ms | 90 | 328,680 |
+| Pass 8 night | 60.00 | 3.7 ms | 90 | 328,680 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
@@ -104,6 +114,8 @@ cadence; sample-to-sample submission variation means they do not establish
 identical CPU cost, native WebKit performance, battery
 life, or sustained thermal behavior. Those claims would need separate evidence.
 The extra portrait-only contact pass is baked offline and adds no live pass.
+Optional `PLATOP_AVATAR_REVIEW_DIR` exports three-quarter/rear model views
+outside the shipped asset directory; the production manifest stays at 28 images.
 Character meshes remain under 9,000 triangles each and within tested motor
 clearances. Grain textures and geometry are scene-owned and reused.
 

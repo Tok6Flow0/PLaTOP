@@ -8,6 +8,8 @@ const { chromium } = await import(process.env.PLATOP_PLAYWRIGHT_MODULE || 'playw
 import fs from 'node:fs/promises';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const out=path.join(root,'public','avatars');
+// Optional inspection views stay outside shipped portraits and their manifest.
+const reviewDir=process.env.PLATOP_AVATAR_REVIEW_DIR ? path.resolve(process.env.PLATOP_AVATAR_REVIEW_DIR) : null;
 if(process.argv.length!==2) throw Error('Usage: node scripts/render-avatars.mjs');
 const sourceFingerprint=await portraitFingerprint(root);
 // Own the server and its root: an unrelated or stale development tab must never
@@ -21,10 +23,11 @@ if(!address || typeof address==='string') throw Error('Portrait studio could not
 const origin=`http://127.0.0.1:${address.port}`;
 browser=await chromium.launch({headless:true,args:['--enable-webgl',...(process.platform==='darwin'?['--use-angle=metal']:[])]});
 await fs.mkdir(out,{recursive:true});
+if(reviewDir)await fs.mkdir(reviewDir,{recursive:true});
 const page=await browser.newPage({viewport:{width:512,height:480}});
 await page.route('**/__portrait_studio',r=>r.fulfill({contentType:'text/html',body:'<!doctype html><title>PLaTOP character studio</title><body style="margin:0"></body>'}));
 await page.goto(`${origin}/__portrait_studio`);
-const portraits=await page.evaluate(async()=>{
+const portraits=await page.evaluate(async(includeReview)=>{
  const lettering=new FontFace('Kalam','url(/fonts/Kalam-Regular.ttf)');await lettering.load();document.fonts.add(lettering);
  const code=await(await fetch('/src/scene/proxies.ts')).text();
  const url=code.match(/from ["']([^"']*\/three\.js[^"']*)["']/)?.[1];
@@ -69,7 +72,7 @@ const portraits=await page.evaluate(async()=>{
  const beauty=new RenderPass(scene,camera),bokeh=new BokehPass(scene,camera,{focus:5,aperture:.008,maxblur:.04}),output=new OutputPass();
  const contact=new GTAOPass(scene,camera,512,480,undefined,{radius:.16,thickness:1,distanceExponent:2});contact.blendIntensity=.65;
  composer.addPass(beauty);composer.addPass(contact);composer.addPass(bokeh);composer.addPass(output);
- function render(name, members, team=false,night=false) {
+ function render(name, members, team=false,night=false,angle=0) {
   ambient.color.set(night?'#91a9c3':'#fff8ee');ambient.groundColor.set(night?'#292536':'#8c725a');ambient.intensity=night?.28:.42;
   key.color.set(night?'#ffc77e':'#fff2dd');key.intensity=night?1.65:2.5;
   key.position.set(...(night?[-2,3,3]:[-3,5,5]));
@@ -101,7 +104,7 @@ const portraits=await page.evaluate(async()=>{
     }
    }
    group.add(model);
-  });scene.add(group);group.updateMatrixWorld(true);
+  });group.rotation.y=angle;scene.add(group);group.updateMatrixWorld(true);
   ground.visible=backdrop.visible=team;scene.background=team?new THREE.Color(night?'#1c2935':'#c9b79d'):null;
   const size=team?[512,480]:[256,256];renderer.setSize(...size,false);camera.aspect=size[0]/size[1];
   if(team){
@@ -125,13 +128,18 @@ const portraits=await page.evaluate(async()=>{
   raster.drawImage(renderer.domElement,0,0,...size);images[name]=portrait.toDataURL('image/png');
   scene.remove(group);owned.add(group);
  }
- for(const team of teams){for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);render('team-'+team.id+'-night',team.members,true,true);}
+ for(const team of teams){
+  for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);render('team-'+team.id+'-night',team.members,true,true);
+  if(includeReview){render('review-'+team.id+'-quarter',team.members,true,false,-.6);render('review-'+team.id+'-rear',team.members,true,false,2.55);}
+ }
  scene.remove(ground,backdrop);owned.add(ground,backdrop);beauty.dispose();contact.dispose();bokeh.dispose();output.dispose();composer.dispose();key.shadow.dispose();studio.dispose();disposeObject(owned);kit.dispose();renderer.dispose();return images;
-});
+},Boolean(reviewDir));
 const files={};
 if(await portraitFingerprint(root)!==sourceFingerprint) throw Error('Portrait sources changed during rendering. Run the studio again.');
 for(const [id,data] of Object.entries(portraits)){
- const bytes=compressPng(Buffer.from(data.split(',')[1],'base64'));await fs.writeFile(path.join(out,`${id}.png`),bytes);
+ const bytes=compressPng(Buffer.from(data.split(',')[1],'base64'));
+ if(id.startsWith('review-')){await fs.writeFile(path.join(reviewDir,`${id}.png`),bytes);continue;}
+ await fs.writeFile(path.join(out,`${id}.png`),bytes);
  files[id]=createHash('sha256').update(bytes).digest('hex');
 }
 await fs.writeFile(path.join(out,'manifest.json'),JSON.stringify({schemaVersion:1,generator:'scripts/render-avatars.mjs',sourceFingerprint,files},null,2)+'\n');

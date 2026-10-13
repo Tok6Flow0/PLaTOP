@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Activity, Character } from '../types';
 import { SceneKit } from './primitives';
-import { characterMesh, characterMaterial, characterSmile, characterStroke, characterEyeArc, curvedFace, fitCharacterRelief, type CharacterForm, type CharacterFinish } from './characterGeometry';
+import { characterMesh, characterMaterial, characterSmile, characterStroke, characterEyeArc, curvedFace, fitCharacterRelief, navigatorCapePoint, type CharacterForm, type CharacterFinish } from './characterGeometry';
 
 interface Personality {
   kind: Character['kind'];
@@ -80,7 +80,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       eyes(head, .112, .018, .276, true);
       sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
       limbs(cream, cream, true);
-      const book = joint(body, 'seedling-book', [0, -.08, .29]); book.rotation.z = -.06;
+      const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.10,1.08,1);
       sculpt(book, 'book', '#d8c69b', [0, 0, 0], [.31, .34, .07]);
       sculpt(book, 'book', '#36574f', [0, 0, .025], [.28, .32, .04], undefined, 'glaze');
       stroke(book, gold, [[0, -.11, .052], [0, -.025, .052], [.035, .052, .052]], .007);
@@ -88,7 +88,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(book, 'tuft', gold, [.035, .055, .055], [.065, .10, .017], [0, 0, -.6], 'brass');
       data.arms.forEach((arm, index) => {
         const sign=index?1:-1;
-        arm.position.z=.19;arm.position.y=.04;
+        arm.position.z=.19;arm.position.y=.13;
         arm.children[0].scale.set(.18,.32,.20);arm.children[1].scale.set(.15,.15,.17);
         sculpt(arm,'limb',gold,[0,-.22,.026],[.185,.028,.20],undefined,'brass');
         const angle=sign*-.80,axis=new THREE.Vector3(0,0,1);
@@ -108,7 +108,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         stroke(body, '#d0a257', [[-.10, -.005, .276], [.04, .08, .276], [.04, -.09, .276]], .009);
         [[-.10, -.005], [.04, .08], [.04, -.09]].forEach(([x,y]) => sculpt(body, 'detail', '#e0b76d', [x, y, .288], [.062, .062, .021], undefined, 'brass'));
       } else {
-        if(id !== 'hr-lens') eyes(head, .108, .020, .294, false, '#173b38', .90);
+        if(id !== 'hr-lens') eyes(head, .108, .020, .294, false, '#173b38', 1.10);
         if (id === 'hr-lens') {
           const lens = ring(head, '#e5d8b8', .43, [-.03, .005, .292]); lens.scale.y *= 1.08;
           const eye=sculpt(head,'detail','#173b38',[-.095,.054,.317],[.14,.16,.07],undefined,'ink');data.eyes.push(eye);
@@ -170,7 +170,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
           if(id==='intake-jarvis') {
             sculpt(body, 'cape', '#263b4d', [0, 0, 0], [1,1,1], undefined, 'clay');
             [-1,1].forEach(sign=>{
-              const trim=Array.from({length:9},(_,i)=>{const t=i/8,r=.31+.15*t,a=.20+1.05*Math.sin(t*Math.PI/2);return[sign*Math.sin(a)*r,.29-t*.72,Math.cos(a)*r*.80+.089+.014*Math.sin(sign*a*5)*Math.sin(Math.PI*t)] as [number,number,number]});
+              const trim=Array.from({length:9},(_,i)=>{const t=i/8,a=sign*(.20+1.05*Math.sin(t*Math.PI/2));return navigatorCapePoint(t,a,-.005)});
               stroke(body,'#bd985c',trim,.008).name='cape-trim';
             });
           }
@@ -288,7 +288,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   } else if (kind === 'owl') {
     const navy = id === 'email-owl', feathers = navy ? '#293b51' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
     body.position.y = navy?.49:.41; data.bodyY = body.position.y; head.position.y = navy?.91:.81; data.headY = head.position.y;
-    if(navy)head.position.z=.065;
+    head.position.z=navy?.065:.025;
     sculpt(body, navy ? 'owlBody' : 'paperBody', feathers, [0, 0, 0], [.70, navy?.83:.70, navy?.55:.62], undefined, navy ? 'feather' : 'paper');
     sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, .54], undefined, navy ? 'feather' : 'paper');
     [-1, 1].forEach(sign => {
@@ -334,7 +334,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     sculpt(body, 'swiftBody', '#d2a34c', [0,0,0], [1,1,1], undefined, 'paper');
     [-1, 1].forEach(sign => {
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .14, .14, -.03]);
-      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], [1, 1, 1], [-.22,0,0], 'paper');data.wings.push(wing);
+      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.66,.66,.60]:[.86,.86,.80], [-.22,0,0], 'paper');data.wings.push(wing);
       const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .117], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
       data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.127], [.006,.013,.013], undefined, 'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);
@@ -342,7 +342,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(foot,'#957446',[[0,.16,-.04],[0,.075,-.07],[0,.008,0]],.009,'brass'); data.feet.push(foot);
     });
     sculpt(head,'paperBeak','#a57d40',[0,.033,.184],[.50,.48,.64],undefined,'paper');
-    sculpt(body,'swiftTail','#ffffff',[0,-.125,-.17],[1,1,1],undefined,'paper');
+    sculpt(body,'swiftTail','#ffffff',[0,-.125,-.17],[.85,.85,.80],undefined,'paper');
     head.position.y-=body.position.y;body.add(head);
     const expression=joint(group,'paper-bird-expression',[0,.40,0]);body.position.y-=.40;expression.add(body);expression.rotation.x=.23;
     data.head=expression;data.headY=.40;data.bodyY=body.position.y;
@@ -361,8 +361,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
   }
   if(wayfinder)head.rotation.z=id==='intake-beacon'?-.095:id==='intake-relay'?.045:id==='intake-compass'?.11:-.025;
-  if(id==='reflection-echo')head.rotation.z=-.07;
-  if(id==='reflection-quill')head.rotation.z=.045;
+  if(id==='reflection-echo'){head.rotation.z=-.07;head.rotation.y=.14;}
+  if(id==='reflection-quill'){head.rotation.z=.045;head.rotation.y=-.12;}
   if(id==='email-owl'){head.rotation.z=-.06;head.rotation.y=.055;}
   data.restHead=data.head.rotation.clone();
   data.eyes.forEach(eye => { eye.userData.restEyeY = eye.scale.y; });

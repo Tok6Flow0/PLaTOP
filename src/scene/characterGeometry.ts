@@ -10,6 +10,7 @@ export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'pa
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.49,.13],[.39,.34],[.25,.46],[0,.5]];
+const wayfinderContour=new THREE.SplineCurve(wayfinderProfile.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(16);
 interface CharacterResources {
   geometry: Map<string, THREE.BufferGeometry>;
   material: Map<string, THREE.MeshStandardMaterial>;
@@ -138,21 +139,40 @@ function smallHeart(): THREE.BufferGeometry {
   geometry.translate(0, 0, -.4); return geometry;
 }
 
-/** Open-backed cape follows the shoulders and flares into a rounded hem. */
+/** Both the cloth and its piping follow the real elliptical torso, including its back. */
+export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
+  const y=.29-t*.72,normalized=(y+.005)/1.06;
+  let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
+  const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
+  const fold=.008*Math.sin(angle*5)*Math.sin(Math.PI*t);
+  return [Math.sin(angle)*(r*.85+.026+.026*t-inset+fold),y,Math.cos(angle)*(r*.64+.028+.019*t-inset+fold)];
+}
+
+/** Open-front lined cape follows the shoulders and flares into a rounded hem. */
 function cape(): THREE.BufferGeometry {
   const vertices: number[] = [], indices: number[] = [], columns = 18, rows = 6;
   for (let row = 0; row <= rows; row++) {
-    const t = row / rows, radius = .31 + .15 * t,bound=.20+1.05*Math.sin(t*Math.PI/2);
+    const t = row / rows,bound=.20+1.05*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
       const angle = bound + column / columns * (Math.PI*2-bound*2);
-      vertices.push(Math.sin(angle) * radius, .29 - t * .72,
-        Math.cos(angle) * radius * .80 + .08 + .014*Math.sin(angle*5)*Math.sin(Math.PI*t));
+      vertices.push(...navigatorCapePoint(t,angle));
       if (row < rows && column < columns) {
         const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
         indices.push(a, d, b, a, c, d);
       }
     }
   }
+  // A turned-in lining and joined rims give the cape thickness at the collar
+  // and lapels. Both sides remain visible from the close observer camera.
+  const outer=vertices.length/3,front=[...indices];
+  for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
+    const t=row/rows,bound=.20+1.05*Math.sin(t*Math.PI/2),angle=bound+col/columns*(Math.PI*2-bound*2);
+    vertices.push(...navigatorCapePoint(t,angle,.014));
+  }
+  for(let i=0;i<front.length;i+=3)indices.push(front[i]+outer,front[i+2]+outer,front[i+1]+outer);
+  const join=(a:number,b:number)=>indices.push(a,b,b+outer,a,b+outer,a+outer);
+  for(let col=0;col<columns;col++){join(col,col+1);join(rows*(columns+1)+col+1,rows*(columns+1)+col);}
+  for(let row=0;row<rows;row++){join((row+1)*(columns+1),row*(columns+1));join(row*(columns+1)+columns,(row+1)*(columns+1)+columns);}
   const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
 }
@@ -223,11 +243,12 @@ function paperOwlHead(quill=false): THREE.BufferGeometry {
     const center=vertices.length;vertices.push([side?.18:-.18,-.015,.46]);
     for(let i=0;i<cheek.length;i++){const a=outline.length+side*cheek.length+i,b=outline.length+side*cheek.length+(i+1)%cheek.length;faces.push([a,b,center]);colors.push('#edd6b0');}
   }
-  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.87,y*.88,-.29] as Tuple));
-  const rearCenter=vertices.length;vertices.push([0,.03,-.39]);
+  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.94,y*.95,-.015] as Tuple));
+  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.60,y*.76,-.20] as Tuple));
+  const rearCenter=vertices.length;vertices.push([0,.03,-.25]);
   for(let i=0;i<outline.length;i++){
-    const j=(i+1)%outline.length;faces.push([i,back+i,back+j],[i,back+j,j],[back+j,back+i,rearCenter]);
-    colors.push('#c1a582','#d0b591','#ba9e7a');
+    const j=(i+1)%outline.length;faces.push([i,shoulder+i,shoulder+j],[i,shoulder+j,j],[shoulder+i,back+i,back+j],[shoulder+i,back+j,shoulder+j],[back+j,back+i,rearCenter]);
+    colors.push('#c7ad8a','#d0b591','#c1a582','#c8b18c','#ba9e7a');
   }
   return polyhedron(vertices,faces,colors);
 }
@@ -238,7 +259,7 @@ function paperOwlBody(): THREE.BufferGeometry {
     [[-.40,-.03,.34],[.39,-.08,.34],[.50,.02,-.06],[.26,-.03,-.43],[-.29,.03,-.43],[-.50,.08,-.08]],
     [[-.27,.34,.27],[.26,.35,.27],[.34,.36,-.03],[.17,.36,-.29],[-.20,.35,-.30],[-.35,.32,-.02]],
   ];
-  const vertices=rings.flat();vertices.push([0,.49,0],[0,-.5,-.04],[-.08,-.01,.41],[.09,-.5,.17]);
+  const vertices=rings.flat();vertices.push([0,.49,.42],[0,-.5,-.04],[-.08,-.01,.41],[.09,-.5,.17]);
   const faces:number[][]=[];
   for(let r=0;r<2;r++)for(let i=0;i<6;i++){
     const j=(i+1)%6;
@@ -271,14 +292,20 @@ function spiritHood(relay = false): THREE.BufferGeometry {
   return smoothDeformedSurface(geometry);
 }
 
-function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
+function spiritProfile(variant:'compass'|'lens'|'relay'):Array<[number,number]> {
   const profile: Array<[number,number]>=[[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75]];
   if(variant!=='compass'){profile[1]=[.25,-.603];profile[2]=[.44,-.52];}
   profile.push(...(variant==='compass'?[[.12,.84],[.055,.93],[0,1.03]]:[[.09,.80],[0,.81]]) as Array<[number,number]>);
+  return profile;
+}
+function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
+  const profile=spiritProfile(variant);
   const geometry=softLathe(profile,32,32),p=geometry.attributes.position;
   for(let i=0;i<p.count;i++){
     const y=p.getY(i),hem=Math.pow(Math.max(0,(.23-y)/.847),1.25);
-    const theta=Math.atan2(p.getX(i),p.getZ(i)),fold=.018*hem*Math.sin(theta*3+y*5);
+    const theta=Math.atan2(p.getX(i),p.getZ(i)),t=Math.min(1,Math.max(0,(.20-y)/.81));
+    const crease=(variant==='lens'?-1:1)*(-.85+1.6*t);
+    const fold=.018*hem*Math.sin(theta*3+y*5)+.047*Math.sin(Math.PI*t)*Math.exp(-(((theta-crease)/.26)**2));
     p.setXYZ(i,p.getX(i)+Math.sin(theta)*fold+(variant==='compass'?0:variant==='lens'?-.17:.17)*hem,y,p.getZ(i)+Math.cos(theta)*fold);
   }
   return smoothDeformedSurface(geometry);
@@ -286,7 +313,7 @@ function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
 
 /** An actual overlapping hood, open around the face and draped down the back. */
 function spiritCowl(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
-  const profile:Array<[number,number]>=[[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75],...(variant==='compass'?[[.12,.84],[.055,.93],[0,1.03]]:[[.09,.80],[0,.81]]) as Array<[number,number]>];
+  const profile=spiritProfile(variant);
   const contour=new THREE.SplineCurve(profile.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(128);
   const radiusAt=(y:number)=>{let i=0;while(i<contour.length-2&&contour[i+1].y<y)i++;const a=contour[i],b=contour[i+1];return Math.max(0,a.x+(b.x-a.x)*(y-a.y)/(b.y-a.y));};
   const levels=variant==='compass'?[.24,.35,.51,.67,.76,.87,1.025]:[.24,.35,.51,.67,.76,.79,.807];
@@ -384,7 +411,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .16], [.50, .32], [.42, .46], [0, .5]]);
-    case 'swiftBody': return foldedBirdVolume([[-.22,.045,.075,-.01],[-.06,.12,.17,.035],[.11,.145,.125,.025],[.22,.108,.13,.105],[.32,.125,.135,.12],[.42,.10,.10,.10],[.46,.028,.035,.065]]);
+    case 'swiftBody': return foldedBirdVolume([[-.22,.045,.075,-.01],[-.06,.12,.17,.035],[.11,.145,.16,.07],[.22,.108,.13,.105],[.32,.125,.135,.12],[.42,.10,.10,.10],[.46,.028,.035,.065]]);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[0,.09,.09],[-.09,.07,.03],[.09,.07,.03],[-.16,-.11,-.28],[.16,-.11,-.28],[0,-.03,-.19],[0,.022,-.12]],[[0,1,3,6],[0,6,4,2],[3,5,6],[4,6,5],[0,2,1],[1,2,4,5,3]],['#cda24d','#dfb65d','#386a65','#386a65','#bd964c','#b88b39']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -472,14 +499,14 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .51 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather' ? .82 : .76,
+      roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather' ? .82 : .76,
       metalness: finish === 'brass' ? .52 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
     });
     if (finish === 'ink') material.envMapIntensity = .65;
     if (['clay','glaze','paper','feather','facialFeather'].includes(finish)) {
-      material.envMapIntensity=.5;
-      material.bumpMap=finish==='facialFeather'?facialGrain(kit):surfaceGrain(kit);material.bumpScale=finish==='facialFeather'?.004:.010;
+      material.envMapIntensity=finish==='glaze'?.75:.5;
+      material.bumpMap=finish==='facialFeather'?facialGrain(kit):surfaceGrain(kit);material.bumpScale=finish==='facialFeather'?.004:finish==='glaze'?.005:.010;
       material.map=material.bumpMap;
     }
     cache.set(key, material);
@@ -540,7 +567,7 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     }
     const area=boundary.reduce((sum,[x,y],i)=>{const next=boundary[(i+1)%boundary.length];return sum+x*next[1]-next[0]*y},0);if(area<0)boundary.reverse();
     const vertices: number[] = [], normals: number[] = [], indices: number[] = [], rings = 6;
-    const contour = torsoSurface ? new THREE.SplineCurve(wayfinderProfile.map(([r, y]) => new THREE.Vector2(r, y))).getPoints(16) : undefined;
+    const contour = torsoSurface ? wayfinderContour : undefined;
     const add = (x: number, y: number) => {
       const px = x + centre[0], py = y + centre[1];
       let surface: number;

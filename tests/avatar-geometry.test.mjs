@@ -25,7 +25,7 @@ async function load(relative) {
 const { teams } = await load('teams.ts');
 const { SceneKit, disposeObject } = await load('scene/primitives.ts');
 const { makeProxy, animateCharacter } = await load('scene/proxies.ts');
-const { characterGeometry, characterMaterial } = await load('scene/characterGeometry.ts');
+const { characterGeometry, characterMaterial, navigatorCapePoint } = await load('scene/characterGeometry.ts');
 const members = teams.flatMap(team => team.members);
 
 function meshes(root) {
@@ -220,7 +220,7 @@ test('walking and explicit resting suppress stationary gestures until the charac
   disposeObject(all); kit.dispose();
 });
 
-test('continuous robed and book faces remain rigidly attached to their shell through agent gestures and walking',()=>{
+test('continuous robed, book, and bird faces remain rigidly attached through agent gestures and walking',()=>{
   const kit=new SceneKit(),all=new THREE.Group();
   for(const member of members.filter(member=>member.id.startsWith('hr-')||['bridge-keeper','email-swift'].includes(member.id))){
     const model=makeProxy(member,kit);all.add(model);model.updateMatrixWorld(true);
@@ -234,6 +234,30 @@ test('continuous robed and book faces remain rigidly attached to their shell thr
     }
   }
   disposeObject(all);kit.dispose();
+});
+
+test('the lined cape is closed and consistently wound at the collar, lapels, and hem',()=>{
+  const kit=new SceneKit(),geometry=characterGeometry(kit,'cape'),edges=new Map();
+  const indices=geometry.index;
+  for(let i=0;i<indices.count;i+=3)for(let j=0;j<3;j++){
+    const a=indices.getX(i+j),b=indices.getX(i+(j+1)%3),key=[Math.min(a,b),Math.max(a,b)].join(':');
+    const edge=edges.get(key)??{count:0,balance:0};edge.count++;edge.balance+=a<b?1:-1;edges.set(key,edge);
+  }
+  for(const edge of edges.values()){assert.equal(edge.count,2);assert.equal(edge.balance,0);}
+  geometry.dispose();kit.dispose();
+});
+
+test('the cape lining clears the real torso around the shoulders, sides, and back',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const body=model.userData.personality.body,shell=body.getObjectByName('wayfinderBody');body.updateWorldMatrix(true,true);
+  for(let row=0;row<=12;row++)for(let col=0;col<=24;col++){
+    const t=row/12,bound=.20+1.05*Math.sin(t*Math.PI/2),angle=bound+col/24*(Math.PI*2-bound*2);
+    const lining=new THREE.Vector3(...navigatorCapePoint(t,angle,.014)).applyMatrix4(body.matrixWorld);
+    const center=new THREE.Vector3(0,.29-t*.72,0).applyMatrix4(body.matrixWorld),outward=lining.clone().sub(center).normalize();
+    const hit=new THREE.Raycaster(center.clone().addScaledVector(outward,2),outward.clone().negate()).intersectObject(shell,false)[0];
+    assert.ok(hit && lining.distanceTo(center)>hit.point.distanceTo(center)+.006,'cloth remains outside the actual torso');
+  }
+  disposeObject(model);kit.dispose();
 });
 
 test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
