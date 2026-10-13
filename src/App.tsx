@@ -7,11 +7,15 @@ import type { Activity, SceneState } from './types';
 import { useViewMode } from './useViewMode';
 import { useWindowWeather } from './idle/useWindowWeather';
 import { WindowGlass, WeatherControls } from './idle/WindowWeather';
+import { useLocalDaylight } from './useLocalDaylight';
+import type { CSSProperties } from 'react';
+import './daylight.css';
 const labels: Record<Activity, string> = { active: 'At work', sleeping: 'Resting', waiting: 'Waiting', unknown: 'Awaiting update' };
 function CharacterPortrait({ id, label, className = '' }: { id: string; label: string; className?: string }) {
   return <img src={`/avatars/${id}.png`} alt={label} className={className} width="128" height="128" />;
 }
-export function App() {
+export function App({ clock }: { clock?: () => Date } = {}) {
+  const daylight = useLocalDaylight(clock);
   const [selected, setSelected] = useState(() => {
     try { const saved = localStorage.getItem('platop.selected-team'); return teams.some(team => team.id === saved) ? saved! : teams[0].id; }
     catch { return teams[0].id; }
@@ -26,7 +30,7 @@ export function App() {
   useEffect(() => { const query = matchMedia('(prefers-reduced-motion: reduce)'); const change = () => setReducedMotion(query.matches); query.addEventListener('change', change); return () => query.removeEventListener('change', change); }, []);
   useEffect(() => { try { localStorage.setItem('platop.selected-team', selected); } catch { /* Selection still works for this visit. */ } }, [selected]);
   const activity = useMemo(() => Object.fromEntries(teams.map(t => [t.id, connected ? snapshot?.teams.find(s => s.teamId === t.id)?.state ?? 'unknown' : 'unknown'])) as Record<string, Activity>, [snapshot, connected]);
-  const sceneState: SceneState = useMemo(() => ({ selectedTeam: selected, activity, decorations: {}, paused, reducedMotion, actions: connected ? snapshot?.actions : undefined, assets: snapshot?.assets, rooms: snapshot?.rooms, controlMode: connected ? 'live' : 'offline' }), [selected, activity, paused, reducedMotion, connected, snapshot]);
+  const sceneState: SceneState = useMemo(() => ({ selectedTeam: selected, activity, decorations: {}, paused, reducedMotion, actions: connected ? snapshot?.actions : undefined, assets: snapshot?.assets, rooms: snapshot?.rooms, controlMode: connected ? 'live' : 'offline', daylight }), [selected, activity, paused, reducedMotion, connected, snapshot, daylight]);
   const selectTeam = useCallback((id: string) => setSelected(id), []);
   useEffect(() => {
     if (!view.idle) return;
@@ -46,12 +50,12 @@ export function App() {
   function nextWindow(direction: number) { setSelected(current => teams[(teams.findIndex(t => t.id === current) + direction + teams.length) % teams.length].id); }
   const team = teams.find(t => t.id === selected)!;
   const updated = snapshot?.teams.find(t => t.teamId === selected)?.updatedAt;
-  return <div className={`app-shell${view.idle ? ' idle-shell' : ''}${view.desktop ? ' desktop-shell' : ''}`}>
+  return <div className={`app-shell${view.idle ? ' idle-shell' : ''}${view.desktop ? ' desktop-shell' : ''}`} data-time-phase={daylight.phase} data-theme={daylight.dark ? 'dark' : 'light'} style={{ '--sky-center': daylight.backdrop[0], '--sky-edge': daylight.backdrop[1] } as CSSProperties}>
     <header className="app-header"><a className="brand" href="/" aria-label="PLaTOP home"><img className="brand-logo" src="/brand/platop-logo-128.png" alt="" width="36" height="36" /><strong>PLaTOP</strong></a><span className="tagline">A little place for your team.</span><div className="header-actions"><button className="connection" onClick={() => dialog.current?.showModal()}><span className={`dot ${connected ? 'live' : ''}`} />{connected ? 'Local playground' : 'Connect your chats'}</button><button className="button view-button" aria-label="Window view" onClick={() => view.setIdle(true)} title="Look through an office window"><Icon name="window" /><span>Window view</span></button><button className="button fullscreen-button" aria-pressed={view.fullscreen} onClick={view.toggleFullscreen} aria-label={view.fullscreen ? 'Exit full screen' : 'Full screen'} title={view.fullscreen ? 'Exit full screen' : 'Full screen'}><Icon name="fullscreen" /><span>{view.fullscreen ? 'Exit full screen' : 'Full screen'}</span></button><button className="button pause-button" aria-pressed={paused} aria-label={paused ? 'Resume view' : 'Pause view'} title="Pause only your view; agents keep working" onClick={() => setPaused(v => !v)}><Icon name={paused ? 'play' : 'pause'} /><span>{paused ? 'Resume' : 'Pause'}</span></button></div></header>
     <main className="app-main"><nav className="team-rail" aria-label="Your teams"><h2>Your teams</h2><div className="team-list">{teams.map(t => <button key={t.id} className={`team-button ${selected === t.id ? 'selected' : ''}`} aria-current={selected === t.id ? 'true' : undefined} onClick={() => setSelected(t.id)}><CharacterPortrait id={t.members[0].id} label={`${t.name} character portrait`} className="team-chip" /><span className="team-label"><strong>{t.name}</strong><small>{t.role}</small></span><span className={`team-dot ${activity[t.id]}`} aria-label={labels[activity[t.id]]} /></button>)}</div><div className="rail-note"><Icon name="plant" /><p>Small teams,<br />brighter days.</p></div></nav>
       <Workspace state={sceneState} onSelect={selectTeam} idleTeam={view.idle ? selected : null}>
         {view.idle && <>
-          <WindowGlass weather={weather.weather} reducedMotion={reducedMotion} paused={paused} />
+          <WindowGlass weather={weather.weather} phase={daylight.phase === 'sunset' ? 'dusk' : daylight.phase} reducedMotion={reducedMotion} paused={paused} />
           <div className="window-frame" aria-hidden="true"><span className="window-mullion" /></div>
           <div className="idle-caption"><span className="idle-brand"><img src="/brand/platop-logo-128.png" alt="" width="24" height="24" />PLaTOP · A little window into your team</span><h1>{team.name}</h1><p>{labels[activity[selected]]} · windows change every two hours</p></div>
           {!view.desktop && <div className="idle-toolbar" aria-label="Window view controls">

@@ -8,7 +8,7 @@ const drops = Array.from({ length: 16 }, (_, index) => ({
   '--drop-duration': `${3.8 + index % 5 * 0.7}s`, '--drop-delay': `${-index * 1.17}s`,
   '--drop-travel': `${48 + index % 4 * 24}px`, '--drop-size': `${3 + index % 3}px`,
 } as CSSProperties));
-export const WindowGlass = memo(function WindowGlass({ weather, reducedMotion = false, paused = false }: { weather: Weather | null; reducedMotion?: boolean; paused?: boolean }) {
+export const WindowGlass = memo(function WindowGlass({ weather, phase, reducedMotion = false, paused = false }: { weather: Weather | null; phase?: Weather['phase']; reducedMotion?: boolean; paused?: boolean }) {
   const [hidden, setHidden] = useState(() => document.visibilityState === 'hidden' || (window as Window & { __PLATOP_DESKTOP_VISIBLE__?: boolean }).__PLATOP_DESKTOP_VISIBLE__ === false);
   useEffect(() => {
     const changed = () => setHidden(document.visibilityState === 'hidden' || (window as Window & { __PLATOP_DESKTOP_VISIBLE__?: boolean }).__PLATOP_DESKTOP_VISIBLE__ === false);
@@ -17,7 +17,7 @@ export const WindowGlass = memo(function WindowGlass({ weather, reducedMotion = 
   }, []);
   const rain = weather?.condition === 'rain' || weather?.condition === 'thunderstorm';
   const snow = weather?.condition === 'snow';
-  return <div className={`window-glass phase-${weather?.phase ?? 'day'} weather-${weather?.condition ?? 'clear'} ${reducedMotion || paused || hidden ? 'glass-still' : ''}`} aria-hidden="true">
+  return <div className={`window-glass phase-${phase ?? weather?.phase ?? 'day'} weather-${weather?.condition ?? 'clear'} ${reducedMotion || paused || hidden ? 'glass-still' : ''}`} aria-hidden="true">
     <div className="glass-weather-tint" /><div className="glass-reflection" />
     {rain ? <div className="glass-rain" style={{ opacity: 0.45 + (weather?.rainIntensity ?? 0) * 0.4 }}>{drops.map((style, index) => <i className="glass-drop" key={index} style={style} />)}</div> : null}
     {snow ? <div className="glass-snow">{drops.slice(0, 12).map((style, index) => <i className="glass-flake" key={index} style={style} />)}</div> : null}

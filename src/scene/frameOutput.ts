@@ -105,6 +105,8 @@ export class FrameOutput {
   private pipeline?: OcclusionPipeline;
   private pipelineAttempted = false;
   private disposed = false;
+  private backdrop: [string, string] = ['#fbf9f1', '#f5f3ed'];
+  private windowBackdrop = '#c4c0aa';
 
   constructor(private readonly renderer: THREE.WebGLRenderer, private readonly scene: THREE.Scene,
     private readonly host: HTMLElement,
@@ -114,6 +116,11 @@ export class FrameOutput {
   }
 
   invalidateBackground(): void { this.backgroundDirty = true; }
+
+  setBackdrop(center: string, edge: string, windowColor: string): void {
+    if (this.backdrop[0] === center && this.backdrop[1] === edge && this.windowBackdrop === windowColor) return;
+    this.backdrop = [center, edge]; this.windowBackdrop = windowColor; this.invalidateBackground();
+  }
 
   private resize(): void {
     const canvas = this.renderer.domElement;
@@ -138,13 +145,13 @@ export class FrameOutput {
     this.backgroundTexture?.dispose();
     this.backgroundTexture = undefined;
     if (idle) {
-      this.scene.background = new THREE.Color('#c4c0aa');
+      this.scene.background = new THREE.Color(this.windowBackdrop);
       return;
     }
     const workspace = this.host.closest<HTMLElement>('.workspace');
     if (!workspace) {
       // A standalone scene host has no workspace gradient to reproduce.
-      this.scene.background = new THREE.Color('#f5f3ed');
+      this.scene.background = new THREE.Color(this.backdrop[1]);
       return;
     }
     const outer = workspace.getBoundingClientRect();
@@ -154,7 +161,7 @@ export class FrameOutput {
     canvas.width = this.width;
     canvas.height = this.height;
     const context = canvas.getContext('2d');
-    if (!context) { this.scene.background = new THREE.Color('#f5f3ed'); return; }
+    if (!context) { this.scene.background = new THREE.Color(this.backdrop[1]); return; }
     const image = context.createImageData(this.width, this.height);
     const centerX = outer.width * 0.5;
     const centerY = outer.height * 0.42;
@@ -164,6 +171,8 @@ export class FrameOutput {
     const top = inner.top - outer.top;
     const cssPerPixelX = inner.width / this.width;
     const cssPerPixelY = inner.height / this.height;
+    const start = [1, 3, 5].map(i => parseInt(this.backdrop[0].slice(i, i + 2), 16));
+    const end = [1, 3, 5].map(i => parseInt(this.backdrop[1].slice(i, i + 2), 16));
     // Match the CSS ellipse/farthest-corner gradient in encoded sRGB. This work
     // runs only on resize/view changes; the texture is reused on every frame.
     for (let y = 0; y < this.height; y++) {
@@ -172,9 +181,9 @@ export class FrameOutput {
         const dx = (left + (x + 0.5) * cssPerPixelX - centerX) / radiusX;
         const mix = Math.min(Math.sqrt(dx * dx + dy * dy) / 0.68, 1);
         const offset = (y * this.width + x) * 4;
-        image.data[offset] = Math.round(251 - 6 * mix);
-        image.data[offset + 1] = Math.round(249 - 6 * mix);
-        image.data[offset + 2] = Math.round(241 - 4 * mix);
+        image.data[offset] = Math.round(start[0] + (end[0] - start[0]) * mix);
+        image.data[offset + 1] = Math.round(start[1] + (end[1] - start[1]) * mix);
+        image.data[offset + 2] = Math.round(start[2] + (end[2] - start[2]) * mix);
         image.data[offset + 3] = 255;
       }
     }

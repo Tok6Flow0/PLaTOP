@@ -15,6 +15,7 @@ import { StudioEnvironment, StudioRoomFinishes, roomLightingFactor } from './sce
 import { StaticContacts, actorContactHeight } from './scene/staticContacts';
 import { agentExpression, type AgentExpression } from './scene/agentExpression';
 import { ObserverMist, observerViewportChanged, type ObserverViewport } from './scene/observerMist';
+import { daylightAtHour } from './localDaylight';
 
 // Keep cinematic 3D at a bounded 1.5 backing pixels per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -134,7 +135,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   camera.position.set(0, 38, 27);
   camera.lookAt(0, 0.7, 0);
   camera.updateMatrixWorld();
-  scene.add(new THREE.HemisphereLight('#fff9f0', '#90755f', 0.72));
+  const skyLight = new THREE.HemisphereLight('#fff9f0', '#90755f', 0.72);
+  scene.add(skyLight);
   const sunlight = new THREE.DirectionalLight('#fff4e5', 2.5);
   sunlight.position.set(-9, 19, 11);
   sunlight.castShadow = true;
@@ -150,6 +152,16 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   sunlight.shadow.camera.top = 16;
   sunlight.shadow.camera.bottom = -16;
   scene.add(sunlight);
+  let daylight = daylightAtHour(12);
+  function updateDaylight(next = daylight): void {
+    daylight = next;
+    skyLight.color.set(next.sky); skyLight.groundColor.set(next.ground); skyLight.intensity = next.ambient;
+    sunlight.color.set(next.sun); sunlight.intensity = next.sunIntensity;
+    sunlight.position.set(...next.sunPosition); sunlight.updateMatrixWorld(true);
+    scene.environmentIntensity = next.reflection;
+    output.setBackdrop(...next.backdrop, next.dark ? next.backdrop[1] : '#c4c0aa');
+    renderer.shadowMap.needsUpdate = true;
+  }
   const kit = new SceneKit();
   const campus = makeCampus(kit);
   scene.add(campus);
@@ -178,8 +190,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   });
   const roomFillLights = new Map<string, THREE.PointLight>();
   rooms.forEach((room, id) => {
-    // An explicit agent lighting style may use one soft, local, shadow-free
-    // ceiling bounce. Default rooms add no runtime lights to the shader.
+    // One bounded shadow-free bounce per room, reused at night and for agent
+    // lighting. Daylight defaults still add no point lights to the shader.
     const fill = new THREE.PointLight('#ffe8bf', 0.8, 6.3, 2);
     fill.name = 'Agent room lighting';
     fill.userData.roomStyleFill = true;
@@ -433,7 +445,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       if (!force && office.occupied === office.nextOccupied) continue;
       office.occupied = office.nextOccupied;
       const lighting = state.rooms?.[office.id]?.lighting;
-      const factor = office.occupied ? roomLightingFactor(lighting) : 0;
+      const factor = office.occupied ? roomLightingFactor(lighting) * (1 + daylight.night * .55) : 0;
       const tint = new THREE.Color(lighting?.color ?? '#ffe8bf');
       const baseline = new THREE.Color('#ffe8bf');
       tint.setRGB(tint.r / baseline.r, tint.g / baseline.g, tint.b / baseline.b);
@@ -452,12 +464,12 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       for (const entry of office.assets) entry.material.emissiveIntensity = entry.intensity * factor;
       const fill = roomFillLights.get(office.id)!;
       const ambientFactor = roomLightingFactor({ ...lighting, brightness: lighting?.ambientBrightness ?? lighting?.brightness });
-      fill.visible = office.occupied && !!lighting && Object.keys(lighting).length > 0 && ambientFactor > 0;
-      fill.intensity = 0.8 * ambientFactor;
+      fill.visible = office.occupied && (daylight.night > .01 || !!lighting && Object.keys(lighting).length > 0) && ambientFactor > 0;
+      fill.intensity = (0.8 + daylight.night * 4.2) * ambientFactor;
       fill.color.set(lighting?.ambientColor ?? lighting?.color ?? '#ffe8bf');
-      const room = rooms.get(office.id)!;
       const position = lighting?.ambientPosition ?? [0, 2.4, -0.5];
-      fill.position.set(room.center.x + position[0], position[1], room.center.z + position[2]);
+      // The bounce is a child of room.root; its coordinates are already local.
+      fill.position.set(...position);
       fill.updateMatrix();
       fill.updateMatrixWorld(true);
     }
@@ -1166,7 +1178,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     host.dataset.sceneFps = '0';
     onError?.('The 3D context was interrupted. Team status remains available.');
   }
-  function restored(): void { contextLost = false; bufferDpr = 0; studio.restore(); staticContacts.restore(); renderer.shadowMap.needsUpdate = true; onError?.(''); wake(); }
+  function restored(): void { contextLost = false; bufferDpr = 0; studio.restore(); updateDaylight(); staticContacts.restore(); renderer.shadowMap.needsUpdate = true; onError?.(''); wake(); }
   controls.addEventListener('change', cameraChanged);
   canvas.addEventListener('pointerdown', pointerDown, { capture: true });
   canvas.addEventListener('pointerup', click);
@@ -1272,6 +1284,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       if (newlyInactive.length) settlingRemaining = 1;
       if (idleTeamId && newlyInactive.some((team) => team.id !== idleTeamId)) deferredCampusSettle = true;
       const priorControl = state.controlMode;
+      if (next.daylight && next.daylight.hour !== daylight.hour) updateDaylight(next.daylight);
       state = { ...next, controlMode: next.controlMode ?? 'live', activity: { ...next.activity }, decorations: { ...next.decorations } };
       if (priorControl !== state.controlMode) for (const actor of actors) {
         actor.proxyPose = undefined;

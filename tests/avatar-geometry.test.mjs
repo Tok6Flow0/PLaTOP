@@ -74,42 +74,19 @@ test('standing feet touch the floor and keep that height when the room lifts a s
   disposeObject(all); kit.dispose();
 });
 
-test('compact helper feet overlap the actual lower belly surface instead of hanging below it', () => {
-  const kit = new SceneKit(), all = new THREE.Group();
-  for (const character of members.filter(character => character.kind === 'robot')) {
-    const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
-    const torso = model.getObjectByName('ceramic-belly');
-    for (const [index, foot] of model.userData.personality.feet.entries()) {
-      const shoe = foot.children.find(mesh => mesh.isMesh && mesh.geometry === characterGeometry(kit, 'bean'));
-      const bounds = new THREE.Box3().setFromObject(shoe), centre = bounds.getCenter(new THREE.Vector3());
-      const sign = index ? 1 : -1;
-      const ray = new THREE.Raycaster(new THREE.Vector3(sign * 2, bounds.max.y * .9, centre.z), new THREE.Vector3(-sign, 0, 0));
-      const contact = ray.intersectObject(torso, false)[0];
-      assert.ok(contact && contact.point.x >= bounds.min.x && contact.point.x <= bounds.max.x,
-        `${character.id}/${foot.name} joins the visible belly through the top of its small shoe`);
-    }
-  }
-  disposeObject(all); kit.dispose();
-});
-
-test('Scout cream belly inset follows the pear surface without clipping into it or floating away', () => {
-  const kit = new SceneKit(), model = makeProxy(members.find(character => character.id === 'bridge-scout'), kit);
-  model.updateMatrixWorld(true);
-  const torso = model.getObjectByName('ceramic-belly'), panel = model.getObjectByName('cream-belly-panel');
-  const positions = panel.geometry.attributes.position, vertex = new THREE.Vector3();
-  for (let i = 0; i < positions.count; i++) {
-    vertex.fromBufferAttribute(positions, i).applyMatrix4(panel.matrixWorld);
-    const ray = new THREE.Raycaster(vertex.clone().add(new THREE.Vector3(0, 0, 1)), new THREE.Vector3(0, 0, -1));
-    const body = ray.intersectObject(torso, false)[0];
-    assert.ok(body && vertex.z - body.point.z >= .01 && vertex.z - body.point.z <= .04,
-      'cream panel stays closely fitted to the actual rounded belly');
-  }
-  disposeObject(model); kit.dispose();
+test('Scout keeps a magnifier and compass, rather than the generic cream belly panel', () => {
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-scout'),kit);
+  const head=model.userData.personality.head,body=model.userData.personality.body;
+  assert.ok(head.children.some(mesh=>mesh.name==='ring' && mesh.scale.x>=.30));
+  assert.ok(body.getObjectByName('compass-emblem'));
+  assert.equal(model.getObjectByName('cream-belly-panel'),undefined);
+  assert.equal(model.userData.personality.eyes.length,2);
+  disposeObject(model);kit.dispose();
 });
 
 test('rounded-square helmet cheeks retain a closely fitted visor and rim on the actual curved shell', () => {
   const kit = new SceneKit(), all = new THREE.Group(), vertex = new THREE.Vector3();
-  for (const character of members.filter(character => character.kind === 'robot')) {
+  for (const character of members.filter(character => ['bridge-jarvis','bridge-scout'].includes(character.id) || character.id.startsWith('intake-'))) {
     const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
     const shell = model.getObjectByName('helmet');
     for (const name of ['visor-rim', 'rounded-visor']) {
@@ -129,9 +106,9 @@ test('rounded-square helmet cheeks retain a closely fitted visor and rim on the 
 test('broader merchant shoulders intersect their visible upper arms rather than leaving detached limbs', () => {
   const kit = new SceneKit(), all = new THREE.Group();
   const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
-  for (const character of members.filter(character => character.id.startsWith('bridge-'))) {
+  for (const character of members.filter(character => ['bridge-jarvis','bridge-scout'].includes(character.id))) {
     const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
-    const torso = model.getObjectByName('ceramic-belly');
+    const torso = model.userData.personality.body.children.find(child=>child.isMesh);
     for (const [index, arm] of model.userData.personality.arms.entries()) {
       const upper = arm.children.find(child => child.isMesh), bounds = new THREE.Box3().setFromObject(upper);
       const centre = bounds.getCenter(new THREE.Vector3()), sign = index ? 1 : -1;
@@ -294,33 +271,36 @@ test('robot cuffs join feet to their torso and lantern warmth adds no real light
   disposeObject(all); kit.dispose();
 });
 
-test('approved office helpers retain soft ceramic silhouettes without costume or folded-paper substitutions', () => {
+test('avatars preserve the distinct original portrait identities and opaque lightweight surfaces', () => {
   const kit = new SceneKit(), all = new THREE.Group();
+  const expected={
+    'bridge-jarvis':['merchantTorso','helmet','ring'],
+    'bridge-scout':['helmet','compass-emblem','ring'],
+    'bridge-keeper':['book','pageFold','seedling-book'],
+    'hr-compass':['spiritBody','spiritHood','hoodTip','compass-emblem'],
+    'hr-lens':['spiritBody','spiritHood','ring'],
+    'hr-relay':['spiritBody','spiritRelayHood','cape'],
+    'intake-jarvis':['torso','cape','hoodTip','compass-emblem'],
+    'intake-beacon':['torso','lanternCap'],
+    'intake-relay':['torso','scroll','book'],
+    'intake-compass':['torso','tuft','circuit-bib'],
+    'support-beacon':['torso','lanternCap','ring'],
+    'reflection-lumen':['hexGlass','hexCap','fineRing'],
+    'reflection-echo':['paperBody','paperDisc','ring'],
+    'reflection-quill':['paperBody','pageFold','quill-pencil'],
+    'email-owl':['owlHead','owlBody','featherFanL','featherFanR','breastFeathers'],
+    'email-swift':['swiftHead','swiftBody','swiftWingL','swiftWingR','paperTail'],
+  };
   for (const character of members) {
-    const model = makeProxy(character, kit); all.add(model);
-    const forms = new Set(meshes(model).map(mesh => mesh.name));
-    for (const form of ['book', 'pageFold', 'cape', 'capePanel', 'hoodTip', 'paperBody', 'paperWing', 'paperTail', 'paperDisc', 'swiftBody']) {
-      assert.equal(forms.has(form), false, `${character.id} keeps the approved soft office silhouette rather than ${form}`);
-    }
-    if (character.kind === 'robot') {
-      assert.ok(forms.has('helmet') && forms.has('ceramic-belly') && forms.has('rounded-visor'),
-        `${character.id} retains the ivory helmet, squat belly and inset rounded visor`);
-      const shell = meshes(model).find(mesh => mesh.name === 'helmet');
-      assert.ok(shell.scale.x > shell.scale.y, `${character.id} helmet stays broad and softly rounded`);
-    } else if (character.kind === 'owl') {
-      assert.ok(forms.has('owlHead') && forms.has('owlBody') && forms.has('wing'),
-        `${character.id} retains the plump owl and soft wings`);
-    } else if (character.kind === 'swift') {
-      assert.ok(forms.has('helmet') && forms.has('owlBody') && forms.has('wing'),
-        'Swift retains rounded bird surfaces and swept wings');
-    } else if (character.id === 'reflection-lumen') {
-      assert.ok(forms.has('lanternGlass') && forms.has('lanternCap') && forms.has('curved-lantern-rail'),
-        'Lumen retains a real amber lantern with a rounded metal cage');
-    }
-    for (const mesh of meshes(model)) {
-      assert.equal(mesh.material.transparent, false, 'character surfaces add no transparent render pass');
-      assert.ok(mesh.scale.x > 0 && mesh.scale.y > 0 && mesh.scale.z > 0, 'character surfaces retain valid winding');
+    const model=makeProxy(character,kit);all.add(model);
+    for(const form of expected[character.id]) assert.ok(model.getObjectByName(form),character.id+' retains '+form);
+    for(const mesh of meshes(model)) {
+      assert.equal(mesh.material.transparent,false,'no extra transparent character pass');
+      assert.ok(mesh.scale.x>0&&mesh.scale.y>0&&mesh.scale.z>0,'valid surface winding');
     }
   }
-  disposeObject(all); kit.dispose();
+  const grain=characterMaterial(kit,'#aabbcc','paper').bumpMap;
+  assert.ok(grain.isDataTexture && grain.image.width===256 && grain.image.height===256);
+  assert.equal(characterMaterial(kit,'#bbccdd','feather').bumpMap,grain,'all tactile materials reuse one micrograin');
+  disposeObject(all);kit.dispose();
 });

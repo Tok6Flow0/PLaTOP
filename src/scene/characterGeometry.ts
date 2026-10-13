@@ -12,6 +12,7 @@ const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37
 interface CharacterResources {
   geometry: Map<string, THREE.BufferGeometry>;
   material: Map<string, THREE.MeshStandardMaterial>;
+  grain?: THREE.DataTexture;
 }
 
 // Model resources belong to one office scene. Every cached surface is attached
@@ -154,7 +155,7 @@ function cape(): THREE.BufferGeometry {
 function feather(): THREE.BufferGeometry {
   const geometry = new THREE.SphereGeometry(.5, 8, 6), position = geometry.attributes.position;
   for (let i = 0; i < position.count; i++) {
-    const y = position.getY(i), taper = .40 + .60 * (y + .5);
+    const y = position.getY(i), taper = .08 + .92 * Math.pow(Math.max(0,y + .5),.45);
     position.setXYZ(i, position.getX(i) * taper, y < -.20 ? -.20 + (y + .20) * 1.27 : y, position.getZ(i));
   }
   return smoothDeformedSurface(geometry);
@@ -211,15 +212,15 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
   const sculpt = feather(), source = sculpt.toNonIndexed(), vertices: number[] = [], normals: number[] = [];
   sculpt.dispose();
-  const count = breast ? 8 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
+  const count = breast ? 11 : 12, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
-    const row = Math.floor(featherIndex / (breast ? 3 : 2)), column = featherIndex % (breast ? 3 : 2);
-    const x = breast ? (column - 1) * .125 : sign * (column * .065 - .025);
+    const row = Math.floor(featherIndex / 3), column = featherIndex % 3;
+    const x = breast ? (column - 1) * .105 : sign * (column * .045 - .035);
     quaternion.setFromEuler(new THREE.Euler(0, breast ? -x * 1.3 : 0, breast ? -x * .55 : -sign * (.20 + column * .18)));
-    matrix.compose(new THREE.Vector3(x, breast ? .08 - row * .14 : .075 - row * .13,
-      breast ? .025 - Math.abs(x) * .20 : .10 + column * .022), quaternion,
-    new THREE.Vector3(breast ? .21 : .18, breast ? .27 : .33, .065)); normalMatrix.getNormalMatrix(matrix);
+    matrix.compose(new THREE.Vector3(x, breast ? .13 - row * .11 - Math.abs(x)*.18 : .12 - row * .11,
+      breast ? .012 - Math.abs(x)*.34 - row*.016 : .102 + column*.012 - row*.018), quaternion,
+    new THREE.Vector3(breast ? .17 : .14, breast ? .225 : .30, .036)); normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
       point.fromBufferAttribute(source.attributes.position, i).applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
       vertices.push(point.x, point.y, point.z); normals.push(normal.x, normal.y, normal.z);
@@ -285,7 +286,28 @@ export function characterGeometry(kit: SceneKit, form: CharacterForm): THREE.Buf
   const cache = owned(kit).geometry;
   let geometry = cache.get(form);
   if (!geometry) { geometry = makeGeometry(form); cache.set(form, geometry); }
+  if (!geometry.attributes.uv) {
+    const p=geometry.attributes.position,uv=new Float32Array(p.count*2);
+    for(let i=0;i<p.count;i++){uv[i*2]=p.getX(i)+.5;uv[i*2+1]=p.getY(i)+.5}
+    geometry.setAttribute('uv',new THREE.BufferAttribute(uv,2));
+  }
   return geometry;
+}
+
+/** A single scene-owned micrograin gives clay/paper tactile detail without more meshes. */
+function surfaceGrain(kit: SceneKit): THREE.DataTexture {
+  const owner=owned(kit);
+  if(owner.grain) return owner.grain;
+  const size=256,data=new Uint8Array(size*size*4);let seed=181;
+  for(let i=0;i<size*size;i++) {
+    seed=(Math.imul(seed,1664525)+1013904223)>>>0;
+    const grain=218+(seed>>>24)*.145;
+    data.set([grain,grain,grain,255],i*4);
+  }
+  const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
+  texture.userData.platopCharacterGrain=true;
+  texture.repeat.set(4,4);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.generateMipmaps=true;texture.needsUpdate=true;owner.grain=texture;return texture;
 }
 
 export function characterMaterial(kit: SceneKit, color: string, finish: CharacterFinish = 'clay'): THREE.MeshStandardMaterial {
@@ -293,13 +315,16 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'ink' ? .32 : finish === 'glaze' ? .40 : finish === 'brass' ? .36 : finish === 'amber' ? .24 : finish === 'paper' ? .94 : finish === 'feather' ? .86 : .70,
-      metalness: finish === 'brass' ? .36 : 0,
+      roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .51 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather' ? .82 : .76,
+      metalness: finish === 'brass' ? .52 : 0,
       ...(finish === 'amber' ? { emissive: '#ff9d2b', emissiveIntensity: .50 } : {}),
     });
     if (finish === 'ink') material.envMapIntensity = .65;
     if (finish === 'paper') material.envMapIntensity = .35;
     if (finish === 'feather') material.envMapIntensity = .42;
+    if (['clay','glaze','paper','feather'].includes(finish)) {
+      material.bumpMap=surfaceGrain(kit);material.bumpScale=finish==='glaze'?.008:finish==='feather'?.017:.012;
+    }
     cache.set(key, material);
   }
   return material;

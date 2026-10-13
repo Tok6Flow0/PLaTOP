@@ -74,9 +74,15 @@ const portraits=await page.evaluate(async()=>{
    if(team) {
     const count=members.length;
     if(members[0].id==='bridge-jarvis'){
-     model.position.set(index===2?0:index===0?-.62:.62,0,index===2?-.45:.22);
-     model.scale.multiplyScalar(index===2?1.23:index===0?.82:.90);
-     model.rotation.y=index===2?0:index===0?.12:-.12;
+     model.position.set(index===0?0:index===1?-.73:.70,0,index===0?-.25:.18);
+     model.rotation.y=index===0?0:index===1?.12:-.12;
+    }else if(members[0].id==='hr-compass'||members[0].id==='reflection-lumen'){
+     model.position.set(index===0?0:index===1?-.66:.66,0,index===0?-.10:.08);
+     model.rotation.y=index===1?.15:index===2?-.15:0;
+    }else if(members[0].id==='intake-jarvis'){
+     model.position.x=[-.36,-1.11,.42,1.18][index];
+     model.position.z=index===0?.20:-.06;
+     model.rotation.y=[0,.13,-.06,-.16][index];
     }else{
      model.position.x=(index-(count-1)/2)*.82;
      model.position.z=index===Math.floor(count/2)?-.25:.12;
@@ -91,7 +97,7 @@ const portraits=await page.evaluate(async()=>{
    const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3()),span=box.getSize(new THREE.Vector3());
    const target=center.clone();target.y-=.02;
    const dist=Math.max(span.y,span.x/camera.aspect)*.5/Math.tan(THREE.MathUtils.degToRad(camera.fov*.5))*1.18;
-   camera.position.copy(target).add(new THREE.Vector3(.06,.08,1).normalize().multiplyScalar(dist));camera.lookAt(target);
+   camera.position.copy(target).add(new THREE.Vector3(.06,.055,1).normalize().multiplyScalar(dist));camera.lookAt(target);
   } else {
    const model=group.children[0],head=model.userData.personality.head;
    const silhouette=members[0].kind==='lantern'||members[0].kind==='swift';

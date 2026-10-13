@@ -1,0 +1,23 @@
+/* Atmosphere follows the local clock; no onlooker lighting or agent controls. */
+.app-shell {background:#f5f3ed}
+.app-shell .workspace {background:radial-gradient(ellipse at 50% 42%,var(--sky-center,#fbf9f1) 0%,var(--sky-edge,#f5f3ed) 68%)}
+.app-shell[data-theme=dark] {color-scheme:dark;color:#e2e7df;background:#172129}
+[data-theme=dark] .app-header,[data-theme=dark] .app-footer {background:#18232b;border-color:#34424a}
+[data-theme=dark] .team-rail,[data-theme=dark] .team-inspector {background:#1b272f;border-color:#34424a}
+[data-theme=dark] .roster,[data-theme=dark] .team-rail {border-color:#34424a}
+[data-theme=dark] .team-button.selected {background:#30463f}
+[data-theme=dark] .team-button:hover {background:#2a3c3b}
+[data-theme=dark] .tagline,[data-theme=dark] .connection,[data-theme=dark] .team-label small,[data-theme=dark] .member small,[data-theme=dark] .activity-label,[data-theme=dark] .team-inspector blockquote,[data-theme=dark] .workspace-heading p,[data-theme=dark] .app-footer,[data-theme=dark] .app-footer button,[data-theme=dark] .rail-note,[data-theme=dark] .update-note,[data-theme=dark] .scene-hint {color:#aabdb4}
+[data-theme=dark] .button,[data-theme=dark] .camera-controls button,[data-theme=dark] .camera-group,[data-theme=dark] .navigation-mode,[data-theme=dark] .camera-help,[data-theme=dark] .connect-dialog,[data-theme=dark] .scene-error,[data-theme=dark] .view-error,[data-theme=dark] .observer-invitation,[data-theme=dark] .observer-controls,[data-theme=dark] .observer-help {background:#24343deF;color:#e2e7df;border-color:#4e625f}
+[data-theme=dark] .camera-group button {background:transparent}
+[data-theme=dark] .button:hover,[data-theme=dark] .camera-controls button:hover,[data-theme=dark] .navigation-mode button:hover,[data-theme=dark] .navigation-mode button[aria-pressed=true] {background:#395049;color:#f4eee0}
+[data-theme=dark] .camera-help p,[data-theme=dark] .connect-dialog p,[data-theme=dark] .connect-dialog li,[data-theme=dark] .camera-group>span {color:#b9c7bd}
+[data-theme=dark] .connect-dialog code {background:#35463f;color:#e1eadf}
+[data-theme=dark] .team-chip,[data-theme=dark] .member-avatar {background:#354b44}
+[data-theme=dark] .team-portrait {filter:brightness(.77) saturate(.9)}
+[data-theme=dark] .idle-toolbar,[data-theme=dark] .idle-weather-panel,[data-theme=dark] .weather-settings {background:#24343df5;color:#e2e7df;border-color:#526861}
+[data-theme=dark] .idle-toolbar select,[data-theme=dark] .idle-weather-panel .window-weather-controls {color:#e2e7df}
+[data-theme=dark] .idle-toolbar button:hover {background:#395049}
+[data-theme=dark] .observer-invite,[data-theme=dark] .observer-toolbar,[data-theme=dark] .observer-movement,[data-theme=dark] .observer-look {background:#24343def;border-color:#4e625f;color:#e2e7df}
+[data-theme=dark] .observer-invite p,[data-theme=dark] .observer-presence small,[data-theme=dark] .observer-hint {color:#b9c7bd}
+[data-theme=dark] .observer-enter,[data-theme=dark] .observer-exit {background:#395049;border-color:#597468;color:#e2e7df}

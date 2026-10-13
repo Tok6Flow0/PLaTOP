@@ -61,6 +61,17 @@ function canvasMap(width = 2, height = 2, values = Uint8ClampedArray.from({ leng
   return texture;
 }
 
+test('shared character micrograin stays batched with UVs and preserves map ownership', t=>{
+  const {scene,actor,moving,batches}=fixture(t);
+  const grain=new THREE.DataTexture(new Uint8Array(16),2,2);grain.userData.platopCharacterGrain=true;
+  let disposed=0;grain.addEventListener('dispose',()=>disposed++);
+  moving.forEach(mesh=>{mesh.material.bumpMap=grain;mesh.material.bumpScale=.01});batches.rebuild();
+  const batch=scene.getObjectByName('Shared character draws').children.find(mesh=>mesh.isTransformPaletteMesh&&mesh.material.bumpMap===grain);
+  assert.ok(batch&&batch.geometry.attributes.uv);assert.equal(batch.material.bumpScale,.01);
+  assert.equal(batch.instanceCount,2);actor.position.x=3;scene.updateMatrixWorld(true);batches.sync();
+  batches.dispose();assert.equal(disposed,0,'source material retains its grain');grain.dispose();
+});
+
 function mappedPlane(texture, alphaTest = 0) {
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.7), new THREE.MeshStandardMaterial({
     map: texture, roughness: 0.95, metalness: 0, side: THREE.DoubleSide, alphaTest,

@@ -1,0 +1,25 @@
+<!doctype html><meta charset="utf-8"><title>PLaTOP — isolated graphics lab</title>
+<style>body{margin:0;background:#e8e5de;color:#243a34;font:14px system-ui}header{padding:16px;display:flex;gap:16px;align-items:center}button{padding:10px}#host{width:1000px;height:800px;position:relative;background:#f5f3ed}pre{white-space:pre-wrap;max-width:1000px}iframe{border:0;width:1536px;height:1024px;display:block}.workspace{width:1000px;background:radial-gradient(ellipse at 50% 42%,#fbf9f1,#f5f3ed 68%)}</style>
+<header><strong>Isolated graphics lab · no bridge / no agent messages</strong><label>Fixture hour <select id="hour"><option value="12">Noon</option><option value="6">Dawn</option><option value="17.75">Sunset</option><option value="23">Night</option></select></label><button id="run">Run camera benchmark</button></header>
+<div class="workspace"><div id="host"></div></div><pre id="result">Ready. Fixed 1000 × 800 scene, 1.5 DPR cap. Camera-only workload.</pre>
+<script type="module">
+if (!import.meta.env.DEV) throw Error('Development fixture only');
+import {createScene} from '/src/scene.ts';
+import {teams} from '/src/teams.ts';
+import {daylightAtHour} from '/src/localDaylight.ts';
+const host=document.querySelector('#host'),result=document.querySelector('#result'),button=document.querySelector('#run');
+const scene=createScene(host,teams,()=>{},message=>{result.textContent=message});
+const state={selectedTeam:teams[0].id,activity:{},decorations:{},paused:false,reducedMotion:false,controlMode:'offline'};
+scene.update(state);
+document.querySelector('#hour').onchange=event=>{state.daylight=daylightAtHour(Number(event.target.value));scene.update(state)};
+button.onclick=async()=>{
+ button.disabled=true;scene.resetCamera();result.textContent='Warming the fixed camera workload…';
+ const intervals=[],cpu=[],render=[];let start=performance.now(),last=start;
+ await new Promise(resolve=>{function frame(now){scene.rotate(.06);if(now-start>2000){intervals.push(now-last);cpu.push(Number(host.dataset.sceneCpuMs));render.push(Number(host.dataset.sceneRenderMs))}last=now;if(now-start<12000)requestAnimationFrame(frame);else resolve()}requestAnimationFrame(frame)});
+ const metrics={...host.dataset},sorted=intervals.toSorted((a,b)=>a-b);
+ const stats=values=>({mean:values.reduce((a,b)=>a+b,0)/values.length,p95:values.toSorted((a,b)=>a-b)[Math.floor(values.length*.95)]});
+ const report={fixture:'camera orbit, 2s warmup + 10s sample, offline agents',hour:state.daylight?.hour??12,viewport:[1000,800],rafFps:1000*intervals.length/intervals.reduce((a,b)=>a+b,0),rafP95:sorted[Math.floor(sorted.length*.95)],frames:intervals.length,cpu:stats(cpu),render:stats(render),metrics};
+ result.textContent=JSON.stringify(report,null,2);scene.resetCamera();button.disabled=false;
+};
+window.addEventListener('pagehide',()=>scene.dispose(),{once:true});
+</script>

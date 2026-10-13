@@ -41,6 +41,16 @@ function fixture(t, { workspace = true, initialReset = true, pipelineFactory } =
   return { output, renderer, scene, camera, calls, images, dispose, interrupt: () => { failRender = true; } };
 }
 
+test('local-clock backdrop replaces its texture once and keeps idle night dark',t=>{
+  const {output,camera,scene,images}=fixture(t);
+  output.render(camera,false);const prior=scene.background;let disposed=0;prior.addEventListener('dispose',()=>disposed++);
+  output.setBackdrop('#203040','#102030','#142536');output.render(camera,false);
+  assert.equal(disposed,1);assert.notEqual(scene.background,prior);
+  const count=images.length;output.setBackdrop('#203040','#102030','#142536');output.render(camera,false);assert.equal(images.length,count);
+  assert.ok(images.at(-1).data[0]<40,'cached background pixels really darken');
+  output.render(camera,true);assert.equal(scene.background.getHexString(),'142536');
+});
+
 test('unsupported renderer keeps the direct opaque output without a framebuffer copy', t => {
   const { output, renderer, scene, camera, calls } = fixture(t);
   output.render(camera, false);
