@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { SceneKit } from './primitives';
 
-export type CharacterForm = 'torso' | 'helmet' | 'lanternHousing' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody'
+export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'wayfinderBody'
@@ -124,6 +124,18 @@ function lanternHousing():THREE.BufferGeometry {
   return smoothDeformedSurface(geometry);
 }
 
+/** Only a rim, never a second filled face behind the luminous insert. Closely
+ * overlapping full panels fight for depth at the wide campus camera distance. */
+function lanternBezel():THREE.BufferGeometry {
+  const inner=speechBoundary(.554,.419),outer=speechBoundary(.59,.455),columns=inner.length;
+  const vertices:number[]=[],indices:number[]=[];
+  for(const[ring,points]of[inner,outer].entries())for(const[x,y]of points){
+    vertices.push(x,y-.002,.305*Math.sqrt(Math.max(.05,1-(x/.410)**2-((y-.002)/.375)**2))+(ring?-.002:.004));
+  }
+  for(let i=0;i<columns;i++){const j=(i+1)%columns;indices.push(i,i+columns,j,j,i+columns,j+columns);}
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+}
+
 /** Joined wing/ear surfaces taper to a rounded point, with no paper-thin edges. */
 function petal(tuft = false): THREE.BufferGeometry {
   const geometry = new THREE.SphereGeometry(.5, tuft ? 12 : 16, tuft ? 8 : 12);
@@ -187,7 +199,8 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
   const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
   const fold=.008*Math.sin(angle*5)*Math.sin(Math.PI*t);
-  return [Math.sin(angle)*(r*.85+.026+.026*t-inset+fold),y,Math.cos(angle)*(r*.64+.028+.019*t-inset+fold)];
+  const drape=.25+.18*Math.sin(t*Math.PI/2);
+  return [Math.sin(angle)*(Math.max(r*.85+.026+.026*t,drape)-inset+fold),y,Math.cos(angle)*(Math.max(r*.64+.028+.019*t,drape*.78)-inset+fold)];
 }
 
 /** Open-front lined cape follows the shoulders and flares into a rounded hem. */
@@ -250,7 +263,11 @@ function swiftHead(): THREE.BufferGeometry {
  * from every viewpoint. Broad quads keep the folds intentional, not noisy. */
 function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=false):THREE.BufferGeometry {
   const vertices:Tuple[]=[],faces:number[][]=[],columns=softCrown?16:10;
-  for(const[y,rx,rz,z]of rings)for(let i=0;i<columns;i++){const a=i/columns*Math.PI*2;vertices.push([Math.sin(a)*rx,y,Math.cos(a)*rz+z]);}
+  for(const[y,rx,rz,z]of rings)for(let i=0;i<columns;i++){
+    const a=i/columns*Math.PI*2;
+    const fold=softCrown&&y<.23?.055*Math.sin(a+.7)*Math.sin(Math.max(0,(y+.20)/.43)*Math.PI):0;
+    vertices.push([Math.sin(a)*rx,y+fold,Math.cos(a)*rz+z]);
+  }
   for(let row=0;row<rings.length-1;row++)for(let col=0;col<columns;col++){const j=(col+1)%columns;faces.push([row*columns+col,row*columns+j,(row+1)*columns+j,(row+1)*columns+col]);}
   faces.push(Array.from({length:columns},(_,i)=>i),Array.from({length:columns},(_,i)=>(rings.length-1)*columns+i));
   const geometry=polyhedron(vertices,faces);
@@ -258,7 +275,7 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
     const foldedNormals=geometry.attributes.normal.clone();smoothDeformedSurface(geometry);
     const p=geometry.attributes.position,n=geometry.attributes.normal,normal=new THREE.Vector3(),flat=new THREE.Vector3();
     for(let i=0;i<p.count;i++){
-      const blend=THREE.MathUtils.smoothstep(p.getY(i),.12,.31);
+      const blend=THREE.MathUtils.smoothstep(p.getY(i),.08,.23);
       normal.fromBufferAttribute(n,i);flat.fromBufferAttribute(foldedNormals,i).lerp(normal,blend).normalize();n.setXYZ(i,flat.x,flat.y,flat.z);
     }
   }
@@ -275,8 +292,9 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return polyhedron([[.015,.18,.10],[.115,-.06,.07],[.02,-.40,.10],[-.18,-.30,.22],[-.16,.01,.28],[-.04,-.10,.32],[-.025,.15,-.12],[.10,-.08,-.13],[-.01,-.37,-.03]],
-    [[0,1,5],[1,2,5],[2,3,5],[3,4,5],[4,0,5],[0,6,7,1],[1,7,8,2],[2,8,3],[3,8,7,6,4],[4,6,0]]);
+  return polyhedron([[.015,.18,.10],[.10,-.06,.085],[.02,-.40,.10],[-.18,-.30,.22],[-.16,.01,.28],[-.04,-.10,.32],[-.025,.15,.045],[.075,-.08,.050],[-.01,-.37,.055]],
+    [[0,1,5],[1,2,5],[2,3,5],[3,4,5],[4,0,5],[0,6,7,1],[1,7,8,2],[2,8,3],[3,8,7,6,4],[4,6,0]],
+    ['#dec8a2','#ccb58f','#c4a980','#dbc39b','#e9d7b4','#cdb58d','#bda079','#cbb18a','#c4a781','#d8c19b']);
 }
 
 /** Folded volumes close into a tapered back, not an extruded cardboard slab. */
@@ -305,20 +323,12 @@ function paperOwlHead(quill=false): THREE.BufferGeometry {
 }
 
 function paperOwlBody(): THREE.BufferGeometry {
-  const rings:Tuple[][]=[
-    [[-.26,-.5,.17],[.25,-.5,.17],[.39,-.36,-.04],[.21,-.5,-.28],[-.22,-.5,-.28],[-.42,-.34,-.04]],
-    [[-.40,-.03,.34],[.39,-.08,.34],[.50,.02,-.06],[.26,-.03,-.43],[-.29,.03,-.43],[-.50,.08,-.08]],
-    [[-.27,.34,.27],[.26,.35,.27],[.34,.36,-.03],[.17,.36,-.29],[-.20,.35,-.30],[-.35,.32,-.02]],
-  ];
-  const vertices=rings.flat();vertices.push([0,.49,.42],[0,-.5,-.04],[-.08,-.01,.41],[.09,-.5,.17]);
-  const faces:number[][]=[];
-  for(let r=0;r<2;r++)for(let i=0;i<6;i++){
-    const j=(i+1)%6;
-    if(i===0){if(r===0)faces.push([6,0,20],[0,21,20],[21,1,20],[1,7,20]);else faces.push([12,6,20],[12,20,13],[13,20,7]);}
-    else faces.push([r*6+i,r*6+j,(r+1)*6+j],[(r+1)*6+j,(r+1)*6+i,r*6+i]);
-  }
-  for(let i=0;i<6;i++){const j=(i+1)%6;faces.push([12+i,12+j,18],[j,i,19]);}
-  return polyhedron(vertices,faces);
+  // Diagonal valley/mountain folds replace stacked hexagonal box sections.
+  // A projecting breast ridge folds into the lower centre seam; the back
+  // converges into the same shoulder and foot vertices, with no extruded wall.
+  const vertices:Tuple[]=[[0,.48,.15],[-.38,.32,.07],[.36,.31,.08],[-.49,-.03,.02],[.46,-.08,.03],[-.29,-.50,.06],[.28,-.50,.07],[-.035,.18,.45],[.07,-.26,.34],[0,-.50,.18],[0,.30,-.30],[0,-.05,-.42],[0,-.5,-.20],[-.33,0,-.25],[.30,0,-.24]];
+  const faces=[[0,1,7],[0,7,2],[1,3,7],[7,3,8],[7,8,4],[7,4,2],[3,5,8],[8,5,9],[8,9,6],[8,6,4],[0,10,1],[0,2,10],[1,10,13],[1,13,3],[2,14,10],[2,4,14],[10,11,13],[10,14,11],[3,13,5],[4,6,14],[13,11,12],[13,12,5],[14,12,11],[14,6,12],[5,12,9],[9,12,6]];
+  return polyhedron(vertices,faces,['#dfc79e','#ead7b3','#d7bc91','#c4a477','#dbc198','#cbb085','#bfa078','#d0b189','#bfa077','#d7ba8f','#d5bc94','#ccb28a','#c2a67e','#d6ba91','#d8bf98','#c9ac83','#bda077','#ceb28b','#ccb18a','#d7bc94','#c4a680','#cbb18b','#b89b73','#c6aa82','#bda17a','#ccb28a']);
 }
 
 function reflect(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
@@ -372,7 +382,7 @@ function spiritCowl(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
   const edge=new THREE.SplineCurve(levels.map((y,i)=>new THREE.Vector2(gaps[i],y))).getPoints(rows);
   for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
     const bound=Math.max(0,edge[row].x),angle=bound+col/columns*(Math.PI*2-bound*2);
-    const drape=Math.max(0,1-row/7),y=edge[row].y-.43*drape*drape*Math.sin(angle/2)**2-.06*drape*Math.sin(angle);
+    const drape=Math.max(0,1-row/7),y=edge[row].y-.43*drape*drape*Math.sin(angle/2)**2-.06*drape*Math.sin(angle)-(variant==='relay'?.22*drape*Math.max(0,Math.sin(angle)):0);
     const hem=Math.pow(Math.max(0,(.23-y)/.847),1.25),r=radiusAt(y)+.029;
     const fold=.018*hem*Math.sin(angle*3+y*5),shift=(variant==='compass'?0:variant==='lens'?-.17:.17)*hem;
     vertices.push(Math.sin(angle)*(r+fold)+shift,y,Math.cos(angle)*(r+fold));uv.push(col/columns,row/rows);
@@ -445,9 +455,11 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
 function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
   switch (form) {
     case 'torso': return softLathe(torsoProfile);
+    case 'scoutBody': return softLathe([[0,-.5],[.25,-.47],[.42,-.30],[.5,-.02],[.45,.05],[.36,.17],[.15,.22],[0,.24]]);
     case 'wayfinderBody': return softLathe(wayfinderProfile);
     case 'helmet': return helmet();
     case 'lanternHousing': return lanternHousing();
+    case 'lanternBezel': return lanternBezel();
     case 'owlHead': return helmet(true);
     case 'owlBody': return softLathe(owlProfile);
     case 'embracingBody': {
@@ -493,7 +505,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
-    case 'swiftBody': return foldedBirdVolume([[-.22,.045,.075,-.01],[-.06,.12,.17,.035],[.11,.145,.16,.07],[.22,.108,.13,.105],[.32,.125,.135,.12],[.42,.10,.10,.10],[.46,.028,.035,.065]],true);
+    case 'swiftBody': return foldedBirdVolume([[-.20,.045,.075,-.01],[.07,.145,.15,.05],[.25,.12,.115,.115],[.32,.095,.085,.09],[.37,.025,.030,.06]],true);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[0,.09,.09],[-.09,.07,.03],[.09,.07,.03],[-.16,-.11,-.28],[.16,-.11,-.28],[0,-.03,-.19],[0,.022,-.12]],[[0,1,3,6],[0,6,4,2],[3,5,6],[4,6,5],[0,2,1],[1,2,4,5,3]],['#cda24d','#dfb65d','#386a65','#386a65','#bd964c','#b88b39']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -512,8 +524,8 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'featherFanL': return featherFan(-1);
     case 'featherFanR': return featherFan(1);
     case 'breastFeathers': return featherFan(1, true);
-    case 'hexGlass': {const source=new THREE.CylinderGeometry(.36,.49,1,6),g=source.toNonIndexed();source.dispose();g.computeVertexNormals();return g;}
-    case 'hexCap': {const source=lathe([[0,-.5],[.45,-.5],[.50,-.42],[.48,-.34],[.12,.43],[.08,.5],[0,.5]],6),g=source.toNonIndexed();source.dispose();g.computeVertexNormals();return g;}
+    case 'hexGlass': {const source=new THREE.CylinderGeometry(.36,.49,1,6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
+    case 'hexCap': {const source=lathe([[0,-.5],[.45,-.5],[.50,-.42],[.48,-.34],[.12,.43],[.08,.5],[0,.5]],6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
     case 'fineRing': return new THREE.TorusGeometry(.5, .027, 6, 28);
     case 'compassStar': return folded([[0, .5], [.07, .13], [.32, .32], [.13, .07], [.5, 0], [.13, -.07], [.32, -.32], [.07, -.13], [0, -.5], [-.07, -.13], [-.32, -.32], [-.13, -.07], [-.5, 0], [-.13, .07], [-.32, .32], [-.07, .13]], .03, .025);
     case 'compassNeedle': return folded([[0,.5],[.085,.09],[.33,0],[.085,-.09],[0,-.5],[-.085,-.09],[-.33,0],[-.085,.09]],.03,.035);

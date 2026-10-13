@@ -25,7 +25,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 6 | 7.8/10 | 8.0/10 | 7.9/10 — B |
 | Pass 7 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
 | Pass 8 | 7.5/10 | 8.1/10 | 7.8/10 — B |
-| Pass 9 | Pending | Pending | Independent review pending |
+| Pass 9 | 7.7/10 | 8.2/10 | 7.9/10 — B |
+| Pass 10 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -78,6 +79,15 @@ housing, and wrapped plumage on the body and both sides of the wings. It also
 refines the bird's wing attachment and the paper heads' rear taper. Three new
 tests cover the book layers, open housing and all-around plumage. All 258 tests
 and the production build pass. Visual acceptance remains independently judged.
+The ninth review identified a live campus-scale face artifact that the portrait
+renders did not show. Pass 10 replaces Beacon's filled gold under-panel with a
+true open bezel, eliminating competing nearly coplanar surfaces; the wide live
+view is checked separately. It also shortens Swift's neck, refolds the paper
+torsos and wings, thins their head depth, frames Lumen's rear glass corners, and
+adjusts eye and beak proportions against the original portraits.
+Scout's neck/shoulder shape and the cape's hanging hem were checked against
+the existing clearance tests. Night reflection is slightly stronger while its
+key light and ambient level remain unchanged. All 258 tests and the build pass.
 
 ## Local-clock atmosphere
 
@@ -118,6 +128,8 @@ test suites were stopped during the samples.
 | Pass 8 night | 60.00 | 3.7 ms | 90 | 328,680 |
 | Pass 9 noon | 60.00 | 4.7 ms | 90 | 331,008 |
 | Pass 9 night | 59.99 | 4.2 ms | 90 | 331,008 |
+| Pass 10 noon | 60.00 | 2.4 ms | 91 | 330,563 |
+| Pass 10 night | 59.99 | 1.2 ms | 91 | 330,563 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed

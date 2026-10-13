@@ -15,16 +15,16 @@ export interface LocalDaylight {
 }
 type Key = { hour: number; night: number; sky: string; ground: string; sun: string; intensity: number; ambient: number; reflection: number; x: number; y: number; backdrop: [string, string] };
 const keys: Key[] = [
-  {hour:0,night:1,sky:'#7797c5',ground:'#302f3c',sun:'#97b9f2',intensity:.32,ambient:.32,reflection:.16,x:-10,y:15,backdrop:['#1e2d38','#121d28']},
-  {hour:5,night:1,sky:'#8295b9',ground:'#3b3442',sun:'#ada4d0',intensity:.38,ambient:.33,reflection:.16,x:-19,y:6,backdrop:['#28303d','#18222e']},
+  {hour:0,night:1,sky:'#7797c5',ground:'#302f3c',sun:'#97b9f2',intensity:.32,ambient:.32,reflection:.20,x:-10,y:15,backdrop:['#1e2d38','#121d28']},
+  {hour:5,night:1,sky:'#8295b9',ground:'#3b3442',sun:'#ada4d0',intensity:.38,ambient:.33,reflection:.20,x:-19,y:6,backdrop:['#28303d','#18222e']},
   {hour:6,night:.5,sky:'#a5c8df',ground:'#576a7b',sun:'#ffe0ad',intensity:2.75,ambient:.43,reflection:.18,x:-22,y:5,backdrop:['#edf0e9','#dbe1e3']},
   {hour:7.5,night:0,sky:'#fff4df',ground:'#9c8570',sun:'#ffddb0',intensity:2.7,ambient:.64,reflection:.30,x:-17,y:15,backdrop:['#fbf4e8','#f2ede5']},
   {hour:12,night:0,sky:'#fff9f0',ground:'#90755f',sun:'#fff4e5',intensity:2.5,ambient:.72,reflection:.32,x:-9,y:19,backdrop:['#fbf9f1','#f5f3ed']},
   {hour:16.5,night:0,sky:'#f5e9d8',ground:'#947563',sun:'#ffdbad',intensity:2.6,ambient:.61,reflection:.28,x:15,y:13,backdrop:['#f9efde','#e9e0d6']},
   {hour:17.75,night:.25,sky:'#d2c6b8',ground:'#6b5651',sun:'#ffae70',intensity:3.05,ambient:.37,reflection:.19,x:22,y:7,backdrop:['#f7e8cf','#e6d8c8']},
-  {hour:18.75,night:.8,sky:'#8e9dbb',ground:'#463648',sun:'#e9a193',intensity:.65,ambient:.33,reflection:.16,x:22,y:5,backdrop:['#334152','#252c3c']},
-  {hour:20,night:1,sky:'#7797c5',ground:'#302f3c',sun:'#97b9f2',intensity:.32,ambient:.32,reflection:.16,x:-10,y:15,backdrop:['#1e2d38','#121d28']},
-  {hour:24,night:1,sky:'#7797c5',ground:'#302f3c',sun:'#97b9f2',intensity:.32,ambient:.32,reflection:.16,x:-10,y:15,backdrop:['#1e2d38','#121d28']},
+  {hour:18.75,night:.8,sky:'#8e9dbb',ground:'#463648',sun:'#e9a193',intensity:.65,ambient:.33,reflection:.20,x:22,y:5,backdrop:['#334152','#252c3c']},
+  {hour:20,night:1,sky:'#7797c5',ground:'#302f3c',sun:'#97b9f2',intensity:.32,ambient:.32,reflection:.20,x:-10,y:15,backdrop:['#1e2d38','#121d28']},
+  {hour:24,night:1,sky:'#7797c5',ground:'#302f3c',sun:'#97b9f2',intensity:.32,ambient:.32,reflection:.20,x:-10,y:15,backdrop:['#1e2d38','#121d28']},
 ];
 function mixColor(a: string, b: string, t: number): string {
   return '#' + [1,3,5].map(i => Math.round(parseInt(a.slice(i,i+2),16)*(1-t)+parseInt(b.slice(i,i+2),16)*t).toString(16).padStart(2,'0')).join('');

@@ -102,7 +102,9 @@ test('Beacon has a real face opening with an outward-facing green shell',()=>{
   assert.ok(cheek&&cheek.point.z>0&&cheek.face.normal.z>0,'front cheek is not inside out');
   const rear=new THREE.Raycaster(new THREE.Vector3(0,0,-1),new THREE.Vector3(0,0,1)).intersectObject(shell)[0];
   assert.ok(rear&&rear.point.z<0,'the rear shell stays closed');
-  material.dispose();geometry.dispose();kit.dispose();
+  const bezel=new THREE.Mesh(characterGeometry(kit,'lanternBezel'),material);bezel.updateMatrixWorld(true);
+  assert.equal(new THREE.Raycaster(new THREE.Vector3(0,0,1),new THREE.Vector3(0,0,-1)).intersectObject(bezel).length,0,'no second filled panel can depth-fight the luminous face');
+  material.dispose();geometry.dispose();bezel.geometry.dispose();kit.dispose();
 });
 
 test('owl plumage covers all four sides within the existing cached geometry budget',()=>{
