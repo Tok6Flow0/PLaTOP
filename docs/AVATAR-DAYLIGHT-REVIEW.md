@@ -26,7 +26,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 7 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
 | Pass 8 | 7.5/10 | 8.1/10 | 7.8/10 — B |
 | Pass 9 | 7.7/10 | 8.2/10 | 7.9/10 — B |
-| Pass 10 | Pending | Pending | Independent review pending |
+| Pass 10 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
+| Pass 11 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -88,6 +89,16 @@ adjusts eye and beak proportions against the original portraits.
 Scout's neck/shoulder shape and the cape's hanging hem were checked against
 the existing clearance tests. Night reflection is slightly stronger while its
 key light and ambient level remain unchanged. All 258 tests and the build pass.
+The tenth independent review confirmed the live face artifact was absent.
+It still found heavy paper figures, a long gold bird breast, a smooth-to-feathered
+boundary on the owl, and clothing that was too fitted. It did not approve the
+result as an A-level reconstruction.
+Pass 11 reduces Keeper's proportions and brings its arms around the held book,
+thins the paper bodies, narrows Lumen's roof, makes Swift more compact, and
+adds stronger hood overlap. Revised feather layers clear their supporting
+body and include a neck transition. A new geometric clearance regression test
+covers the clipping caught during close-up inspection. All 259 tests and the
+production build pass; the independent visual result remains separate.
 
 ## Local-clock atmosphere
 
@@ -130,6 +141,8 @@ test suites were stopped during the samples.
 | Pass 9 night | 59.99 | 4.2 ms | 90 | 331,008 |
 | Pass 10 noon | 60.00 | 2.4 ms | 91 | 330,563 |
 | Pass 10 night | 59.99 | 1.2 ms | 91 | 330,563 |
+| Pass 11 noon | 60.00 | 2.6 ms | 91 | 330,659 |
+| Pass 11 night | 59.99 | 2.8 ms | 91 | 330,659 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed

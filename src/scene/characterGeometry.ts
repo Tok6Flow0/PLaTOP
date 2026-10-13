@@ -5,7 +5,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'lanternHousing' 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'wayfinderBody'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'headPlumage' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -235,8 +235,8 @@ function cape(): THREE.BufferGeometry {
 function feather(): THREE.BufferGeometry {
   const geometry = new THREE.SphereGeometry(.5, 8, 4), position = geometry.attributes.position;
   for (let i = 0; i < position.count; i++) {
-    const y = position.getY(i), taper = .08 + .92 * Math.pow(Math.max(0,y + .5),.45);
-    position.setXYZ(i, position.getX(i) * taper, y < -.20 ? -.20 + (y + .20) * 1.27 : y, position.getZ(i));
+    const y = position.getY(i), taper = .08 + .92 * Math.pow(Math.max(0,y + .5),.65);
+    position.setXYZ(i, position.getX(i) * taper, y < -.20 ? -.20 + (y + .20) * 1.38 : y, position.getZ(i));
   }
   return smoothDeformedSurface(geometry);
 }
@@ -283,8 +283,8 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
 }
 
 function swiftWing(): THREE.BufferGeometry {
-  const boundary:Tuple[]=[[0,.10,.10],[.07,.20,-.43],[.065,-.045,-.20],[.09,-.39,-.35],[.08,-.28,.03]];
-  const vertices:Tuple[]=[...boundary,[.115,.015,-.04],...boundary.map(([x,y,z])=>[x-.009,y,z] as Tuple)];
+  const boundary:Tuple[]=[[0,.12,.075],[.035,.25,-.46],[.045,-.045,-.21],[.055,-.35,-.39],[.06,-.24,.055]];
+  const vertices:Tuple[]=[...boundary,[.09,.015,-.085],...boundary.map(([x,y,z])=>[x-.006,y,z] as Tuple)];
   const faces:number[][]=[[0,5,1],[1,5,2],[2,5,3],[3,5,4],[4,5,0],[6,7,8],[6,8,10],[8,9,10]];
   for(let i=0;i<5;i++){const j=(i+1)%5;faces.push([i,j,j+6,i+6]);}
   return polyhedron(vertices,faces,['#e0b15e','#d5a24e','#b59347','#d7ab59','#e5bc74','#3c6d68','#3c6d68','#3c6d68','#b38948','#47736b','#3b6e65','#c59854','#b68b45']);
@@ -366,7 +366,7 @@ function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
     const y=p.getY(i),hem=Math.pow(Math.max(0,(.23-y)/.847),1.25);
     const theta=Math.atan2(p.getX(i),p.getZ(i)),t=Math.min(1,Math.max(0,(.20-y)/.81));
     const crease=(variant==='lens'?-1:1)*(-.85+1.6*t);
-    const fold=.018*hem*Math.sin(theta*3+y*5)+.047*Math.sin(Math.PI*t)*Math.exp(-(((theta-crease)/.26)**2));
+    const fold=.024*hem*Math.sin(theta*3+y*5)+.085*Math.sin(Math.PI*t)*Math.exp(-(((theta-crease)/.40)**2));
     p.setXYZ(i,p.getX(i)+Math.sin(theta)*fold+(variant==='compass'?0:variant==='lens'?-.17:.17)*hem,y,p.getZ(i)+Math.cos(theta)*fold);
   }
   return smoothDeformedSurface(geometry);
@@ -382,8 +382,8 @@ function spiritCowl(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
   const edge=new THREE.SplineCurve(levels.map((y,i)=>new THREE.Vector2(gaps[i],y))).getPoints(rows);
   for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
     const bound=Math.max(0,edge[row].x),angle=bound+col/columns*(Math.PI*2-bound*2);
-    const drape=Math.max(0,1-row/7),y=edge[row].y-.43*drape*drape*Math.sin(angle/2)**2-.06*drape*Math.sin(angle)-(variant==='relay'?.22*drape*Math.max(0,Math.sin(angle)):0);
-    const hem=Math.pow(Math.max(0,(.23-y)/.847),1.25),r=radiusAt(y)+.029;
+    const drape=Math.max(0,1-row/7),y=edge[row].y-.48*drape*drape*Math.sin(angle/2)**2-.06*drape*Math.sin(angle)-(variant==='relay'?.32*drape*Math.max(0,Math.sin(angle)):0);
+    const hem=Math.pow(Math.max(0,(.23-y)/.847),1.25),r=radiusAt(y)+.038+.050*drape*Math.sin(angle/2)**2;
     const fold=.018*hem*Math.sin(angle*3+y*5),shift=(variant==='compass'?0:variant==='lens'?-.17:.17)*hem;
     vertices.push(Math.sin(angle)*(r+fold)+shift,y,Math.cos(angle)*(r+fold));uv.push(col/columns,row/rows);
     if(row<rows&&col<columns){const a=row*(columns+1)+col,b=a+1,c=a+columns+1,d=c+1;indices.push(a,b,d,a,d,c);}
@@ -408,30 +408,52 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 }
 
 /** One cached surface owns each layered fan; detail does not add pose matrices. */
-function featherFan(sign: number, breast = false): THREE.BufferGeometry {
-  const sculpt = feather(), source = sculpt.toNonIndexed(), vertices: number[] = [], normals: number[] = [];
+function featherFan(sign: number, breast = false, crown = false): THREE.BufferGeometry {
+  const sculpt = feather(), source = sculpt.toNonIndexed(), vertices: number[] = [], normals: number[] = [], colours:number[]=[];
   sculpt.dispose();
-  const count = breast ? 50 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
+  const count = crown ? 12 : breast ? 40 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
+    if(crown){
+      const row=Math.floor(featherIndex/6),column=featherIndex%6;
+      const angle=Math.PI*.52+(column+(row%2?.26:0))/5*Math.PI*.96;
+      const y=-.14-row*.075+.014*Math.sin(column*1.8);
+      for(let i=0;i<source.attributes.position.count;i++){
+        point.fromBufferAttribute(source.attributes.position,i);
+        const tone=.93+.08*Math.max(0,point.z)/.34-.07*Math.abs(point.x);
+        colours.push(tone,tone,tone);
+        const py=y+point.y*.16,radial=Math.sqrt(Math.max(.015,1-(py/.325)**2));
+        const theta=angle+point.x*.155/Math.max(.12,.417*radial);
+        // Bury the quill root in the head; only the softly turned tip overlaps
+        // the neck. A complete raised leaf here reads as a tab on a helmet.
+        const relief=-.007+Math.max(0,-point.y)*.040+point.z*.008;
+        point.set(Math.sin(theta)*(.417*radial+relief),py,Math.cos(theta)*(.27*radial+relief));
+        normal.set(Math.sin(theta)/.417,py/(.325*.325),Math.cos(theta)/.27).normalize();
+        vertices.push(point.x,point.y,point.z);normals.push(normal.x,normal.y,normal.z);
+      }
+      continue;
+    }
     if(breast){
       // Overlapping plumage wraps the entire oval. Each small feather is
       // tangential to the body, including its sides and rear, with staggered
       // rows. One cached mesh replaces the old front-only breast panel.
-      const row=Math.floor(featherIndex/10),column=featherIndex%10;
-      const angle=(column+(row%2?.5:0))/10*Math.PI*2,y=.20-row*.105;
+      const row=Math.floor(featherIndex/8),column=featherIndex%8;
+      const angle=(column+(row%2?.5:0))/8*Math.PI*2,y=.17-row*.100+.012*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
       for(let i=0;i<source.attributes.position.count;i++){
         point.fromBufferAttribute(source.attributes.position,i);
-        const py=y+point.y*.23,normalizedY=py/.83;
+        const tone=.94+.08*Math.max(0,point.z)/.34-.09*Math.abs(point.x)+.014*Math.sin(featherIndex*1.73);
+        colours.push(tone,tone,tone);
+        const py=y+point.y*.25,normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
-        const theta=angle+point.x*.22/Math.max(.12,radius*.70);
-        const relief=.008+point.z*.017;
+        const theta=angle+point.x*.265/Math.max(.12,radius*.70);
+        const relief=(.016+point.z*.026+(4-row)*.012)*(1-.90*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
-        normal.fromBufferAttribute(source.attributes.normal,i).applyMatrix3(normalMatrix).normalize();
+        const slope=(b.x-a.x)/(b.y-a.y);
+        normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
         vertices.push(point.x,point.y,point.z);normals.push(normal.x,normal.y,normal.z);
       }
       continue;
@@ -449,7 +471,18 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
     }
   }
   source.dispose(); const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3)); return breast?smoothDeformedSurface(geometry):geometry;
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  if(breast||crown){
+    const radial=geometry.attributes.normal.clone();smoothDeformedSurface(geometry);
+    const n=geometry.attributes.normal,a=new THREE.Vector3(),b=new THREE.Vector3();
+    for(let i=0;i<n.count;i++){
+      a.fromBufferAttribute(n,i);b.fromBufferAttribute(radial,i);
+      if(a.dot(b)>0)a.lerp(b,.16).normalize();
+      n.setXYZ(i,a.x,a.y,a.z);
+    }
+    geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
+  }
+  return geometry;
 }
 
 function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
@@ -505,7 +538,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
-    case 'swiftBody': return foldedBirdVolume([[-.20,.045,.075,-.01],[.07,.145,.15,.05],[.25,.12,.115,.115],[.32,.095,.085,.09],[.37,.025,.030,.06]],true);
+    case 'swiftBody': return foldedBirdVolume([[-.17,.032,.06,-.025],[.025,.115,.115,.035],[.19,.113,.11,.115],[.285,.098,.097,.100],[.335,.025,.030,.075]],true);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[0,.09,.09],[-.09,.07,.03],[.09,.07,.03],[-.16,-.11,-.28],[.16,-.11,-.28],[0,-.03,-.19],[0,.022,-.12]],[[0,1,3,6],[0,6,4,2],[3,5,6],[4,6,5],[0,2,1],[1,2,4,5,3]],['#cda24d','#dfb65d','#386a65','#386a65','#bd964c','#b88b39']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -524,6 +557,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'featherFanL': return featherFan(-1);
     case 'featherFanR': return featherFan(1);
     case 'breastFeathers': return featherFan(1, true);
+    case 'headPlumage': return featherFan(1,false,true);
     case 'hexGlass': {const source=new THREE.CylinderGeometry(.36,.49,1,6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
     case 'hexCap': {const source=lathe([[0,-.5],[.45,-.5],[.50,-.42],[.48,-.34],[.12,.43],[.08,.5],[0,.5]],6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
     case 'fineRing': return new THREE.TorusGeometry(.5, .027, 6, 28);
@@ -637,13 +671,6 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     const radius = Math.min(width, height) * cornerRatio, boundary: Array<[number, number]> = [];
     const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
     corners.forEach(([sx, sy], corner) => {
-      if(bubble&&corner===3) {
-        const tail=new THREE.Path();tail.moveTo(width/2-radius,-height/2);
-        tail.quadraticCurveTo(width*.28,-height*.5,width*.32,-height*.57);
-        tail.bezierCurveTo(width*.48,-height*.72,width*.48,-height*.55,width*.445,-height*.505);
-        tail.bezierCurveTo(width*.39,-height*.46,width*.51,-height*.41,width*.5,-height/2+radius);
-        tail.getSpacedPoints(12).forEach(p=>boundary.push([p.x,p.y]));return;
-      }
       for (let step = 0; step < 8; step++) {
         const angle = (corner + step / 7) * Math.PI / 2;
         let x = sx * (width / 2 - radius) + Math.cos(angle) * radius;

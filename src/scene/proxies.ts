@@ -88,7 +88,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       eyes(head, .112, .018, .276, true);
       sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
       limbs(cream, cream, true);
-      const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.10,1.08,1);
+      const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
       sculpt(book, 'book', '#d8c69b', [0, 0, 0], [.31, .34, .07]);
       sculpt(book, 'book', '#36574f', [0, 0, .025], [.28, .32, .04], undefined, 'glaze');
       stroke(book, gold, [[0, -.11, .052], [0, -.025, .052], [.035, .052, .052]], .007);
@@ -96,7 +96,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(book, 'tuft', gold, [.035, .055, .055], [.065, .10, .017], [0, 0, -.6], 'brass');
       data.arms.forEach((arm, index) => {
         const sign=index?1:-1;
-        arm.position.z=.19;arm.position.y=.13;
+        arm.position.z=.29;arm.position.y=.13;arm.position.x=sign*.285;
         arm.children[0].scale.set(.18,.32,.20);arm.children[1].scale.set(.15,.15,.17);
         sculpt(arm,'limb',gold,[0,-.22,.026],[.185,.028,.20],undefined,'brass');
         const angle=sign*-.80,axis=new THREE.Vector3(0,0,1);
@@ -133,7 +133,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       // Keep the tiny identity marks on the actual robe curvature. The skirt
       // is broader than the face, so a constant face-depth plane clips them.
       for(const ornament of [...body.children]) if(ornament!==robe) {
-        if(ornament.name==='compass-emblem'){ornament.position.z=.365;continue;}
+        if(ornament.name==='compass-emblem'){ornament.position.z=.415;continue;}
         fitCharacterRelief(ornament,robe);
       }
       sculpt(body,id==='hr-lens'?'lensCowl':id==='hr-relay'?'relayCowl':'compassCowl',bodyColor,[0,-.015,0],[.82,.90,.80],undefined,'clay');
@@ -145,7 +145,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       head.position.y-=body.position.y;body.add(head);
       const expression=joint(group,'robe-expression',[0,.70,0]);
       body.position.y-=.70;expression.add(body);
-      expression.rotation.z=id==='hr-lens'?-.025:id==='hr-relay'?.035:-.01;
+      expression.rotation.z=id==='hr-lens'?-.08:id==='hr-relay'?.09:-.01;
       data.head=expression;data.headY=.70;data.bodyY=body.position.y;
     } else {
       if (leader) { body.position.y = .70; data.bodyY = .70; head.position.y = 1.30; data.headY = 1.30; }
@@ -254,7 +254,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,id==='intake-compass'?.036:.012);
       }
     }
-    group.scale.setScalar(leader ? 1.06 : id === 'bridge-scout' ? 1.03 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : hr ? .99 : 1.10);
+    group.scale.setScalar(leader ? 1.06 : id === 'bridge-scout' ? 1.03 : id === 'bridge-keeper' ? .97 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : hr ? .99 : 1.10);
+    if(id==='bridge-keeper')group.scale.x*=.92;
   } else if (kind === 'lantern') {
     const support = id === 'support-beacon', green = support ? '#2c5b42' : '#ad8246';
     if (support) {
@@ -291,9 +292,9 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       }
       eyes(head, .078, .025, .191, true, '#75562e', .67);
       characterSmile(kit, head, '#826331', .034, .022, [0, -.052, .201]);
-      sculpt(head, 'hexCap', green, [0, .377, 0], [.67, .28, .59], undefined, 'brass');
-      sculpt(head, 'limb', gold, [0, .535, 0], [.105, .055, .105], undefined, 'brass');
-      sculpt(head, 'fineRing', green, [0, .681, 0], [.26, .30, .26], undefined, 'brass');
+      sculpt(head, 'hexCap', green, [0, .367, 0], [.57, .23, .54], undefined, 'brass');
+      sculpt(head, 'limb', gold, [0, .496, 0], [.13, .075, .13], undefined, 'brass');
+      sculpt(head, 'fineRing', green, [0, .635, 0], [.26, .26, .26], undefined, 'brass');
       sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'brass');
       [-1,1].forEach(sign=>{const foot=joint(group,sign<0?'foot_l':'foot_r',[sign*.22,.075,.11]);sculpt(foot,'bean',gold,[0,0,0],[.16,.15,.20],undefined,'brass');data.feet.push(foot)});
       group.scale.setScalar(.95);
@@ -326,7 +327,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       else sculpt(foot, 'paperWing', '#b89868', [0, 0, 0], [.16, .08, .23], undefined, 'paper');
       data.feet.push(foot);
     });
-    if(navy) sculpt(head,'beak',gold,[0,-.095,.305],[.115,.195,.145],[.15,0,Math.PI],'brass');
+    if(navy) {
+      sculpt(head,'beak',gold,[0,-.084,.297],[.078,.178,.072],[.20,0,Math.PI],'brass');
+      sculpt(head,'headPlumage','#293e54',[0,0,0],[.95,1,.98],undefined,'feather');
+    }
     else sculpt(head,'paperBeak',gold,[0,-.077,.196],[.7,.9,.28],[.75,0,0],'paper');
     if (id === 'reflection-quill') {
       kit.mesh(body, 'detailCylinder', '#c99c4a', [.35, .01, .19], [.042, .48, .042], [0, 0, -.35]).name='quill-pencil';
@@ -338,17 +342,18 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     if (navy) {
       sculpt(body, 'breastFeathers', '#293e54', [0, 0, 0], [1, 1, 1], undefined, 'feather');
-      sculpt(body, 'envelope', '#dcb26a', [0, .08, .329], [.19, .135, .016], undefined, 'brass');
-      stroke(body, '#835d31', [[-.083, .130, .344], [0, .065, .344], [.083, .130, .344]], .005, 'clay');
+      sculpt(body, 'envelope', '#dcb26a', [0, .08, .388], [.19, .135, .016], undefined, 'brass');
+      stroke(body, '#835d31', [[-.083, .130, .403], [0, .065, .403], [.083, .130, .403]], .005, 'clay');
     }
+    else body.scale.z=.63;
   } else {
     // Swift's split tail, creased ochre wings and teal folded edge are solid
     // low-poly paper surfaces rather than flattened ceramic spheres.
-    body.position.y = .32; data.bodyY = .32;head.position.set(0,.55,.06); data.headY = .55;
+    body.position.y = .30; data.bodyY = .30;head.position.set(0,.505,.065); data.headY = .505;
     sculpt(body, 'swiftBody', '#d2a34c', [0,0,0], [1,1,1], undefined, 'paper');
     [-1, 1].forEach(sign => {
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .075, .14, -.03]);
-      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.66,.66,.60]:[.86,.86,.80], [-.22,0,0], 'paper');data.wings.push(wing);
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .078, .145, -.005]);
+      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.62,.62,.60]:[.74,.74,.76], [-.13,0,0], 'paper');data.wings.push(wing);
       const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .117], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
       data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.127], [.006,.013,.013], undefined, 'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);
@@ -356,7 +361,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(foot,'#957446',[[0,.16,-.04],[0,.075,-.07],[0,.008,0]],.009,'brass'); data.feet.push(foot);
     });
     sculpt(head,'paperBeak','#a57d40',[0,.048,.184],[.50,.48,.50],[-.35,0,0],'paper');
-    sculpt(body,'swiftTail','#ffffff',[0,-.125,-.17],[.85,.85,.80],undefined,'paper');
+    sculpt(body,'swiftTail','#ffffff',[0,-.105,-.11],[.74,.78,.86],undefined,'paper');
     head.position.y-=body.position.y;body.add(head);
     const expression=joint(group,'paper-bird-expression',[0,.40,0]);body.position.y-=.40;expression.add(body);expression.rotation.x=.12;
     data.head=expression;data.headY=.40;data.bodyY=body.position.y;

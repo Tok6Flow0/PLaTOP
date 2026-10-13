@@ -116,6 +116,28 @@ test('owl plumage covers all four sides within the existing cached geometry budg
   geometry.dispose();kit.dispose();
 });
 
+test('visible breast feather planes stay outside the curved owl body',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  const shell=model.getObjectByName('owlBody'),plumage=model.getObjectByName('breastFeathers');
+  model.updateMatrixWorld(true);
+  const positions=plumage.geometry.attributes.position,normals=plumage.geometry.attributes.normal;
+  const point=new THREE.Vector3(),normal=new THREE.Vector3(),vertex=new THREE.Vector3();
+  for(let i=0;i<positions.count;i+=3){
+    point.set(0,0,0);normal.set(0,0,0);
+    for(let j=0;j<3;j++){point.add(vertex.fromBufferAttribute(positions,i+j));normal.add(vertex.fromBufferAttribute(normals,i+j));}
+    point.multiplyScalar(1/3);
+    if(Math.abs(point.y)>.20)continue;
+    const direction=new THREE.Vector3(point.x,0,point.z).normalize();
+    if(normal.normalize().dot(direction)<.2)continue;
+    const centre=new THREE.Vector3(0,point.y,0).applyMatrix4(plumage.matrixWorld);
+    point.applyMatrix4(plumage.matrixWorld);
+    const ray=new THREE.Raycaster(centre.clone().addScaledVector(direction,2),direction.clone().negate());
+    const hit=ray.intersectObject(shell,false)[0];
+    assert.ok(hit&&point.distanceTo(centre)>hit.point.distanceTo(centre)+.002,'outward-facing feather triangle clears its supporting body');
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('rounded-square helmet cheeks retain a closely fitted visor and rim on the actual curved shell', () => {
   const kit = new SceneKit(), all = new THREE.Group(), vertex = new THREE.Vector3();
   for (const character of members.filter(character => ['bridge-jarvis','bridge-scout'].includes(character.id) || character.id.startsWith('intake-'))) {
