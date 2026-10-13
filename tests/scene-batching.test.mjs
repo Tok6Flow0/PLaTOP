@@ -61,6 +61,22 @@ function canvasMap(width = 2, height = 2, values = Uint8ClampedArray.from({ leng
   return texture;
 }
 
+test('dense character replacements hide only their coarse draws and are never merged into scene batches', t => {
+  const { scene, actor, moving, batches, dynamicBatch } = fixture(t, { prune: true });
+  const high = new THREE.Mesh(moving[0].geometry, moving[0].material); high.userData.characterDetailMesh = true; scene.add(high);
+  moving[0].userData.characterDetailHidden = true;
+  batches.sync();
+  assert.equal(dynamicBatch.getVisibleAt(0), false);
+  assert.equal(dynamicBatch.getVisibleAt(1), true, 'other parts retain normal visibility');
+  assert.equal(moving[0].visible, true, 'logical source visibility is not rewritten');
+  batches.rebuild();
+  assert.equal(high.layers.mask, 1, 'the high-detail draw is excluded even during a decoration rebuild');
+  delete moving[0].userData.characterDetailHidden; batches.sync();
+  const rebuilt = scene.getObjectByName('Shared character draws').children.find(mesh => mesh.isTransformPaletteMesh);
+  assert.equal(rebuilt.getVisibleAt(0), true, 'distance LOD restores its original batched draw');
+  assert.equal(actor.visible, false, 'batch traversal pruning remains intact');
+});
+
 test('shared character micrograin stays batched with UVs and preserves map ownership', t=>{
   const {scene,actor,moving,batches}=fixture(t);
   const grain=new THREE.DataTexture(new Uint8Array(16),2,2);grain.userData.platopCharacterGrain=true;

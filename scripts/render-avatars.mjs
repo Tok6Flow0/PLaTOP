@@ -34,6 +34,7 @@ const portraits=await page.evaluate(async(includeReview)=>{
  if(!url) throw Error('Three module identity unavailable');
  const THREE=await import(url);
  const {makeProxy}=await import('/src/scene/proxies.ts');
+ const {refineCharacterModel}=await import('/src/scene/characterDetail.ts');
  const {SceneKit,disposeObject}=await import('/src/scene/primitives.ts');
  const {StudioEnvironment}=await import('/src/scene/studioEnvironment.ts');
  const {plant,floorSurface}=await import('/src/scene/environmentProps.ts');
@@ -78,9 +79,10 @@ const portraits=await page.evaluate(async(includeReview)=>{
   key.position.set(...(night?[-2,3,3]:[-3,5,5]));
   fill.color.set(night?'#9eb8dd':'#dde8e1');fill.intensity=night?.58:.18;
   scene.environmentIntensity=night?.23:.32;wall.material.color.set(night?'#243441':'#b3a18b');
-  const group=new THREE.Group();
+  const group=new THREE.Group(),releaseSurfaces=[];
   members.forEach((member,index)=>{
    const model=makeProxy(member,kit);
+   releaseSurfaces.push(refineCharacterModel(model));
    model.traverse(object=>{if(object.isMesh)object.castShadow=true;});
    if(team) {
     const count=members.length;
@@ -126,7 +128,10 @@ const portraits=await page.evaluate(async(includeReview)=>{
   const portrait=document.createElement('canvas');portrait.width=size[0];portrait.height=size[1];
   const raster=portrait.getContext('2d');raster.imageSmoothingEnabled=true;raster.imageSmoothingQuality='high';
   raster.drawImage(renderer.domElement,0,0,...size);images[name]=portrait.toDataURL('image/png');
-  scene.remove(group);owned.add(group);
+  // High-detail geometry is large; release each rendered view immediately.
+  // Materials belong to SceneKit and remain shared by the following views.
+  scene.remove(group);releaseSurfaces.forEach(release=>release());
+  owned.add(group);
  }
  for(const team of teams){
   for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);render('team-'+team.id+'-night',team.members,true,true);

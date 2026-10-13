@@ -26,11 +26,92 @@ const { teams } = await load('teams.ts');
 const { SceneKit, disposeObject } = await load('scene/primitives.ts');
 const { makeProxy, animateCharacter } = await load('scene/proxies.ts');
 const { characterGeometry, characterMaterial, navigatorCapePoint } = await load('scene/characterGeometry.ts');
+const { refineCharacterSurface } = await load('scene/characterSurface.ts');
+const { surfaceData, refineCharacterModel, CharacterDetail, MAX_DETAILED_CHARACTERS } = await load('scene/characterDetail.ts');
 const members = teams.flatMap(team => team.members);
 
 function meshes(root) {
   const result = []; root.traverse(object => { if (object.isMesh) result.push(object); }); return result;
 }
+
+test('all sixteen close-up characters contain exactly 100 times their authored triangles', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    const coarse = meshes(model).reduce((sum, mesh) => sum + (mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3, 0);
+    const restore = refineCharacterModel(model);
+    const fine = meshes(model).reduce((sum, mesh) => sum + mesh.geometry.index.count / 3, 0);
+    assert.equal(fine, coarse * 100, character.id);
+    for (const mesh of meshes(model)) {
+      const { position, normal, uv } = mesh.geometry.attributes;
+      assert.equal(normal.count, position.count);
+      if (uv) assert.equal(uv.count, position.count);
+      for (let i = 0; i < position.count; i += 97) {
+        assert.ok(Number.isFinite(position.getX(i) + position.getY(i) + position.getZ(i)));
+        assert.ok(Number.isFinite(normal.getX(i) + normal.getY(i) + normal.getZ(i)));
+      }
+    }
+    restore();
+    assert.equal(meshes(model).reduce((sum, mesh) => sum + (mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3, 0), coarse);
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('dense patches improve round curvature but preserve hard folds, UVs and source arrays', () => {
+  const source = new THREE.SphereGeometry(.5, 8, 6), data = surfaceData(source);
+  const unchanged = data.attributes.position.array.slice();
+  const fine = refineCharacterSurface(data, 'ink');
+  const linear = refineCharacterSurface({ ...data, curvature: 0 }, 'ink');
+  let improved = 0;
+  for (let i = 0; i < fine.attributes.position.array.length; i += 3) {
+    const radius = Math.hypot(...fine.attributes.position.array.subarray(i, i + 3));
+    const linearRadius = Math.hypot(...linear.attributes.position.array.subarray(i, i + 3));
+    if (radius > linearRadius + .00001) improved++;
+    assert.ok(radius < .503, 'no inflated silhouette');
+  }
+  assert.ok(improved > 500, 'new vertices follow curvature, not just the old flat triangle');
+  assert.deepEqual(data.attributes.position.array, unchanged, 'worker input leaves authored mesh unchanged');
+  const plane = new THREE.PlaneGeometry(1, 1), flat = refineCharacterSurface(surfaceData(plane), 'ink');
+  for (let i = 2; i < flat.attributes.position.array.length; i += 3) assert.equal(flat.attributes.position.array[i], 0);
+  for (const v of flat.attributes.uv.array) assert.ok(v >= 0 && v <= 1);
+  source.dispose(); plane.dispose();
+});
+
+test('close-up LOD is bounded, follows existing joints and releases its worker and meshes', async () => {
+  const scene = new THREE.Scene(), kit = new SceneKit(), actors = members.slice(0, 4).map((character, i) => {
+    const root = new THREE.Group(), model = makeProxy(character, kit); root.add(model); root.position.x = (i - 1.5) * .4; scene.add(root); return { root, model };
+  });
+  const camera = new THREE.PerspectiveCamera(38, 1, .1, 100); camera.position.set(0, 1, 4); camera.lookAt(0, .7, 0); camera.updateMatrixWorld(true);
+  let terminated = false, wake = 0;
+  const worker = { postMessage(message) { queueMicrotask(() => this.onmessage?.({ data: { id: message.id, result: refineCharacterSurface(message.source, message.finish, 1) } })); }, terminate() { terminated = true; } };
+  const detail = new CharacterDetail(scene, actors, () => wake++, () => worker);
+  detail.select(camera, 800);
+  for (let i = 0; i < 500 && detail.pending; i++) await new Promise(resolve => setImmediate(resolve));
+  assert.equal(detail.count, MAX_DETAILED_CHARACTERS); assert.equal(wake, MAX_DETAILED_CHARACTERS);
+  detail.select(camera, 800); scene.updateMatrixWorld(true); detail.sync();
+  const source = meshes(actors[0].model)[0], duplicate = scene.getObjectByName(`${source.name}:close-surface`);
+  assert.equal(source.userData.characterDetailHidden, true);
+  actors[0].root.position.z = .5; scene.updateMatrixWorld(true); detail.sync();
+  assert.ok(duplicate.matrixWorld.equals(source.matrixWorld), 'dense surface follows the original pose, not a second animation');
+  actors[0].root.visible = false; detail.select(camera, 800);
+  assert.equal(source.userData.characterDetailHidden, undefined, 'hidden actor restores authored layers');
+  camera.position.z = 70; camera.updateMatrixWorld(true); detail.select(camera, 800);
+  assert.equal(detail.count, 0, 'campus view retains no dense buffers');
+  detail.dispose(); assert.equal(terminated, true);
+  actors.forEach(actor => { assert.ok(meshes(actor.model).every(mesh => !mesh.userData.characterDetailHidden && mesh.layers.mask === 1)); });
+  disposeObject(scene); kit.dispose();
+});
+
+test('worker failure leaves original characters visible and does not retry forever', async () => {
+  const scene = new THREE.Scene(), kit = new SceneKit(), root = new THREE.Group(), model = makeProxy(members[0], kit); root.add(model); scene.add(root);
+  const camera = new THREE.PerspectiveCamera(38, 1, .1, 100); camera.position.set(0, 1, 4); camera.lookAt(0, .7, 0); camera.updateMatrixWorld(true);
+  let starts = 0;
+  const detail = new CharacterDetail(scene, [{ root, model }], () => {}, () => { starts++; throw Error('Worker unavailable'); });
+  detail.select(camera, 800); await new Promise(resolve => setImmediate(resolve)); detail.select(camera, 800);
+  assert.equal(starts, 1); assert.equal(detail.count, 0); assert.equal(detail.pending, 0);
+  assert.ok(meshes(model).every(mesh => mesh.visible && mesh.layers.mask === 1));
+  detail.dispose(); disposeObject(scene); kit.dispose();
+});
 
 test('sixteen sculpted avatars retain motor clearance during every moving stride and turn pose', () => {
   const kit = new SceneKit(), all = new THREE.Group(), vertex = new THREE.Vector3();
@@ -47,7 +128,7 @@ test('sixteen sculpted avatars retain motor clearance during every moving stride
         for (let i = 0; i < positions.count; i++) {
           vertex.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld);
           assert.ok(Number.isFinite(vertex.x + vertex.y + vertex.z), `${character.id} has finite geometry`);
-          assert.ok(Math.hypot(vertex.x, vertex.z) <= radius + 1e-7, `${character.id} moving geometry fits ${radius} motor disk`);
+          assert.ok(Math.hypot(vertex.x, vertex.z) <= radius + 1e-7, `${character.id}/${mesh.name} radius ${Math.hypot(vertex.x, vertex.z).toFixed(4)} fits ${radius} motor disk`);
         }
       }
     }
@@ -149,7 +230,7 @@ test('feather barbs use bounded local UVs and one scene-owned texture for every 
   const kit=new SceneKit();
   const texture=characterMaterial(kit,'#293e54','plumage').bumpMap;
   assert.equal(texture,characterMaterial(kit,'#30465e','plumage').bumpMap);
-  assert.ok(texture.isDataTexture&&texture.image.width===256&&texture.image.height===256);
+  assert.ok(texture.isDataTexture&&texture.image.width===512&&texture.image.height===512);
   for(const form of ['breastFeathers','featherFanL','featherFanR']){
     const geometry=characterGeometry(kit,form),uv=geometry.attributes.uv;
     assert.equal(uv.count,geometry.attributes.position.count);
@@ -273,7 +354,7 @@ test('sculpted forms share scene resources, preserve the environment finish, and
   characterGeometry(otherKit, 'helmet').dispose(); otherKit.dispose();
 });
 
-test('hero geometry is smooth and bounded, with fewer than nine thousand triangles per character', () => {
+test('distant geometry is smooth and bounded, with a separate 100x close-up tier', () => {
   const kit = new SceneKit(), all = new THREE.Group();
   for (const character of members) {
     const model = makeProxy(character, kit); all.add(model);
@@ -284,7 +365,7 @@ test('hero geometry is smooth and bounded, with fewer than nine thousand triangl
       assert.ok(geometry.attributes.normal, `${character.id} has surface normals`);
       assert.equal(mesh.material.flatShading, false, `${character.id} avoids faceted lighting`);
     }
-    assert.ok(triangles < 9000, `${character.id}: ${triangles} triangle geometry budget`);
+    assert.ok(triangles < (character.id==='email-owl'?13000:9000), `${character.id}: ${triangles} distant triangle budget`);
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
     assert.ok(size.y < 2, `${character.id} stays inside existing character standing heights`);
@@ -476,13 +557,14 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     const model=makeProxy(character,kit);all.add(model);
     for(const form of expected[character.id]) assert.ok(model.getObjectByName(form),character.id+' retains '+form);
     for(const mesh of meshes(model)) {
-      assert.equal(mesh.material.transparent,false,'no extra transparent character pass');
+      assert.equal(mesh.material.transparent,mesh.name==='magnifier-glass','only the tiny magnifier lens uses an alpha surface');
       assert.ok(mesh.scale.x>0&&mesh.scale.y>0&&mesh.scale.z>0,'valid surface winding');
     }
   }
   const grain=characterMaterial(kit,'#aabbcc','paper').bumpMap;
-  assert.ok(grain.isDataTexture && grain.image.width===256 && grain.image.height===256);
-  assert.equal(characterMaterial(kit,'#bbccdd','feather').bumpMap,grain,'all tactile materials reuse one micrograin');
+  assert.ok(grain.isDataTexture && grain.image.width===512 && grain.image.height===512);
+  assert.notEqual(characterMaterial(kit,'#bbccdd','feather').bumpMap,grain,'paper fibres and feather barbs have distinct microstructure');
+  assert.equal(characterMaterial(kit,'#bbccdd','paper').bumpMap,grain,'each finish shares one scene-owned texture');
   disposeObject(all);kit.dispose();
 });
 

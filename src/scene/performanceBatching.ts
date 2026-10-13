@@ -368,7 +368,7 @@ export class SceneBatches {
   private isVisible(object: THREE.Object3D): boolean {
     const cached = this.visibility.get(object);
     if (cached?.frame === this.visibilityFrame) return cached.visible;
-    const ownVisible = this.renderPrunedRoots.get(object) ?? object.visible;
+    const ownVisible = !object.userData.characterDetailHidden && (this.renderPrunedRoots.get(object) ?? object.visible);
     const visible = ownVisible && (object === this.scene || (!!object.parent && this.isVisible(object.parent)));
     if (cached) { cached.frame = this.visibilityFrame; cached.visible = visible; }
     else this.visibility.set(object, { frame: this.visibilityFrame, visible });
@@ -580,7 +580,7 @@ export class SceneBatches {
     const mappedGroups = new Map<string, Source[]>();
     this.scene.traverse((object) => {
       const mesh = object as THREE.Mesh;
-      if (!mesh.isMesh || (mesh as THREE.SkinnedMesh).isSkinnedMesh || (mesh as THREE.InstancedMesh).isInstancedMesh
+      if (!mesh.isMesh || mesh.userData.characterDetailMesh || (mesh as THREE.SkinnedMesh).isSkinnedMesh || (mesh as THREE.InstancedMesh).isInstancedMesh
         || (mesh as THREE.BatchedMesh).isBatchedMesh || Array.isArray(mesh.material)
         || (!(mesh.material as THREE.MeshStandardMaterial).isMeshStandardMaterial
           && !(mesh.material as THREE.MeshBasicMaterial).isMeshBasicMaterial)

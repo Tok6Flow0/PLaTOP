@@ -56,6 +56,14 @@ Idle, Move, Work and Sleep clips. The [asset contract](docs/ASSET-CONTRACT.md) a
 [coordination board](docs/COORDINATION.md) record integration and approvals.
 A visual resemblance score is a subjective critique, not a pixel-equivalence measurement.
 
+Close-up embodiments have a **100× triangle-density tier**: each authored triangle
+becomes one hundred curved surface triangles, with material-specific relief.
+Ceramic curves stay smooth; folded-paper edges remain creased. The portrait
+generator uses these same meshes. At most three nearby characters receive the
+dense tier, built in a local worker and released when the camera moves away.
+The whole-office view keeps the lighter meshes. This is a rendering detail level,
+not new agent behavior, a promise of reference equivalence, or PS5 hardware quality.
+
 ## Run locally
 
 Use Node.js **22.12+** on the 22.x line, or **20.19+** on the 20.x line.

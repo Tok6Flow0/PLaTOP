@@ -5,8 +5,8 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'wayfinderBody'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
-export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
+export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.46,.08],[.29,.18],[.14,.235],[0,.26]];
@@ -16,7 +16,7 @@ const owlContour=new THREE.SplineCurve(owlProfile.map(([r,y])=>new THREE.Vector2
 interface CharacterResources {
   geometry: Map<string, THREE.BufferGeometry>;
   material: Map<string, THREE.MeshStandardMaterial>;
-  grain?: THREE.DataTexture;
+  grains?: Map<string, THREE.DataTexture>;
   glow?: THREE.DataTexture;
   facialGrain?: THREE.DataTexture;
   plumageGrain?: THREE.DataTexture;
@@ -83,9 +83,15 @@ function helmet(owl = false,boxed=false): THREE.BufferGeometry {
     const edge=boxed?1-THREE.MathUtils.smoothstep(z,.12,.27):0;
     const px=THREE.MathUtils.lerp(x*cheek*(1+.12*jaw),Math.sign(x)*.5*Math.pow(Math.abs(x)*2,.63),edge);
     const py=THREE.MathUtils.lerp(y-.035*jaw,Math.sign(y)*.5*Math.pow(Math.abs(y)*2,.72),edge);
-    position.setXYZ(i, px, py, back);
+    const recess=owl&&back>0?owlEyeRecess(px*.78,py*.65)*1.55/.54:0;
+    position.setXYZ(i, px, py, back-recess);
   }
   return smoothDeformedSurface(geometry);
+}
+
+/** A shallow socket nests the eye inside the facial disc, not on top of it. */
+function owlEyeRecess(x:number,y:number):number {
+  return .026*Math.exp(-(((Math.abs(x)-.13)/.072)**2+((y-.002)/.085)**2)*1.15);
 }
 
 function speechBoundary(width:number,height:number):Array<[number,number]> {
@@ -125,6 +131,7 @@ function lanternHousing():THREE.BufferGeometry {
     indices.push(a,c,b,b,c,d);
   }
   const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);
+  geometry.userData.characterEllipsoid={radii:[.410,.375,.305],centerY:-.002,shell:true};
   return smoothDeformedSurface(geometry);
 }
 
@@ -134,10 +141,11 @@ function lanternBezel():THREE.BufferGeometry {
   const inner=speechBoundary(.554,.419),outer=speechBoundary(.59,.455),columns=inner.length;
   const vertices:number[]=[],indices:number[]=[];
   for(const[ring,points]of[inner,outer].entries())for(const[x,y]of points){
-    vertices.push(x,y-.002,.305*Math.sqrt(Math.max(.05,1-(x/.410)**2-((y-.002)/.375)**2))+(ring?-.002:.004));
+    vertices.push(x,y-.002,.305*Math.sqrt(Math.max(.05,1-(x/.410)**2-((y-.002)/.375)**2))+(ring?.002:.012));
   }
   for(let i=0;i<columns;i++){const j=(i+1)%columns;indices.push(i,i+columns,j,j,i+columns,j+columns);}
-  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
+  const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(vertices,3));geometry.setIndex(indices);geometry.computeVertexNormals();
+  geometry.userData.characterEllipsoid={radii:[.410,.375,.305]};return geometry;
 }
 
 /** Joined wing/ear surfaces taper to a rounded point, with no paper-thin edges. */
@@ -199,12 +207,12 @@ function smallHeart(): THREE.BufferGeometry {
 
 /** Both the cloth and its piping follow the real elliptical torso, including its back. */
 export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
-  const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t),normalized=(y+.005)/1.06;
+  const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t)-.045*Math.sin(angle)**2*(1-t)**2,normalized=(y+.005)/1.06;
   let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
   const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
-  const fold=.017*Math.sin(angle*5)*Math.sin(Math.PI*t);
-  const drape=.25+.24*Math.sin(t*Math.PI/2);
-  return [Math.sin(angle)*(Math.max(r*.85+.026+.026*t,drape)-inset+fold),y,Math.cos(angle)*(Math.max(r*.64+.028+.019*t,drape*.78)-inset+fold)];
+  const fold=(.027+.037*Math.sin(angle*5+.4)+.010*Math.sin(angle*9-t))*Math.sin(Math.PI*t)+.014*Math.sin(angle*5+.4)*t*t;
+  const drape=.32+.16*Math.sin(t*Math.PI/2);
+  return [Math.sin(angle)*Math.min(.512,Math.max(r*.85+.030+.026*t,drape)-inset+fold),y,Math.cos(angle)*Math.min(.43,Math.max(r*.64+.032+.019*t,drape*.78)-inset+fold)];
 }
 
 /** Continuous forearm from shoulder into a rounded inward clasp, not a pad
@@ -227,7 +235,7 @@ function embracingArm():THREE.BufferGeometry {
 
 /** Open-front lined cape follows the shoulders and flares into a rounded hem. */
 function cape(): THREE.BufferGeometry {
-  const vertices: number[] = [], indices: number[] = [], columns = 18, rows = 6;
+  const vertices: number[] = [], indices: number[] = [], columns = 24, rows = 10;
   for (let row = 0; row <= rows; row++) {
     const t = row / rows,bound=.20+1.05*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
@@ -370,9 +378,9 @@ function foldedSheet(outline:Tuple[],ridge:Tuple,tones:string[]):THREE.BufferGeo
 /** Folded volumes close into a tapered back, not an extruded cardboard slab. */
 function paperOwlHead(quill=false): THREE.BufferGeometry {
   const outline:Array<[number,number]>=quill?
-    [[-.41,-.26],[-.30,-.45],[.22,-.45],[.47,-.13],[.45,.24],[.54,.51],[.19,.34],[-.08,.39],[-.48,.53],[-.44,.14]]:
+    [[-.41,-.26],[-.30,-.45],[.22,-.45],[.47,-.13],[.45,.24],[.54,.51],[.19,.41],[-.08,.43],[-.48,.53],[-.44,.14]]:
     [[-.44,-.22],[-.27,-.43],[.25,-.44],[.47,-.10],[.42,.28],[.23,.48],[-.23,.44],[-.47,.14]];
-  const cheek:Array<[number,number]>=[[.012,.04],[.075,.26],[.24,.31],[.38,.16],[.42,-.055],[.26,-.35],[.014,-.40]];
+  const cheek:Array<[number,number]>=[[.012,.02],[.045,.25],[.16,.36],[.29,.32],[.415,.14],[.39,-.06],[.24,-.30],[.014,-.405]];
   const holes=[cheek.map(([x,y])=>new THREE.Vector2(-x,y)),cheek.map(([x,y])=>new THREE.Vector2(x,y))];
   const outer=outline.map(([x,y])=>new THREE.Vector2(x,y));
   const points=[...outer,...holes.flat()];
@@ -433,8 +441,8 @@ function spiritHood(relay = false): THREE.BufferGeometry {
 }
 
 function spiritProfile(variant:'compass'|'lens'|'relay'):Array<[number,number]> {
-  const profile: Array<[number,number]>=[[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75]];
-  if(variant!=='compass'){profile[1]=[.25,-.603];profile[2]=[.44,-.52];}
+  const profile: Array<[number,number]>=[[0,-.617],[.43,-.617],[.51,-.51],[.51,-.30],[.43,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75]];
+  if(variant!=='compass'){profile[1]=[.26,-.603];profile[2]=[.47,-.52];profile[3]=[.49,-.30];}
   profile.push(...(variant==='compass'?[[.12,.84],[.055,.93],[0,1.03]]:[[.09,.80],[0,.81]]) as Array<[number,number]>);
   return profile;
 }
@@ -490,15 +498,15 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
   const sculpt = breast?feather():flightFeather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
   sculpt.dispose();
-  const count = breast ? 60 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
+  const count = breast ? 84 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
     if(breast){
       // Overlapping plumage wraps the entire oval. Each small feather is
       // tangential to the body, including its sides and rear, with staggered
       // rows. One cached mesh replaces the old front-only breast panel.
-      const row=Math.floor(featherIndex/10),column=featherIndex%10;
-      const angle=(column+.5+(row%2?.5:0))/10*Math.PI*2,y=.20-row*.100+.008*Math.sin(column*2.1+row);
+      const row=Math.floor(featherIndex/12),column=featherIndex%12;
+      const angle=(column+.5+(row%2?.5:0)+.04*Math.sin(column*2.7+row))/12*Math.PI*2,y=.235-row*.080+.004*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
@@ -509,12 +517,12 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         colours.push(tone,tone,tone);
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
-        const py=y+point.y*(row===5?.14:.22),normalizedY=py/.83;
+        const py=y+point.y*(row===6?.13:.195),normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
-        const vaneWidth=row===5?.115:row===4?.18:.225;
+        const vaneWidth=row===6?.11:row===5?.15:.195;
         const theta=angle+point.x*vaneWidth/Math.max(.12,radius*.70);
-        const relief=(.007+point.z*.026+(5-row)*.0025)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
+        const relief=(.007+point.z*.026+(6-row)*.002)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
@@ -639,6 +647,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'fineRing': return new THREE.TorusGeometry(.5, .027, 6, 28);
     case 'compassStar': return folded([[0, .5], [.07, .13], [.32, .32], [.13, .07], [.5, 0], [.13, -.07], [.32, -.32], [.07, -.13], [0, -.5], [-.07, -.13], [-.32, -.32], [-.13, -.07], [-.5, 0], [-.13, .07], [-.32, .32], [-.07, .13]], .03, .025);
     case 'compassNeedle': return folded([[0,.5],[.085,.09],[.33,0],[.085,-.09],[0,-.5],[-.085,-.09],[-.33,0],[-.085,.09]],.03,.035);
+    case 'compassPointer': return polyhedron([[0,.5,0],[.15,0,.025],[0,-.5,0],[-.15,0,.025],[0,0,.060],[0,0,-.025]],
+      [[0,1,4],[0,4,3],[1,2,4],[2,3,4],[0,5,1],[1,5,2],[2,5,3],[3,5,0]],
+      ['#d09b4d','#e7b767','#f0d5a0','#ac8d52','#9b763a','#a58950','#90713b','#b18b4a']);
   }
 }
 
@@ -654,20 +665,34 @@ export function characterGeometry(kit: SceneKit, form: CharacterForm): THREE.Buf
   return geometry;
 }
 
-/** A single scene-owned micrograin gives clay/paper tactile detail without more meshes. */
-function surfaceGrain(kit: SceneKit): THREE.DataTexture {
+/** Finish-specific microstructure: ceramic pores, laid-paper fibres and fine
+ * brushed metal. Broad highlights remain clean; texture is not painted noise. */
+function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture {
   const owner=owned(kit);
-  if(owner.grain) return owner.grain;
-  const size=256,data=new Uint8Array(size*size*4);let seed=181;
-  for(let i=0;i<size*size;i++) {
+  owner.grains ??= new Map();
+  const cached=owner.grains.get(finish);if(cached)return cached;
+  const size=512,data=new Uint8Array(size*size*4);let seed=181;
+  const hash=(x:number,y:number)=>((Math.imul(x+71,374761393)^Math.imul(y+113,668265263))>>>0)%65521/65521;
+  const noiseAt=(x:number,y:number)=>{
+    const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
+    return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(ix,iy),hash(ix+1,iy),sx),THREE.MathUtils.lerp(hash(ix,iy+1),hash(ix+1,iy+1),sx),sy);
+  };
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
-    const grain=183+(seed>>>24)*.28;
-    data.set([grain,grain,grain,255],i*4);
+    const noise=(seed>>>24)/255, broad=Math.sin(x*.063+Math.sin(y*.081))*Math.sin(y*.048);
+    const pore=noiseAt(x/6,y/6),fibre=noiseAt(x/2.8+Math.sin(y*.036)*.7,y/25);
+    const barbs=Math.pow(Math.max(0,Math.sin(y*.67+Math.abs(x-size*.5)*.28)),12);
+    const grain=finish==='paper'?237-29*fibre-13*pore-8*noise
+      :finish==='brass'?249-4*Math.sin(y*1.17+x*.007)-3*noise
+      :finish==='cloth'?238-13*(Math.sin(x*Math.PI/4)**2+Math.sin(y*Math.PI/4)**2)-15*pore-6*noise
+      :finish==='feather'?237-10*barbs-19*pore-9*noise
+      :finish==='glaze'?247-13*pore-6*noise+2*broad:244-29*pore-10*noise+3*broad;
+    data.set([grain,grain,grain,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
   texture.userData.platopCharacterGrain=true;
   texture.repeat.set(2,2);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
-  texture.generateMipmaps=true;texture.needsUpdate=true;owner.grain=texture;return texture;
+  texture.generateMipmaps=true;texture.needsUpdate=true;owner.grains.set(finish,texture);return texture;
 }
 
 /** Warm frosted glass has a luminous centre and a quiet amber edge. */
@@ -687,27 +712,27 @@ function glassGlow(kit: SceneKit): THREE.DataTexture {
 /** Fine radial barbs in the owl's facial discs, shared by both eyes. */
 function facialGrain(kit:SceneKit):THREE.DataTexture {
   const owner=owned(kit);if(owner.facialGrain)return owner.facialGrain;
-  const size=256,data=new Uint8Array(size*size*4);
+  const size=512,data=new Uint8Array(size*size*4);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const seed=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%101/100;
-    const barbs=Math.pow(Math.max(0,Math.sin(a*157+r*31+Math.sin(a*39)*1.1)),10);
-    const tone=241-36*barbs*Math.min(1,r*3)-20*seed;
+    const barbs=Math.pow(Math.max(0,Math.sin(a*67+r*23+Math.sin(a*17)*1.1)),8);
+    const tone=242-61*barbs*Math.min(1,r*3)-24*seed;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;
 }
 
 /** Individual feather UVs keep the fine barbs aligned with each overlapping
- * vane. One 256px texture is reused by all breast and wing layers. */
+ * vane. One 512px texture is reused by all breast and wing layers. */
 function plumageGrain(kit:SceneKit):THREE.DataTexture {
   const owner=owned(kit);if(owner.plumageGrain)return owner.plumageGrain;
-  const size=256,data=new Uint8Array(size*size*4);
+  const size=512,data=new Uint8Array(size*size*4);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const u=(x+.5)/size-.5,v=(y+.5)/size;
     const seed=((Math.imul(x+17,374761393)^Math.imul(y+29,668265263))>>>0)%101/100;
-    const barb=Math.pow(Math.max(0,Math.sin(v*285+Math.abs(u)*143+Math.sin(v*19)*2)),8);
-    const quill=Math.exp(-(u*u)/.00010),tone=229-25*barb-12*seed+15*quill;
+    const barb=Math.pow(Math.max(0,Math.sin(v*137+Math.abs(u)*91+Math.sin(v*19)*2)),8);
+    const quill=Math.exp(-(u*u)/.00010),tone=235-48*barb-20*seed+12*quill;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;
@@ -720,14 +745,16 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'brass' ? .52 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
     });
+    material.userData.characterFinish = finish;
+    if(finish==='glass'){material.transparent=true;material.opacity=.16;material.depthWrite=false;material.envMapIntensity=1.2;}
     if (finish === 'ink') material.envMapIntensity = .65;
-    if (['clay','glaze','paper','feather','facialFeather','plumage'].includes(finish)) {
+    if (['clay','glaze','paper','feather','facialFeather','plumage','brass','cloth'].includes(finish)) {
       material.envMapIntensity=finish==='glaze'?.75:.5;
-      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit);material.bumpScale=finish==='plumage'?.002:finish==='facialFeather'?.004:finish==='glaze'?.005:.010;
+      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='glaze'?.006:finish==='brass'?.0015:finish==='paper'?.014:.012;
       material.map=material.bumpMap;
     }
     cache.set(key, material);
@@ -797,8 +824,14 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
         surface = sz * cross;
         normal.set(sz * px / (sx * sx * cross), -sz * radius * slope / (sy * cross), 1).normalize();
       } else {
-        surface = surfaceRadii[2] * Math.sqrt(Math.max(.05, 1 - (px / surfaceRadii[0]) ** 2 - (py / surfaceRadii[1]) ** 2));
-        normal.set(px / surfaceRadii[0] ** 2, py / surfaceRadii[1] ** 2, surface / surfaceRadii[2] ** 2).normalize();
+        surface = surfaceRadii[2] * Math.sqrt(Math.max(.05, 1 - (px / surfaceRadii[0]) ** 2 - (py / surfaceRadii[1]) ** 2))-(owlSign?owlEyeRecess(px,py):0);
+        normal.set(px / surfaceRadii[0] ** 2, py / surfaceRadii[1] ** 2, (surface+(owlSign?owlEyeRecess(px,py):0)) / surfaceRadii[2] ** 2).normalize();
+        if(owlSign){
+          const recess=owlEyeRecess(px,py),base=Math.max(.06,surface+recess);
+          const dx=-(surfaceRadii[2]**2)*px/(surfaceRadii[0]**2*base)+recess*2.3*(Math.abs(px)-.13)/.072**2*Math.sign(px);
+          const dy=-(surfaceRadii[2]**2)*py/(surfaceRadii[1]**2*base)+recess*2.3*(py-.002)/.085**2;
+          normal.set(-dx,-dy,1).normalize();
+        }
       }
       vertices.push(px, py, surface + offset + centre[2] + .010);
       normals.push(normal.x, normal.y, normal.z);
@@ -818,7 +851,9 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     geometry.setAttribute('uv',new THREE.Float32BufferAttribute(vertices.flatMap((value,index)=>index%3===0?[(value-(owlSign?centre[0]:0))/width+.5,(vertices[index+1]-(owlSign?centre[1]:0))/height+.5]:[]),2));
-    geometry.setIndex(indices); cache.set(key, geometry);
+    geometry.setIndex(indices);
+    if(!torsoSurface)geometry.userData.characterEllipsoid={radii:surfaceRadii,owlSocket:!!owlSign};
+    cache.set(key, geometry);
   }
   const mesh = new THREE.Mesh(geometry, characterMaterial(kit, color, finish));
   mesh.receiveShadow = true; parent.add(mesh); return mesh;
@@ -887,6 +922,6 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
       const hit=ray.intersectObject(shell,false)[0];
       if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}
     }
-    geometry.computeVertexNormals();mesh.geometry=geometry;
+    geometry.computeVertexNormals();geometry.userData.characterFitted=true;mesh.geometry=geometry;
   });
 }

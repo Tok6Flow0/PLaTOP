@@ -50,7 +50,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     const emblem = joint(parent, 'compass-emblem', at);
     ring(emblem, color, diameter, [0, 0, 0]);
     if (wayfinder) sculpt(emblem, 'detail', '#2b4252', [0, 0, -.006], [diameter * .88, diameter * .88, .025], undefined, 'clay');
-    sculpt(emblem, hr||id==='bridge-scout'?'compassNeedle':'compassStar', hr?'#2d5244':color, [0, 0, .010], [diameter * .78, diameter * .90, .11], [0, 0, id==='bridge-scout'?-.50:-.08], hr?'clay':'brass');
+    sculpt(emblem, id==='bridge-scout'?'compassPointer':hr?'compassNeedle':'compassStar', id==='bridge-scout'?'#ffffff':hr?'#2d5244':color, [0, 0, .010], [diameter * .78, diameter * .90, .11], [0, 0, id==='bridge-scout'?-.50:-.08], hr?'clay':'brass');
     sculpt(emblem, 'detail', '#ead3a0', [0, 0, .027], [.033, .033, .015], undefined, 'brass');
   };
   const limbs = (color: string, extremity: string, compact = false, robed = false) => {
@@ -85,7 +85,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       // and face keep Keeper's pale-paper identity.
       stroke(body, '#bda783', [[-.323, -.32, .235], [-.328, .08, .235], [-.312, .62, .235]], .005, 'clay');
       sculpt(head,'book','#e6d7b9',[0,-.021,.263],[.48,.31,.011],undefined,'paper');
-      eyes(head, .112, .018, .276, true);
+      eyes(head, .112, .018, .276, true, ink, 1.12);
       sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
       limbs(cream, cream, true);
       const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
@@ -175,11 +175,11 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         sculpt(head, 'limb', '#527669', [0, .395, 0], [.04, .13, .04], undefined, 'brass');
       } else {
         if (id === 'intake-compass') [-1, 1].forEach(sign => data.eyes.push(characterEyeArc(kit, head, '#ffe0a0', [sign * .121, .048, .365], .044, -.026)));
-        else eyes(head, .121, .030, .365, true, wayfinder ? '#ffe0a0' : '#493a2d');
+        else eyes(head, .121, .030, .365, true, wayfinder ? '#ffe0a0' : '#493a2d', leader?1.25:1);
         if(!wayfinder && !leader) characterSmile(kit, head, '#735131', .046, .023, [0, -.068, .365]);
         if (wayfinder) {
           if(id==='intake-jarvis') {
-            sculpt(body, 'cape', '#263b4d', [0, 0, 0], [1,1,1], undefined, 'clay');
+            sculpt(body, 'cape', '#263b4d', [0, 0, 0], [1,1,1], undefined, 'cloth');
             [-1,1].forEach(sign=>{
               const trim=Array.from({length:9},(_,i)=>{const t=i/8,a=sign*(.20+1.05*Math.sin(t*Math.PI/2));return navigatorCapePoint(t,a,-.005)});
               stroke(body,'#bd985c',trim,.008).name='cape-trim';
@@ -237,7 +237,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       }
       [-1, 1].forEach(sign => {
         sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], 'glaze');
-        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [.045, .117, .117], undefined, 'glaze');
+        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [leader?.070:.045, leader?.20:.117, leader?.20:.117], undefined, 'glaze');
       });
       limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7',false,wayfinder);
       if(wayfinder) [-1,1].forEach(sign=>{
@@ -325,12 +325,12 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     [-1, 1].forEach(sign => {
       const facialDisc=navy?curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'facialFeather', [.417, .325, .27],false,undefined,.43,sign):undefined;
-      const iris=navy?sculpt(head, 'bean', '#c49b54', [sign * .162, .002, .277], [.157, .181, .022], undefined, 'clay'):undefined;
+      const iris=navy?sculpt(head, 'bean', '#c49b54', [sign * .130, .002, .277], [.151, .170, .016], undefined, 'clay'):undefined;
       if(iris&&facialDisc){iris.name='owl-iris';facialDisc.name=`owl-facial-disc:${sign}`;fitCharacterRelief(iris,facialDisc,.001);}
       if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162+(navy?.025:.006), navy?-.002:.011, navy?.290:.195], [navy ? .105 : .083, navy ? .125 : .098, navy?.035:.024], undefined, 'ink'); data.eyes.push(eye);
-        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * .162 + (navy?.009:-.010), navy?.031:.043, navy?.305:.208], [navy?.025:.020, navy?.030:.022, .006], undefined, 'glaze');
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?-.002:.011, navy?.290:.195], [navy ? .100 : .083, navy ? .118 : .098, navy?.023:.024], undefined, 'ink'); data.eyes.push(eye);
+        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - .012, navy?.031:.043, navy?.305:.208], [navy?.019:.020, navy?.023:.022, .006], undefined, 'glaze');
         if(iris){fitCharacterRelief(eye,iris,.001);fitCharacterRelief(highlight,eye,.001);}
         data.highlights.push(highlight);
       }
@@ -359,6 +359,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     } else if (id === 'reflection-echo') {
       ring(body, gold, .245, [.28, .07, .32]);
       ring(body, '#ead5a5', .212, [.28, .07, .327]);
+      sculpt(body,'bean','#f6e8c1',[.28,.07,.333],[.198,.198,.025],undefined,'glass').name='magnifier-glass';
       stroke(body, gold, [[.28, -.055, .32], [.25, -.25, .32]], .020);
     }
     if (navy) {
@@ -367,13 +368,14 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(body, '#835d31', [[-.083, .130, .403], [0, .065, .403], [.083, .130, .403]], .005, 'clay');
     }
     else {
-      body.scale.set(1.06,1,.46);
+      body.scale.set(1.06,.86,.46);
+      body.position.y-=.025;data.bodyY=body.position.y;
       body.rotation.z=id==='reflection-echo'?-.055:.06;
       body.getObjectByName(id==='reflection-echo'?'paperChestL':'paperChestR')!.rotation.z=id==='reflection-echo'?-.075:.065;
       // Keep the complete facial assembly together while making the folded
       // head a shallow wrapper, rather than a solid slab atop a narrow torso.
       head.scale.set(.93,.93,.72);
-      head.position.y=.78;data.headY=.78;
+      head.position.y=.69;data.headY=.69;
       data.wings.forEach(wing=>{wing.scale.z=.72;});
     }
   } else {
@@ -406,7 +408,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     for(const [i,foot]of data.feet.entries()){
       foot.position.x=(i?1:-1)*.20;
       const toe=foot.children[0];toe.scale.set(.30,.28,.32);
-      sculpt(foot,'bean','#315d58',[0,0,.146],[.235,.215,.025],undefined,'glaze');
+      sculpt(foot,'bean','#315d58',[0,0,.164],[.235,.215,.025],undefined,'glaze');
       foot.position.y=.14;
     }
   }

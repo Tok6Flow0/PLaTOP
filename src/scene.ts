@@ -16,6 +16,7 @@ import { StaticContacts, actorContactHeight } from './scene/staticContacts';
 import { agentExpression, type AgentExpression } from './scene/agentExpression';
 import { ObserverMist, observerViewportChanged, type ObserverViewport } from './scene/observerMist';
 import { daylightAtHour } from './localDaylight';
+import { CharacterDetail } from './scene/characterDetail';
 
 // Keep cinematic 3D at a bounded 1.5 backing pixels per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -569,6 +570,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   observerBounds.min.y = Math.max(.3, worldBounds.min.y + .35);
   observerRig = new ObserverMist(camera, controls, observerBounds);
   scene.add(observerRig.mist.root);
+  const characterDetail = new CharacterDetail(scene, actors, () => wake(true));
 
   const visible = () => documentVisible && nativeVisible && !contextLost && !disposed;
   const still = () => state.paused || state.reducedMotion || systemReducedMotion;
@@ -726,13 +728,19 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       if (diagnosticsEnabled) resolutionDiagnostics();
     }
     if (!diagnosticsEnabled) {
+      characterDetail.select(camera, height);
       batches.sync();
+      characterDetail.sync();
       contacts.sync(camera);
       output.render(camera, !!idleTeamId);
       return;
     }
     const batchStart = performance.now();
+    characterDetail.select(camera, height);
     batches.sync();
+    characterDetail.sync();
+    host.dataset.detailedCharacters = String(characterDetail.count);
+    host.dataset.detailPending = String(characterDetail.pending);
     const contactStart = performance.now();
     contacts.sync(camera);
     const renderStart = performance.now();
@@ -1348,6 +1356,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       canvas.removeEventListener('webglcontextrestored', restored);
       actors.forEach((actor) => { actor.mixer?.stopAllAction(); actor.mixer?.uncacheRoot(actor.model); });
       contacts.dispose();
+      characterDetail.dispose();
       staticContacts.dispose();
       batches.dispose();
       officeAssets.dispose();
@@ -1372,6 +1381,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.sceneFps;
       delete host.dataset.loadedCharacters;
       delete host.dataset.proxyCount;
+      delete host.dataset.detailedCharacters;
+      delete host.dataset.detailPending;
       delete host.dataset.sceneDrawCalls;
       delete host.dataset.sceneTriangles;
       delete host.dataset.sceneRenderMs;
