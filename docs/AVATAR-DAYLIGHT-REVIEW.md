@@ -21,6 +21,7 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 2 | 6.8/10 | 7.5/10 | B− |
 | Pass 3 | 7.4/10 | 7.9/10 | 7.7/10 — B |
 | Pass 4 | 7.6/10 | 7.9/10 | 7.8/10 — B |
+| Pass 5 | 7.8/10 | 7.9/10 | 7.9/10 — B |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 The requested acceptance threshold has not yet been met. Pass 1 restored the
@@ -42,6 +43,11 @@ robed faces attached during real gestures. All 253 tests and the build pass.
 The independent review still finds the paper construction uneven, HR cloaks
 too plain, and the intake cape insufficiently dimensional. Nighttime dark
 surfaces need more separation. The acceptance threshold remains unmet.
+Pass 5 adds modeled hood layers, stronger amber diffusion, finer owl feathers
+and facial grain, and simpler paper faces. The independent review recognizes
+the illuminated Beacon as the strongest asset, but still finds stiffness in
+the bird, broad geometric owl bellies, and insufficient individual posture.
+All 253 tests and the production build pass; these do not override that review.
 
 ## Local-clock atmosphere
 
@@ -72,6 +78,8 @@ test suites were stopped during the samples.
 | Pass 3 night | 60.00 | 3.8 ms | 86 | 319,168 |
 | Pass 4 noon | 59.80 | 1.8 ms | 86 | 324,476 |
 | Pass 4 night | 60.00 | 1.6 ms | 86 | 324,476 |
+| Pass 5 noon | 60.00 | 3.0 ms | 87 | 327,218 |
+| Pass 5 night | 60.00 | 2.1 ms | 87 | 327,218 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
@@ -90,3 +98,5 @@ The dev-only `tools/graphics-lab.html` and `tools/clock-review.html?hour=23`
 provide repeatable performance and screenshot fixtures. They are not linked
 from the product or included as Vite production entry points. Production has
 no time slider, preview activity or onlooker control of agents.
+`tools/avatar-review.html` places each original portrait next to its actual
+rendered models for direct day/night comparison, without connecting to chats.

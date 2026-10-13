@@ -119,6 +119,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         if(ornament.name==='compass-emblem'){ornament.position.z=.365;continue;}
         fitCharacterRelief(ornament,robe);
       }
+      sculpt(body,id==='hr-lens'?'lensCowl':id==='hr-relay'?'relayCowl':'compassCowl',bodyColor,[0,-.015,0],[.82,.90,.80],undefined,'clay');
       characterSmile(kit, head, '#244c43', .043, .021, [0, -.068, .298]);
       limbs(bodyColor, bodyColor, true, true);
       // A continuous robed figure has no separate rigid neck. Its expression
@@ -262,36 +263,35 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(head, 'fineRing', green, [0, .681, 0], [.26, .30, .26], undefined, 'brass');
       sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'brass');
       [-1,1].forEach(sign=>{const foot=joint(group,sign<0?'foot_l':'foot_r',[sign*.22,.075,.11]);sculpt(foot,'bean',gold,[0,0,0],[.16,.15,.20],undefined,'brass');data.feet.push(foot)});
-      group.scale.setScalar(1.12);
+      group.scale.setScalar(.97);
     }
   } else if (kind === 'owl') {
     const navy = id === 'email-owl', feathers = navy ? '#293b51' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
-    body.position.y = .49; data.bodyY = .49; head.position.y = .91; data.headY = .91;
+    body.position.y = navy?.49:.43; data.bodyY = body.position.y; head.position.y = navy?.91:.83; data.headY = head.position.y;
     if(navy)head.position.z=.065;
-    sculpt(body, navy ? 'owlBody' : 'paperBody', feathers, [0, 0, 0], [.70, .83, .55], undefined, navy ? 'feather' : 'paper');
+    sculpt(body, navy ? 'owlBody' : 'paperBody', feathers, [0, 0, 0], [.70, navy?.83:.70, navy?.55:.62], undefined, navy ? 'feather' : 'paper');
     sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : id === 'reflection-echo' ? '#c7aa83' : '#cfb18a', [0, 0, 0], [.78, .65, .54], undefined, navy ? 'feather' : 'paper');
     [-1, 1].forEach(sign => {
-      if (navy) curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'clay', [.417, .325, .27],false,undefined,.43,sign);
+      if (navy) curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'facialFeather', [.417, .325, .27],false,undefined,.43,sign);
       else {
-        const disc=sculpt(head, sign<0?'paperDiscL':'paperDisc', '#edd6b0', [sign * .157, -.012, .280], [.365, .42, .022], [0, sign * -.17, sign * -.06], 'paper');
-        fitCharacterRelief(disc,head.children[0] as THREE.Mesh,.012,true);
+        sculpt(head, sign<0?'paperDiscL':'paperDisc', '#edd6b0', [sign * .157, -.012, .283], [.365, .42, .022], [0, sign * .36, sign * -.06], 'paper');
       }
       if (navy) sculpt(head, 'bean', '#c49b54', [sign * .162, .002, .289], [.193, .220, .051], undefined, 'brass');
-      if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .355], .050, .033));
+      if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .307], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162, .011, navy?.313:.353], [navy ? .143 : .116, navy ? .166 : .136, .060], undefined, 'ink'); data.eyes.push(eye);
-        data.highlights.push(sculpt(head, 'detail', '#fff9e7', [sign * .162 - .025, .053, navy?.330:.373], [.035, .043, .010], undefined, 'glaze'));
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162, .011, navy?.313:.300], [navy ? .143 : .092, navy ? .166 : .110, .045], undefined, 'ink'); data.eyes.push(eye);
+        data.highlights.push(sculpt(head, 'detail', '#fff9e7', [sign * .162 - (navy?.025:.016), navy?.053:.043, navy?.330:.322], [navy?.035:.023, navy?.043:.028, .010], undefined, 'glaze'));
       }
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], [.85,1.35,1.25], [0,0,sign*.10], 'feather');
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
       sculpt(wing, navy ? 'wing' : 'paperWing', navy ? '#31485e' : '#d0bea0', [sign * .015, -.145, 0], [.205, .53, .30], [0, 0, sign * .23], navy ? 'feather' : 'paper');
       if (navy) {
         sculpt(wing, sign < 0 ? 'featherFanL' : 'featherFanR', '#30465e', [0, -.035, 0], [1, 1, 1], undefined, 'feather');
-      } else sculpt(wing, 'pageFold', '#dec39a', [sign * .025, -.15, .10], [.15, .30, .08], [0, 0, sign * .24], 'paper');
+      }
       data.wings.push(wing);
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .145, .08, .08]);
       if (navy) [-1, 0, 1].forEach(toe => sculpt(foot, 'toe', gold, [toe * .053, 0, .012 - Math.abs(toe) * .012], [.075, .16, .20], [0, toe * -.12, 0], 'brass'));
-      else sculpt(foot, 'paperWing', gold, [0, 0, 0], [.19, .16, .235], undefined, 'paper');
+      else sculpt(foot, 'bean', gold, [0, 0, 0], [.14, .16, .22], undefined, 'paper');
       data.feet.push(foot);
     });
     if(navy) sculpt(head,'paperBeak',gold,[0,-.080,.311],[.77,.85,.67],[.75,0,0],'brass');
@@ -299,14 +299,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     if (id === 'reflection-quill') {
       kit.mesh(body, 'detailCylinder', '#c99c4a', [.35, .01, .19], [.042, .48, .042], [0, 0, -.35]).name='quill-pencil';
       sculpt(body, 'beak', '#514d42', [.27, -.216, .19], [.040, .075, .040], [0, 0, Math.PI - .35]);
-      sculpt(body, 'pageFold', '#e4d2b1', [-.07, -.04, .25], [.30, .40, .08], [0, .10, .14], 'paper');
-      sculpt(body, 'pageFold', '#d0b58b', [.10, -.15, .24], [.23, .31, .07], [0, -.10, -.24], 'paper');
     } else if (id === 'reflection-echo') {
       ring(body, gold, .245, [.28, .07, .32]);
       ring(body, '#ead5a5', .212, [.28, .07, .327]);
       stroke(body, gold, [[.28, -.055, .32], [.25, -.25, .32]], .020);
-      sculpt(body, 'pageFold', '#e4cdab', [-.075, -.03, .25], [.30, .39, .07], [0, .1, -.12], 'paper');
-      sculpt(body, 'pageFold', '#c5a575', [.09, -.14, .24], [.24, .32, .07], [0, -.1, -.24], 'paper');
     }
     if (navy) {
       sculpt(body, 'breastFeathers', '#293e54', [0, 0, 0], [1, 1, 1], undefined, 'feather');
