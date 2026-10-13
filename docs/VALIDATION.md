@@ -371,3 +371,61 @@ was found, with one running app instance. After sampling, the final build was
 restored to the live Beacon desktop background with preview and diagnostics
 off and animation unpaused. Temporary GPU QA browsers and preview servers were
 closed; the live bridge and updated native app remain running.
+
+## Shared moving matrices and sleep resources — 2026-10-12
+
+This round uses `5a3ba0d` as its reference. Compatible moving palettes now share
+one matrix texture with disjoint integer offsets; geometry and color IDs remain
+local. Color, depth and distance shaders use the same offsets. Static camera
+and normal palettes retain their original math. The shared texture has one
+owner and is released once on rebuild or disposal. Sleep sprites now lazily
+share one immutable material and canvas texture within each scene, preserving
+their individual transforms, centers, visibility, ordering and cleanup.
+
+Actual moving-matrix uploads fall from five to one per campus frame and three
+to one in Beacon. Corresponding matrix bytes fall from 32,768 to 25,600 and
+29,440 to 25,600. All-sleeping campus label texture binds fall from twelve to
+one; sprite draw counts remain twelve. Beacon uses an authored sleep effect,
+so it gains no sprite reduction. These counts are not CPU measurements.
+
+The matrix change matched all 44 deterministic views exactly, including the
+extension-disabled path, seven production views and forced depth/distance
+shadow probes with actual offset-uniform readback. The isolated shared-label
+change matched 48 views exactly. All 76 sampled actor states remained exact.
+Fourteen final production views matched the atlas reference exactly, covering
+campus and all six offices in neutral and sleeping states. Context recovery,
+pause/hidden/resume, resource disposal and renderer-error checks passed. All
+**128 tests** pass, and the production build and independent source/output
+fingerprint checks succeed.
+
+Native CPU captures used the same app, GPU-process and WebContent launch
+identities, fixed preview activity, 1712 × 778 window viewport, 1109 × 538
+scene buffer, DPR 1, opaque MSAA and 30 FPS. Dimensions and view were checked
+before and after captures. Diagnostics and QA browsers were closed. Each
+capture used a 26-second warmup and three 13-second cumulative-counter windows
+bound to its exact build fingerprint. CPU percentages sum those three
+processes as a percentage of one core; they exclude whole-machine CPU, GPU
+execution time, power and battery.
+
+The initial reference/atlas medians were 28.88% and 28.57%. The final candidate
+measured 30.25%; an immediate reference repeat measured 30.59%, approximately
+1.1% higher. Reference drift and overlapping sample ranges make this a small
+preliminary result. **The requested additional 20–30% CPU reduction is not
+established.** A pixel-exact ordered-wall experiment reduced campus draws by
+ten but showed no reliable native CPU benefit, so it remains private. An
+occlusion-paused fullscreen capture was excluded.
+
+Recent final native timing reported 30.0 FPS, median 33 ms, p95 34 ms and maximum
+35 ms, with zero intervals above 50.5 ms. These are recent renderer timings,
+not guaranteed display presentation. The existing signed native bundle is
+updated in place through its fingerprint-verified frontend; only one installed
+bundle and one running instance were found.
+
+All six automations remain active and invoke the PLaTOP skill, prefer local
+MCP, retain the working CLI fallback, and report heartbeats and final states.
+Local stdio initialization, tool listing and bridge status readback succeed.
+Existing chats still need a host refresh to load the registered MCP tools;
+computer-use access to Codex settings was blocked. No business workflow was
+triggered for testing, and no schedule, notification or authority was changed.
+Private mappings, tokens, raw captures and location remain local. Temporary QA
+browsers and servers are closed; the live bridge remains running.

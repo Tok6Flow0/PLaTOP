@@ -1171,6 +1171,130 @@ test('global dynamic draws retain incompatible shader and former normal paths ac
   assert.ok(sources.every(source => source.layers.mask === 2));
 });
 
+function atlasFixture(t) {
+  const scene = new THREE.Scene();
+  const geometry = new THREE.BoxGeometry();
+  const fixedGeometry = new THREE.SphereGeometry(0.5, 8, 6);
+  const materials = [new THREE.MeshStandardMaterial({ color: 0x819e76 }),
+    new THREE.MeshStandardMaterial({ color: 0xc4b48c, wireframe: true }),
+    new THREE.MeshBasicMaterial({ color: 0x37627d })];
+  const rooms = [], actors = [], sources = [];
+  for (let office = 0; office < 2; office++) {
+    const room = new THREE.Group();
+    const actor = new THREE.Group();
+    room.position.set(office * 7.123456789, 0.731246813, -office * 3.987654321);
+    actor.rotation.set(0.37, 0.71, -0.19);
+    actor.scale.set(1.13, 0.81, 1.7);
+    room.add(actor); scene.add(room); rooms.push(room); actors.push(actor);
+    materials.forEach((material, index) => {
+      const source = new THREE.Mesh(geometry, material);
+      source.position.set(index + 0.123456789, 0.276543219, -0.612345678);
+      source.rotation.set(0.71, index * 0.41, -0.31);
+      actor.add(source); sources.push(source);
+    });
+  }
+  const fixed = [geometry, fixedGeometry].map(geometry => new THREE.Mesh(geometry, materials[0]));
+  scene.add(...fixed);
+  const batches = new SceneBatches(scene, new Set(actors));
+  batches.rebuild();
+  t.after(() => { batches.dispose(); geometry.dispose(); fixedGeometry.dispose(); materials.forEach(material => material.dispose()); });
+  return { scene, rooms, actors, sources, fixed, batches, moving: batches.paletteBatches.filter(batch => batch.dynamic),
+    staticPalette: batches.paletteBatches.find(batch => !batch.dynamic).mesh };
+}
+
+function assertAtlasParts(moving) {
+  for (const { mesh, sources } of moving) sources.forEach(({ mesh: source }, index) => {
+    const expected = source.matrixWorld.toArray().map(Math.fround);
+    assert.deepEqual(mesh.getMatrixAt(index, new THREE.Matrix4()).toArray(), expected);
+    const start = (mesh.matrixOffset + index) * 16;
+    const packed = [...mesh.matricesTexture.image.data.slice(start, start + 16)];
+    expected[15] = mesh.getVisibleAt(index) ? 1 : 0;
+    assert.deepEqual(packed, expected, 'each local part resolves its exact Float32 matrix and visibility slot');
+    const range = mesh.getGeometryRangeAt(index);
+    for (let vertex = range.vertexStart; vertex < range.vertexStart + range.vertexCount; vertex++) {
+      assert.equal(mesh.geometry.attributes.platopPart.getX(vertex), index, 'geometry and color IDs remain local');
+    }
+  });
+}
+
+test('distinct dynamic draws share one matrix upload source with exact disjoint part slots and local colors', t => {
+  const { rooms, actors, sources, moving, staticPalette, batches } = atlasFixture(t);
+  assert.equal(moving.length, 3);
+  const atlas = moving[0].mesh.matricesTexture;
+  assert.ok(moving.every(({ mesh }) => mesh.matricesTexture === atlas));
+  assert.notEqual(staticPalette.matricesTexture, atlas, 'static uploads remain independent');
+  assert.equal(new Set(moving.map(({ mesh }) => mesh.colorsTexture)).size, 3, 'color palettes remain unchanged');
+  assert.deepEqual(moving.map(({ mesh }) => mesh.matrixOffset), [0, 2, 4]);
+  assertAtlasParts(moving);
+  const version = atlas.version;
+  const staticVersion = staticPalette.matricesTexture.version;
+  const firstColors = moving[0].mesh.colorsTexture;
+  const originalColor = [...firstColors.image.data];
+  actors[1].position.set(1.123456789, -0.731246813, 4.987654321);
+  actors[1].rotation.y += 0.3;
+  moving[2].sources[1].mesh.material.color.setRGB(0.13, 0.27, 0.31);
+  batches.sync();
+  assert.ok(atlas.version > version);
+  assert.equal(staticPalette.matricesTexture.version, staticVersion);
+  assert.deepEqual([...firstColors.image.data], originalColor, 'unrelated local color palette is unchanged');
+  assertAtlasParts(moving);
+  rooms[1].visible = false; batches.sync();
+  assert.ok(moving.every(({ mesh }) => mesh.count === 1));
+  assertAtlasParts(moving);
+  sources[0].visible = false; batches.sync();
+  assert.equal(moving[0].mesh.count, 0);
+  assert.equal(moving[0].mesh.visible, false);
+  sources[0].visible = true; rooms[1].visible = true; batches.sync();
+  assert.ok(moving.every(({ mesh }) => mesh.count === 2));
+  assertAtlasParts(moving);
+});
+
+test('color, depth and distance shaders resolve shared matrix offsets after fresh shader compilation', t => {
+  const { moving, staticPalette, batches, actors } = atlasFixture(t);
+  actors[0].position.x += 0.17; batches.sync();
+  for (const mesh of [...moving.map(batch => batch.mesh), staticPalette]) {
+    const texture = mesh.matricesTexture;
+    const before = [...texture.image.data];
+    for (let compilation = 0; compilation < 2; compilation++) {
+      for (const [material, library] of [[mesh.material, mesh.material.isMeshBasicMaterial ? THREE.ShaderLib.basic : THREE.ShaderLib.standard],
+        [mesh.customDepthMaterial, THREE.ShaderLib.depth], [mesh.customDistanceMaterial, THREE.ShaderLib.distanceRGBA]]) {
+        const shader = { vertexShader: library.vertexShader, fragmentShader: library.fragmentShader, uniforms: {} };
+        material.onBeforeCompile(shader, {});
+        assert.equal(shader.uniforms.batchingTexture.value, texture);
+        assert.equal(shader.uniforms.platopMatrixOffset.value, mesh.matrixOffset);
+        assert.match(shader.vertexShader, /uniform int platopMatrixOffset/);
+        assert.match(shader.vertexShader, /int j = \( int\( i \) \+ platopMatrixOffset \) \* 4/);
+        assert.match(shader.vertexShader, /if \( !platopVisible \) gl_Position/);
+        if (material === mesh.material) assert.equal(shader.uniforms.batchingColorTexture.value, mesh.colorsTexture);
+      }
+    }
+    assert.deepEqual([...texture.image.data], before, 'fresh compilation retains the CPU atlas for context restoration');
+  }
+});
+
+test('rebuilding releases each shared atlas once, restores source ownership and allocates exact replacement slots', t => {
+  const { sources, batches, moving } = atlasFixture(t);
+  const oldAtlas = moving[0].mesh.matricesTexture;
+  let oldDisposals = 0, sourceDisposals = 0;
+  oldAtlas.addEventListener('dispose', () => oldDisposals++);
+  [...new Set(sources.flatMap(source => [source.geometry, source.material]))]
+    .forEach(resource => resource.addEventListener('dispose', () => sourceDisposals++));
+  batches.rebuild();
+  assert.equal(oldDisposals, 1, 'shared texture is disposed by its one owner');
+  const replacement = batches.paletteBatches.filter(batch => batch.dynamic);
+  const newAtlas = replacement[0].mesh.matricesTexture;
+  assert.notEqual(newAtlas, oldAtlas);
+  assert.ok(replacement.every(({ mesh }) => mesh.matricesTexture === newAtlas));
+  assertAtlasParts(replacement);
+  let newDisposals = 0;
+  newAtlas.addEventListener('dispose', () => newDisposals++);
+  batches.dispose(); batches.dispose();
+  assert.equal(oldDisposals, 1);
+  assert.equal(newDisposals, 1);
+  assert.equal(sourceDisposals, 0);
+  assert.ok(sources.every(source => source.layers.mask === 1));
+});
+
 test('rebuild and disposal release owned palettes and shadow materials once, retaining original resources', t => {
   const { sources, batches, multi } = multiFixture(t);
   const owned = [multi.geometry, multi.material, multi.matricesTexture, multi.colorsTexture,

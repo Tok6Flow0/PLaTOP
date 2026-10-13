@@ -121,9 +121,11 @@ can finish before a newly inactive scene settles. Window view renders only its
 selected room and pauses when covered or hidden. The 3D canvas uses one backing
 pixel per CSS pixel with native antialiasing in an opaque canvas; interface text
 retains the display's native pixel density. Retina scenes can look slightly softer
-than the previous 1.5-pixel budget, especially tiny text within the room. Static transforms and colors are cached, and compatible animated
-parts share multi-draw submissions when the device supports them. The original
-instanced rendering path remains available on other devices. One
+than the previous 1.5-pixel budget, especially tiny text within the room. Static
+transforms and colors are cached. Compatible rigid surfaces share draws, and
+compatible moving groups share one matrix upload per frame. Sleep labels reuse
+one immutable material and texture per scene. Unsupported surfaces retain their
+original rendering paths. One
 small static shadow map, contact textures and modest lamp glows create soft
 lighting. An opaque canvas avoids transparent compositing, and the cached warm
 background preserves the office palette. These are rendering budgets, not

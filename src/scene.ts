@@ -43,7 +43,7 @@ type InteractiveRoom = Room & {
   walls?: Array<{ root: THREE.Object3D; normal: THREE.Vector3; twoSided?: boolean }>;
 };
 
-function sleepIndicator(): THREE.Sprite {
+function makeSleepMaterial(): THREE.SpriteMaterial {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
   canvas.height = 128;
@@ -62,7 +62,11 @@ function sleepIndicator(): THREE.Sprite {
   }
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
-  const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false }));
+  return new THREE.SpriteMaterial({ map: texture, transparent: true, depthWrite: false, depthTest: false });
+}
+
+function sleepIndicator(material: THREE.SpriteMaterial): THREE.Sprite {
+  const sprite = new THREE.Sprite(material);
   sprite.scale.set(0.7, 0.38, 1);
   sprite.renderOrder = 10;
   return sprite;
@@ -148,6 +152,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   const contactTexture = new THREE.CanvasTexture(contactCanvas);
   const contactGeometry = new THREE.PlaneGeometry(1, 1);
+  // Labels share immutable resources within this scene; each Sprite keeps its own transform.
+  let sharedSleepMaterial: THREE.SpriteMaterial | undefined;
   teams.slice(0, 6).forEach((team, teamIndex) => {
     const room = makeRoom(team, teamIndex, kit) as InteractiveRoom;
     rooms.set(team.id, room);
@@ -164,7 +170,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         ?? new THREE.Vector3((index - (team.members.length - 1) / 2) * 0.9, 0.1, 0.55 + (index % 2) * 0.16);
       root.position.copy(home);
       root.rotation.y = room.actorFacing?.[index] ?? 0;
-      const sleep = sleepIndicator();
+      const sleep = sleepIndicator(sharedSleepMaterial ??= makeSleepMaterial());
       sleep.position.set(0.2, sleepHeight, 0);
       sleep.visible = false;
       root.add(sleep);

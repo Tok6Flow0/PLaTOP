@@ -51,13 +51,28 @@ class CameraTransformPalette {
   dispose(): void { this.texture.dispose(); }
 }
 
+/** Shared moving matrices need one texture upload, even across distinct shaders. */
+class MatrixAtlas {
+  readonly texture: THREE.DataTexture;
+  readonly data: Float32Array;
+
+  constructor(parts: number) {
+    const size = Math.max(4, Math.ceil(Math.sqrt(parts * 4) / 4) * 4);
+    this.data = new Float32Array(size * size * 4);
+    this.texture = new THREE.DataTexture(this.data, size, size, THREE.RGBAFormat, THREE.FloatType);
+  }
+
+  dispose(): void { this.texture.dispose(); }
+}
+
 /** One real draw, with each rigid surface retaining its own GPU transform. */
 class TransformPaletteMesh extends THREE.Mesh<THREE.BufferGeometry, OpaqueMaterial> {
   readonly isTransformPaletteMesh = true;
   count = 0;
-  readonly matricesTexture: THREE.DataTexture;
   readonly colorsTexture: THREE.DataTexture;
-  private readonly matrices: Float32Array;
+  private matrixAtlas: MatrixAtlas;
+  private matrixStart = 0;
+  private ownsMatrices = true;
   private readonly colors: Float32Array;
   private readonly worldMatrices?: THREE.Matrix4[];
   private readonly viewPalette?: CameraTransformPalette;
@@ -67,11 +82,9 @@ class TransformPaletteMesh extends THREE.Mesh<THREE.BufferGeometry, OpaqueMateri
     private readonly ranges: PaletteRange[], readonly normalMode: NormalMode,
     readonly viewSpace = false) {
     super(geometry, material);
-    const matrixSize = Math.max(4, Math.ceil(Math.sqrt(instanceCount * 4) / 4) * 4);
+    this.matrixAtlas = new MatrixAtlas(instanceCount);
     const colorSize = Math.max(1, Math.ceil(Math.sqrt(instanceCount)));
-    this.matrices = new Float32Array(matrixSize * matrixSize * 4);
     this.colors = new Float32Array(colorSize * colorSize * 4).fill(1);
-    this.matricesTexture = new THREE.DataTexture(this.matrices, matrixSize, matrixSize, THREE.RGBAFormat, THREE.FloatType);
     this.colorsTexture = new THREE.DataTexture(this.colors, colorSize, colorSize, THREE.RGBAFormat, THREE.FloatType);
     if (viewSpace) {
       this.worldMatrices = Array.from({ length: instanceCount }, () => new THREE.Matrix4());
@@ -82,13 +95,22 @@ class TransformPaletteMesh extends THREE.Mesh<THREE.BufferGeometry, OpaqueMateri
       this.onBeforeShadow = (_renderer, _object, _camera, shadowCamera) => this.shadowPalette!.update(shadowCamera, this.worldVersion);
     }
   }
+  get matricesTexture(): THREE.DataTexture { return this.matrixAtlas.texture; }
+  get matrixOffset(): number { return this.matrixStart; }
+  shareMatrices(atlas: MatrixAtlas, offset: number): void {
+    atlas.data.set(this.matrixAtlas.data.subarray(this.matrixStart * 16, (this.matrixStart + this.instanceCount) * 16), offset * 16);
+    if (this.ownsMatrices) this.matrixAtlas.dispose();
+    this.matrixAtlas = atlas;
+    this.matrixStart = offset;
+    this.ownsMatrices = false;
+  }
   setMatrixAt(index: number, matrix: THREE.Matrix4): void {
-    matrix.toArray(this.matrices, index * 16);
+    matrix.toArray(this.matrixAtlas.data, (this.matrixStart + index) * 16);
     if (this.worldMatrices) { this.worldMatrices[index].copy(matrix); this.worldVersion += 1; }
     this.matricesTexture.needsUpdate = true;
   }
   getMatrixAt(index: number, target: THREE.Matrix4): THREE.Matrix4 {
-    target.fromArray(this.matrices, index * 16);
+    target.fromArray(this.matrixAtlas.data, (this.matrixStart + index) * 16);
     target.elements[15] = 1;
     return target;
   }
@@ -99,20 +121,22 @@ class TransformPaletteMesh extends THREE.Mesh<THREE.BufferGeometry, OpaqueMateri
   getColorAt(index: number, target: THREE.Color): THREE.Color { return target.fromArray(this.colors, index * 4); }
   setVisibleAt(index: number, visible: boolean): void {
     const value = visible ? 1 : 0;
-    if (this.matrices[index * 16 + 15] === value) return;
+    const position = (this.matrixStart + index) * 16 + 15;
+    if (this.matrixAtlas.data[position] === value) return;
     this.count += visible ? 1 : -1;
-    this.matrices[index * 16 + 15] = value;
+    this.matrixAtlas.data[position] = value;
     this.matricesTexture.needsUpdate = true;
   }
-  getVisibleAt(index: number): boolean { return this.matrices[index * 16 + 15] === 1; }
+  getVisibleAt(index: number): boolean { return this.matrixAtlas.data[(this.matrixStart + index) * 16 + 15] === 1; }
   getGeometryIdAt(index: number): number { return index; }
   getGeometryRangeAt(index: number): PaletteRange { return this.ranges[index]; }
   configureShader(shader: THREE.WebGLProgramParametersWithUniforms, colors: boolean, shadow = false): void {
     const declarations = `
 uniform highp sampler2D batchingTexture;
+uniform int platopMatrixOffset;
 mat4 getBatchingMatrix( const in float i ) {
   int size = textureSize( batchingTexture, 0 ).x;
-  int j = int( i ) * 4;
+  int j = ( int( i ) + platopMatrixOffset ) * 4;
   int x = j % size;
   int y = j / size;
   return mat4( texelFetch( batchingTexture, ivec2( x, y ), 0 ),
@@ -139,6 +163,7 @@ batchingMatrix[3][3] = 1.0;`)
     // own BatchedMesh. This ordinary Mesh supplies the same varying explicitly.
     shader.fragmentShader = defines + (colors ? '#ifndef USE_COLOR\n#define USE_COLOR\n#endif\n' : '') + shader.fragmentShader;
     shader.uniforms.batchingTexture = { value: this.matricesTexture };
+    shader.uniforms.platopMatrixOffset = { value: this.matrixStart };
     if (colors) shader.uniforms.batchingColorTexture = { value: this.colorsTexture };
     if (this.viewSpace) {
       shader.vertexShader = `uniform highp sampler2D platopViewTexture;
@@ -180,7 +205,7 @@ gl_Position = projectionMatrix * mvPosition;`);
   }
   dispose(): void {
     this.geometry.dispose();
-    this.matricesTexture.dispose();
+    if (this.ownsMatrices) this.matrixAtlas.dispose();
     this.colorsTexture.dispose();
     this.viewPalette?.dispose();
     this.shadowPalette?.dispose();
@@ -302,6 +327,7 @@ export class SceneBatches {
   private readonly root = new THREE.Group();
   private batches: Batch[] = [];
   private paletteBatches: PaletteBatch[] = [];
+  private dynamicMatrices?: MatrixAtlas;
   private readonly dynamicPaletteRoots = new Map<THREE.Object3D, DynamicPaletteRoot>();
   private readonly dynamicRootOrder = new Map<THREE.Object3D, number>();
   private readonly geometryKeys = new WeakMap<THREE.BufferGeometry, string>();
@@ -646,6 +672,15 @@ export class SceneBatches {
         if (this.addPaletteBatch(sources, dynamic, normalMode)) sources.forEach(({ mesh }) => instancedSources.add(mesh));
       }
     }
+    const moving = this.paletteBatches.filter(batch => batch.dynamic);
+    if (moving.length > 1) {
+      this.dynamicMatrices = new MatrixAtlas(moving.reduce((parts, batch) => parts + batch.mesh.instanceCount, 0));
+      let offset = 0;
+      for (const { mesh } of moving) {
+        mesh.shareMatrices(this.dynamicMatrices, offset);
+        offset += mesh.instanceCount;
+      }
+    }
     for (const root of this.prunableRoots ?? []) {
       let ancestor: THREE.Object3D | null = root;
       while (ancestor && ancestor !== this.scene) ancestor = ancestor.parent;
@@ -772,6 +807,8 @@ export class SceneBatches {
       mesh.material.dispose();
     }
     this.paletteBatches = [];
+    this.dynamicMatrices?.dispose();
+    this.dynamicMatrices = undefined;
     this.dynamicPaletteRoots.clear();
   }
 
