@@ -1,0 +1,30 @@
+/* Observer-only chrome. Nothing here provides an office or agent action. */
+.observer-invite{position:absolute;bottom:76px;left:50%;transform:translateX(-50%);z-index:5;display:flex;align-items:center;gap:12px;width:max-content;max-width:calc(100% - 32px);padding:13px 15px;background:#fafbf6f5;border:1px solid #c4d8ca;border-radius:14px;box-shadow:0 8px 30px #234c3820}
+.observer-invite strong,.observer-presence strong{font-size:13px;font-weight:650}
+.observer-invite p{font-size:11px;color:#65776c;line-height:1.5;margin:3px 0 0}
+.observer-sigil{display:block;flex:0 0 31px;width:31px;height:31px;border-radius:50%;background:radial-gradient(ellipse at 40% 40%,#f8fffc 0%,#d5f6e8 30%,#b4d8cf90 55%,#b4d8cf00 73%);box-shadow:0 0 16px #9edbc13b}
+.observer-invite .observer-enter,.observer-exit{border:1px solid #9dbbab;border-radius:7px;background:#e6efe6;padding:8px 10px;min-height:36px;font-size:11px;font-weight:650;white-space:nowrap}
+.observer-enter:hover,.observer-exit:hover{background:#d6e5d7}
+.observer-dismiss{padding:5px;display:flex;align-items:center;justify-content:center;border-radius:5px}.observer-dismiss .ui-icon{height:15px;width:15px}
+.observer-toolbar{position:absolute;z-index:5;top:100px;left:18px;right:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 12px;border:1px solid #c4d5c8;border-radius:12px;background:#fafbf6ed;box-shadow:0 5px 25px #294a3720}
+.observer-presence{display:flex;gap:8px;align-items:center;margin-right:auto}.observer-presence small{display:block;color:#66796b;font-size:10px;line-height:1.4;margin-top:2px}.observer-perspective{display:flex;gap:2px;padding:3px;border:1px solid #ccd8cd;border-radius:7px}.observer-perspective button{border-radius:4px;padding:7px;font-size:10px;white-space:nowrap}.observer-perspective button[aria-pressed=true]{background:#dce9de}.observer-perspective button:hover{background:#e4eee4}
+.observer-movement,.observer-look{position:absolute;bottom:39px;z-index:5;display:grid;grid-template-columns:repeat(3,38px);grid-template-rows:repeat(3,38px);gap:3px;padding:7px;background:#fafbf6ed;border:1px solid #c4d5c8;border-radius:12px;box-shadow:0 5px 25px #294a3720}
+.observer-movement{left:18px}.observer-look{right:18px}.observer-movement button,.observer-look button{border:1px solid #d0dbd0;border-radius:6px;background:#f6f8f0;display:flex;align-items:center;justify-content:center;min-height:38px;font-size:10px;touch-action:manipulation}.observer-movement button:hover,.observer-look button:hover{background:#dce9de}.observer-movement .ui-icon,.observer-look .ui-icon{width:16px;height:16px}.observer-movement>span,.observer-look>span{grid-column:2;grid-row:2;text-align:center;align-self:center;font-size:9px;color:#6f8274}.float-forward,.observer-look button:first-child{grid-column:2;grid-row:1}.float-left,.observer-look button:nth-child(2){grid-column:1;grid-row:2}.float-right,.observer-look button:nth-child(4){grid-column:3;grid-row:2}.float-back,.observer-look button:last-child{grid-column:2;grid-row:3}.float-rise{grid-column:3;grid-row:1}.float-descend{grid-column:3;grid-row:3}
+.observer-hint{position:absolute;bottom:10px;left:15px;right:15px;margin:0;text-align:center;font-size:10px;line-height:1.5;color:#6b7f70;pointer-events:none;background:#f8faf1c9;border-radius:6px;padding:4px 8px;width:fit-content;max-width:calc(100% - 30px);margin-inline:auto}
+@media(max-width:1100px){.observer-toolbar{top:102px;gap:7px;left:10px;right:10px}.observer-presence{width:100%}.observer-perspective{margin-right:auto}.observer-toolbar .observer-exit{min-height:32px;padding:7px}.observer-invite{gap:8px}.observer-invite .observer-sigil{display:none}.observer-invite p{max-width:165px}.observer-movement{left:10px}.observer-look{right:10px}}
+@media(max-width:760px){.observer-toolbar{top:82px;padding:8px}.observer-presence .observer-sigil{flex-basis:24px;height:24px;width:24px}.observer-presence small{font-size:9px}.observer-invite{bottom:76px;padding:10px;gap:7px}.observer-invite strong{font-size:12px}.observer-invite p{font-size:10px;max-width:143px}.observer-invite .observer-enter{font-size:10px;padding:7px}.observer-invite .observer-dismiss{padding:2px}.observer-movement,.observer-look{bottom:43px;grid-template-columns:repeat(3,36px);grid-template-rows:repeat(3,36px);gap:2px;padding:5px}.observer-movement button,.observer-look button{min-height:36px}.observer-hint{font-size:9px;bottom:8px;max-width:calc(100% - 16px);left:8px;right:8px}}
+
+/* Touch navigation needs a real fingertip target, even in the compact view. */
+.observer-toolbar{top:118px}
+.observer-navigation-toggle{border:1px solid #c4d5c8;border-radius:7px;padding:8px;font-size:10px;min-height:36px;background:#f7f9f2}
+.observer-navigation-toggle[aria-expanded=true]{background:#dce9de}
+@media(max-width:760px){.observer-toolbar{top:82px}}
+@media(max-width:760px){
+  .observer-movement,.observer-look{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px)}
+  .observer-movement button,.observer-look button{min-height:44px;min-width:44px}
+  .observer-toolbar button,.observer-toolbar .observer-exit,.observer-invite .observer-enter{min-height:44px}
+  .observer-invite>div{min-width:0}
+  .observer-invite .observer-enter,.observer-invite .observer-dismiss{flex-shrink:0}
+  .observer-invite .observer-dismiss{min-width:44px;min-height:44px}
+  .observer-invite p{max-width:120px}
+}

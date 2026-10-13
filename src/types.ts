@@ -23,6 +23,9 @@ export interface RoomStyleUpdate { teamId: string; palette?: Partial<RoomPalette
 export type OfficeRooms = Partial<Record<string, OfficeRoomStyle>>;
 export interface Snapshot { teams: TeamState[]; serverTime: string; actions?: OfficeActions; assets?: OfficeAssets; rooms?: OfficeRooms; }
 export interface SceneState { selectedTeam: string; activity: Record<string, Activity>; decorations: Record<string, Decoration[]>; paused: boolean; reducedMotion: boolean; actions?: OfficeActions; assets?: OfficeAssets; rooms?: OfficeRooms; controlMode?: 'live' | 'offline'; }
+export type ObserverMode = 'first-person' | 'third-person';
+export type ObserverMove = 'forward' | 'back' | 'left' | 'right' | 'up' | 'down';
+export interface ObserverState { active: boolean; available: boolean; mode: ObserverMode; }
 export interface SceneHandle {
   update: (state: SceneState) => void;
   resetCamera: () => void;
@@ -32,5 +35,10 @@ export interface SceneHandle {
   pan: (dx: number, dz: number) => void;
   setNavigationMode: (mode: 'pan' | 'rotate') => void;
   setIdleView: (teamId: string | null) => void;
+  enterObserver: () => void;
+  exitObserver: () => void;
+  setObserverMode: (mode: ObserverMode) => void;
+  moveObserver: (direction: ObserverMove) => void;
+  lookObserver: (horizontal: number, vertical: number) => void;
   dispose: () => void;
 }

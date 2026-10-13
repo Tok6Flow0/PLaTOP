@@ -1,31 +1,36 @@
-# Agent studio graphics comparison
+# Source comparison and unseen observer review
 
-Final result: passed.
+Current result: the stricter character-level reference pass is implemented and functionally verified. The scene and portraits are closer to the supplied concept, but exact visual equivalence has not been achieved or approved. The earlier qualitative acceptance and 84/100 comparison do not establish an exact match.
 
-Scope: the default desktop space, model-generated portrait icons and one isolated agent-designed room. This is qualitative visual acceptance, not a pixel-perfect score, ray-tracing claim or live-chat adoption check.
+## Current evidence
 
-## Evidence
+- Reference: `public/reference/office-concept.png`, the left-hand image supplied by the user.
+- Current campus: `docs/images/studio-campus-after.png`.
+- Paired source/current: `docs/images/studio-source-comparison.png`.
+- Paired source/current characters: `docs/images/studio-portraits-comparison.png`.
+- Third-person mist: `docs/images/studio-mist-third-person.png`.
+- Mobile mist controls: `docs/images/studio-mist-mobile.png`.
 
-- Reference: `public/reference/office-concept.png` (1536 × 1024).
-- Baseline: `docs/images/studio-campus-before.png`, from `bbd4404`.
-- Current: `docs/images/studio-campus-after.png`.
-- Side-by-side source/current: `docs/images/studio-source-comparison.png`.
-- Side-by-side baseline/current: `docs/images/studio-before-after.png`.
-- Paired model portraits: `docs/images/studio-portraits-comparison.png`.
-- Agent-owned practice: `docs/images/studio-agent-practice.png` (synthetic fixture, not a real team's design).
+Desktop captures use a verified 1536 × 1024 CSS viewport at 1× screenshot density. The comparison presents both full views at the same scale; the character comparison enlarges the reference portrait and the actual model-generated portrait equally. Mobile checks use a verified 390 × 844 CSS viewport. These are screenshots of the running application, without injected activity or live-chat reads.
 
-Desktop captures use a verified 1536 × 1024 CSS viewport and 1× screenshot density, with native-density interface text and a bounded 1.5× scene backing density. The in-app browser could not supply the matched desktop viewport, so the comparison used Chrome. Source and render were viewed together, not scored from memory. A subsequent narrow-viewport override did not actually resize the browser; that capture was excluded. Mobile rendering is not newly verified by this review.
+## Refinement
 
-## Iteration history
+Successive paired reviews corrected the back-wall height, room framing, rug palette, oversized computer clutter, disconnected-looking furnishings, narrow foliage and weak surface depth. The current space has connected leaves and branches, rolled clay pots, rounded wood and woven rugs. Real doorways, foyer gaps and floor bridges retain usable routes. A shared floor overlap was removed so close views do not flicker.
 
-1. Baseline review found faceted face rims, weak identity differentiation, blotchy portrait contact ellipses, narrow foliage, flat chair backs/rug corners and washed-out room depth.
-2. Refined the actual models, fitted smooth curved face geometry, preserved intentional paper folds, tuned glaze/brass/paper/feather response and regenerated all 22 portraits. Replaced portrait contact ellipses with baked studio shadows; enlarged and staggered the lineups.
-3. Compared the real scene with the source again. Added rounded woven rugs/chair backs, broader leaves, warmer timber and coherent interior sidewall colour. Kept travel openings and routes unchanged.
-4. Independent review identified two remaining P2 issues: angular rug/corridor cast shadows and Keeper's pale book outline. Increased static shadow softness and warmed Keeper's binding/crease; recaptured and reviewed. No P1/P2 visual blocker remained in the final reviewed desktop state.
-5. An independent agent read the revised skill, chose its own palette and four object recipes, published them through real stdio MCP into an isolated bridge, inspected the render and revised its undersized floor lamp. Corrected the engine's discovered wall attachment defect and verified physical mounting/cutaway metadata across all rooms.
+The sixteen default models now follow the approved concept's ceramic helpers, ivory/navy owls, lanterns and ochre bird. Names, stable IDs and roles are unchanged. Fitted visors and belly panels, joined arms and feet, fuller bodies, rounded jaw contours, oval ears and more faithful face proportions replace the earlier costume interpretations. All 22 interface portraits are freshly rendered from these same models. The last character comparison prompted richer orange/green finishes, Scout's larger cream face and belly, Jarvis's taller visor, wider botanical staging and less blur on foreground characters.
 
-## Intentional differences and remaining limits
+Contact shading reuses depth from one geometry draw. The colour target is capped at 1600 pixels and the eight-sample occlusion target at 800; allocation or draw failures fall back to direct rendering. Transparent walls and luminous mist preserve bounded alpha coverage. The scene retains a 1.5× backing-density cap and a 2048-square static shadow map. No ray tracing, PS5-equivalent quality or whole-device performance claim is made.
 
-The name is PLaTOP, not the source's old spelling. There are no onlooker action/decorating controls or preview-activity choreography. The adopted avatars are distinct, and origami facets remain deliberate. Doorways and the open foyer serve genuine agent-selected travel. The original image remains richer in organic detail and photographic portrait depth; this pass is substantially closer and more cohesive, not identical. No subjective fidelity percentage is asserted.
+## Functional verification
 
-Renderer changes are bounded but not free: the 1.5× scene density cap permits up to 2.25× backing pixels, and the 2048-square static shadow map uses four times the prior map area. No whole-device energy or native frame-time claim is made. Room/object design remains data-only and local; it grants no business authority or access to other chats.
+The complete suite passes 246 tests, including the real installed occlusion pass's rendering-state restoration and failure fallback, all actor routes with decorations on/off, physical door/floor geometry, character clearance and surface fit, lossless PNG output, no status-driven gestures, demo-source rejection and mist isolation. The production build and source/output fingerprint check pass.
+
+Browser checks cover the default campus, all six office windows, close zoom and optional mist entry, first/third person, movement through a wall, keyboard exit, window-view exit, responsive controls and loaded portraits. First person hides the observer's own mist. Camera restoration at an unchanged viewport was verified by two parked-cursor captures with zero changed pixels. Resized exits restore the orbit then apply the normal responsive fit. Mobile Float, Look, perspective and Exit controls have at least 44-pixel target height. No WebGL warning or error appeared in the reviewed desktop session.
+
+The neutral scene has no standing animation loop. Mist is a local camera object with no identity, bridge writes, collision body, occupancy, agent visibility or decorating authority. There is no Preview activity control, preview state or automatic busy choreography. The README preserves the creator's requested quote about minimalism and the agents' chosen embodiments.
+
+## Remaining visual differences
+
+The reference has richer organic foliage, finer material irregularity and more photographic light falloff. The procedural characters remain more stylized, and their neutral positions differ from the reference's staged seated poses. A staged working tableau would conflict with the requirement that only agent-chosen actions animate the space. Camera and window controls remain for the observer; the reference's activity and decorating buttons are deliberately absent.
+
+The latest captures supersede the earlier `studio-before-after.png` and agent-practice images, which remain historical evidence. This pass does not establish adoption by installed skills, existing automations or a running native companion, and it does not modify the private live bridge.

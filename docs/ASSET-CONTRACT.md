@@ -2,7 +2,7 @@
 
 The default scene uses sixteen cohesive procedural characters in `src/scene/proxies.ts` and `src/scene/characterGeometry.ts`. Rounded ceramic robots, lanterns, owls and a swift share the room's material and lighting direction. Claude's sixteen authored GLB deliveries and animations remain available as source assets. The user asked Codex to lead a reference-matching rebuild and independent critique; delivery and visual approval are separate. `public/assets/approved.json` currently enables no GLBs. That gate can opt individual reviewed models back in without changing the delivery manifest; a missing or failed model retains its procedural character.
 
-The user-approved starting-space concept in `public/reference/office-concept.png` is the current style target. Original team portraits in `public/portraits/` preserve identity cues. The viewer's member and team portraits in `public/avatars/` are renders of the current procedural models, rather than crops of the concept image. Preserve each team's chosen identity, silhouette, materials, emblem, and small companion details. `src/teams.ts` contains the roster and description, but a written palette shorthand must not override a clear visual identity in the source portrait. Keep the final work cute and polished, with simple ceramic, paper and lantern forms that read at a small size.
+The user-approved starting-space concept in `public/reference/office-concept.png` is the current style and default character-form target, including the latest request to match its characters. Original team portraits in `public/portraits/` remain preserved as historical identity references. The viewer's member and team portraits in `public/avatars/` render the current procedural models, rather than crop the concept. Preserve names, stable IDs and roles. `src/teams.ts` records the current concept-led forms; written shorthand must not override a clear visual in the approved reference. Default forms use rounded ceramic helpers, soft owls and lanterns, not the earlier book/cape/origami interpretations.
 
 ## Optional authored GLB delivery
 
@@ -70,9 +70,9 @@ changes; they do not guarantee identical pixels across different graphics driver
 | Team / source portrait | Stable model ID | Identity |
 | --- | --- | --- |
 | Savor Bridge / `merchant.png` | `bridge-jarvis` | Jarvis, warm orange ceramic coordination robot |
-| Savor Bridge / `merchant.png` | `bridge-scout` | Scout, teal research robot with magnifying/compass cue |
-| Savor Bridge / `merchant.png` | `bridge-keeper` | Keeper, ivory book-like continuity helper |
-| Clear Path / `hr.png` | `hr-compass` | Compass, calm central guardian; follow the ivory teardrop source silhouette |
+| Savor Bridge / `merchant.png` | `bridge-scout` | Scout, green helper with cream face, cream belly panel and green ears |
+| Savor Bridge / `merchant.png` | `bridge-keeper` | Keeper, tall ivory helper with dark visor, orange ears and sage chest badge |
+| Clear Path / `hr.png` | `hr-compass` | Compass, compact sage helper with warm ivory ceramic helmet |
 | Clear Path / `hr.png` | `hr-lens` | Lens, sage factual reviewer |
 | Clear Path / `hr.png` | `hr-relay` | Relay, teal follow-through helper |
 | Savor Wayfinders / `intake.png` | `intake-jarvis` | Jarvis, cream navigation guardian, navy faceplate, compass cue |
@@ -81,10 +81,10 @@ changes; they do not guarantee identical pixels across different graphics driver
 | Savor Wayfinders / `intake.png` | `intake-compass` | Compass, cream backend-continuity guardian, circuit cue |
 | Beacon / `support.png` | `support-beacon` | Forest-green ceramic lantern with amber conversation-bubble front; represents accountable assistant Jarvis |
 | The Lantern Desk / `reflection.png` | `reflection-lumen` | Lumen, warm amber lantern |
-| The Lantern Desk / `reflection.png` | `reflection-echo` | Echo, cream origami owl with magnifying lens |
-| The Lantern Desk / `reflection.png` | `reflection-quill` | Quill, folded-paper owl with pencil |
+| The Lantern Desk / `reflection.png` | `reflection-echo` | Echo, soft cream owl with round pale facial discs |
+| The Lantern Desk / `reflection.png` | `reflection-quill` | Quill, warm ivory owl with rounded ear tufts and small golden beak |
 | Savor Dispatch / `email.png` | `email-owl` | Navy ceramic courier owl, pale facial discs, envelope cue; display name remains provisional |
-| Savor Dispatch / `email.png` | `email-swift` | Ochre paper swift with teal edge; display name describes the species |
+| Savor Dispatch / `email.png` | `email-swift` | Small ochre ceramic bird with swept wings; display name describes the species |
 
 Characters with the same spoken name in different teams remain separate assets and preserve their different identities. Do not merge Jarvis, Relay, Compass or Beacon IDs.
 

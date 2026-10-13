@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
-import type { Activity, Character, SceneHandle, SceneState, Team } from './types';
+import type { Activity, Character, ObserverMode, ObserverMove, ObserverState, SceneHandle, SceneState, Team } from './types';
 import { CLIP_NAMES, fetchCharacter, fetchManifest, type ClipName } from './scene/assets';
 import { disposeObject, SceneKit } from './scene/primitives';
 import { animateCharacter, makeProxy, AuthoredFootPose } from './scene/proxies';
@@ -14,12 +14,15 @@ import { OfficeAssetsRenderer } from './scene/officeAssets';
 import { StudioEnvironment, StudioRoomFinishes, roomLightingFactor } from './scene/studioEnvironment';
 import { StaticContacts, actorContactHeight } from './scene/staticContacts';
 import { agentExpression, type AgentExpression } from './scene/agentExpression';
+import { ObserverMist, observerViewportChanged, type ObserverViewport } from './scene/observerMist';
 
 // Keep cinematic 3D at a bounded 1.5 backing pixels per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
 const SCENE_PIXEL_RATIO_CAP = 1.5;
-const CAMPUS_FOV = 20;
-const CAMPUS_ELEVATION = THREE.MathUtils.degToRad(39);
+const CAMPUS_FOV = 14;
+const CAMPUS_ELEVATION = THREE.MathUtils.degToRad(34);
+const CLOSE_ZOOM_THRESHOLD = 4.5;
+const MAX_CAMPUS_ZOOM = 32;
 
 interface ProxyPose {
   object: THREE.Object3D;
@@ -87,7 +90,7 @@ function sleepIndicator(material: THREE.SpriteMaterial): THREE.Sprite {
 
 /** Lightweight local visualisation only. The renderer never controls agent work. */
 export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: string) => void,
-  onError?: (message: string) => void): SceneHandle {
+  onError?: (message: string) => void, onObserverState?: (state: ObserverState) => void): SceneHandle {
   let renderer: THREE.WebGLRenderer;
   try {
     // Three creates an alpha-enabled context internally. Supply the explicit
@@ -103,7 +106,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     notice.setAttribute('role', 'status');
     host.append(notice);
     onError?.('WebGL unavailable. Showing team details without the 3D workspace.');
-    return { update() {}, resetCamera() {}, zoom() {}, rotate() {}, tilt() {}, pan() {}, setNavigationMode() {}, setIdleView() {}, dispose() { notice.remove(); } };
+    return { update() {}, resetCamera() {}, zoom() {}, rotate() {}, tilt() {}, pan() {}, setNavigationMode() {}, setIdleView() {}, enterObserver() {}, exitObserver() {}, setObserverMode() {}, moveObserver() {}, lookObserver() {}, dispose() { notice.remove(); } };
   }
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO_CAP));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -131,8 +134,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   camera.position.set(0, 38, 27);
   camera.lookAt(0, 0.7, 0);
   camera.updateMatrixWorld();
-  scene.add(new THREE.HemisphereLight('#fff7e8', '#9b8c75', 0.95));
-  const sunlight = new THREE.DirectionalLight('#fff2df', 2.3);
+  scene.add(new THREE.HemisphereLight('#fff9f0', '#90755f', 0.72));
+  const sunlight = new THREE.DirectionalLight('#fff4e5', 2.5);
   sunlight.position.set(-9, 19, 11);
   sunlight.castShadow = true;
   sunlight.shadow.mapSize.set(2048, 2048);
@@ -276,6 +279,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   let idleTeamId: string | null = null;
   let navigationMode: 'pan' | 'rotate' = 'pan';
   let campusPose: { position: THREE.Vector3; target: THREE.Vector3; zoom: number } | undefined;
+  let observerRig: ObserverMist | undefined;
+  let observerStateSignature = '';
+  let observerCursor = '';
+  let observerLabel = '';
+  let observerViewport: ObserverViewport | undefined;
   const queryDiagnostics = new URLSearchParams(window.location.search).get('motion-debug') === '1';
   let diagnosticsEnabled = false;
   const diagnosticFields = ['sceneFrames', 'sceneMeasuredFps', 'sceneIntervalP50', 'sceneIntervalP95', 'sceneIntervalMax', 'sceneLongFrames', 'sceneTargetFps'] as const;
@@ -307,8 +315,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   controls.screenSpacePanning = false;
   controls.zoomToCursor = true;
   controls.minZoom = 0.65;
-  controls.maxZoom = 2.8;
-  controls.minDistance = 48 / 2.8;
+  controls.maxZoom = MAX_CAMPUS_ZOOM;
+  controls.minDistance = 48 / MAX_CAMPUS_ZOOM;
   controls.maxDistance = 48 / 0.65;
   controls.minPolarAngle = THREE.MathUtils.degToRad(25);
   controls.maxPolarAngle = THREE.MathUtils.degToRad(55);
@@ -387,7 +395,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       }
       const material = (object as THREE.Mesh | THREE.Sprite).material;
       if (!material || Array.isArray(material)) return;
-      if (material.blending === THREE.AdditiveBlending) {
+      if (material.blending === THREE.AdditiveBlending || material.userData.officeGlow) {
         const glowing = material as THREE.Material & { opacity: number; color: THREE.Color };
         glow.push({ material: glowing, opacity: glowing.opacity, color: glowing.color.clone() });
       }
@@ -455,7 +463,17 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     }
   }
   const gestures = new Map<number, { x: number; y: number; dragged: boolean }>();
+  function notifyObserver(): void {
+    const next: ObserverState = { active: !!observerRig?.active, available: !idleTeamId && !observerRig?.active && zoomLevel >= CLOSE_ZOOM_THRESHOLD,
+      mode: observerRig?.mode ?? 'third-person' };
+    const signature = `${next.active}:${next.available}:${next.mode}`;
+    if (signature === observerStateSignature) return;
+    observerStateSignature = signature;
+    host.dataset.observerMode = next.active ? next.mode : 'orbit';
+    onObserverState?.(next);
+  }
   function cameraChanged(): void {
+    if (observerRig?.active) { camera.updateMatrixWorld(); fadeWalls(); wake(true); return; }
     if (idleTeamId) { camera.updateMatrixWorld(); fadeWalls(); wake(true); return; }
     const clamped = controls.target.clone();
     clamped.x = THREE.MathUtils.clamp(clamped.x, worldBounds.min.x + 0.7, worldBounds.max.x - 0.7);
@@ -473,6 +491,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     }
     camera.updateMatrixWorld();
     zoomLevel = fittedDistance / camera.position.distanceTo(controls.target);
+    notifyObserver();
     fadeWalls();
     wake(true);
   }
@@ -530,6 +549,14 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   // SceneBatches synchronizes animation transforms once before drawing. Avoid
   // the renderer repeating the same scene traversal after that explicit pass.
   scene.matrixWorldAutoUpdate = false;
+  // Kept outside static batching and actor collections. This local camera
+  // presence is never an office occupant and cannot enter agent telemetry.
+  const observerBounds = worldBounds.clone();
+  observerBounds.min.add(new THREE.Vector3(-1.5, 0, -1.5));
+  observerBounds.max.add(new THREE.Vector3(1.5, 3, 1.5));
+  observerBounds.min.y = Math.max(.3, worldBounds.min.y + .35);
+  observerRig = new ObserverMist(camera, controls, observerBounds);
+  scene.add(observerRig.mist.root);
 
   const visible = () => documentVisible && nativeVisible && !contextLost && !disposed;
   const still = () => state.paused || state.reducedMotion || systemReducedMotion;
@@ -864,6 +891,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     width = host.clientWidth;
     height = host.clientHeight;
     const aspect = Math.max(width, 1) / Math.max(height, 1);
+    if (observerRig?.active) { observerRig.resize(aspect); wake(true); return; }
     if (idleTeamId) { camera.aspect = aspect; applyIdleCamera(); wake(true); return; }
     // Perspective corner fit preserves the reference's narrow back / wider front.
     const framingCamera = camera.clone();
@@ -881,13 +909,13 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     fittedDistance = fit * 1.035;
     defaultPosition.copy(defaultTarget).addScaledVector(defaultDirection, fittedDistance);
     const direction = camera.position.clone().sub(controls.target).normalize();
-    controls.minDistance = Math.max(fittedDistance / 2.8, (worldBounds.max.y - defaultTarget.y + 2) / Math.sin(THREE.MathUtils.degToRad(35)));
+    controls.minDistance = Math.max(.8, fittedDistance / MAX_CAMPUS_ZOOM);
     controls.maxDistance = fittedDistance / 0.65;
     camera.position.copy(controls.target).addScaledVector(direction, THREE.MathUtils.clamp(fittedDistance / zoomLevel, controls.minDistance, controls.maxDistance));
     camera.aspect = aspect;
     // Lift the starting campus within the canvas, leaving the entry and camera
     // controls breathing room without changing the front-width fit or tilt.
-    if (width > 0 && height > 0) camera.setViewOffset(width, height, 0, height * 0.045, width, height);
+    if (width > 0 && height > 0) camera.setViewOffset(width, height, 0, height * 0.020, width, height);
     camera.updateProjectionMatrix();
     controls.update();
     wake(true);
@@ -912,28 +940,45 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function click(event: PointerEvent): void {
     const gesture = gestures.get(event.pointerId);
     gestures.delete(event.pointerId);
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
     canvas.style.cursor = idleTeamId ? 'default' : 'grab';
+    if (observerRig?.active) return;
     if (event.button !== 0 || disposed || idleTeamId || gesture?.dragged || event.shiftKey || event.ctrlKey || event.metaKey) return;
     const teamId = teamAt(event);
     if (teamId) onSelect(teamId);
   }
   function pointerDown(event: PointerEvent): void {
     if (idleTeamId) return;
-    controls.mouseButtons.LEFT = event.shiftKey || event.ctrlKey || event.metaKey || navigationMode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
+    if (!observerRig?.active) controls.mouseButtons.LEFT = event.shiftKey || event.ctrlKey || event.metaKey || navigationMode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
     if (event.pointerType !== 'touch') canvas.focus({ preventScroll: true });
     gestures.set(event.pointerId, { x: event.clientX, y: event.clientY, dragged: false });
+    if (observerRig?.active) canvas.setPointerCapture(event.pointerId);
     if (gestures.size > 1) gestures.forEach((gesture) => { gesture.dragged = true; });
     canvas.style.cursor = 'grabbing';
   }
-  function pointerCancel(event: PointerEvent): void { gestures.delete(event.pointerId); canvas.style.cursor = 'grab'; }
+  function pointerCancel(event: PointerEvent): void {
+    gestures.delete(event.pointerId);
+    if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+    canvas.style.cursor = 'grab';
+  }
   function hover(event: PointerEvent): void {
     if (idleTeamId) { canvas.style.cursor = 'default'; return; }
     const gesture = gestures.get(event.pointerId);
+    if (observerRig?.active) {
+      if (gesture) {
+        lookObserver((event.clientX - gesture.x) * .004, -(event.clientY - gesture.y) * .004);
+        gesture.x = event.clientX;
+        gesture.y = event.clientY;
+        gesture.dragged = true;
+      }
+      canvas.style.cursor = gesture ? 'grabbing' : 'grab';
+      return;
+    }
     if (gesture && Math.hypot(event.clientX - gesture.x, event.clientY - gesture.y) > 5) gesture.dragged = true;
     canvas.style.cursor = gestures.size ? 'grabbing' : teamAt(event) ? 'pointer' : 'grab';
   }
   function setZoom(factor: number): void {
-    if (disposed || idleTeamId || !Number.isFinite(factor) || factor <= 0) return;
+    if (disposed || idleTeamId || observerRig?.active || !Number.isFinite(factor) || factor <= 0) return;
     const direction = camera.position.clone().sub(controls.target);
     const distance = THREE.MathUtils.clamp(direction.length() / factor, controls.minDistance, controls.maxDistance);
     camera.position.copy(controls.target).addScaledVector(direction.normalize(), distance);
@@ -942,6 +987,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   function resetView(): void {
     if (disposed || idleTeamId) return;
+    exitObserver();
     zoomLevel = 1;
     controls.reset();
     camera.position.copy(defaultPosition);
@@ -953,7 +999,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     wake(true);
   }
   function rotateView(radians: number): void {
-    if (disposed || idleTeamId || !Number.isFinite(radians)) return;
+    if (disposed || idleTeamId || observerRig?.active || !Number.isFinite(radians)) return;
     const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
     spherical.theta += radians;
     camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
@@ -961,7 +1007,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     wake(true);
   }
   function tiltView(radians: number): void {
-    if (disposed || idleTeamId || !Number.isFinite(radians)) return;
+    if (disposed || idleTeamId || observerRig?.active || !Number.isFinite(radians)) return;
     const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
     spherical.phi = THREE.MathUtils.clamp(spherical.phi - radians, controls.minPolarAngle, controls.maxPolarAngle);
     camera.position.copy(controls.target).add(new THREE.Vector3().setFromSpherical(spherical));
@@ -969,7 +1015,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     wake(true);
   }
   function panView(dx: number, dz: number): void {
-    if (disposed || idleTeamId || !Number.isFinite(dx) || !Number.isFinite(dz)) return;
+    if (disposed || idleTeamId || observerRig?.active || !Number.isFinite(dx) || !Number.isFinite(dz)) return;
     const offset = new THREE.Vector3(dx, 0, dz);
     camera.position.add(offset);
     controls.target.add(offset);
@@ -981,6 +1027,46 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     navigationMode = mode;
     controls.mouseButtons.LEFT = mode === 'pan' ? THREE.MOUSE.PAN : THREE.MOUSE.ROTATE;
     canvas.dataset.navigationMode = mode;
+  }
+  function enterObserver(): void {
+    if (disposed || idleTeamId || zoomLevel < CLOSE_ZOOM_THRESHOLD || !observerRig || observerRig.active) return;
+    observerCursor = canvas.style.cursor;
+    observerLabel = canvas.getAttribute('aria-label') ?? campusLabel;
+    if (!observerRig.enter()) return;
+    observerViewport = { width: host.clientWidth, height: host.clientHeight };
+    gestures.clear();
+    canvas.style.cursor = 'grab';
+    canvas.setAttribute('aria-label', 'Local mist observer. Agents cannot see or respond to you. Click this view, then use W A S D or arrows to float, Q and E to descend and rise. Drag to look. Escape leaves and restores your orbit view.');
+    notifyObserver();
+    fadeWalls();
+    wake(true);
+  }
+  function exitObserver(): void {
+    if (!observerRig?.exit()) return;
+    const needsRefit = observerViewportChanged(observerViewport, host.clientWidth, host.clientHeight);
+    observerViewport = undefined;
+    for (const id of gestures.keys()) if (canvas.hasPointerCapture(id)) canvas.releasePointerCapture(id);
+    gestures.clear();
+    canvas.style.cursor = observerCursor;
+    canvas.setAttribute('aria-label', observerLabel);
+    // Restore the exact saved orbit first. A genuinely changed viewport alone
+    // needs the regular responsive fit; resize never enters/exits the rig.
+    if (needsRefit && !disposed) resize();
+    notifyObserver();
+    fadeWalls();
+    wake(true);
+  }
+  function setObserverMode(mode: ObserverMode): void {
+    if (!observerRig?.setMode(mode)) return;
+    notifyObserver(); fadeWalls(); wake(true);
+  }
+  function moveObserver(direction: ObserverMove): void {
+    if (!observerRig?.move(direction)) return;
+    fadeWalls(); wake(true);
+  }
+  function lookObserver(horizontal: number, vertical: number): void {
+    if (!observerRig?.look(horizontal, vertical)) return;
+    fadeWalls(); wake(true);
   }
   function applyIdleCamera(): void {
     const room = idleTeamId ? rooms.get(idleTeamId) : undefined;
@@ -1013,6 +1099,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   function setIdleView(teamId: string | null): void {
     if (disposed || (teamId !== null && !rooms.has(teamId)) || teamId === idleTeamId) return;
+    exitObserver();
     if (teamId && !idleTeamId) campusPose = { position: camera.position.clone(), target: controls.target.clone(), zoom: zoomLevel };
     // An offscreen actor cannot finish its return-home pose while another
     // office is selected. Resume that bounded transition when campus returns.
@@ -1032,6 +1119,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     staticContacts.syncVisibility();
     batches.invalidateVisibility();
     host.dataset.idleTeam = teamId ?? '';
+    notifyObserver();
     controls.minPolarAngle = teamId ? 0 : THREE.MathUtils.degToRad(25);
     controls.maxPolarAngle = teamId ? Math.PI : THREE.MathUtils.degToRad(55);
     controls.minDistance = teamId ? 0.1 : controls.minDistance;
@@ -1048,9 +1136,19 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   function keyboard(event: KeyboardEvent): void {
     if (idleTeamId) return;
+    if (observerRig?.active) {
+      const key = event.key.toLowerCase();
+      const moves: Record<string, ObserverMove> = { w: 'forward', arrowup: 'forward', s: 'back', arrowdown: 'back', a: 'left', arrowleft: 'left', d: 'right', arrowright: 'right', q: 'down', e: 'up' };
+      if (moves[key]) { event.preventDefault(); event.stopImmediatePropagation(); moveObserver(moves[key]); }
+      else if (key === 'escape') { event.preventDefault(); exitObserver(); }
+      return;
+    }
     if (event.key === '+' || event.key === '=') { event.preventDefault(); setZoom(1.15); }
     else if (event.key === '-' || event.key === '_') { event.preventDefault(); setZoom(1 / 1.15); }
     else if (event.key === 'Home') { event.preventDefault(); resetView(); }
+  }
+  function observerEscape(event: KeyboardEvent): void {
+    if (event.key === 'Escape' && observerRig?.active) { event.preventDefault(); exitObserver(); }
   }
   function visibility(): void { documentVisible = !document.hidden; wake(); }
   function nativeVisibility(event: Event): void {
@@ -1063,6 +1161,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function lost(event: Event): void {
     event.preventDefault();
     contextLost = true;
+    exitObserver();
     cancelFrame();
     host.dataset.sceneFps = '0';
     onError?.('The 3D context was interrupted. Team status remains available.');
@@ -1078,6 +1177,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   canvas.addEventListener('webglcontextrestored', restored);
   document.addEventListener('visibilitychange', visibility);
   window.addEventListener('platop:visibility', nativeVisibility);
+  window.addEventListener('keydown', observerEscape);
   motionPreference.addEventListener('change', motionChanged);
   const observer = new ResizeObserver(resize);
   observer.observe(host);
@@ -1207,14 +1307,22 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     pan: panView,
     setNavigationMode,
     setIdleView,
+    enterObserver,
+    exitObserver,
+    setObserverMode,
+    moveObserver,
+    lookObserver,
     dispose() {
       if (disposed) return;
       disposed = true;
+      exitObserver();
+      observerRig?.dispose();
       assetAbort.abort();
       cancelFrame();
       observer.disconnect();
       document.removeEventListener('visibilitychange', visibility);
       window.removeEventListener('platop:visibility', nativeVisibility);
+      window.removeEventListener('keydown', observerEscape);
       motionPreference.removeEventListener('change', motionChanged);
       controls.removeEventListener('change', cameraChanged);
       controls.dispose();
@@ -1257,6 +1365,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.sceneCpuMs;
       delete host.dataset.sceneMultiDraw;
       delete host.dataset.idleTeam;
+      delete host.dataset.observerMode;
       diagnosticFields.forEach((field) => { delete host.dataset[field]; });
       stageFields.forEach((field) => { delete host.dataset[field]; });
       stageFrames = undefined;

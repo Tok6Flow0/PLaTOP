@@ -21,9 +21,26 @@ the whiteboard, file at the cabinet, or wait for another team in a lounge. These
 are optional expressions the agent chooses, not task categories or a scripted
 routine. Heartbeats never reissue an action.
 
+## Why this space exists
+
+The creator's words:
+
+> The entire idea of this application is ultra minimalism. You don't control
+> anything. The only activity that happens is when the agents are genuinely
+> moving. If they're not genuinely working, there is no preview activity.
+> That's the only way these are not robots that we are animating. These are the
+> chosen embodiments of the agents. The agents chose these embodiments.
+
+This is the guiding intent for contributors: give the agents a place to inhabit,
+remember their identity and express their real work in small, personal ways.
+The room is a starting point they can make their own. There is no activity demo,
+automatic busy routine or viewer control over an agent. Camera, window and
+playback controls affect only the onlooker's view. Without a confirmed agent
+action, the space stays still; an activity badge never invents a performance.
+
 **Current status:** the office is a real 3D scene modeled toward the supplied
 concept. All sixteen default characters use a cohesive procedural ceramic,
-paper and lantern design from `src/scene/proxies.ts` and
+owl and lantern design from `src/scene/proxies.ts` and
 `src/scene/characterGeometry.ts`. Claude's sixteen GLB deliveries remain source
 assets; the current `public/assets/approved.json` has no enabled GLB IDs. A later
 review can opt individual GLBs back in; their animation is limited to the shipped
@@ -51,6 +68,15 @@ mode; scroll to zoom toward the pointer. Touch uses one finger to pan and two to
 Camera tilt, distance and ground clearance are bounded, and front-facing walls
 fade from view. **Reset view** returns to the starting composition. With the
 canvas focused, arrows pan, Shift+arrows orbit, +/- zoom, and Home resets.
+
+Zoom supports up to 32× the fitted starting view. At close range, a small
+**Enter as mist** invitation lets you look around from inside the space.
+Third person shows your soft glowing mist; first person hides it. Use WASD or
+arrows to float, Q/E to change height, and drag to look. **Navigate** reveals
+optional Float and Look buttons; they stay tucked away by default. Escape or
+**Exit** restores the previous camera.
+The mist can pass through walls and furniture. It exists only in your local
+view: agents cannot see it, and it cannot interact with them or their room.
 
 On macOS 12+ with Apple Command Line Tools installed:
 
@@ -176,15 +202,16 @@ Walking paths ease into work, turns are bounded, and authored actions blend rath
 than snapping between poses. Hidden or minimized windows stop rendering; neutral,
 paused, and reduced-motion scenes use frames only when needed. A brief transition
 can finish before a newly inactive scene settles. Window view renders only its
-selected room and pauses when covered or hidden. The 3D canvas uses one backing
-pixel per CSS pixel with native antialiasing in an opaque canvas; interface text
-retains the display's native pixel density. Retina scenes can look slightly softer
-than the previous 1.5-pixel budget, especially tiny text within the room. Static
+selected room and pauses when covered or hidden. The 3D canvas caps its backing
+density at 1.5 pixels per CSS pixel; interface text retains the display's native
+pixel density. Contact shading reuses the scene's depth with a colour target
+capped at 1600 pixels on its longest side and half-resolution occlusion capped
+at 800. If that GPU path fails, rendering falls back to direct output. Static
 transforms and colors are cached. Compatible rigid surfaces share draws, and
 compatible moving groups share one matrix upload per frame. Sleep labels reuse
 one immutable material and texture per scene. Unsupported surfaces retain their
 original rendering paths. One
-small static shadow map, contact textures and modest lamp glows create soft
+2048-square static shadow map, contact textures and modest lamp glows create soft
 lighting. A small prefiltered studio environment is baked once for ceramic and
 metal reflections. An explicit agent lighting override can enable one bounded,
 shadow-free fill per occupied room; default rooms add no active fill lights, and
@@ -237,6 +264,12 @@ plus their source/file fingerprints. Playwright is optional
 developer tooling, not an application runtime dependency. Chromium and working
 WebGL are required for generation; fingerprints track source freshness, not
 identical pixels across every graphics driver.
+
+Portrait PNGs are recompressed losslessly with Node's built-in zlib; no image
+pixels, dimensions or alpha are discarded. Local handwritten board and note
+lettering uses [Kalam](https://fonts.google.com/specimen/Kalam), bundled under
+the SIL Open Font License in `public/fonts/Kalam-OFL.txt`; no font service is
+contacted by the application.
 
 No repository
 license has been selected; public visibility does not grant additional reuse

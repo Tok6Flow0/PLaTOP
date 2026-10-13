@@ -28,7 +28,7 @@ async function loadScene(relative) {
   modules.set(file.href, url); return import(url);
 }
 
-async function realLayout() {
+async function realLayout({ withCampus = false } = {}) {
   // Structural floor tests need no browser/GPU. Canvas painting is deliberately
   // stubbed; these textures are never rendered or used for image assertions.
   const previous = globalThis.document, noop = () => {};
@@ -41,10 +41,11 @@ async function realLayout() {
   globalThis.document = { createElement: () => ({ width: 1, height: 1, getContext: () => context }) };
   try {
     const { SceneKit, disposeObject } = await loadScene('scene/primitives.ts');
-    const { makeRoom, campusNavigation } = await loadScene('scene/rooms.ts');
+    const { makeRoom, makeCampus, campusNavigation } = await loadScene('scene/rooms.ts');
     const { teams } = await loadScene('teams.ts'); const kit = new SceneKit();
     const rooms = new Map(teams.map((team, index) => [team.id, makeRoom(team, index, kit)]));
-    return { teams, rooms, kit, disposeObject, navigator: new OfficeNavigator(makeOfficeMap(rooms, teams, campusNavigation)) };
+    return { teams, rooms, kit, disposeObject, campus: withCampus ? makeCampus(kit) : undefined,
+      navigator: new OfficeNavigator(makeOfficeMap(rooms, teams, campusNavigation)) };
   } finally { globalThis.document = previous; }
 }
 
@@ -318,6 +319,64 @@ test('real sixteen-avatar layout connects every assigned desk, interaction stop,
       const leaving = create(); assert.equal(leaving.apply({ id: 'leave', actorId: character.id, kind: 'leave' }), true, `${label} exit`); run(leaving);
       assert.equal(leaving.present, false); leaving.apply({ id: 'arrive', actorId: character.id, kind: 'arrive' }); run(leaving); assert.equal(leaving.present, true);
     }
+  }
+});
+
+test('three-member side places use their real floor-height homes beside a full-width desk without imaginary chairs', async t => {
+  const { rooms, kit, disposeObject } = await realLayout();
+  t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
+  for (const officeId of ['merchant', 'hr']) {
+    const room = rooms.get(officeId), { desks, blockers, floorY } = room.navigation;
+    const table = blockers.find(({ bounds: [x0, z0, x1, z1], deskIndex }) => deskIndex === undefined
+      && Math.abs(x1 - x0 - 2.75) < 1e-9 && Math.abs(z1 - z0 - 1.4) < 1e-9);
+    assert.ok(table, `${officeId} preserves its actual full-width shared table`);
+    const [x0, z0, x1, z1] = table.bounds, tableZ = (z0 + z1) / 2;
+    for (const memberIndex of [0, 2]) {
+      const desk = desks[memberIndex], home = room.actorHomes[memberIndex];
+      assert.deepEqual([home.x, home.y, home.z], [desk.position[0], floorY, desk.position[1]], `${officeId}/${memberIndex} has no visual-only offset`);
+      assert.equal(desk.seatHeight, floorY, `${officeId}/${memberIndex} stands rather than floating over a missing chair`);
+      assert.ok(Math.abs(desk.position[1] - tableZ) < .2, `${officeId}/${memberIndex} is beside the table, not along its front edge`);
+      assert.ok(memberIndex === 0 ? desk.position[0] < x0 : desk.position[0] > x1, `${officeId}/${memberIndex} is outside the tabletop`);
+      assert.equal(blockers.some(blocker => blocker.deskIndex === memberIndex), false, `${officeId}/${memberIndex} has no unrendered side chair`);
+      assert.equal(room.actorFacing[memberIndex], desk.facing, `${officeId}/${memberIndex} keeps the same physical and visual facing`);
+    }
+    assert.ok(desks[1].position[1] < z0, `${officeId} center resident remains behind the desk`);
+    assert.ok(blockers.some(blocker => blocker.deskIndex === 1), `${officeId} center resident retains a real chair`);
+  }
+});
+
+test('lower inner-side doors cut real walls and parapets above physical bridge floors while their back walls stay solid', async t => {
+  const { rooms, kit, disposeObject, navigator, campus } = await realLayout({ withCampus: true });
+  campus.updateMatrixWorld(true);
+  t.after(() => { disposeObject(campus); for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
+  const meshes = root => { const result = []; root.traverse(object => { if (object.isMesh) result.push(object); }); return result; };
+  const foyer = rooms.get('reflection');
+  for (const [officeId, direction] of [['support', 1], ['email', -1]]) {
+    const room = rooms.get(officeId), door = navigator.anchor(officeId, 'door'); room.root.updateMatrixWorld(true);
+    const localZ = door.position[1] - room.center.z;
+    assert.equal(door.position[0] - room.center.x, direction * 3, `${officeId} enters through its actual inner side`);
+    const wall = room.walls.find(wall => wall.normal.x === direction);
+    const ray = new THREE.Raycaster(new THREE.Vector3(room.center.x + direction * 2, 1.2, door.position[1]), new THREE.Vector3(direction, 0, 0), 0, 1.5);
+    assert.equal(ray.intersectObjects(meshes(wall.root)).length, 0, `${officeId} doorway has no physical wall or base trim across its body clearance`);
+    ray.ray.origin.z += 1.15;
+    assert.ok(ray.intersectObjects(meshes(wall.root)).length > 0, `${officeId} preserves its solid wall beside the opening`);
+    const back = room.walls.find(wall => wall.normal.z === -1);
+    const backRay = new THREE.Raycaster(new THREE.Vector3(room.center.x, .6, room.center.z), new THREE.Vector3(0, 0, -1));
+    for (const localX of [-2, 0, 2]) {
+      backRay.ray.origin.x = room.center.x + localX;
+      assert.ok(backRay.intersectObjects(meshes(back.root)).length > 0, `${officeId} back wall is physically solid at x=${localX}`);
+    }
+    foyer.root.updateMatrixWorld(true);
+    const foyerDirection = -direction, parapet = foyer.walls.find(wall => wall.normal.x === foyerDirection);
+    const parapetRay = new THREE.Raycaster(new THREE.Vector3(foyerDirection * 2, .5, foyer.center.z + localZ), new THREE.Vector3(foyerDirection, 0, 0), 0, 1.5);
+    assert.equal(parapetRay.intersectObjects(meshes(parapet.root)).length, 0, `${officeId} passage also cuts the real foyer parapet`);
+    parapetRay.ray.origin.z += 1.15;
+    assert.ok(parapetRay.intersectObjects(meshes(parapet.root)).length > 0, `${officeId} keeps the remaining foyer parapet`);
+    const bridge = [foyerDirection * 3.075, door.position[1]];
+    assert.equal(navigator.pointClear(bridge, .7), true, `${officeId} bridge carries the largest avatar disk`);
+    const floorRay = new THREE.Raycaster(new THREE.Vector3(bridge[0], .2, bridge[1]), new THREE.Vector3(0, -1, 0));
+    const floor = floorRay.intersectObjects(meshes(campus))[0];
+    assert.ok(floor && Math.abs(floor.point.y - .075) < 1e-6, `${officeId} bridge has a rendered walking surface, not only floor metadata`);
   }
 });
 

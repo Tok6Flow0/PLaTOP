@@ -40,7 +40,7 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
         context.fillRect(x, y, 171, 51.2);
         for (let line = 0; line < 7; line++) {
           const grainY = y + 4 + line * 6.2, curl = random() * 2.4;
-          context.strokeStyle = line % 3 ? 'rgba(116,80,43,.045)' : 'rgba(255,237,193,.15)'; context.lineWidth = 0.6;
+          context.strokeStyle = line % 3 ? 'rgba(116,80,43,.035)' : 'rgba(255,237,193,.07)'; context.lineWidth = 0.6;
           context.beginPath(); context.moveTo(x, grainY); context.bezierCurveTo(x + 45, grainY + curl, x + 112, grainY - curl, x + 171, grainY); context.stroke();
         }
       }
@@ -49,7 +49,16 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
       context.fillStyle = i % 2 ? 'rgba(90,66,39,.035)' : 'rgba(255,255,255,.07)';
       context.fillRect(random() * 512, random() * 512, random() * 10 + 1, 0.7);
     }
-    context.lineWidth = 1.2; context.strokeStyle = 'rgba(99,77,52,.16)';
+    // The source's worn timber and limestone have quiet joins, not a ruled
+    // diagram. Small colour clouds give broad surfaces natural variation.
+    for (let patch = 0; patch < 14; patch++) {
+      const x = random() * 512, y = random() * 512, radius = 45 + random() * 90;
+      const cloud = context.createRadialGradient(x, y, 0, x, y, radius);
+      cloud.addColorStop(0, patch % 2 ? 'rgba(73,55,37,.045)' : 'rgba(255,239,204,.055)');
+      cloud.addColorStop(1, 'rgba(120,100,75,0)');
+      context.fillStyle = cloud; context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
+    }
+    context.lineWidth = tile ? 0.7 : 0.8; context.strokeStyle = tile ? 'rgba(99,77,52,.045)' : 'rgba(99,77,52,.065)';
     const rows = tile ? 4 : 10;
     for (let row = 0; row <= rows; row++) {
       const y = row * 512 / rows;
@@ -90,19 +99,27 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
     shape.quadraticCurveTo(left, top, left, top - radius); shape.lineTo(left, bottom + radius);
     shape.quadraticCurveTo(left, bottom, left + radius, bottom); return shape;
   };
-  const pile = new THREE.ExtrudeGeometry(outline(width, depth, .30), {depth:.035,bevelEnabled:false,curveSegments:8});
-  const base = new THREE.Mesh(pile, kit.material(color, 'fabric')); base.rotation.x = -Math.PI / 2;
-  base.position.set(x,.0935,z); base.receiveShadow = true; parent.add(base); surface(base,'rug');
+  const radius = Math.min(width, depth) * 0.23;
+  // The rounded bound stays inside the original rectangle and the bevel retains
+  // the certified pile height. A soft woven edge reads better than a paint chip.
+  const pile = new THREE.ExtrudeGeometry(outline(width - 0.024, depth - 0.024, radius),
+    { depth: 0.027, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 12 });
+  const edgeColor = `#${new THREE.Color(color).multiplyScalar(0.86).getHexString()}`;
+  const base = new THREE.Mesh(pile, kit.material(edgeColor, 'fabric')); base.rotation.x = -Math.PI / 2;
+  base.position.set(x,.0975,z); base.receiveShadow = true; parent.add(base); surface(base,'rug');
   const texture = canvasTexture(512, 512, (context) => {
     context.fillStyle = color; context.fillRect(0, 0, 512, 512);
-    context.strokeStyle = 'rgba(255,245,214,.12)'; context.lineWidth = 1;
-    for (let p = 0; p < 512; p += 3) {
-      context.beginPath(); context.moveTo(0, p); context.lineTo(512, p); context.stroke();
-      context.beginPath(); context.moveTo(p, 0); context.lineTo(p, 512); context.stroke();
+    // Alternating short warp/weft stitches survive downsampling without the
+    // bright regular grid that made the previous rug look like a flat panel.
+    for (let row = 0; row < 128; row++) for (let column = 0; column < 128; column++) {
+      const horizontal = (row + column) % 2 === 0;
+      const variation = (row * 29 + column * 17) % 7;
+      context.fillStyle = variation < 3 ? 'rgba(255,237,200,.12)' : 'rgba(61,48,31,.085)';
+      const px = column * 4, py = row * 4;
+      context.fillRect(px + (horizontal ? 0.1 : 1.15), py + (horizontal ? 1.15 : 0.1), horizontal ? 3.8 : 1.7, horizontal ? 1.7 : 3.8);
     }
-    context.strokeStyle = 'rgba(62,56,41,.22)'; context.lineWidth = 3; context.strokeRect(14, 14, 484, 484);
-    for (let i = 0; i < 1800; i++) {
-      context.fillStyle = i % 3 ? 'rgba(255,242,211,.065)' : 'rgba(55,48,34,.06)';
+    for (let i = 0; i < 2000; i++) {
+      context.fillStyle = i % 3 ? 'rgba(255,242,211,.055)' : 'rgba(55,48,34,.055)';
       context.fillRect((i * 193) % 512, (i * 83) % 512, 1.3, 2.3);
     }
     const edgeShade = context.createRadialGradient(256, 190, 40, 256, 256, 345);
@@ -112,7 +129,7 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
   });
   const weave = surface(texturedPlane(parent, texture, [x, 0.13, z], width - 0.11, depth - 0.11, true), 'rug');
   weave.geometry.dispose();
-  weave.geometry = new THREE.ShapeGeometry(outline(width - .11, depth - .11, .25), 8);
+  weave.geometry = new THREE.ShapeGeometry(outline(width - .11, depth - .11, radius - .055), 12);
   const points = weave.geometry.getAttribute('position'), uv = weave.geometry.getAttribute('uv');
   for (let i=0;i<points.count;i++) uv.setXY(i,points.getX(i)/(width-.11)+.5,points.getY(i)/(depth-.11)+.5);
   (weave.material as THREE.MeshStandardMaterial).roughness = 0.98;
@@ -141,7 +158,8 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   kit.mesh(parent, 'roundedBox', '#ac9474', [x, y, z], [2.69, 1.72, 0.105]);
   const texture = canvasTexture(800, 360, (context) => {
     context.fillStyle = '#e9e4d7'; context.fillRect(0, 0, 800, 360); context.fillStyle = 'rgba(122,112,91,.13)'; context.fillRect(18, 17, 764, 3);
-    context.fillStyle = textColor; context.font = 'italic 43px Georgia, serif'; lines.forEach((line, i) => context.fillText(line, 76, 93 + i * 75, 485)); drawSymbol(context, symbol);
+    context.fillStyle = `#${new THREE.Color(textColor).multiplyScalar(0.58).getHexString()}`;
+    context.font = '46px Kalam, cursive'; lines.forEach((line, i) => context.fillText(line, 76, 93 + i * 75, 485)); drawSymbol(context, symbol);
     context.fillStyle = '#bfb5a3'; for (const px of [23, 777]) for (const py of [23, 337]) { context.beginPath(); context.arc(px, py, 4, 0, Math.PI * 2); context.fill(); }
   });
   texturedPlane(parent, texture, [x, y, z + 0.059], 2.55, 1.57);
@@ -149,16 +167,25 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   kit.mesh(parent, 'cylinder', '#748575', [x + 0.68, y - 0.81, z + 0.09], [0.045, 0.39, 0.045], [0, 0, Math.PI / 2]);
 }
 export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number): void {
-  surface(kit.mesh(parent, 'roundedBox', '#a77e53', [x, 0.7, z], [width, 0.2, depth], undefined, 'wood'), 'furniture');
-  surface(kit.mesh(parent, 'roundedBox', '#b18b60', [x, 0.804, z], [width - 0.07, 0.025, depth - 0.07], undefined, 'wood'), 'furniture');
-  for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) surface(kit.mesh(parent, 'roundedDetail', '#9e7d52', [x + dx, 0.38, z + dz], [0.15, 0.64, 0.15], [0, 0, dx < 0 ? 0.045 : -0.045], 'wood'), 'furniture');
+  const slab = surface(beveledBlock(parent, kit, '#9e754d', [x, 0.7, z], [width, 0.2, depth], 0.09), 'furniture');
+  slab.material = kit.material('#9e754d', 'wood');
+  const crown = surface(beveledBlock(parent, kit, '#b38a5c', [x, 0.804, z], [width - 0.07, 0.025, depth - 0.07], 0.011), 'furniture');
+  crown.material = kit.material('#b38a5c', 'wood');
+  const legGeometry = new THREE.LatheGeometry([[0, -0.5], [0.052, -0.5], [0.068, -0.46], [0.077, -0.25],
+    [0.091, 0.4], [0.089, 0.47], [0.072, 0.5], [0, 0.5]].map(([r, y]) => new THREE.Vector2(r, y)), 16);
+  for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) {
+    const leg = surface(new THREE.Mesh(legGeometry, kit.material('#987046', 'wood')), 'furniture');
+    leg.position.set(x + dx, 0.38, z + dz); leg.scale.y = 0.64;
+    leg.rotation.set(dz < 0 ? -0.035 : 0.035, 0, dx < 0 ? 0.045 : -0.045);
+    leg.castShadow = leg.receiveShadow = true; parent.add(leg);
+  }
   for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) floorContact(parent, x + dx, 0.137, z + dz, 0.44, 0.38);
   const grain = canvasTexture(768, 384, (context) => {
     context.beginPath(); context.roundRect(0, 0, 768, 384, 54); context.clip();
-    context.fillStyle = '#ad8055'; context.fillRect(0, 0, 768, 384);
+    context.fillStyle = '#946e50'; context.fillRect(0, 0, 768, 384);
     for (let i = 0; i < 160; i++) {
       const y = i * 2.48, phase = i * 3.7;
-      context.strokeStyle = i % 3 ? 'rgba(91,56,28,.09)' : 'rgba(237,206,153,.16)'; context.lineWidth = i % 4 ? 0.8 : 1.4;
+      context.strokeStyle = i % 3 ? 'rgba(85,51,27,.13)' : 'rgba(237,206,153,.18)'; context.lineWidth = i % 4 ? 0.8 : 1.4;
       context.beginPath(); context.moveTo(0, y); context.bezierCurveTo(180, y + Math.sin(phase) * 5, 450, y + Math.cos(phase) * 8, 768, y + Math.sin(phase + 1) * 4); context.stroke();
     }
   });
@@ -171,19 +198,26 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 export function stool(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string): void {
   surface(kit.mesh(parent, 'cylinder', '#a08055', [x, 0.51, z], [0.68, 0.12, 0.68], undefined, 'wood'), 'furniture');
   kit.mesh(parent, 'sphere', color, [x, 0.575, z], [0.68, 0.16, 0.68], undefined, 'fabric');
-  for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) surface(kit.mesh(parent, 'roundedDetail', '#9d7c52', [x + Math.sin(angle) * 0.2, 0.29, z + Math.cos(angle) * 0.2], [0.085, 0.45, 0.085], undefined, 'wood'), 'furniture');
+  for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) surface(kit.mesh(parent, 'detailCylinder', '#97714a', [x + Math.sin(angle) * 0.2, 0.29, z + Math.cos(angle) * 0.2], [0.09, 0.45, 0.09], [Math.cos(angle) * 0.05, 0, -Math.sin(angle) * 0.05], 'wood'), 'furniture');
 }
 export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0, z); group.rotation.y = angle; parent.add(group);
   group.name = 'Desk chair';
   stool(group, kit, 0, 0, color);
-  [-0.27, 0.27].forEach((dx) => surface(kit.mesh(group, 'roundedDetail', '#96714c', [dx, 0.79, -0.23], [0.075, 0.55, 0.075], undefined, 'wood'), 'furniture'));
-  const backGeometry = new RoundedBoxGeometry(.65,.53,.15,3,.07);
-  const positions = backGeometry.getAttribute('position');
-  for(let i=0;i<positions.count;i++) positions.setZ(i,positions.getZ(i)+positions.getX(i)**2*.18);
-  backGeometry.computeVertexNormals();
-  const back = new THREE.Mesh(backGeometry,kit.material(color,'fabric')); back.position.set(0,1.02,-.25); back.rotation.x=.1;
-  back.castShadow=back.receiveShadow=true;group.add(back);
+  [-0.27, 0.27].forEach((dx) => surface(kit.mesh(group, 'detailCylinder', '#96714c', [dx, 0.79, -0.23], [0.065, 0.55, 0.065], [0.08, 0, 0], 'wood'), 'furniture'));
+  const curvedBack = (width: number, height: number, depth: number) => {
+    const geometry = new RoundedBoxGeometry(width, height, depth, 3, Math.min(depth * 0.45, 0.06));
+    const positions = geometry.getAttribute('position');
+    for (let i = 0; i < positions.count; i++) {
+      const px = positions.getX(i), py = positions.getY(i);
+      positions.setXYZ(i, px * (0.94 + 0.06 * (py / height + 0.5)), py + px * px * 0.12, positions.getZ(i) + px * px * 0.24);
+    }
+    geometry.computeVertexNormals(); return geometry;
+  };
+  const frame = surface(new THREE.Mesh(curvedBack(0.7, 0.53, 0.14), kit.material('#98734e', 'wood')), 'furniture');
+  frame.position.set(0, 1.02, -0.25); frame.rotation.x = 0.08; frame.castShadow = frame.receiveShadow = true; group.add(frame);
+  const back = new THREE.Mesh(curvedBack(0.59, 0.42, 0.08), kit.material(color, 'fabric'));
+  back.position.set(0, 1.02, -0.165); back.rotation.x = 0.08; back.castShadow = back.receiveShadow = true; group.add(back);
   return group;
 }
 export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
@@ -263,10 +297,12 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   const vertex = (t: number, across: number): Point => {
-    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.65 : broad ? 0.65 : 0.72) * (spear ? 0.06 : herb ? 0.15 : broad ? 0.22 : 0.17), bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.24 : broad ? 0.29 : 0.36);
-    const length = herb ? 0.53 : broad ? 0.68 : 0.93;
+    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.5 : 0.6) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.25 : 0.19);
+    const bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.2 : broad ? 0.26 : 0.34);
+    const length = herb ? 0.5 : broad ? 0.78 : spear ? 0.93 : 0.87;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
-    return [width * across, t * length + 0.012 * cup, bend - 0.035 * cup];
+    return [width * across + Math.sin(Math.PI * t) * Math.sin(t * 2.1) * 0.012,
+      t * length + 0.012 * cup, bend - 0.035 * cup];
   };
   // Five shared ribs describe a soft cup instead of a folded-paper crease.
   // Each pointed end is one vertex, avoiding zero-area triangles and split
@@ -282,28 +318,91 @@ export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THR
     indices.push(first, next, next + 1, first, next + 1, first + 1);
   }
   for (let side = 0; side < 4; side++) indices.push(31 + side, 36, 32 + side);
-  const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
+  const colors: number[] = [];
+  for (let index = 0; index < uvs.length; index += 2) {
+    const across = Math.abs(uvs[index] * 2 - 1), t = uvs[index + 1];
+    const value = 0.86 + (1 - across) * 0.15 + Math.sin(t * Math.PI) * 0.04;
+    colors.push(value, value, value);
+  }
+  const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+  geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+  geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
 }
 export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf'): void {
   const group = new THREE.Group(); group.position.set(x, base, z); group.scale.setScalar(size); parent.add(group);
+  group.name = `Botanical plant ${kind}`;
   if (base <= 0.12) floorContact(group, 0, 0.006 / size, 0, 0.57, 0.57);
-  kit.mesh(group, 'pot', potColor, [0, 0.19, 0], [0.44, 0.38, 0.44], undefined, 'ceramic'); kit.mesh(group, 'cylinder', potColor, [0, 0.378, 0], [0.47, 0.06, 0.47], undefined, 'ceramic'); kit.mesh(group, 'cylinder', '#655941', [0, 0.414, 0], [0.37, 0.008, 0.37]);
-  const shades = ['#69834b', '#507140', '#7b9254'];
+  const warmth = kind === 'broad' ? 0.3 : kind === 'leaf' ? 0.18 : kind === 'ivy' ? 0.12 : kind === 'spear' ? 0.08 : 0;
+  const clay = `#${new THREE.Color(potColor).lerp(new THREE.Color('#ad7651'), warmth).multiplyScalar(0.73).getHexString()}`;
+  const potGeometry = new THREE.LatheGeometry([[0, 0], [0.13, 0], [0.155, 0.018], [0.18, 0.07], [0.205, 0.17],
+    [0.216, 0.29], [0.207, 0.365], [0.2, 0.39], [0.181, 0.39], [0.189, 0.355], [0.193, 0.29],
+    [0.173, 0.1], [0.13, 0.04], [0, 0.04]].map(([r, y]) => new THREE.Vector2(r, y)), 20);
+  const pot = new THREE.Mesh(potGeometry, kit.material(clay, 'ceramic'));
+  pot.name = 'Rounded plant pot'; pot.castShadow = pot.receiveShadow = true; group.add(pot);
+  const lip = new THREE.Mesh(new THREE.TorusGeometry(0.199, 0.017, 6, 24), kit.material(clay, 'ceramic'));
+  lip.name = 'Pot rolled lip'; lip.position.y = 0.39; lip.rotation.x = Math.PI / 2; lip.castShadow = lip.receiveShadow = true; group.add(lip);
+  const soil = kit.mesh(group, 'cylinder', '#514630', [0, 0.385, 0], [0.354, 0.008, 0.354]); soil.name = 'Plant soil';
+  const shades = ['#58753f', '#43643a', '#748b4c'];
+  const materials = shades.map(color => {
+    const material = kit.material(color).clone(); material.side = THREE.DoubleSide; material.vertexColors = true; return material;
+  });
+  const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
+  const geometry = leafGeometry(kind === 'spear', kind === 'herb' || kind === 'ivy', kind === 'broad');
+  const stem = (from: THREE.Vector3, to: THREE.Vector3, radius = 0.009) => {
+    const midpoint = from.clone().add(to).multiplyScalar(0.5), direction = to.clone().sub(from);
+    const mesh = kit.mesh(canopy, 'detailCylinder', '#627346', [midpoint.x, midpoint.y, midpoint.z], [radius * 2, direction.length(), radius * 2]);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
+  };
+  const addLeaf = (index: number, position: Point, rotation: Point, scale: number) => {
+    const leaf = new THREE.Mesh(geometry, materials[index % materials.length]); leaf.name = 'Cupped botanical leaf';
+    leaf.position.set(...position); leaf.rotation.set(...rotation); leaf.scale.set(scale * (0.9 + index % 3 * 0.06), scale, scale);
+    leaf.castShadow = leaf.receiveShadow = true; canopy.add(leaf);
+  };
   if (kind === 'ivy') {
-    for (const vine of [-1, 1]) for (let step = 0; step < 7; step++) {
-      const vineX = vine * 0.1 + Math.sin(step * 0.7) * 0.07, vineY = 0.45 - step * 0.105, vineZ = 0.17 + step * 0.045;
-      kit.mesh(group, 'detailCylinder', '#637447', [vineX, vineY, vineZ], [0.018, 0.14, 0.018], [0.35, 0, 0]);
-      kit.mesh(group, 'detailSphere', shades[step % 3], [vineX + vine * 0.09, vineY, vineZ + 0.035], [0.25, 0.065, 0.19], [0.45, vine * 0.4, vine * 0.3]);
+    for (const vine of [-1, 1]) {
+      let previous = new THREE.Vector3(vine * 0.06, 0.39, 0);
+      for (let step = 0; step < 7; step++) {
+        const point = new THREE.Vector3(vine * 0.1 + Math.sin(step * 0.7) * 0.07, 0.45 - step * 0.105, 0.17 + step * 0.045);
+        stem(previous, point, 0.009); previous = point;
+        addLeaf(step + (vine === 1 ? 7 : 0), [point.x, point.y, point.z], [1.1, vine * 0.45, vine * 0.65], 0.45);
+      }
     }
-    return;
+  } else {
+    const count = kind === 'spear' ? 11 : kind === 'herb' ? 15 : kind === 'broad' ? 13 : 15;
+    const trunkHeight = kind === 'spear' || kind === 'herb' ? 0.43 : kind === 'broad' ? 1.23 : 1.25;
+    const curve = new THREE.CatmullRomCurve3([new THREE.Vector3(0, 0.385, 0), new THREE.Vector3(0.025, 0.65, -0.015),
+      new THREE.Vector3(-0.018, trunkHeight - 0.12, 0.02), new THREE.Vector3(0.012, trunkHeight, 0)]);
+    if (kind !== 'spear' && kind !== 'herb') {
+      const trunk = new THREE.Mesh(new THREE.TubeGeometry(curve, 8, 0.014, 5, false), kit.material('#627346'));
+      trunk.castShadow = trunk.receiveShadow = true; canopy.add(trunk);
+    }
+    for (let i = 0; i < count; i++) {
+      const angle = i * 2.399;
+      const origin = kind === 'spear' ? 0.405 : kind === 'herb' ? 0.405 + i % 3 * 0.045 : 0.45 + i % (kind === 'leaf' ? 5 : 4) * (kind === 'broad' ? 0.22 : 0.18);
+      const reach = kind === 'spear' ? 0.045 : kind === 'herb' ? 0.07 : kind === 'leaf' ? 0.17 : 0.09;
+      const point: Point = [Math.sin(angle) * reach, origin, Math.cos(angle) * reach];
+      const branchRoot = kind === 'spear' || kind === 'herb' ? new THREE.Vector3(0, 0.385, 0)
+        : curve.getPoint(THREE.MathUtils.clamp((origin - 0.385) / (trunkHeight - 0.385), 0, 1));
+      stem(branchRoot, new THREE.Vector3(...point));
+      const scale = kind === 'herb' ? 0.62 + i % 4 * 0.105 : kind === 'spear' ? 0.68 + i % 4 * 0.15 : kind === 'leaf' ? 0.58 + i % 4 * 0.10 : 0.7 + i % 4 * 0.13;
+      addLeaf(i, point, [kind === 'herb' ? -0.18 : kind === 'leaf' ? 0.42 + i % 3 * 0.15 : i % 2 * 0.08, angle, (i % 3 - 1) * 0.12], scale);
+    }
   }
-  kit.mesh(group, 'cylinder', '#627b47', [0, 0.85, 0], [0.033, 0.9, 0.033]);
-  const geometry = leafGeometry(kind === 'spear', kind === 'herb', kind === 'broad');
-  for (let i = 0; i < (kind === 'spear' ? 9 : kind === 'herb' ? 13 : 11); i++) {
-    const material = kit.material(shades[i % shades.length]); material.side = THREE.DoubleSide;
-    const leaf = new THREE.Mesh(geometry, material), rotation = i * 2.399, origin = kind === 'spear' ? 0.42 : 0.46 + i % 4 * (kind === 'herb' ? 0.07 : kind === 'broad' ? 0.24 : 0.17);
-    leaf.position.set(Math.sin(rotation) * 0.035, origin, Math.cos(rotation) * 0.035); leaf.rotation.set(i % 2 * 0.1, rotation, (i % 3 - 1) * 0.15); leaf.scale.setScalar(0.62 + i % 4 * 0.17); leaf.castShadow = true; leaf.receiveShadow = true; group.add(leaf);
-  }
+  // Keep every actual leaf vertex within its existing navigation envelope;
+  // a fuller canopy must never silently widen a certified floor obstacle.
+  canopy.updateMatrixWorld(true);
+  let radius = 0;
+  canopy.traverse(object => {
+    if (!(object instanceof THREE.Mesh)) return;
+    const positions = object.geometry.getAttribute('position'), point = new THREE.Vector3();
+    for (let i = 0; i < positions.count; i++) {
+      point.fromBufferAttribute(positions, i).applyMatrix4(object.matrixWorld);
+      radius = Math.max(radius, Math.hypot(point.x, point.z));
+    }
+  });
+  const bound = kind === 'broad' ? 0.57 : kind === 'spear' ? 0.28 : kind === 'herb' ? 0.48 : 0.5;
+  if (radius > bound) canopy.scale.set(bound / radius, 1, bound / radius);
+  group.add(canopy);
 }
 export function lamp(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, variant = 0): void {
   const metal = '#6a6b4c';
@@ -314,8 +413,14 @@ export function lamp(parent: THREE.Object3D, kit: SceneKit, x: number, z: number
   const haloTexture = canvasTexture(64, 64, (context) => {
     const gradient = context.createRadialGradient(32, 32, 1, 32, 32, 31); gradient.addColorStop(0, 'rgba(255,205,101,.35)'); gradient.addColorStop(0.42, 'rgba(255,208,128,.13)'); gradient.addColorStop(1, 'rgba(255,211,138,0)'); context.fillStyle = gradient; context.fillRect(0, 0, 64, 64);
   });
-  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.95 })); halo.position.set(x, 1.65, z); halo.scale.set(1.8, 1.8, 1); parent.add(halo);
-  const bounce = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.8), new THREE.MeshBasicMaterial({ map: haloTexture, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, opacity: 0.65 }));
+  // Luminous translucent haze has real coverage, unlike additive ONE/ONE
+  // alpha. That keeps the one-draw compositor valid even over bare background.
+  const haze = new THREE.Color('#fff8e9').multiplyScalar(2.2);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: haloTexture, color: haze, transparent: true, depthWrite: false, blending: THREE.NormalBlending, opacity: 0.95 }));
+  halo.material.userData.officeGlow = true;
+  halo.position.set(x, 1.65, z); halo.scale.set(1.8, 1.8, 1); parent.add(halo);
+  const bounce = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 1.8), new THREE.MeshBasicMaterial({ map: haloTexture, color: haze, transparent: true, depthWrite: false, blending: THREE.NormalBlending, opacity: 0.65 }));
+  bounce.material.userData.officeGlow = true;
   bounce.position.set(x, 0.136, z + 0.12); bounce.rotation.x = -Math.PI / 2; parent.add(bounce);
 }
 /**

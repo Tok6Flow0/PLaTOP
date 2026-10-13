@@ -103,3 +103,37 @@ test('the complete default campus stays within one draw and 140 static contact t
   const resources = new THREE.Group(); resources.add(scene, ...sourceGroups);
   disposeObject(resources); kit.dispose();
 });
+
+test('the actual shared floor plane clears its support and overlapping room surfaces by several depth units', async t => {
+  canvasDocument(t);
+  const primitives = await moduleUrl('../src/scene/primitives.ts');
+  const environment = await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives });
+  const { SceneKit, disposeObject } = await import(primitives);
+  const { makeCampus, makeRoom, OFFICE_FLOOR_Y } = await import(await moduleUrl('../src/scene/rooms.ts', { './primitives': primitives, './environmentProps': environment }));
+  const { teams } = await import(await moduleUrl('../src/teams.ts'));
+  const scene = new THREE.Scene(), kit = new SceneKit(), campus = makeCampus(kit);
+  scene.add(campus, makeRoom(teams[3], 3, kit).root); scene.updateMatrixWorld(true);
+  const meshes = root => { const result = []; root.traverse(object => { if (object.isMesh) result.push(object); }); return result; };
+  const ray = new THREE.Raycaster(new THREE.Vector3(0, .2, 0), new THREE.Vector3(0, -1, 0));
+  const levels = [...new Set(ray.intersectObjects(meshes(campus)).map(hit => +hit.point.y.toFixed(6)))].sort((a, b) => b - a);
+  assert.ok(levels.length >= 2, 'the proof intersects the actual rendered plane and its solid support');
+  assert.ok(levels[0] - levels[1] >= .007, 'shared texture does not compete with its backing slab at overview depth');
+  ray.ray.origin.set(-6.15, .2, 2.25);
+  const overlap = [...new Set(ray.intersectObjects(meshes(scene)).map(hit => +hit.point.y.toFixed(6)))].sort((a, b) => b - a);
+  assert.ok(overlap.length >= 3, 'the proof samples the actual shared/room floor overlap');
+  assert.ok(overlap[0] - levels[0] >= .01, 'room texture remains above the shared texture without a near-coplanar double surface');
+  const sharedSurfaces = meshes(campus).filter(mesh => mesh.material.map).map(mesh => new THREE.Box3().setFromObject(mesh))
+    .filter(box => Math.abs(box.min.y - .075) < 1e-6 && Math.abs(box.max.y - .075) < 1e-6);
+  assert.equal(sharedSurfaces.length, 3, 'one corridor and two real side-door bridge textures');
+  for (let i = 0; i < sharedSurfaces.length; i++) for (let j = i + 1; j < sharedSurfaces.length; j++) {
+    const a = sharedSurfaces[i], b = sharedSurfaces[j];
+    const width = Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x);
+    const depth = Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z);
+    assert.ok(width <= 1e-6 || depth <= 1e-6, 'shared textures meet at edges without any coplanar area overlap');
+  }
+  assert.equal(OFFICE_FLOOR_Y, .1, 'visual layer separation never changes navigation or actor grounding');
+  const sourceGroups = [];
+  scene.traverse(object => { if (object.userData.staticSources) sourceGroups.push(object.userData.staticSources); });
+  const resources = new THREE.Group(); resources.add(scene, ...sourceGroups);
+  disposeObject(resources); kit.dispose();
+});

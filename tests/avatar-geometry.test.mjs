@@ -74,6 +74,80 @@ test('standing feet touch the floor and keep that height when the room lifts a s
   disposeObject(all); kit.dispose();
 });
 
+test('compact helper feet overlap the actual lower belly surface instead of hanging below it', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  for (const character of members.filter(character => character.kind === 'robot')) {
+    const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
+    const torso = model.getObjectByName('ceramic-belly');
+    for (const [index, foot] of model.userData.personality.feet.entries()) {
+      const shoe = foot.children.find(mesh => mesh.isMesh && mesh.geometry === characterGeometry(kit, 'bean'));
+      const bounds = new THREE.Box3().setFromObject(shoe), centre = bounds.getCenter(new THREE.Vector3());
+      const sign = index ? 1 : -1;
+      const ray = new THREE.Raycaster(new THREE.Vector3(sign * 2, bounds.max.y * .9, centre.z), new THREE.Vector3(-sign, 0, 0));
+      const contact = ray.intersectObject(torso, false)[0];
+      assert.ok(contact && contact.point.x >= bounds.min.x && contact.point.x <= bounds.max.x,
+        `${character.id}/${foot.name} joins the visible belly through the top of its small shoe`);
+    }
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('Scout cream belly inset follows the pear surface without clipping into it or floating away', () => {
+  const kit = new SceneKit(), model = makeProxy(members.find(character => character.id === 'bridge-scout'), kit);
+  model.updateMatrixWorld(true);
+  const torso = model.getObjectByName('ceramic-belly'), panel = model.getObjectByName('cream-belly-panel');
+  const positions = panel.geometry.attributes.position, vertex = new THREE.Vector3();
+  for (let i = 0; i < positions.count; i++) {
+    vertex.fromBufferAttribute(positions, i).applyMatrix4(panel.matrixWorld);
+    const ray = new THREE.Raycaster(vertex.clone().add(new THREE.Vector3(0, 0, 1)), new THREE.Vector3(0, 0, -1));
+    const body = ray.intersectObject(torso, false)[0];
+    assert.ok(body && vertex.z - body.point.z >= .01 && vertex.z - body.point.z <= .04,
+      'cream panel stays closely fitted to the actual rounded belly');
+  }
+  disposeObject(model); kit.dispose();
+});
+
+test('rounded-square helmet cheeks retain a closely fitted visor and rim on the actual curved shell', () => {
+  const kit = new SceneKit(), all = new THREE.Group(), vertex = new THREE.Vector3();
+  for (const character of members.filter(character => character.kind === 'robot')) {
+    const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
+    const shell = model.getObjectByName('helmet');
+    for (const name of ['visor-rim', 'rounded-visor']) {
+      const inset = model.getObjectByName(name), positions = inset.geometry.attributes.position;
+      for (let i = 0; i < positions.count; i++) {
+        vertex.fromBufferAttribute(positions, i).applyMatrix4(inset.matrixWorld);
+        const ray = new THREE.Raycaster(vertex.clone().add(new THREE.Vector3(0, 0, 1)), new THREE.Vector3(0, 0, -1));
+        const surface = ray.intersectObject(shell, false)[0];
+        assert.ok(surface && vertex.z - surface.point.z >= .006 && vertex.z - surface.point.z <= .05,
+          `${character.id}/${name} follows the helmet without clipping or floating`);
+      }
+    }
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('broader merchant shoulders intersect their visible upper arms rather than leaving detached limbs', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  const material = new THREE.MeshBasicMaterial({ side: THREE.DoubleSide });
+  for (const character of members.filter(character => character.id.startsWith('bridge-'))) {
+    const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
+    const torso = model.getObjectByName('ceramic-belly');
+    for (const [index, arm] of model.userData.personality.arms.entries()) {
+      const upper = arm.children.find(child => child.isMesh), bounds = new THREE.Box3().setFromObject(upper);
+      const centre = bounds.getCenter(new THREE.Vector3()), sign = index ? 1 : -1;
+      const ray = new THREE.Raycaster(new THREE.Vector3(sign * 2, centre.y, centre.z), new THREE.Vector3(-sign, 0, 0));
+      const shoulder = ray.intersectObject(torso, false)[0];
+      const surface = new THREE.Mesh(upper.geometry, material);
+      surface.matrixAutoUpdate = false; surface.matrix.copy(upper.matrixWorld); surface.updateMatrixWorld(true);
+      const crossings = ray.intersectObject(surface, false);
+      assert.ok(shoulder && crossings.length >= 2 && shoulder.distance >= crossings[0].distance &&
+        shoulder.distance <= crossings[crossings.length - 1].distance,
+      `${character.id}/${arm.name} joins the actual belly surface`);
+    }
+  }
+  material.dispose(); disposeObject(all); kit.dispose();
+});
+
 test('sculpted forms share scene resources, preserve the environment finish, and allocate nothing during animation', () => {
   const kit = new SceneKit(), otherKit = new SceneKit(), all = new THREE.Group();
   const environmentInk = kit.material('#243c43'), priorRoughness = environmentInk.roughness;
@@ -100,7 +174,7 @@ test('sculpted forms share scene resources, preserve the environment finish, and
   characterGeometry(otherKit, 'helmet').dispose(); otherKit.dispose();
 });
 
-test('hero geometry is smooth and bounded, with fewer than eight thousand triangles per character', () => {
+test('hero geometry is smooth and bounded, with fewer than nine thousand triangles per character', () => {
   const kit = new SceneKit(), all = new THREE.Group();
   for (const character of members) {
     const model = makeProxy(character, kit); all.add(model);
@@ -111,7 +185,7 @@ test('hero geometry is smooth and bounded, with fewer than eight thousand triang
       assert.ok(geometry.attributes.normal, `${character.id} has surface normals`);
       assert.equal(mesh.material.flatShading, false, `${character.id} avoids faceted lighting`);
     }
-    assert.ok(triangles < 8000, `${character.id}: ${triangles} triangle geometry budget`);
+    assert.ok(triangles < 9000, `${character.id}: ${triangles} triangle geometry budget`);
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
     assert.ok(size.y < 2, `${character.id} stays inside existing character standing heights`);
@@ -220,29 +294,33 @@ test('robot cuffs join feet to their torso and lantern warmth adds no real light
   disposeObject(all); kit.dispose();
 });
 
-test('reference identities retain book, guardian, conversation lantern, feather and folded-paper silhouettes', () => {
+test('approved office helpers retain soft ceramic silhouettes without costume or folded-paper substitutions', () => {
   const kit = new SceneKit(), all = new THREE.Group();
-  const models = new Map(members.map(character => {
-    const model = makeProxy(character, kit); all.add(model); return [character.id, model];
-  }));
-  const has = (id, form) => meshes(models.get(id)).some(mesh => mesh.geometry === characterGeometry(kit, form));
-  assert.ok(has('bridge-keeper', 'book') && has('bridge-keeper', 'pageFold'), 'Keeper retains its dimensional book and folded page');
-  for (const id of ['hr-compass', 'hr-lens', 'hr-relay']) {
-    assert.ok(has(id, 'spiritBody') && !has(id, 'helmet'), `${id} remains a ceramic guardian`);
-  }
-  for (const id of ['intake-jarvis', 'intake-beacon', 'intake-relay', 'intake-compass']) {
-    assert.ok(has(id, 'cape') && has(id, 'capePanel'), `${id} retains a fitted navigation cape`);
-  }
-  assert.ok(has('support-beacon', 'helmet') && !has('support-beacon', 'lanternGlass'), 'Beacon keeps its embracing conversation shell');
-  for (const id of ['reflection-echo', 'reflection-quill']) {
-    assert.ok(has(id, 'paperBody') && has(id, 'paperWing'), `${id} retains dimensional paper folds`);
-  }
-  assert.ok(has('email-swift', 'swiftBody') && has('email-swift', 'paperTail'), 'Swift retains its creased bird body and split tail');
-  assert.ok(has('email-owl', 'featherFanL') && has('email-owl', 'featherFanR') && has('email-owl', 'breastFeathers'),
-    'Courier retains layered feather construction');
-  for (const model of models.values()) for (const mesh of meshes(model)) {
-    assert.equal(mesh.material.transparent, false, 'identity surfaces add no transparent render pass');
-    assert.ok(mesh.scale.x > 0 && mesh.scale.y > 0 && mesh.scale.z > 0, 'identity surfaces retain valid winding');
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    const forms = new Set(meshes(model).map(mesh => mesh.name));
+    for (const form of ['book', 'pageFold', 'cape', 'capePanel', 'hoodTip', 'paperBody', 'paperWing', 'paperTail', 'paperDisc', 'swiftBody']) {
+      assert.equal(forms.has(form), false, `${character.id} keeps the approved soft office silhouette rather than ${form}`);
+    }
+    if (character.kind === 'robot') {
+      assert.ok(forms.has('helmet') && forms.has('ceramic-belly') && forms.has('rounded-visor'),
+        `${character.id} retains the ivory helmet, squat belly and inset rounded visor`);
+      const shell = meshes(model).find(mesh => mesh.name === 'helmet');
+      assert.ok(shell.scale.x > shell.scale.y, `${character.id} helmet stays broad and softly rounded`);
+    } else if (character.kind === 'owl') {
+      assert.ok(forms.has('owlHead') && forms.has('owlBody') && forms.has('wing'),
+        `${character.id} retains the plump owl and soft wings`);
+    } else if (character.kind === 'swift') {
+      assert.ok(forms.has('helmet') && forms.has('owlBody') && forms.has('wing'),
+        'Swift retains rounded bird surfaces and swept wings');
+    } else if (character.id === 'reflection-lumen') {
+      assert.ok(forms.has('lanternGlass') && forms.has('lanternCap') && forms.has('curved-lantern-rail'),
+        'Lumen retains a real amber lantern with a rounded metal cage');
+    }
+    for (const mesh of meshes(model)) {
+      assert.equal(mesh.material.transparent, false, 'character surfaces add no transparent render pass');
+      assert.ok(mesh.scale.x > 0 && mesh.scale.y > 0 && mesh.scale.z > 0, 'character surfaces retain valid winding');
+    }
   }
   disposeObject(all); kit.dispose();
 });

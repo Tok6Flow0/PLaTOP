@@ -1,5 +1,7 @@
 # Characters, animation and decor
 
+This page describes the preserved authored GLB library. It is not the current default procedural model pipeline: see [ASSET-CONTRACT.md](ASSET-CONTRACT.md) for the concept-led default characters, portrait generator and approval gate.
+
 Sixteen characters from six teams. Each team named itself and drew its own portrait when the CEO asked; the models follow those portraits, restyled to the PLaTOP office concept (`public/reference/office-concept.png`). That means designer-toy robots (round helmets, dark curved visors, block-shaped ceramic torsos, dark rounded hands and feet), plush owls with big ringed eyes, a brass lantern and a little clay swift.
 
 Everything is generated from code in [`assets-src/`](../assets-src). No textures, no baked lights, no external tools.

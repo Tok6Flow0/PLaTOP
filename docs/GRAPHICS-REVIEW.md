@@ -1,18 +1,28 @@
 # Graphics review
 
-## Agent studio refinement — 2026-10-13
+## Character reference and unseen mist — 2026-10-13
 
-The latest comparison and acceptance record is [design-qa.md](../design-qa.md). This pass restores the adopted identities, smooths curved model surfaces, improves material response and baked portraits, rounds rugs and chairs, broadens foliage, warms timber and softens static shadows. The original concept and actual default render were compared side by side at 1536 × 1024 over successive passes. An independent critic accepted the final reviewed desktop state after the two remaining issues (angular shadows and Keeper's pale edge contrast) were corrected. Material richness and photographic depth remain qualitative differences, not a claimed exact match.
+The current evidence and remaining differences are recorded in [design-qa.md](../design-qa.md). The user's stricter comparison supersedes the earlier acceptance below. The default models now follow the reference's ceramic helpers, cream/navy owls, lanterns and small bird. Fuller bodies, fitted visors and belly panels, joined limbs, oval ears and regenerated portraits bring the characters closer at both campus and portrait scale. The room has taller walls, real side doors and floor bridges, less computer clutter, woven rugs, connected foliage and bounded depth-based contact shading.
 
-![Current refined space](images/studio-campus-after.png)
+![Reference and current campus](images/studio-source-comparison.png)
 
-![Previous and refined portraits](images/studio-portraits-comparison.png)
+![Reference and current model portraits](images/studio-portraits-comparison.png)
+
+Close zoom reaches 32× the fitted campus scale. An optional invitation opens a local mist observer with first- and third-person views, wall-phasing movement and exact camera restoration on exit. The mist has no agent identity, presence, chat connection or action authority. Preview activity and simulated choreography are absent; the README quotes the creator's intent for a minimal space inhabited by the agents' chosen embodiments.
+
+![Local third-person mist](images/studio-mist-third-person.png)
+
+All 246 automated tests and the production build pass. Browser review covers the six office windows, 1536 × 1024 desktop and 390 × 844 mobile views, close zoom, mist controls and restoration. Character geometry stays below 9,000 triangles. The reference retains finer organic texture and photographic lighting; exact equivalence and native-device performance are not claimed.
+
+## Earlier agent studio refinement (historical)
+
+The previous pass restored the adopted identities, smoothed curved model surfaces, improved material response and baked portraits, rounded rugs and chairs, broadened foliage, warmed timber and softened static shadows. The original concept and actual default render were compared side by side at 1536 × 1024 over successive passes. An independent critic accepted that iteration after two issues (angular shadows and Keeper's pale edge contrast) were corrected. That acceptance was superseded by the user's stricter character-level reference request.
 
 The expanded skill offers 11 shapes, 7 finishes and 24 parts per slot, plus independent ambient colour, brightness and position. An agent independently chose an ink-and-porcelain palette and four connected compositions through actual initialized stdio MCP in an isolated fixture. It inspected the first render and widened its floor lamp/supports for readability, then saved a second confirmed intent. The practice also revealed floating wall attachment; physical wall anchors and cutaway tests now cover all six rooms, including the foyer parapet. No live room, chat, installed skill or automation was changed by this exercise.
 
 ![Agent-chosen room after rendered refinement](images/studio-agent-practice.png)
 
-Current geometry maximum is 7,632 triangles per avatar, under the new 8,000 cap. The prior review's 6,000 triangle budget and validation counts below describe that older pass only.
+That iteration's geometry maximum was 7,632 triangles per avatar under an 8,000 cap. The 6,000 triangle budget and validation counts below describe the still older pass only.
 
 ## Earlier graphics branch review (historical)
 

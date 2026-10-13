@@ -2,12 +2,13 @@ import * as THREE from 'three';
 import type { SceneKit } from './primitives';
 
 export type CharacterForm = 'torso' | 'helmet' | 'owlBody' | 'owlHead' | 'wing' | 'tuft'
-  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring'
+  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart'
   | 'book' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'toe' | 'paperBody' | 'paperWing' | 'paperTail' | 'paperDisc' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftWingL' | 'swiftWingR'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather';
 type Tuple = [number, number, number];
+const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 interface CharacterResources {
   geometry: Map<string, THREE.BufferGeometry>;
   material: Map<string, THREE.MeshStandardMaterial>;
@@ -63,10 +64,15 @@ function helmet(owl = false): THREE.BufferGeometry {
     const x = position.getX(i), y = position.getY(i), z = position.getZ(i);
     // Move only the middle latitudes outward. The poles remain smooth and the
     // face has generous cheeks rather than a faceted cube or detached spheres.
-    const cheek = 1 + (owl ? .07 : .06) * Math.max(0, 1 - (y * 2) ** 2);
+    const cheek = 1 + (owl ? .07 : .025) * Math.max(0, 1 - (y * 2) ** 2);
     const back = !owl && z < 0 ? z * (1 - .15 * (z * 2) ** 2) : z;
-    const jaw = !owl && y < -.1 ? 1 - .03 * (-.1 - y) / .4 : 1;
-    position.setXYZ(i, x * cheek * jaw, y, back);
+    // Fill only the side/back lower cheeks. The front remains the same fitted
+    // ellipsoid, while the silhouette has a soft rounded-square jaw instead
+    // of tapering to the bottom of a ball.
+    const side = Math.max(0, 1 - Math.max(0, z) / .25) ** 2;
+    const lower = Math.max(0, Math.min(1, (-y - .05) / .45));
+    const jaw = owl ? 0 : Math.sin(lower * Math.PI) * side;
+    position.setXYZ(i, x * cheek * (1 + .12 * jaw), y - .035 * jaw, back);
   }
   return smoothDeformedSurface(geometry);
 }
@@ -111,6 +117,18 @@ function roundedBook(): THREE.BufferGeometry {
   shape.quadraticCurveTo(-.5, -.5, -.5 + radius, -.5);
   const geometry = new THREE.ExtrudeGeometry(shape, { depth: .80, steps: 1, bevelEnabled: true,
     bevelSegments: 3, bevelSize: .035, bevelThickness: .07, curveSegments: 5 });
+  geometry.translate(0, 0, -.4); return geometry;
+}
+
+function smallHeart(): THREE.BufferGeometry {
+  const shape = new THREE.Shape();
+  shape.moveTo(0, -.5);
+  shape.bezierCurveTo(-.20, -.32, -.54, -.08, -.48, .20);
+  shape.bezierCurveTo(-.43, .48, -.14, .49, 0, .27);
+  shape.bezierCurveTo(.14, .49, .43, .48, .48, .20);
+  shape.bezierCurveTo(.54, -.08, .20, -.32, 0, -.5);
+  const geometry = new THREE.ExtrudeGeometry(shape, { depth: .8, steps: 1, bevelEnabled: true,
+    bevelSegments: 2, bevelSize: .04, bevelThickness: .10, curveSegments: 5 });
   geometry.translate(0, 0, -.4); return geometry;
 }
 
@@ -213,7 +231,7 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
 
 function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
   switch (form) {
-    case 'torso': return softLathe([[0, -.5], [.24, -.49], [.40, -.41], [.48, -.24], [.5, .03], [.46, .29], [.34, .46], [0, .5]]);
+    case 'torso': return softLathe(torsoProfile);
     case 'helmet': return helmet();
     case 'owlHead': return helmet(true);
     case 'owlBody': return softLathe([[0, -.5], [.25, -.47], [.42, -.30], [.5, -.02], [.48, .20], [.35, .42], [0, .5]]);
@@ -229,6 +247,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'detail': return new THREE.SphereGeometry(.5, 12, 6);
     case 'beak': return lathe([[0, -.5], [.32, -.46], [.5, -.30], [.47, -.05], [.32, .20], [.12, .43], [0, .5]], 16);
     case 'ring': return new THREE.TorusGeometry(.5, .085, 8, 24);
+    case 'heart': return smallHeart();
     case 'book': return roundedBook();
     case 'cloak': return softLathe([[0, -.5], [.36, -.49], [.5, -.39], [.48, -.20], [.34, .12], [.21, .36], [.09, .49], [0, .54]]);
     case 'cape': return cape();
@@ -295,16 +314,17 @@ export function characterMesh(kit: SceneKit, parent: THREE.Object3D, form: Chara
   mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); return mesh;
 }
 
-/** Fit an inset face to the helmet; the patch shares its curvature and normals. */
+/** Fit an inset to its helmet or pear belly, sharing its curvature and normals. */
 export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string, width: number, height: number,
-  offset: number, centre: Tuple = [0, 0, 0], finish: CharacterFinish = 'ink', surfaceRadii: Tuple = [.461, .38, .345], bubble = false): THREE.Mesh {
+  offset: number, centre: Tuple = [0, 0, 0], finish: CharacterFinish = 'ink', surfaceRadii: Tuple = [.461, .38, .345], bubble = false,
+  torsoSurface?: [number, number, number, number], cornerRatio = .43): THREE.Mesh {
   const cache = owned(kit).geometry;
-  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}`;
+  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}`;
   let geometry = cache.get(key);
   if (!geometry) {
     // Four continuous arcs give a rounded boundary at close range while using
     // fewer triangles than the old grid's visibly stair-stepped outline.
-    const radius = Math.min(width, height) * .43, boundary: Array<[number, number]> = [];
+    const radius = Math.min(width, height) * cornerRatio, boundary: Array<[number, number]> = [];
     const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
     corners.forEach(([sx, sy], corner) => {
       for (let step = 0; step < 8; step++) {
@@ -316,11 +336,26 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
       }
     });
     const vertices: number[] = [], normals: number[] = [], indices: number[] = [], rings = 6;
+    const contour = torsoSurface ? new THREE.SplineCurve(torsoProfile.map(([r, y]) => new THREE.Vector2(r, y))).getPoints(16) : undefined;
     const add = (x: number, y: number) => {
       const px = x + centre[0], py = y + centre[1];
-      const surface = surfaceRadii[2] * Math.sqrt(Math.max(.05, 1 - (px / surfaceRadii[0]) ** 2 - (py / surfaceRadii[1]) ** 2));
+      let surface: number;
+      const normal = new THREE.Vector3();
+      if (torsoSurface && contour) {
+        const [sx, sy, sz, offsetY] = torsoSurface, normalizedY = (py - offsetY) / sy;
+        let row = 0;
+        while (row < contour.length - 2 && contour[row + 1].y < normalizedY) row++;
+        const a = contour[row], b = contour[row + 1], slope = (b.x - a.x) / (b.y - a.y);
+        const radius = Math.max(0, a.x + (normalizedY - a.y) * slope);
+        const cross = Math.sqrt(Math.max(.0001, radius * radius - (px / sx) ** 2));
+        surface = sz * cross;
+        normal.set(sz * px / (sx * sx * cross), -sz * radius * slope / (sy * cross), 1).normalize();
+      } else {
+        surface = surfaceRadii[2] * Math.sqrt(Math.max(.05, 1 - (px / surfaceRadii[0]) ** 2 - (py / surfaceRadii[1]) ** 2));
+        normal.set(px / surfaceRadii[0] ** 2, py / surfaceRadii[1] ** 2, surface / surfaceRadii[2] ** 2).normalize();
+      }
       vertices.push(px, py, surface + offset + centre[2] + .010);
-      const normal = new THREE.Vector3(px / surfaceRadii[0] ** 2, py / surfaceRadii[1] ** 2, surface / surfaceRadii[2] ** 2).normalize(); normals.push(normal.x, normal.y, normal.z);
+      normals.push(normal.x, normal.y, normal.z);
     };
     add(0, 0);
     for (let row = 1; row <= rings; row++) boundary.forEach(([x, y]) => add(x * row / rings, y * row / rings));
