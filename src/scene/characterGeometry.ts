@@ -6,19 +6,20 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
-export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather';
+export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.46,.08],[.29,.18],[.14,.235],[0,.26]];
 const wayfinderContour=new THREE.SplineCurve(wayfinderProfile.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(16);
 const owlProfile:Array<[number,number]>=[[0,-.5],[.25,-.47],[.42,-.30],[.5,-.02],[.48,.20],[.35,.42],[0,.5]];
-const owlContour=new THREE.SplineCurve(owlProfile.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(16);
+const owlContour=new THREE.SplineCurve(owlProfile.map(([r,y])=>new THREE.Vector2(r,y))).getPoints(12);
 interface CharacterResources {
   geometry: Map<string, THREE.BufferGeometry>;
   material: Map<string, THREE.MeshStandardMaterial>;
   grain?: THREE.DataTexture;
   glow?: THREE.DataTexture;
   facialGrain?: THREE.DataTexture;
+  plumageGrain?: THREE.DataTexture;
 }
 
 // Model resources belong to one office scene. Every cached surface is attached
@@ -210,7 +211,7 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
  * pasted onto the belly. The sweep is built once and uses the existing joint. */
 function embracingArm():THREE.BufferGeometry {
   const origin=new THREE.Vector3(.245,.23,.05);
-  const curve=new THREE.CatmullRomCurve3([[.245,.23,.05],[.25,.13,.13],[.20,.035,.22],[.065,.015,.245],[-.055,.035,.245]].map(p=>new THREE.Vector3(...p).sub(origin)));
+  const curve=new THREE.CatmullRomCurve3([[.245,.23,.05],[.25,.13,.13],[.20,.015,.22],[.065,-.055,.245],[-.035,-.07,.245]].map(p=>new THREE.Vector3(...p).sub(origin)));
   const rows=12,columns=12,frames=curve.computeFrenetFrames(rows,false),positions:number[]=[],indices:number[]=[];
   for(let row=0;row<=rows;row++){
     const t=row/rows,centre=curve.getPointAt(t),radius=.104*Math.pow(Math.max(0,Math.sin(Math.PI*t)),.45);
@@ -463,9 +464,9 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 
 /** One cached surface owns each layered fan; detail does not add pose matrices. */
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
-  const sculpt = feather(), source = sculpt.toNonIndexed(), vertices: number[] = [], normals: number[] = [], colours:number[]=[];
+  const sculpt = feather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
   sculpt.dispose();
-  const count = breast ? 50 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
+  const count = breast ? 60 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
     if(breast){
@@ -473,19 +474,22 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       // tangential to the body, including its sides and rear, with staggered
       // rows. One cached mesh replaces the old front-only breast panel.
       const row=Math.floor(featherIndex/10),column=featherIndex%10;
-      const angle=(column+.5+(row%2?.5:0))/10*Math.PI*2,y=.17-row*.100+.012*Math.sin(column*2.1+row);
+      const angle=(column+.5+(row%2?.5:0))/10*Math.PI*2,y=.20-row*.100+.008*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
       for(let i=0;i<source.attributes.position.count;i++){
         point.fromBufferAttribute(source.attributes.position,i);
-        const tone=.94+.08*Math.max(0,point.z)/.34-.09*Math.abs(point.x)+.014*Math.sin(featherIndex*1.73);
+        uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
+        const tone=.87+.16*(point.y+.62)/1.12+.07*Math.max(0,point.z)-.035*Math.abs(point.x)+.020*Math.sin(featherIndex*1.73);
         colours.push(tone,tone,tone);
-        const py=y+point.y*.25,normalizedY=py/.83;
+        // The last row ends above the closed body pole. Projecting through
+        // that pole would invert the radius and create long floor spikes.
+        const py=y+point.y*(row===5?.14:.22),normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
         const theta=angle+point.x*.225/Math.max(.12,radius*.70);
-        const relief=(.007+point.z*.026+(4-row)*.0025)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
+        const relief=(.007+point.z*.026+(5-row)*.0025)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
@@ -493,16 +497,18 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       }
       continue;
     }
-    const row=Math.floor(featherIndex/3),column=featherIndex%3,x=sign*(column*.045-.035);
-    quaternion.setFromEuler(new THREE.Euler(0,0,-sign*(.20+column*.18)));
-    matrix.compose(new THREE.Vector3(x,.12-row*.11,.102+column*.012-row*.018),quaternion,new THREE.Vector3(.14,.30,.018));normalMatrix.getNormalMatrix(matrix);
+    const [row,column]=([[0,0],[0,1],[0,2],[1,0],[1,1],[2,0]] as const)[featherIndex],x=sign*(column*.065-.035+row*.023);
+    quaternion.setFromEuler(new THREE.Euler(0,0,-sign*(.12+column*.15)));
+    matrix.compose(new THREE.Vector3(x,.07-row*.13,.108+column*.010-row*.007),quaternion,new THREE.Vector3(.17,.27+row*.025,.018));normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
-      point.fromBufferAttribute(source.attributes.position, i).applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
+      point.fromBufferAttribute(source.attributes.position, i);uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
+      point.applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
       vertices.push(point.x, point.y, point.z); normals.push(normal.x, normal.y, normal.z);
     }
   }
   source.dispose(); const geometry = new THREE.BufferGeometry();
   geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
   if(breast){
     const radial=geometry.attributes.normal.clone();smoothDeformedSurface(geometry);
     const n=geometry.attributes.normal,a=new THREE.Vector3(),b=new THREE.Vector3();
@@ -510,7 +516,7 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       a.fromBufferAttribute(n,i);b.fromBufferAttribute(radial,i);
       // Very thin overlapping plumage follows the body's soft shading. A
       // beveled-solid normal would make each feather read like metal armor.
-      if(a.dot(b)>0)a.lerp(b,.92).normalize();
+      if(a.dot(b)>0)a.lerp(b,.62).normalize();
       n.setXYZ(i,a.x,a.y,a.z);
     }
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
@@ -528,7 +534,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'lanternHousing': return lanternHousing();
     case 'lanternBezel': return lanternBezel();
     case 'owlHead': return helmet(true);
-    case 'owlBody': return softLathe(owlProfile);
+    // The shell is almost entirely covered by feathers. Spend its triangles
+    // on the visible overlapping layers instead of an invisible dense core.
+    case 'owlBody': return softLathe(owlProfile,12,16);
     case 'embracingBody': {
       const geometry=softLathe([[0,-.5],[.17,-.485],[.36,-.40],[.49,-.15],[.48,.15],[.35,.41],[0,.5]]),p=geometry.attributes.position;
       for(let i=0;i<p.count;i++){const x=p.getX(i),y=p.getY(i),weight=THREE.MathUtils.smoothstep(-y,.25,.50);p.setY(i,y+.14*Math.exp(-(x*x)/.012)*weight);}
@@ -579,7 +587,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
-    case 'swiftBody': return foldedBirdVolume([[-.17,.032,.06,-.025],[.025,.115,.115,.035],[.19,.113,.11,.115],[.285,.098,.097,.100],[.335,.025,.030,.075]],true);
+    case 'swiftBody': return foldedBirdVolume([[-.12,.032,.06,-.025],[.025,.122,.115,.035],[.15,.113,.11,.115],[.25,.098,.097,.100],[.30,.025,.030,.075]],true);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[.025,.11,.04],[.025,.04,-.15],[.025,-.19,-.40],[.025,-.11,-.02],[.062,-.02,-.12],[-.006,.11,.04],[-.006,.04,-.15],[-.006,-.19,-.40],[-.006,-.11,-.02]],[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],['#dcb366','#d7ab5c','#c59c4c','#e3bd73','#386a65','#c99c4f','#386a65','#35615d','#a5813e']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -657,10 +665,27 @@ function facialGrain(kit:SceneKit):THREE.DataTexture {
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const seed=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%101/100;
     const barbs=Math.pow(Math.max(0,Math.sin(a*157+r*31+Math.sin(a*39)*1.1)),10);
-    const tone=242-22*barbs*Math.min(1,r*3)-16*seed;
+    const tone=241-36*barbs*Math.min(1,r*3)-20*seed;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;
+}
+
+/** Individual feather UVs keep the fine barbs aligned with each overlapping
+ * vane. One 256px texture is reused by all breast and wing layers. */
+function plumageGrain(kit:SceneKit):THREE.DataTexture {
+  const owner=owned(kit);if(owner.plumageGrain)return owner.plumageGrain;
+  const size=256,data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const u=(x+.5)/size-.5,v=(y+.5)/size;
+    const seed=((Math.imul(x+17,374761393)^Math.imul(y+29,668265263))>>>0)%101/100;
+    const barb=Math.pow(Math.max(0,Math.sin(v*285+Math.abs(u)*143+Math.sin(v*19)*2)),8);
+    const quill=Math.exp(-(u*u)/.00010),tone=229-25*barb-12*seed+15*quill;
+    data.set([tone,tone,tone,255],(y*size+x)*4);
+  }
+  const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;
+  texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;
+  owner.plumageGrain=texture;return texture;
 }
 
 export function characterMaterial(kit: SceneKit, color: string, finish: CharacterFinish = 'clay'): THREE.MeshStandardMaterial {
@@ -668,14 +693,14 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather' ? .82 : .76,
+      roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'brass' ? .52 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
     });
     if (finish === 'ink') material.envMapIntensity = .65;
-    if (['clay','glaze','paper','feather','facialFeather'].includes(finish)) {
+    if (['clay','glaze','paper','feather','facialFeather','plumage'].includes(finish)) {
       material.envMapIntensity=finish==='glaze'?.75:.5;
-      material.bumpMap=finish==='facialFeather'?facialGrain(kit):surfaceGrain(kit);material.bumpScale=finish==='facialFeather'?.004:finish==='glaze'?.005:.010;
+      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit);material.bumpScale=finish==='plumage'?.002:finish==='facialFeather'?.004:finish==='glaze'?.005:.010;
       material.map=material.bumpMap;
     }
     cache.set(key, material);

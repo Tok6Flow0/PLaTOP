@@ -121,10 +121,27 @@ test('Beacon clasped forearms show their outward-facing surfaces in front of the
 test('owl plumage covers all four sides within the existing cached geometry budget',()=>{
   const kit=new SceneKit(),geometry=characterGeometry(kit,'breastFeathers'),p=geometry.attributes.position;
   const quadrants=new Set();
+  for(let i=0;i<p.count;i++)assert.ok(p.getY(i)>-.40,'bottom plumage ends before the closed body pole, never projecting a negative radius');
   for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i))<.1)quadrants.add(`${Math.sign(p.getX(i))}:${Math.sign(p.getZ(i))}`);
   for(const x of [-1,1])for(const z of [-1,1])assert.ok(quadrants.has(`${x}:${z}`));
   assert.equal(characterGeometry(kit,'breastFeathers'),geometry,'the wrap is built once per scene');
   geometry.dispose();kit.dispose();
+});
+
+test('feather barbs use bounded local UVs and one scene-owned texture for every layered surface',()=>{
+  const kit=new SceneKit();
+  const texture=characterMaterial(kit,'#293e54','plumage').bumpMap;
+  assert.equal(texture,characterMaterial(kit,'#30465e','plumage').bumpMap);
+  assert.ok(texture.isDataTexture&&texture.image.width===256&&texture.image.height===256);
+  for(const form of ['breastFeathers','featherFanL','featherFanR']){
+    const geometry=characterGeometry(kit,form),uv=geometry.attributes.uv;
+    assert.equal(uv.count,geometry.attributes.position.count);
+    for(let i=0;i<uv.count;i++){
+      assert.ok(uv.getX(i)>=0&&uv.getX(i)<=1&&uv.getY(i)>=0&&uv.getY(i)<=1,'each feather owns the same small, bounded texture coordinates');
+    }
+    geometry.dispose();
+  }
+  kit.dispose();
 });
 
 test('visible breast feather planes stay outside the curved owl body',()=>{
@@ -350,7 +367,7 @@ test('the cape lining clears the real torso around the shoulders, sides, and bac
 
 test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
   const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
-  const expectedTriangles = { torso: 768, owlBody: 768, lanternGlass: 336, lanternCap: 384, bridgeHelmet:1216,
+  const expectedTriangles = { torso: 768, owlBody: 384, lanternGlass: 336, lanternCap: 384, bridgeHelmet:1216,
     lanternBase: 384, limb: 224, beak: 192, helmet: 1216, owlHead: 1216, wing: 352, tuft: 168,
     spiritBody: 768, spiritFigure:2048, spiritLens:2048, spiritRelay:2048, cloak: 768, merchantTorso: 768 };
   for (const [form, count] of Object.entries(expectedTriangles)) {

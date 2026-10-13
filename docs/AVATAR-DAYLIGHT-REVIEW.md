@@ -29,7 +29,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 10 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
 | Pass 11 | 8.1/10 | 8.1/10 | 8.1/10 — B+ |
 | Pass 12 | 8.2/10 | 8.1/10 | 8.1/10 — B+ |
-| Pass 13 | Pending | Pending | Independent review pending |
+| Pass 13 | 8.1/10 | 8.2/10 | 8.1/10 — B+ |
+| Pass 14 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -119,6 +120,18 @@ side flaps, brings Beacon's hands into a clasp, rounds its eye-stroke ends,
 thins the owl's feather surfaces and paper-head backs, and refines eye depth
 and inward-looking posture. All 263 tests and the production build pass. No
 additional live render pass is introduced.
+The thirteenth review found a jagged cream arm/cape intersection and clipped
+shoulder insets, and found the thinned owl feathers too faint. Pass 14 repairs
+the cape/arm boundary and projects the oval insets onto their actual surfaces.
+Beacon has a more compact lower body and diagonal clasp; paper heads and wings
+are shallower; Swift has a shorter breast and a forward shoulder attachment.
+Six feather rows and descending wing fans use a shared 256-pixel barb texture.
+The mostly hidden owl core is reduced from 768 to 384 triangles to retain the
+existing per-character budget. Inspection caught lower feathers projecting
+past the body's pole; their length is corrected and a regression assertion
+covers that limit. Local feather UV/cache tests were added. All 264 tests and
+the production build pass. One interrupted browser sample was discarded; the
+recorded measurements below are fresh completed samples.
 
 ## Local-clock atmosphere
 
@@ -167,6 +180,8 @@ test suites were stopped during the samples.
 | Pass 12 night | 60.01 | 4.6 ms | 91 | 330,835 |
 | Pass 13 noon | 60.01 | 4.1 ms | 91 | 329,523 |
 | Pass 13 night | 60.00 | 4.1 ms | 91 | 329,523 |
+| Pass 14 noon | 60.00 | 3.1 ms | 93 | 329,379 |
+| Pass 14 night | 60.00 | 3.0 ms | 93 | 329,379 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
