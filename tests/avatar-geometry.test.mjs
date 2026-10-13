@@ -222,7 +222,7 @@ test('walking and explicit resting suppress stationary gestures until the charac
 
 test('continuous robed and book faces remain rigidly attached to their shell through agent gestures and walking',()=>{
   const kit=new SceneKit(),all=new THREE.Group();
-  for(const member of members.filter(member=>member.id.startsWith('hr-')||member.id==='bridge-keeper')){
+  for(const member of members.filter(member=>member.id.startsWith('hr-')||['bridge-keeper','email-swift'].includes(member.id))){
     const model=makeProxy(member,kit);all.add(model);model.updateMatrixWorld(true);
     const p=model.userData.personality,face=model.getObjectByName('head');
     const relative=()=>new THREE.Matrix4().copy(p.body.matrixWorld).invert().multiply(face.matrixWorld).elements;
@@ -296,16 +296,16 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'hr-compass':['spiritFigure','compassCowl','compassNeedle','compass-emblem'],
     'hr-lens':['spiritLens','lensCowl','ring'],
     'hr-relay':['spiritRelay','relayCowl','detail'],
-    'intake-jarvis':['torso','cape','hoodTip','compass-emblem'],
-    'intake-beacon':['torso','lanternCap'],
-    'intake-relay':['torso','scroll','book'],
-    'intake-compass':['torso','tuft','circuit-bib'],
+    'intake-jarvis':['wayfinderBody','cape','hoodTip','compass-emblem'],
+    'intake-beacon':['wayfinderBody','lanternCap'],
+    'intake-relay':['wayfinderBody','scroll','book'],
+    'intake-compass':['wayfinderBody','tuft','circuit-bib'],
     'support-beacon':['owlBody','lanternCap','ring'],
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
-    'reflection-echo':['paperBody','paperDisc','ring'],
+    'reflection-echo':['paperBody','paperEchoHead','paperOwlWingL','paperOwlWingR','ring'],
     'reflection-quill':['paperBody','paperWing','quill-pencil'],
     'email-owl':['owlHead','owlBody','featherFanL','featherFanR','breastFeathers'],
-    'email-swift':['swiftHead','swiftBody','swiftWingL','swiftWingR','swiftTail'],
+    'email-swift':['paper-bird-expression','swiftBody','swiftWingL','swiftWingR','swiftTail'],
   };
   for (const character of members) {
     const model=makeProxy(character,kit);all.add(model);
