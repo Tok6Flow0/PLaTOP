@@ -24,7 +24,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 5 | 7.8/10 | 7.9/10 | 7.9/10 — B |
 | Pass 6 | 7.8/10 | 8.0/10 | 7.9/10 — B |
 | Pass 7 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
-| Pass 8 | Pending | Pending | Independent review pending |
+| Pass 8 | 7.5/10 | 8.1/10 | 7.8/10 — B |
+| Pass 9 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -69,6 +70,14 @@ fixes a cape that was buried inside the torso, closes its lining and rims,
 and refines paper depth, inward head posture, cloth folds and ceramic finish.
 Two new tests verify the cape's closed winding and clearance around the body.
 All 255 tests and the production build pass.
+The eighth review lowered the overall score after the added side/rear views
+exposed padded book construction, abrupt neck joins, a projecting lantern face,
+and feather detail limited to the front. Pass 9 adds thin covers around a page
+block, deliberate collars and a shoulder-fitted cape, an actual open lantern
+housing, and wrapped plumage on the body and both sides of the wings. It also
+refines the bird's wing attachment and the paper heads' rear taper. Three new
+tests cover the book layers, open housing and all-around plumage. All 258 tests
+and the production build pass. Visual acceptance remains independently judged.
 
 ## Local-clock atmosphere
 
@@ -107,6 +116,8 @@ test suites were stopped during the samples.
 | Pass 7 night | 60.00 | 3.2 ms | 87 | 328,332 |
 | Pass 8 noon | 60.00 | 3.2 ms | 90 | 328,680 |
 | Pass 8 night | 60.00 | 3.7 ms | 90 | 328,680 |
+| Pass 9 noon | 60.00 | 4.7 ms | 90 | 331,008 |
+| Pass 9 night | 59.99 | 4.2 ms | 90 | 331,008 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed

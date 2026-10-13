@@ -84,6 +84,36 @@ test('Scout keeps a magnifier and compass, rather than the generic cream belly p
   disposeObject(model);kit.dispose();
 });
 
+test('Keeper has separate thin covers around a recessed page block and a bound spine',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);
+  const front=model.getObjectByName('front-cover'),back=model.getObjectByName('back-cover'),pages=model.getObjectByName('page-block');
+  assert.ok(front&&back&&pages&&model.getObjectByName('book-spine'));
+  assert.ok(front.scale.z<pages.scale.z*.15&&back.scale.z<pages.scale.z*.15,'covers are thin, not solid padded book volumes');
+  assert.ok(front.position.z>pages.position.z&&back.position.z<pages.position.z,'leaves sit between the two covers');
+  assert.ok(front.scale.x>pages.scale.x&&back.scale.y>pages.scale.y,'pages are recessed inside the cover edge');
+  disposeObject(model);kit.dispose();
+});
+
+test('Beacon has a real face opening with an outward-facing green shell',()=>{
+  const kit=new SceneKit(),geometry=characterGeometry(kit,'lanternHousing'),material=new THREE.MeshBasicMaterial();
+  const shell=new THREE.Mesh(geometry,material);shell.updateMatrixWorld(true);
+  assert.equal(new THREE.Raycaster(new THREE.Vector3(0,0,1),new THREE.Vector3(0,0,-1)).intersectObject(shell).length,0,'no green helmet behind the amber aperture');
+  const cheek=new THREE.Raycaster(new THREE.Vector3(.36,0,1),new THREE.Vector3(0,0,-1)).intersectObject(shell)[0];
+  assert.ok(cheek&&cheek.point.z>0&&cheek.face.normal.z>0,'front cheek is not inside out');
+  const rear=new THREE.Raycaster(new THREE.Vector3(0,0,-1),new THREE.Vector3(0,0,1)).intersectObject(shell)[0];
+  assert.ok(rear&&rear.point.z<0,'the rear shell stays closed');
+  material.dispose();geometry.dispose();kit.dispose();
+});
+
+test('owl plumage covers all four sides within the existing cached geometry budget',()=>{
+  const kit=new SceneKit(),geometry=characterGeometry(kit,'breastFeathers'),p=geometry.attributes.position;
+  const quadrants=new Set();
+  for(let i=0;i<p.count;i++)if(Math.abs(p.getY(i))<.1)quadrants.add(`${Math.sign(p.getX(i))}:${Math.sign(p.getZ(i))}`);
+  for(const x of [-1,1])for(const z of [-1,1])assert.ok(quadrants.has(`${x}:${z}`));
+  assert.equal(characterGeometry(kit,'breastFeathers'),geometry,'the wrap is built once per scene');
+  geometry.dispose();kit.dispose();
+});
+
 test('rounded-square helmet cheeks retain a closely fitted visor and rim on the actual curved shell', () => {
   const kit = new SceneKit(), all = new THREE.Group(), vertex = new THREE.Vector3();
   for (const character of members.filter(character => ['bridge-jarvis','bridge-scout'].includes(character.id) || character.id.startsWith('intake-'))) {
@@ -252,8 +282,8 @@ test('the cape lining clears the real torso around the shoulders, sides, and bac
   const body=model.userData.personality.body,shell=body.getObjectByName('wayfinderBody');body.updateWorldMatrix(true,true);
   for(let row=0;row<=12;row++)for(let col=0;col<=24;col++){
     const t=row/12,bound=.20+1.05*Math.sin(t*Math.PI/2),angle=bound+col/24*(Math.PI*2-bound*2);
-    const lining=new THREE.Vector3(...navigatorCapePoint(t,angle,.014)).applyMatrix4(body.matrixWorld);
-    const center=new THREE.Vector3(0,.29-t*.72,0).applyMatrix4(body.matrixWorld),outward=lining.clone().sub(center).normalize();
+    const point=navigatorCapePoint(t,angle,.014),lining=new THREE.Vector3(...point).applyMatrix4(body.matrixWorld);
+    const center=new THREE.Vector3(0,point[1],0).applyMatrix4(body.matrixWorld),outward=lining.clone().sub(center).normalize();
     const hit=new THREE.Raycaster(center.clone().addScaledVector(outward,2),outward.clone().negate()).intersectObject(shell,false)[0];
     assert.ok(hit && lining.distanceTo(center)>hit.point.distanceTo(center)+.006,'cloth remains outside the actual torso');
   }
@@ -324,7 +354,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'intake-beacon':['wayfinderBody','lanternCap'],
     'intake-relay':['wayfinderBody','scroll','book'],
     'intake-compass':['wayfinderBody','tuft','circuit-bib'],
-    'support-beacon':['owlBody','lanternCap','ring'],
+    'support-beacon':['embracingBody','lanternCap','ring'],
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
     'reflection-echo':['paperBody','paperEchoHead','paperOwlWingL','paperOwlWingR','ring'],
     'reflection-quill':['paperBody','paperWing','quill-pencil'],
