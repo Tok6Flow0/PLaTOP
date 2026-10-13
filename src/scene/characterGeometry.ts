@@ -210,13 +210,13 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
  * pasted onto the belly. The sweep is built once and uses the existing joint. */
 function embracingArm():THREE.BufferGeometry {
   const origin=new THREE.Vector3(.245,.23,.05);
-  const curve=new THREE.CatmullRomCurve3([[.245,.23,.05],[.25,.14,.13],[.23,0,.19],[.115,-.095,.22],[.04,-.10,.215]].map(p=>new THREE.Vector3(...p).sub(origin)));
+  const curve=new THREE.CatmullRomCurve3([[.245,.23,.05],[.25,.13,.13],[.20,.035,.22],[.065,.015,.245],[-.055,.035,.245]].map(p=>new THREE.Vector3(...p).sub(origin)));
   const rows=12,columns=12,frames=curve.computeFrenetFrames(rows,false),positions:number[]=[],indices:number[]=[];
   for(let row=0;row<=rows;row++){
     const t=row/rows,centre=curve.getPointAt(t),radius=.104*Math.pow(Math.max(0,Math.sin(Math.PI*t)),.45);
     for(let col=0;col<=columns;col++){
       const angle=col/columns*Math.PI*2,delta=frames.normals[row].clone().multiplyScalar(Math.cos(angle)*radius).addScaledVector(frames.binormals[row],Math.sin(angle)*radius);
-      positions.push(centre.x+delta.x,centre.y+delta.y,centre.z+delta.z*.80);
+      positions.push(Math.max(.0015,centre.x+origin.x+delta.x)-origin.x,centre.y+delta.y,centre.z+delta.z*.80);
       if(row<rows&&col<columns){const a=row*(columns+1)+col,b=a+1,c=a+columns+1,d=c+1;indices.push(a,b,c,b,d,c);}
     }
   }
@@ -254,12 +254,13 @@ function cape(): THREE.BufferGeometry {
 }
 
 function feather(): THREE.BufferGeometry {
-  const geometry = new THREE.SphereGeometry(.5, 8, 4), position = geometry.attributes.position;
-  for (let i = 0; i < position.count; i++) {
-    const y = position.getY(i), taper = .08 + .92 * Math.pow(Math.max(0,y + .5),.65);
-    position.setXYZ(i, position.getX(i) * taper, y < -.20 ? -.20 + (y + .20) * 1.38 : y, position.getZ(i));
-  }
-  return smoothDeformedSurface(geometry);
+  // A lightly cupped, thin feather, not a stretched solid diamond. The same
+  // closed outline works on the breast and on the overlapping wing fans.
+  const outline:Tuple[]=[[0,.5,0],[-.28,.44,0],[-.45,.24,0],[-.46,.04,0],[-.35,-.23,0],[-.17,-.48,0],[0,-.62,0],[.14,-.47,0],[.31,-.23,0],[.42,.04,0],[.40,.26,0],[.25,.44,0]];
+  const points:Tuple[]=[...outline,[0,.02,.10],...outline.map(([x,y,z])=>[x,y,z-.014] as Tuple),[0,.02,.086]];
+  const faces:number[][]=[];
+  for(let i=0;i<12;i++){const j=(i+1)%12;faces.push([i,12,j],[i+13,j+13,25],[i,j,j+13,i+13]);}
+  return smoothDeformedSurface(polyhedron(points,faces));
 }
 
 function polyhedron(vertices: Tuple[], faces: number[][],faceColors?: string[]): THREE.BufferGeometry {
@@ -356,9 +357,9 @@ function paperOwlHead(quill=false): THREE.BufferGeometry {
     const center=vertices.length;vertices.push([side?.18:-.18,-.015,.46]);
     for(let i=0;i<cheek.length;i++){const a=outline.length+side*cheek.length+i,b=outline.length+side*cheek.length+(i+1)%cheek.length;faces.push([a,b,center]);colors.push('#edd6b0');}
   }
-  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.78,y*.85,.015] as Tuple));
-  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.53,y*.69,-.12] as Tuple));
-  const rearCenter=vertices.length;vertices.push([0,.03,-.16]);
+  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.87,y*.92,.21-Math.abs(x)*.12] as Tuple));
+  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.58,y*.70,.03] as Tuple));
+  const rearCenter=vertices.length;vertices.push([-.035,.03,.08]);
   for(let i=0;i<outline.length;i++){
     const j=(i+1)%outline.length;faces.push([i,shoulder+i,shoulder+j],[i,shoulder+j,j],[shoulder+i,back+i,back+j],[shoulder+i,back+j,shoulder+j],[back+j,back+i,rearCenter]);
     colors.push('#c7ad8a','#d0b591','#c1a582','#c8b18c','#ba9e7a');
@@ -484,7 +485,7 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
         const theta=angle+point.x*.225/Math.max(.12,radius*.70);
-        const relief=(.016+point.z*.026+(4-row)*.012)*(1-.90*THREE.MathUtils.smoothstep(py,.14,.29));
+        const relief=(.007+point.z*.026+(4-row)*.0025)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
@@ -507,7 +508,9 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
     const n=geometry.attributes.normal,a=new THREE.Vector3(),b=new THREE.Vector3();
     for(let i=0;i<n.count;i++){
       a.fromBufferAttribute(n,i);b.fromBufferAttribute(radial,i);
-      if(a.dot(b)>0)a.lerp(b,.16).normalize();
+      // Very thin overlapping plumage follows the body's soft shading. A
+      // beveled-solid normal would make each feather read like metal armor.
+      if(a.dot(b)>0)a.lerp(b,.92).normalize();
       n.setXYZ(i,a.x,a.y,a.z);
     }
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
@@ -785,12 +788,24 @@ export function characterSmile(kit: SceneKit, parent: THREE.Object3D, color: str
 
 /** Small inlaid strokes share their tube surface across all scene characters. */
 export function characterStroke(kit: SceneKit, parent: THREE.Object3D, color: string, points: Tuple[],
-  radius = .008, finish: CharacterFinish = 'brass'): THREE.Mesh {
-  const cache = owned(kit).geometry, key = `stroke:${radius}:${points.map(point => point.join(':')).join(';')}`;
+  radius = .008, finish: CharacterFinish = 'brass',rounded=false): THREE.Mesh {
+  const cache = owned(kit).geometry, key = `stroke:${radius}:${rounded}:${points.map(point => point.join(':')).join(';')}`;
   let geometry = cache.get(key);
   if (!geometry) {
     const curve = new THREE.CatmullRomCurve3(points.map(point => new THREE.Vector3(...point)));
-    geometry = new THREE.TubeGeometry(curve, Math.max(4, points.length * 2), radius, 4, false); cache.set(key, geometry);
+    geometry = new THREE.TubeGeometry(curve, Math.max(4, points.length * 2), radius, rounded?8:4, false);
+    if(rounded){
+      const parts=[geometry.toNonIndexed(),...([points[0],points[points.length-1]].map(p=>{
+        const sphere=new THREE.SphereGeometry(radius,8,6).translate(...p),part=sphere.toNonIndexed();sphere.dispose();return part;
+      }))];
+      geometry.dispose();geometry=new THREE.BufferGeometry();
+      for(const name of ['position','normal','uv']){
+        const size=parts[0].attributes[name].itemSize;
+        geometry.setAttribute(name,new THREE.Float32BufferAttribute(parts.flatMap(part=>Array.from(part.attributes[name].array)),size));
+      }
+      parts.forEach(part=>part.dispose());
+    }
+    cache.set(key, geometry);
   }
   const mesh = new THREE.Mesh(geometry, characterMaterial(kit, color, finish));
   mesh.castShadow = true; mesh.receiveShadow = true; parent.add(mesh); return mesh;
@@ -799,7 +814,7 @@ export function characterStroke(kit: SceneKit, parent: THREE.Object3D, color: st
 export function characterEyeArc(kit: SceneKit, parent: THREE.Object3D, color: string, at: Tuple,
   width = .045, height = .026, finish: CharacterFinish = 'ink',strokeRadius=.010): THREE.Mesh {
   const mesh = characterStroke(kit, parent, color,
-    [[-width, 0, 0], [-width * .6, height * .82, 0], [0, height, 0], [width * .6, height * .82, 0], [width, 0, 0]], strokeRadius, finish);
+    [[-width, 0, 0], [-width * .6, height * .82, 0], [0, height, 0], [width * .6, height * .82, 0], [width, 0, 0]], strokeRadius, finish,strokeRadius>.012);
   mesh.position.set(...at); return mesh;
 }
 

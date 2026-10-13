@@ -28,7 +28,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 9 | 7.7/10 | 8.2/10 | 7.9/10 — B |
 | Pass 10 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
 | Pass 11 | 8.1/10 | 8.1/10 | 8.1/10 — B+ |
-| Pass 12 | Pending | Pending | Independent review pending |
+| Pass 12 | 8.2/10 | 8.1/10 | 8.1/10 — B+ |
+| Pass 13 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -111,6 +112,13 @@ HR companion heights and the navigator cape's flare are also revised.
 The all-angle inspection exposed a mirrored-normal bug and an inside-out arm;
 both were fixed. Four new tests cover thin closed sheets, mirrored color and
 normal fidelity, and outward-facing arms. All 263 tests and the build pass.
+The twelfth review still found thick feather scales, solid-looking paper heads,
+low separated Beacon hands and exposed white mittens on the navigator cape.
+It did not approve the submission. Pass 13 replaces those mittens with joined
+side flaps, brings Beacon's hands into a clasp, rounds its eye-stroke ends,
+thins the owl's feather surfaces and paper-head backs, and refines eye depth
+and inward-looking posture. All 263 tests and the production build pass. No
+additional live render pass is introduced.
 
 ## Local-clock atmosphere
 
@@ -157,6 +165,8 @@ test suites were stopped during the samples.
 | Pass 11 night | 59.99 | 2.8 ms | 91 | 330,659 |
 | Pass 12 noon | 59.99 | 4.4 ms | 91 | 330,835 |
 | Pass 12 night | 60.01 | 4.6 ms | 91 | 330,835 |
+| Pass 13 noon | 60.01 | 4.1 ms | 91 | 329,523 |
+| Pass 13 night | 60.00 | 4.1 ms | 91 | 329,523 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed

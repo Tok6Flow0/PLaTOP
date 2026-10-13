@@ -239,12 +239,12 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], 'glaze');
         sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [.045, .117, .117], undefined, 'glaze');
       });
-      limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7');
-      if(wayfinder) data.arms.forEach((arm,index)=>{
-        const sign=index?1:-1;arm.position.x=sign*.385;arm.position.y=.11;arm.position.z=.025;
-        arm.children[0].scale.set(.15,.44,.22);arm.children[0].position.y=-.13;
-        arm.children[1].scale.set(.15,.13,.18);arm.children[1].position.y=-.30;
+      limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7',false,wayfinder);
+      if(wayfinder) [-1,1].forEach(sign=>{
+        const arm=joint(body,sign<0?'arm_l':'arm_r',[sign*.375,.10,.025]);
+        sculpt(arm,'bean',bodyColor,[0,-.15,0],[.19,.61,.31],undefined,'glaze');
         sculpt(arm,'detail','#2d4250',[sign*.025,-.05,.116],[.085,.23,.025],[0,sign*.4,0],'clay');
+        data.arms.push(arm);
       });
       if(wayfinder&&id!=='intake-jarvis'){
         stroke(body,'#c3ad83',[[-.275,.19,.30],[-.255,-.04,.32],[-.15,-.16,.32],[0,-.20,.32],[.15,-.16,.32],[.255,-.04,.32],[.275,.19,.30]],.005,'clay');
@@ -322,10 +322,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       if (navy) sculpt(head, 'bean', '#c49b54', [sign * .162, .002, .289], [.157, .181, .051], undefined, 'brass');
       if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162+(navy?.014:0), .011, navy?.313:.202], [navy ? .105 : .092, navy ? .125 : .110, .045], undefined, 'ink'); data.eyes.push(eye);
-        data.highlights.push(sculpt(head, 'detail', '#fff9e7', [sign * .162 - (navy?.003:.016), navy?.044:.043, navy?.330:.224], [navy?.025:.023, navy?.030:.028, .010], undefined, 'glaze'));
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162+(navy?.029:.006), navy?-.002:.011, navy?.313:.195], [navy ? .105 : .083, navy ? .125 : .098, navy?.045:.024], undefined, 'ink'); data.eyes.push(eye);
+        data.highlights.push(sculpt(head, 'detail', '#fff9e7', [sign * .162 + (navy?.012:-.010), navy?.031:.043, navy?.330:.208], [navy?.025:.020, navy?.030:.022, .006], undefined, 'glaze'));
       }
-      if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.184,.042,.223],[sign*.215,.035,.212],[sign*.235,.050,.194]],.007,'ink');
+      if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.50,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
       if(navy) sculpt(wing,'featherCore','#31485e',[sign*.015,-.145,0],[.205,.53,.30],[0,0,sign*.23],'feather');
@@ -393,9 +393,9 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
   }
   if(wayfinder)head.rotation.z=id==='intake-beacon'?-.095:id==='intake-relay'?.045:id==='intake-compass'?.11:-.025;
-  if(id==='reflection-echo'){head.rotation.z=-.07;head.rotation.y=.14;}
-  if(id==='reflection-quill'){head.rotation.z=.045;head.rotation.y=-.12;}
-  if(id==='email-owl'){head.rotation.z=-.12;head.rotation.y=.075;}
+  if(id==='reflection-echo'){head.rotation.z=-.12;head.rotation.y=.28;}
+  if(id==='reflection-quill'){head.rotation.z=.09;head.rotation.y=-.24;}
+  if(id==='email-owl'){head.rotation.z=-.16;head.rotation.y=.12;}
   if(id==='support-beacon'){head.rotation.z=.045;head.rotation.y=-.035;}
   data.restHead=data.head.rotation.clone();
   data.eyes.forEach(eye => { eye.userData.restEyeY = eye.scale.y; });
