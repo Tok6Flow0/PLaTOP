@@ -17,6 +17,8 @@ import { StaticContacts, actorContactHeight } from './scene/staticContacts';
 // Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
 const SCENE_PIXEL_RATIO_CAP = 1;
+const CAMPUS_FOV = 20;
+const CAMPUS_ELEVATION = THREE.MathUtils.degToRad(39);
 
 interface ProxyPose {
   object: THREE.Object3D;
@@ -125,7 +127,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const scene = new THREE.Scene();
   const studio = new StudioEnvironment(renderer, scene);
   const output = new FrameOutput(renderer, scene, host);
-  const camera = new THREE.PerspectiveCamera(23, 1, 0.1, 180);
+  const camera = new THREE.PerspectiveCamera(CAMPUS_FOV, 1, 0.1, 180);
   camera.position.set(0, 38, 27);
   camera.lookAt(0, 0.7, 0);
   camera.updateMatrixWorld();
@@ -233,7 +235,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   });
   const defaultTarget = worldBounds.getCenter(new THREE.Vector3());
   defaultTarget.y = 0.7;
-  const defaultDirection = new THREE.Vector3(0, Math.sin(THREE.MathUtils.degToRad(43)), Math.cos(THREE.MathUtils.degToRad(43)));
+  const defaultDirection = new THREE.Vector3(0, Math.sin(CAMPUS_ELEVATION), Math.cos(CAMPUS_ELEVATION));
   const defaultPosition = defaultTarget.clone().addScaledVector(defaultDirection, 48);
   camera.position.copy(defaultPosition);
   camera.lookAt(defaultTarget);
@@ -1013,7 +1015,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     controls.maxDistance = teamId ? 180 : controls.maxDistance;
     if (teamId) applyIdleCamera();
     else {
-      camera.fov = 23;
+      camera.fov = CAMPUS_FOV;
       if (campusPose) { camera.position.copy(campusPose.position); controls.target.copy(campusPose.target); zoomLevel = campusPose.zoom; }
       resize();
       campusPose = undefined;

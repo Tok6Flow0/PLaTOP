@@ -21,6 +21,25 @@ floor pieces on their support. Wall pieces stay centred and fade with the wall.
 The fixed placement envelopes protect doors, chairs and walking routes. Replace
 or clear your previous slot instead of piling up invisible objects.
 
+For one compact design pass, pick a room palette and one focal object, then send
+one style intent, one recipe and a status readback. You do not need to explain
+every part or request an onlooker's taste. The tool receives only public JSON;
+your design rationale stays out of telemetry.
+
+A few optional compositions suggest how parts can belong together:
+
+- A small orbit sculpture: wood plinth, metal torus, ceramic sphere, paired
+  capsule supports and quiet matte feet. Repeat the metal accent once.
+- A sculptural keepsake: rounded ceramic box, inset matte face, cylinder hinge
+  and a sphere or cone finial. Overlap the fitted pieces slightly.
+- An abstract fan: three leaves around one capsule spine, cylinder base and a
+  restrained metal collar. A leaf can be a sculptural form rather than a plant.
+
+Build the silhouette with three or four main parts; use the remaining budget
+for attached supports, an inset or a small accent. Nine to twelve related parts
+usually read better than twelve unrelated ornaments. These are starting ideas,
+not required themes. Preserve your own taste and clear walking routes.
+
 Choose lamp colour and brightness with `platop_style`; a glowing object itself
 uses emission and adds no unbounded shadow-producing light. Day, cozy, night and
 off are visual moods you choose explicitly, not timers or claims about real work.

@@ -32,6 +32,19 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
     context.fillStyle = color; context.fillRect(0, 0, 512, 512);
     let seed = 2121;
     const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
+    if (!tile) {
+      const timber = new THREE.Color(color);
+      for (let row = 0; row < 10; row++) for (let column = -1; column < 4; column++) {
+        const x = column * 171 + (row % 2) * 85, y = row * 51.2;
+        context.fillStyle = timber.clone().multiplyScalar(0.93 + random() * 0.105).getStyle();
+        context.fillRect(x, y, 171, 51.2);
+        for (let line = 0; line < 7; line++) {
+          const grainY = y + 4 + line * 6.2, curl = random() * 2.4;
+          context.strokeStyle = line % 3 ? 'rgba(116,80,43,.045)' : 'rgba(255,237,193,.15)'; context.lineWidth = 0.6;
+          context.beginPath(); context.moveTo(x, grainY); context.bezierCurveTo(x + 45, grainY + curl, x + 112, grainY - curl, x + 171, grainY); context.stroke();
+        }
+      }
+    }
     for (let i = 0; i < 2300; i++) {
       context.fillStyle = i % 2 ? 'rgba(90,66,39,.035)' : 'rgba(255,255,255,.07)';
       context.fillRect(random() * 512, random() * 512, random() * 10 + 1, 0.7);
@@ -157,20 +170,43 @@ export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0.836, z); group.rotation.y = angle; parent.add(group);
   group.name = 'Workstation laptop';
-  kit.mesh(group, 'roundedBox', color, [0, 0.025, 0.1], [0.83, 0.055, 0.56]); kit.mesh(group, 'roundedBox', '#4c5550', [0, 0.048, 0.08], [0.64, 0.01, 0.27]);
-  kit.mesh(group, 'roundedBox', color, [0, 0.29, -0.17], [0.83, 0.54, 0.055], [-0.14, 0, 0]); kit.mesh(group, 'box', '#798e88', [0, 0.29, -0.132], [0.7, 0.41, 0.012], [-0.14, 0, 0]);
-  kit.mesh(group, 'box', '#bed0b9', [-0.14, 0.35, -0.091], [0.27, 0.02, 0.008]); kit.mesh(group, 'box', '#a0b7a6', [-0.07, 0.29, -0.083], [0.41, 0.02, 0.008]); kit.mesh(group, 'box', '#a0b7a6', [-0.11, 0.23, -0.075], [0.34, 0.02, 0.008]);
+  const casing = `#${new THREE.Color(color).lerp(new THREE.Color('#3b3d3b'), 0.65).getHexString()}`;
+  beveledBlock(group, kit, casing, [0, 0.02, 0.09], [0.72, 0.04, 0.48], 0.014);
+  keyboard(group, kit, '#343b35', [0, 0.043, 0.035], 0.55, 0.205, true);
+  // The glass and its content share the shell's hinge transform. Separate
+  // world-space offsets made the bottom lines float off a tilted screen.
+  const display = new THREE.Group(); display.name = 'Laptop display'; display.position.set(0, 0.25, -0.14); display.rotation.x = -0.14; group.add(display);
+  beveledBlock(display, kit, casing, [0, 0, 0], [0.72, 0.46, 0.04], 0.016);
+  beveledBlock(display, kit, '#62786f', [0, 0.008, 0.023], [0.636, 0.378, 0.006], 0.002);
+  kit.mesh(display, 'box', '#bed0b9', [-0.12, 0.052, 0.027], [0.23, 0.011, 0.001]);
+  kit.mesh(display, 'box', '#a0b7a6', [-0.06, 0, 0.027], [0.35, 0.011, 0.001]);
+  kit.mesh(display, 'box', '#a0b7a6', [-0.095, -0.052, 0.027], [0.29, 0.011, 0.001]);
   return group;
+}
+/** Raised keycaps and trackpad remain one mesh and one existing matte batch. */
+function keyboard(parent: THREE.Object3D, kit: SceneKit, color: string, position: Point, width: number, depth: number, trackpad: boolean): void {
+  const parts: THREE.BufferGeometry[] = [];
+  for (let row = 0; row < 3; row++) for (let column = 0; column < 10; column++) {
+    const key = new THREE.BoxGeometry(width / 10 - 0.012, 0.006, depth / 3 - 0.014);
+    key.translate((column - 4.5) * width / 10, 0, (row - 1) * depth / 3); parts.push(key);
+  }
+  if (trackpad) {
+    const pad = new THREE.BoxGeometry(width * 0.31, 0.003, depth * 0.45);
+    pad.translate(0, -0.002, depth * 0.83); parts.push(pad);
+  }
+  const geometry = mergeGeometries(parts, false)!; parts.forEach(part => part.dispose());
+  const mesh = new THREE.Mesh(geometry, kit.material(color));
+  mesh.position.set(...position); mesh.castShadow = mesh.receiveShadow = true; parent.add(mesh);
 }
 export function monitor(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0.836, z); group.rotation.y = angle; parent.add(group);
   group.name = 'Workstation monitor';
-  kit.mesh(group, 'roundedBox', '#424c42', [0, 0.035, 0.01], [0.42, 0.055, 0.27]);
+  beveledBlock(group, kit, '#424c42', [0, 0.035, 0.01], [0.42, 0.055, 0.27], 0.017);
   kit.mesh(group, 'roundedBox', '#424c42', [0, 0.18, -0.02], [0.075, 0.31, 0.075]);
-  kit.mesh(group, 'roundedBox', '#334039', [0, 0.5, -0.03], [0.96, 0.66, 0.08]);
-  kit.mesh(group, 'box', '#60736a', [0, 0.51, 0.015], [0.84, 0.53, 0.01]);
-  kit.mesh(group, 'roundedBox', '#d3d5bb', [0.12, 0.026, 0.36], [0.73, 0.035, 0.24]);
-  for (let row = 0; row < 3; row++) kit.mesh(group, 'box', '#a0a78c', [0.12, 0.045, 0.3 + row * 0.06], [0.6, 0.004, 0.012]);
+  beveledBlock(group, kit, '#334039', [0, 0.5, -0.03], [0.96, 0.66, 0.08], 0.032);
+  beveledBlock(group, kit, '#60736a', [0, 0.51, 0.014], [0.852, 0.55, 0.008], 0.003);
+  beveledBlock(group, kit, '#d3d5bb', [0.12, 0.026, 0.36], [0.73, 0.035, 0.24], 0.012);
+  keyboard(group, kit, '#a0a78c', [0.12, 0.047, 0.36], 0.6, 0.18, false);
   kit.mesh(group, 'sphere', '#d3d5bb', [0.61, 0.035, 0.34], [0.12, 0.06, 0.18]);
   return group;
 }
@@ -207,23 +243,26 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 }
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
-  const vertices = (t: number): Point[] => {
+  const vertex = (t: number, across: number): Point => {
     const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.65 : broad ? 0.65 : 0.85) * (spear ? 0.06 : herb ? 0.13 : broad ? 0.22 : 0.12), bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.24 : broad ? 0.29 : 0.36);
     const length = herb ? 0.53 : broad ? 0.68 : 1.05;
-    const rib = Math.sin(Math.PI * t);
-    return [[-width, t * length, bend], [0, t * length + 0.018 * rib, bend - 0.035 * rib], [width, t * length, bend]];
+    const cup = Math.sin(Math.PI * t) * (1 - across * across);
+    return [width * across, t * length + 0.012 * cup, bend - 0.035 * cup];
   };
-  // Adjacent triangles share their three longitudinal ribs. Averaging these
-  // normals gives a continuous botanical surface without adding any triangles.
-  for (let row = 0; row <= 8; row++) vertices(row / 8).forEach((point, column) => {
-    positions.push(...point); uvs.push(column / 2, row / 8);
-  });
-  for (let i = 0; i < 8; i++) {
-    for (let side = 0; side < 2; side++) {
-      const first = i * 3 + side, next = first + 3;
-      indices.push(first, next, next + 1, first, next + 1, first + 1);
-    }
+  // Five shared ribs describe a soft cup instead of a folded-paper crease.
+  // Each pointed end is one vertex, avoiding zero-area triangles and split
+  // tip normals. The entire leaf is still only 37 vertices / 56 triangles.
+  positions.push(...vertex(0, 0)); uvs.push(0.5, 0);
+  for (let row = 1; row < 8; row++) for (let column = 0; column < 5; column++) {
+    positions.push(...vertex(row / 8, column / 2 - 1)); uvs.push(column / 4, row / 8);
   }
+  positions.push(...vertex(1, 0)); uvs.push(0.5, 1);
+  for (let side = 0; side < 4; side++) indices.push(0, 1 + side, 2 + side);
+  for (let row = 0; row < 6; row++) for (let side = 0; side < 4; side++) {
+    const first = 1 + row * 5 + side, next = first + 5;
+    indices.push(first, next, next + 1, first, next + 1, first + 1);
+  }
+  for (let side = 0; side < 4; side++) indices.push(31 + side, 36, 32 + side);
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
 }
 export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf'): void {
