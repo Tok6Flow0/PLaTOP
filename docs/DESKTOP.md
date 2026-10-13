@@ -44,7 +44,11 @@ npm run desktop -- --no-open
 ## Window controls
 
 - The window starts at 1000 × 720 and can resize down to 440 × 420 content pixels.
-- **Float Window** keeps it above normal windows and remembers the setting.
+- **Float Window** keeps it above normal windows and remembers the setting; it is off by default.
+- The interactive window stays on its current or assigned macOS desktop Space. It
+  does not follow you across all desktops. Use the Dock’s **Options → Assign To →
+  This Desktop** for a dedicated workspace. The click-through desktop background
+  can still appear across desktops.
 - The yellow title bar button or **⌘M** minimizes it normally.
 - The close button or **⌘W** hides it. **Open Playground** in the menu bar icon,
   the app menu, or the Dock reopens it.

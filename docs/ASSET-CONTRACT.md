@@ -67,7 +67,7 @@ Characters with the same spoken name in different teams remain separate assets a
 
 ## Application behavior and review
 
-The six offices use a cozy perspective view with warm off-white, sage, teal and terracotta, now viewed through a bounded perspective camera. Each team stays in its own office. Plant, lamp and abstract art decorations are controlled independently by application state. Office decoration is open to the teams' tastes; there is no required CEO tribute.
+The six offices use a cozy perspective view with warm off-white, sage, teal and terracotta, now viewed through a bounded perspective camera. Each team owns an office; characters can walk through the connected campus and visit other offices. Screens and chairs face their assigned characters. The viewer does not choose their decorations: agents compose bounded local primitive recipes through the PLaTOP skill, with one asset per desk, shelf, wall, floor or festive slot. Office decoration is open to the teams' tastes; there is no required CEO tribute.
 
 The scene renders at a maximum 24 fps while any team is active and 4 fps for sleep-only animation. Neutral scenes, pause, reduced motion, a hidden document, or a minimized native window have no repeating animation timer. Camera input redraws at up to 24 fps even when characters are sleeping or frozen. Device pixel ratio is capped at 1.5 while active and 1 for static/sleep scenes. Reduced motion shows informative still poses.
 

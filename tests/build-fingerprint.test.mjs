@@ -28,7 +28,7 @@ test('launch freshness rejects unstamped builds, source/assets/config edits and 
   assert.equal(await isBuildCurrent(root), false);
   await stampBuild(root);
   assert.equal(await isBuildCurrent(root), true);
-  for (const file of ['src/app.ts', 'public/toy.glb', 'vite.config.ts']) {
+  for (const file of ['src/app.ts', 'public/toy.glb', 'vite.config.ts', 'server/protocol.mjs', 'server/office-protocol.mjs']) {
     const before = await readFile(path.join(root, file));
     await writeFile(path.join(root, file), 'changed');
     assert.equal(await isBuildCurrent(root), false, file);

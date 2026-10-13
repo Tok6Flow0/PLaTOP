@@ -133,20 +133,25 @@ export function stool(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   kit.mesh(parent, 'cylinder', '#a08055', [x, 0.51, z], [0.68, 0.12, 0.68]); kit.mesh(parent, 'sphere', color, [x, 0.575, z], [0.68, 0.16, 0.68]);
   for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) kit.mesh(parent, 'roundedDetail', '#9d7c52', [x + Math.sin(angle) * 0.2, 0.29, z + Math.cos(angle) * 0.2], [0.085, 0.45, 0.085]);
 }
-export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): void {
+export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0, z); group.rotation.y = angle; parent.add(group);
+  group.name = 'Desk chair';
   stool(group, kit, 0, 0, color);
   [-0.27, 0.27].forEach((dx) => kit.mesh(group, 'roundedDetail', '#96714c', [dx, 0.79, -0.23], [0.075, 0.55, 0.075]));
   kit.mesh(group, 'roundedBox', color, [0, 1.02, -0.25], [0.65, 0.53, 0.13], [0.1, 0, 0]);
+  return group;
 }
-export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): void {
+export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0.836, z); group.rotation.y = angle; parent.add(group);
+  group.name = 'Workstation laptop';
   kit.mesh(group, 'roundedBox', color, [0, 0.025, 0.1], [0.83, 0.055, 0.56]); kit.mesh(group, 'roundedBox', '#4c5550', [0, 0.048, 0.08], [0.64, 0.01, 0.27]);
   kit.mesh(group, 'roundedBox', color, [0, 0.29, -0.17], [0.83, 0.54, 0.055], [-0.14, 0, 0]); kit.mesh(group, 'box', '#798e88', [0, 0.29, -0.132], [0.7, 0.41, 0.012], [-0.14, 0, 0]);
   kit.mesh(group, 'box', '#bed0b9', [-0.14, 0.35, -0.091], [0.27, 0.02, 0.008]); kit.mesh(group, 'box', '#a0b7a6', [-0.07, 0.29, -0.083], [0.41, 0.02, 0.008]); kit.mesh(group, 'box', '#a0b7a6', [-0.11, 0.23, -0.075], [0.34, 0.02, 0.008]);
+  return group;
 }
-export function monitor(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, angle = 0): void {
+export function monitor(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0.836, z); group.rotation.y = angle; parent.add(group);
+  group.name = 'Workstation monitor';
   kit.mesh(group, 'roundedBox', '#424c42', [0, 0.035, 0.01], [0.42, 0.055, 0.27]);
   kit.mesh(group, 'roundedBox', '#424c42', [0, 0.18, -0.02], [0.075, 0.31, 0.075]);
   kit.mesh(group, 'roundedBox', '#334039', [0, 0.5, -0.03], [0.96, 0.66, 0.08]);
@@ -154,6 +159,7 @@ export function monitor(parent: THREE.Object3D, kit: SceneKit, x: number, z: num
   kit.mesh(group, 'roundedBox', '#d3d5bb', [0.12, 0.026, 0.36], [0.73, 0.035, 0.24]);
   for (let row = 0; row < 3; row++) kit.mesh(group, 'box', '#a0a78c', [0.12, 0.045, 0.3 + row * 0.06], [0.6, 0.004, 0.012]);
   kit.mesh(group, 'sphere', '#d3d5bb', [0.61, 0.035, 0.34], [0.12, 0.06, 0.18]);
+  return group;
 }
 export function paper(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, angle: number): void {
   const group = new THREE.Group(); group.position.set(x, 0.836, z); group.rotation.y = angle; parent.add(group);

@@ -5,7 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
 import { MAX_BODY_BYTES, SOURCES, TEAM_IDS, parseUpdate, parseUpdates } from '../server/protocol.mjs';
 import { requestActivity as request } from '../server/client.mjs';
+import { requestAction, requestDecoration } from '../server/client.mjs';
+import { parseOfficeCommand } from '../server/office-cli.mjs';
 const USAGE = `PLaTOP local activity\n\n  node scripts/platop.mjs status\n  node scripts/platop.mjs set <team> <state> [--source skill|codex|demo|manual]\n  node scripts/platop.mjs snapshot <public-snapshot.json>\n  node scripts/platop.mjs run <team> [--source skill|codex|demo|manual] -- <command> [args...]\n\nTeams: merchant, hr, intake, support, reflection, email\nStates: active, sleeping, waiting, unknown\n`;
+const OFFICE_USAGE = `\nLocal office visuals (inline JSON only):\n  node scripts/platop.mjs action <team> <kind> [<actor-and-target-json>]\n  node scripts/platop.mjs decorate <team> <slot> <parts-json>\n\nAction options accept only actorId and target. Empty parts [] clears the slot.\n`;
 
 function sourceOption(args) {
   if (args.length === 0) return 'skill';
@@ -52,13 +55,20 @@ async function run(teamId, args) {
 
 export async function main(args = process.argv.slice(2)) {
   const [command = 'status', ...rest] = args;
-  if (['--help', '-h', 'help'].includes(command)) { process.stdout.write(USAGE); return 0; }
+  if (['--help', '-h', 'help'].includes(command)) { process.stdout.write(USAGE + OFFICE_USAGE); return 0; }
   if (command === 'status' && rest.length === 0) { console.log(JSON.stringify(await request(), null, 2)); return 0; }
   if (command === 'set' && rest.length >= 2) {
     const [teamId, state, ...options] = rest;
     const payload = parseUpdate({ teamId, state, source: sourceOption(options) });
     await request(payload);
     console.log(`PLaTOP: ${teamId} ${state}.`);
+    return 0;
+  }
+  if (command === 'action' || command === 'decorate') {
+    const operation = parseOfficeCommand(command, rest);
+    if (command === 'action') await requestAction(operation.arguments);
+    else await requestDecoration(operation.arguments);
+    console.log(`PLaTOP: ${command === 'action' ? 'action queued' : 'decoration saved'}.`);
     return 0;
   }
   if (command === 'snapshot' && rest.length === 1) {

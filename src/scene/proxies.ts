@@ -3,6 +3,7 @@ import type { Activity, Character } from '../types';
 import { SceneKit } from './primitives';
 
 interface Personality {
+  kind: Character['kind'];
   head: THREE.Group;
   body: THREE.Group;
   arms: THREE.Group[];
@@ -58,7 +59,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const headColor = kind === 'robot' ? id === 'hr-lens' ? '#dfc797' : id === 'hr-relay' ? '#ddcaa3' : cream : character.color;
   const body = joint(group, 'body', [0, 0.57, 0]);
   const head = joint(group, 'head', [0, 1.08, 0]);
-  const data: Personality = { body, head, bodyY: 0.57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
+  const data: Personality = { kind, body, head, bodyY: 0.57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
   const faceMaterial = kit.material(ink); faceMaterial.roughness = 0.31;
 
   if (kind === 'robot') {
@@ -140,7 +141,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       kit.mesh(head, 'cone', feathers, [sign * 0.25, 0.31, -0.045], [0.20, 0.25, 0.19], [0, 0, sign * -0.25]);
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * 0.34, 0.13, 0]);
       kit.mesh(wing, 'sphere', feathers, [0, -0.14, 0], [0.18, 0.53, 0.32], [0, 0, sign * 0.25]); data.wings.push(wing);
-      kit.mesh(group, 'sphere', gold, [sign * 0.15, 0.08, 0.08], [0.20, 0.10, 0.24]);
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * 0.15, 0.08, 0.08]);
+      kit.mesh(foot, 'sphere', gold, [0, 0, 0], [0.20, 0.10, 0.24]); data.feet.push(foot);
     });
     kit.mesh(head, 'cone', gold, [0, -0.10, 0.345], [0.12, 0.16, 0.13], [Math.PI / 2, 0, Math.PI]);
     if (id === 'reflection-quill') kit.mesh(body, 'cylinder', '#bb9456', [0.37, 0.02, 0.18], [0.045, 0.50, 0.045], [0, 0, -0.35]);
@@ -159,21 +161,79 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     kit.mesh(body, 'octahedron', '#557e76', [0, -0.015, -0.38], [0.29, 0.06, 0.35]);
   }
   data.eyes.forEach(eye => { eye.userData.restEyeY = eye.scale.y; });
+  data.feet.forEach(foot => { foot.userData.restFootY = foot.position.y; foot.userData.restFootZ = foot.position.z; });
   group.userData.personality = data;
   return group;
 }
 
 /** Small character-specific gestures; no physics, root motion or extra render loop. */
-export function animateCharacter(model: THREE.Object3D, status: Activity, time: number, index: number, moving: boolean, frozen: boolean): void {
+export interface LocomotionPose { phase: number; speed: number; seatLift: number; celebration: number; foldWings?: boolean }
+
+/** Keep authored feet grounded when the room raises a seated avatar's body. */
+export class AuthoredFootPose {
+  private groups: Array<{ feet: THREE.Object3D[]; chain: THREE.Object3D[]; applied: THREE.Vector3 }> = [];
+  private matrix = new THREE.Matrix4();
+  private inverse = new THREE.Matrix3();
+  private shift = new THREE.Vector3();
+  constructor(model: THREE.Object3D) {
+    for (const name of ['foot_l', 'foot_r']) {
+      const foot = model.getObjectByName(name);
+      if (!foot?.parent) continue;
+      const existing = this.groups.find(group => group.chain[group.chain.length - 1] === foot.parent);
+      if (existing) { existing.feet.push(foot); continue; }
+      const chain: THREE.Object3D[] = [];
+      for (let object: THREE.Object3D | null = foot.parent; object; object = object.parent) {
+        chain.unshift(object); if (object === model) break;
+      }
+      this.groups.push({ feet: [foot], chain, applied: new THREE.Vector3() });
+    }
+  }
+  restore(): void {
+    for (const group of this.groups) {
+      for (const foot of group.feet) foot.position.sub(group.applied);
+      group.applied.set(0, 0, 0);
+    }
+  }
+  apply(seatLift: number): void {
+    if (seatLift <= 0) return;
+    for (const group of this.groups) {
+      this.matrix.identity();
+      for (const object of group.chain) {
+        if (object.matrixAutoUpdate) object.updateMatrix();
+        this.matrix.multiply(object.matrix);
+      }
+      this.inverse.setFromMatrix4(this.matrix).invert();
+      this.shift.set(0, -seatLift, 0).applyMatrix3(this.inverse);
+      group.applied.copy(this.shift);
+      for (const foot of group.feet) foot.position.add(group.applied);
+    }
+  }
+}
+export function animateCharacter(model: THREE.Object3D, status: Activity, time: number, index: number, moving: boolean, frozen: boolean,
+  locomotion?: LocomotionPose): void {
   const p = model.userData.personality as Personality | undefined; if (!p) return;
   const t = frozen ? 0 : time + index * 0.7;
   const asleep = status === 'sleeping';
   const working = status === 'active' && !moving;
-  p.body.position.y = p.bodyY + (asleep ? Math.sin(t * 1.4) * 0.012 : moving ? Math.abs(Math.sin(t * 6)) * 0.028 : 0);
-  p.head.rotation.set(asleep ? 0.16 : working ? 0.09 : 0, working ? Math.sin(t * 1.3) * 0.09 : 0, asleep ? 0.10 : moving ? Math.sin(t * 6) * 0.035 : 0);
-  p.arms.forEach((arm, i) => { arm.rotation.x = moving ? Math.sin(t * 6 + i * Math.PI) * 0.28 : working ? -0.5 + Math.sin(t * 6 + i) * 0.09 : asleep ? -0.16 : 0; });
-  p.feet.forEach((foot, i) => { foot.rotation.x = moving ? Math.sin(t * 6 + i * Math.PI) * 0.25 : 0; });
-  p.wings.forEach((wing, i) => { wing.rotation.z = (i ? 1 : -1) * (moving ? Math.sin(t * 7) * 0.35 : asleep ? 0.10 : 0); });
+  const phase = locomotion?.phase ?? t * 6;
+  const stride = locomotion ? Math.min(1, locomotion.speed / 0.85) : 1;
+  const celebration = locomotion?.celebration ?? 0;
+  p.body.position.y = p.bodyY + (asleep ? Math.sin(t * 1.4) * 0.012 : moving ? Math.abs(Math.sin(phase)) * 0.028 * stride : 0);
+  p.head.rotation.set(asleep ? 0.16 : working ? 0.09 : moving ? 0.025 : 0, working ? Math.sin(t * 1.3) * 0.09 : 0, asleep ? 0.10 : moving ? Math.sin(phase) * 0.035 * stride : 0);
+  p.arms.forEach((arm, i) => { arm.rotation.x = celebration ? -1.4 * celebration : moving ? -Math.sin(phase + i * Math.PI) * 0.38 * stride : working ? -0.5 + Math.sin(t * 6 + i) * 0.09 : asleep ? -0.16 : 0; });
+  p.feet.forEach((foot, i) => {
+    const step = Math.sin(phase + i * Math.PI);
+    foot.rotation.x = moving ? Math.max(0, step) * 0.34 * stride : 0;
+    foot.position.y = foot.userData.restFootY - Math.max(0, locomotion?.seatLift ?? 0) + (moving ? Math.max(0, step) * 0.055 * stride : 0);
+    foot.position.z = foot.userData.restFootZ + (moving ? step * 0.10 * stride : Math.max(0, locomotion?.seatLift ?? 0) * 0.55);
+  });
+  p.wings.forEach((wing, i) => {
+    // Swift folds its wide wings before entering the room's narrow aisle. The
+    // bounded transit silhouette fits the same .60-unit clearance as robots.
+    wing.rotation.z = p.kind === 'swift' && locomotion?.foldWings
+      ? (i ? -1 : 1) * (1.05 + (moving ? Math.sin(phase * 1.4) * 0.08 : 0))
+      : (i ? 1 : -1) * (celebration ? 0.65 * celebration : moving ? Math.sin(phase * 1.2) * 0.35 * stride : asleep ? 0.10 : 0);
+  });
   const blink = !frozen && status === 'active' && t % 4.7 < 0.12;
   p.eyes.forEach(eye => { eye.scale.y = eye.userData.restEyeY * (asleep ? 0.13 : blink ? 0.09 : 1); });
   p.highlights.forEach(highlight => { highlight.visible = !asleep && !blink; });

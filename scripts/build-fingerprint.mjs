@@ -8,7 +8,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
 const STAMP = 'build-info.json';
 export const BUILD_INPUTS = Object.freeze(['index.html', 'package.json', 'package-lock.json',
-  'tsconfig.json', 'vite.config.ts', 'scripts/build-fingerprint.mjs', 'src', 'public']);
+  'tsconfig.json', 'vite.config.ts', 'scripts/build-fingerprint.mjs', 'src', 'public',
+  'server/protocol.mjs', 'server/office-protocol.mjs', 'server/office-protocol.d.mts']);
 
 async function hashEntries(root, entries, exclude = '') {
   const hash = createHash('sha256');

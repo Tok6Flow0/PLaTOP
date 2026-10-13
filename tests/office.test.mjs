@@ -1,0 +1,298 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile, writeFile, mkdir, mkdtemp, rm, stat, symlink } from 'node:fs/promises';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
+import path from 'node:path';
+import os from 'node:os';
+import ts from 'typescript';
+import { createBridge } from '../server/index.mjs';
+import { requestActivity, requestAction, requestDecoration } from '../server/client.mjs';
+import { TEAM_IDS, MAX_SNAPSHOT_BYTES } from '../server/protocol.mjs';
+import { TEAM_ACTORS, ACTOR_IDS, ACTION_KINDS, DECOR_SHAPES, DECOR_SLOTS, parseAction, parseDecoration, parseOfficeSnapshot } from '../server/office-protocol.mjs';
+import { parseOfficeCommand } from '../server/office-cli.mjs';
+
+const exec = promisify(execFile);
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
+const ASSET = { teamId: 'merchant', slot: 'desk', parts: [{ shape: 'box', color: '#A1B2C3', glow: true }] };
+const ACTION = { teamId: 'merchant', kind: 'walk_to', target: { officeId: 'hr', place: 'lounge' } };
+
+async function fixture(t, options = {}) {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'platop-office-'));
+  await mkdir(path.join(root, 'dist'));
+  const bridge = await createBridge({ root, port: 0, ...options });
+  const token = (await readFile(path.join(root, '.local/token'), 'utf8')).trim();
+  t.after(async () => { await bridge.close(); await rm(root, { recursive: true, force: true }); });
+  const request = async (route = '/api/state', { body, auth = false, headers = {} } = {}) => {
+    const response = await fetch(`http://127.0.0.1:${bridge.port}${route}`, { method: body === undefined ? 'GET' : 'POST',
+      headers: { ...(body === undefined ? {} : { 'Content-Type': 'application/json' }), ...(auth ? { Authorization: `Bearer ${token}` } : {}), ...headers },
+      ...(body === undefined ? {} : { body: typeof body === 'string' ? body : JSON.stringify(body) }) });
+    return { status: response.status, text: await response.text() };
+  };
+  const client = { root, port: bridge.port };
+  return { root, bridge, token, request, client };
+}
+
+test('server public actor ownership exactly matches the actual frontend roster', async () => {
+  const source = await readFile(new URL('../src/teams.ts', import.meta.url), 'utf8');
+  const javascript = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText;
+  const { teams } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+  assert.deepEqual(TEAM_ACTORS, Object.fromEntries(teams.map(team => [team.id, team.members.map(member => member.id)])));
+  assert.equal(new Set(ACTOR_IDS).size, 16);
+  assert.deepEqual(Object.keys(TEAM_ACTORS), TEAM_IDS);
+});
+
+test('actions default owned actors, normalize arrival targets and permit only named public places', () => {
+  assert.deepEqual(parseAction(ACTION), { ...ACTION, actorId: 'bridge-jarvis' });
+  assert.deepEqual(parseAction({ teamId: 'email', kind: 'arrive' }),
+    { teamId: 'email', actorId: 'email-owl', kind: 'arrive', target: { officeId: 'email', place: 'door' } });
+  for (const kind of ACTION_KINDS.filter(kind => kind !== 'walk_to')) assert.equal(parseAction({ teamId: 'hr', kind }).kind, kind);
+  for (const value of [
+    { ...ACTION, actorId: 'email-owl' }, { ...ACTION, actorId: 'private-thread' },
+    { teamId: 'merchant', kind: 'walk_to' }, { teamId: 'merchant', kind: 'work', target: ACTION.target },
+    { ...ACTION, target: { officeId: 'hr', place: 'private' } }, { ...ACTION, target: { officeId: 'hr', place: 'desk', x: 2 } },
+    { ...ACTION, id: 'caller-controlled' }, { ...ACTION, text: 'PRIVATE' }, { ...ACTION, kind: 'eval' },
+  ]) assert.throws(() => parseAction(value));
+});
+
+test('primitive recipes normalize defaults and reject unbounded counts, values, extents and private fields', () => {
+  const normalized = parseDecoration(ASSET);
+  assert.deepEqual(normalized.parts[0], { shape: 'box', position: [0, 0, 0], size: [0.3, 0.3, 0.3], rotation: [0, 0, 0], color: '#a1b2c3', glow: true });
+  for (const shape of DECOR_SHAPES) assert.equal(parseDecoration({ ...ASSET, parts: [{ shape }] }).parts[0].shape, shape);
+  for (const part of [
+    { shape: 'plane' }, { shape: 'box', text: 'PRIVATE' }, { shape: 'box', url: 'https://example.invalid' },
+    { shape: 'box', color: 'red' }, { shape: 'box', color: '#fff' }, { shape: 'box', color: '#123456;evil' },
+    { shape: 'box', size: [0, 1, 1] }, { shape: 'box', size: [2, 1, 1] },
+    { shape: 'box', size: [NaN, 0.3, 0.3] }, { shape: 'box', position: [Infinity, 0, 0] },
+    { shape: 'box', position: [1.2, 0, 0], size: [1.2, 1.2, 1.2] },
+    { shape: 'box', rotation: [0, 4, 0] }, { shape: 'box', glow: 'yes' },
+    { shape: 'box', segments: 1000000 }, { shape: 'box', position: [0, 0] },
+  ]) assert.throws(() => parseDecoration({ ...ASSET, parts: [part] }));
+  for (const value of [
+    { ...ASSET, parts: Array.from({ length: 13 }, () => ({ shape: 'box' })) },
+    { ...ASSET, parts: new Array(2) }, { ...ASSET, slot: 'private-slot' }, { ...ASSET, teamId: 'private-team' },
+    { ...ASSET, path: '/private/file' }, { ...ASSET, source: 'manual' },
+  ]) assert.throws(() => parseDecoration(value));
+  const input = { ...ASSET, parts: [{ shape: 'box', position: [0, 0, 0] }] };
+  const copy = parseDecoration(input);
+  input.parts[0].position[0] = 900;
+  assert.equal(copy.parts[0].position[0], 0);
+});
+
+test('office HTTP writes require existing local token/origin protections and sanitized bounded JSON', async t => {
+  const { request, token } = await fixture(t);
+  for (const [route, body] of [['/api/actions', ACTION], ['/api/assets', ASSET]]) {
+    assert.equal((await request(route, { body })).status, 401);
+    assert.equal((await request(route, { body, auth: true, headers: { Origin: 'https://example.invalid' } })).status, 403);
+    assert.equal((await request(route, { body, auth: true, headers: { 'Sec-Fetch-Site': 'cross-site' } })).status, 403);
+    assert.equal((await request(route, { body, auth: true, headers: { 'Content-Type': 'text/plain' } })).status, 415);
+    assert.equal((await request(route, { body: 'x'.repeat(8193), auth: true })).status, 413);
+    const invalid = await request(route, { body: { ...body, token, path: '/private/file', text: 'PRIVATE_TEXT' }, auth: true });
+    assert.equal(invalid.status, 400);
+    assert.ok(!invalid.text.includes(token) && !invalid.text.includes('PRIVATE'));
+  }
+  const snapshot = JSON.parse((await request()).text);
+  assert.equal(snapshot.actions, undefined);
+  assert.equal(snapshot.assets, undefined);
+});
+
+test('current actions persist only server UUIDs per owned actor without altering activity expiry', async t => {
+  let clock = Date.parse('2026-10-12T12:00:00Z');
+  const { root, request, client } = await fixture(t, { now: () => clock });
+  const first = await requestAction(ACTION, client);
+  const action = first.actions['bridge-jarvis'];
+  assert.match(action.id, UUID);
+  assert.deepEqual(action.target, ACTION.target);
+  const second = await requestAction({ teamId: 'merchant', kind: 'rest' }, client);
+  assert.notEqual(second.actions['bridge-jarvis'].id, action.id);
+  assert.equal(Object.keys(second.actions).length, 1);
+  assert.equal(second.actions['bridge-jarvis'].target, undefined);
+  await requestActivity({ teamId: 'merchant', state: 'active', source: 'skill' }, client);
+  clock += 120_000;
+  const expired = JSON.parse((await request()).text);
+  assert.equal(expired.teams[0].state, 'unknown');
+  assert.equal(expired.actions['bridge-jarvis'].id, second.actions['bridge-jarvis'].id);
+  const saved = JSON.parse(await readFile(path.join(root, '.local/office.json'), 'utf8'));
+  assert.deepEqual(Object.keys(saved), ['actions', 'assets']);
+  assert.deepEqual(Object.keys(saved.actions), ['bridge-jarvis']);
+  assert.equal(saved.actions['bridge-jarvis'].id, second.actions['bridge-jarvis'].id);
+  assert.equal((await stat(path.join(root, '.local/office.json'))).mode & 0o777, 0o600);
+  const restarted = await createBridge({ root, port: 0 });
+  t.after(() => restarted.close());
+  const restored = await requestActivity(undefined, { root, port: restarted.port });
+  assert.deepEqual(restored.actions, second.actions);
+});
+
+test('slot replacement, identical recipes, clearing and full bounded office capacity stay current-only', async t => {
+  const { root, client } = await fixture(t);
+  const first = await requestDecoration(ASSET, client);
+  const id = first.assets.merchant.desk.id;
+  assert.match(id, UUID);
+  const same = await requestDecoration(ASSET, client);
+  assert.equal(same.assets.merchant.desk.id, id);
+  const changed = await requestDecoration({ ...ASSET, parts: [{ shape: 'cone' }] }, client);
+  assert.notEqual(changed.assets.merchant.desk.id, id);
+  const parts = Array.from({ length: 12 }, (_, index) => ({ shape: DECOR_SHAPES[index % DECOR_SHAPES.length] }));
+  for (const teamId of TEAM_IDS) for (const slot of DECOR_SLOTS) await requestDecoration({ teamId, slot, parts }, client);
+  const full = await requestActivity(undefined, client);
+  assert.equal(Object.values(full.assets).flatMap(slots => Object.values(slots)).length, 30);
+  assert.ok(Buffer.byteLength(JSON.stringify(full)) < MAX_SNAPSHOT_BYTES);
+  assert.ok((await stat(path.join(root, '.local/office.json'))).size < MAX_SNAPSHOT_BYTES);
+  const mcp = fileURLToPath(new URL('../scripts/platop-mcp-client.mjs', import.meta.url));
+  const viaMcp = await exec(process.execPath, [mcp, 'status'], { env: { ...process.env, PLATOP_ROOT: root, PLATOP_PORT: String(client.port) }, maxBuffer: 524_288, timeout: 12_000 });
+  assert.deepEqual(JSON.parse(viaMcp.stdout).assets, full.assets);
+  const cleared = await requestDecoration({ teamId: 'merchant', slot: 'desk', parts: [] }, client);
+  assert.equal(cleared.assets.merchant.desk, undefined);
+  assert.equal(Object.keys(cleared.assets.merchant).length, 4);
+  assert.deepEqual(parseOfficeSnapshot(cleared).assets, cleared.assets);
+});
+
+test('corrupt or symlinked office persistence never exposes private content or follows outside files', async t => {
+  const { root } = await fixture(t);
+  const file = path.join(root, '.local/office.json');
+  await writeFile(file, JSON.stringify({ actions: {}, assets: {}, history: ['PRIVATE_HISTORY'] }));
+  const corrupt = await createBridge({ root, port: 0 });
+  t.after(() => corrupt.close());
+  assert.equal((await requestActivity(undefined, { root, port: corrupt.port })).actions, undefined);
+  await rm(file);
+  const outside = path.join(root, 'outside-office.json');
+  await writeFile(outside, 'PRIVATE_OUTSIDE');
+  await symlink(outside, file);
+  const linked = await createBridge({ root, port: 0 });
+  t.after(() => linked.close());
+  const snapshot = await requestActivity(undefined, { root, port: linked.port });
+  assert.equal(snapshot.assets, undefined);
+  assert.ok(!JSON.stringify(snapshot).includes('PRIVATE'));
+  await requestAction({ teamId: 'hr', kind: 'work' }, { root, port: linked.port });
+  assert.equal(await readFile(outside, 'utf8'), 'PRIVATE_OUTSIDE');
+});
+
+test('office persistence failure rolls back current state and queued concurrent actor updates stay bounded', async t => {
+  const { root, client } = await fixture(t);
+  const writes = await Promise.all(TEAM_IDS.flatMap(teamId => TEAM_ACTORS[teamId].map(actorId => requestAction({ teamId, actorId, kind: 'work' }, client))));
+  const before = await requestActivity(undefined, client);
+  assert.equal(Object.keys(before.actions).length, ACTOR_IDS.length);
+  assert.ok(writes.every(snapshot => snapshot.actions));
+  const file = path.join(root, '.local/office.json');
+  await rm(file);
+  await mkdir(file);
+  await assert.rejects(requestAction({ teamId: 'merchant', kind: 'celebrate' }, client));
+  await assert.rejects(requestDecoration(ASSET, client));
+  const after = await requestActivity(undefined, client);
+  assert.deepEqual(after.actions, before.actions);
+  assert.equal(after.assets, undefined);
+});
+
+test('snapshots expose only committed office state during delayed or failed persistence', async t => {
+  const root = await mkdtemp(path.join(os.tmpdir(), 'platop-office-commit-'));
+  t.after(() => rm(root, { recursive: true, force: true }));
+  const fsModule = path.join(root, 'delayed-fs.mjs');
+  await writeFile(fsModule, `export {mkdir,lstat,chmod,readFile,rename,unlink} from 'node:fs/promises';
+import {writeFile as actualWrite} from 'node:fs/promises';
+let gate;
+export function pauseNextWrite(){
+  let release,enter;
+  const pending=new Promise(resolve=>{release=resolve;});
+  const started=new Promise(resolve=>{enter=resolve;});
+  gate={pending,enter}; return {started,release};
+}
+export async function writeFile(...args){
+  if(gate){const current=gate;gate=undefined;current.enter();if(await current.pending)throw Error('Controlled persistence failure');}
+  return actualWrite(...args);
+}`);
+  const source = (await readFile(new URL('../server/office-store.mjs', import.meta.url), 'utf8'))
+    .replace("from 'node:fs/promises'", "from './delayed-fs.mjs'")
+    .replace("from './protocol.mjs'", `from ${JSON.stringify(new URL('../server/protocol.mjs', import.meta.url).href)}`)
+    .replace("from './office-protocol.mjs'", `from ${JSON.stringify(new URL('../server/office-protocol.mjs', import.meta.url).href)}`);
+  const storeFile = path.join(root, 'office-store-probe.mjs');
+  await writeFile(storeFile, source);
+  const { createOfficeStore } = await import(new URL(`file://${storeFile}`).href);
+  const { pauseNextWrite } = await import(new URL(`file://${fsModule}`).href);
+  const store = await createOfficeStore({ localDirectory: path.join(root, '.local') });
+  const delayed = pauseNextWrite();
+  const action = store.action({ teamId: 'support', kind: 'work' });
+  await delayed.started;
+  assert.deepEqual(store.snapshot(), {}, 'in-flight action must not be published before its file commits');
+  delayed.release(false);
+  await action;
+  const committed = store.snapshot();
+  assert.equal(committed.actions['support-beacon'].kind, 'work');
+  const failed = pauseNextWrite();
+  const decoration = store.decorate(ASSET);
+  await failed.started;
+  assert.deepEqual(store.snapshot(), committed, 'in-flight asset must not leak into reads');
+  failed.release(true);
+  await assert.rejects(decoration);
+  assert.deepEqual(store.snapshot(), committed);
+  await store.decorate(ASSET);
+  assert.ok(store.snapshot().assets.merchant.desk);
+});
+
+test('office SSE emits changed current data while identical recipes and absent clears stay quiet', async t => {
+  const { bridge, client } = await fixture(t, { heartbeatMs: 20 });
+  const controller = new AbortController();
+  t.after(() => controller.abort());
+  const response = await fetch(`http://127.0.0.1:${bridge.port}/api/events`, { signal: controller.signal });
+  const reader = response.body.getReader();
+  let received = '';
+  async function until(predicate) {
+    const deadline = Date.now() + 2000;
+    while (!predicate(received)) {
+      const remaining = deadline - Date.now();
+      if (remaining <= 0) throw new Error('Missing local office event.');
+      let timer;
+      try {
+        const chunk = await Promise.race([reader.read(), new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('Missing local office event.')), remaining); })]);
+        if (chunk.done) throw new Error('Office stream ended.');
+        received += new TextDecoder().decode(chunk.value);
+      } finally { clearTimeout(timer); }
+    }
+  }
+  await until(text => text.includes('event: state'));
+  await requestDecoration(ASSET, client);
+  await until(text => text.includes('"assets"'));
+  const stateCount = received.split('event: state').length;
+  received = received.replaceAll(': heartbeat', ': consumed');
+  await requestDecoration(ASSET, client);
+  await requestDecoration({ teamId: 'email', slot: 'wall', parts: [] }, client);
+  await until(text => text.includes(': heartbeat'));
+  assert.equal(received.split('event: state').length, stateCount);
+  await requestAction({ teamId: 'support', kind: 'rest' }, client);
+  await until(text => text.includes('"support-beacon"'));
+  assert.equal(received.split('event: state').length, stateCount + 1);
+  controller.abort();
+});
+
+test('new direct CLI and actual stdio MCP transport preserve exact public action/recipe data', async t => {
+  const { root, client } = await fixture(t);
+  const env = { ...process.env, PLATOP_ROOT: root, PLATOP_PORT: String(client.port) };
+  for (const name of ['platop.mjs', 'platop-mcp-client.mjs']) {
+    const script = fileURLToPath(new URL(`../scripts/${name}`, import.meta.url));
+    const cli = args => exec(process.execPath, [script, ...args], { env, timeout: 12_000, maxBuffer: 524_288 });
+    assert.match((await cli(['action', 'email', 'arrive'])).stdout, /action queued/);
+    assert.match((await cli(['action', 'email', 'walk_to', JSON.stringify({ actorId: 'email-swift', target: { officeId: 'intake', place: 'desk' } })])).stdout, /action queued/);
+    assert.match((await cli(['decorate', 'email', 'festive', JSON.stringify([{ shape: 'torus', glow: true }])])).stdout, /decoration saved/);
+    const snapshot = JSON.parse((await cli(['status'])).stdout);
+    assert.equal(snapshot.actions['email-swift'].target.officeId, 'intake');
+    assert.equal(snapshot.assets.email.festive.parts[0].shape, 'torus');
+    assert.ok(!JSON.stringify(snapshot).includes(root));
+    for (const args of [
+      ['action', 'email', 'work', '{"actorId":"bridge-jarvis"}'],
+      ['action', 'email', 'work', '{"command":"PRIVATE_COMMAND"}'],
+      ['decorate', 'email', 'desk', '/private/file'],
+      ['decorate', 'email', 'desk', JSON.stringify([{ shape: 'box', url: 'PRIVATE_URL' }])],
+      ['decorate', 'email', 'desk', 'x'.repeat(8193)],
+    ]) await assert.rejects(cli(args), error => error.code === 1 && !error.stdout && !error.stderr.includes('PRIVATE'));
+  }
+});
+
+test('office CLI parsing rejects alternate programs, files, options and extra private keys', () => {
+  assert.equal(parseOfficeCommand('action', ['support', 'rest']).arguments.actorId, 'support-beacon');
+  assert.deepEqual(parseOfficeCommand('decorate', ['hr', 'wall', '[]']).arguments.parts, []);
+  for (const [command, args] of [
+    ['action', ['hr', 'work', '{"id":"private"}']], ['action', ['hr', 'work', '{}', '--server', '/private']],
+    ['decorate', ['hr', 'wall', '@file.json']], ['decorate', ['hr', 'wall', '[]', '--source', 'manual']],
+    ['run', ['hr', '--', 'PRIVATE_PROGRAM']],
+  ]) assert.throws(() => parseOfficeCommand(command, args));
+});

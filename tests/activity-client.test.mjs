@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import vm from 'node:vm';
 import ts from 'typescript';
+import * as officeProtocol from '../server/office-protocol.mjs';
 
 const source = await readFile(new URL('../src/useActivity.ts', import.meta.url), 'utf8');
 const javascript = ts.transpileModule(source, {
@@ -54,6 +55,7 @@ function activityClient() {
     require(name) {
       if (name === 'react') return hooks;
       if (name === './teams') return { teams: teamIds.map(id => ({ id })) };
+      if (name === '../server/office-protocol.mjs') return officeProtocol;
       throw new Error(`Unexpected dependency: ${name}`);
     },
   });
@@ -172,4 +174,22 @@ test('unmount aborts the fetch, closes SSE, and ignores late completions and eve
   client.stream.error();
   await flush();
   assert.equal(client.writes, writes, 'disposed clients cannot write React state');
+});
+
+test('office intents and bounded recipes survive SSE while malformed office data is ignored', () => {
+  const client = activityClient();
+  const value = snapshot('sleeping');
+  value.actions = { 'support-beacon': { id: '12345678-1234-4123-8123-123456789abc', actorId: 'support-beacon', kind: 'leave' } };
+  value.assets = { support: { desk: { id: '12345678-1234-4123-8123-123456789abd', parts: [{ shape: 'sphere', color: '#AABBCC' }] } } };
+  client.stream.state(value);
+  assert.equal(client.value.snapshot.actions['support-beacon'].kind, 'leave');
+  assert.equal(client.value.snapshot.assets.support.desk.parts[0].color, '#aabbcc');
+  const prior = client.value.snapshot;
+  for (const invalid of [
+    { ...value, actions: { privateChatId: value.actions['support-beacon'] } },
+    { ...value, assets: { support: { desk: { ...value.assets.support.desk, url: 'https://invalid.example' } } } },
+    { ...value, teams: [value.teams[0], value.teams[0]] },
+    { ...value, serverTime: 'invalid' },
+  ]) { client.stream.state(invalid); assert.equal(client.value.snapshot, prior); }
+  client.unmount();
 });

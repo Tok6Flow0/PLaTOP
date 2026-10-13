@@ -10,7 +10,7 @@ import os from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { createBridge } from '../server/index.mjs';
 import { requestActivity } from '../server/client.mjs';
-import { TEAM_IDS } from '../server/protocol.mjs';
+import { TEAM_IDS, MAX_SNAPSHOT_BYTES } from '../server/protocol.mjs';
 
 const SCRIPT = fileURLToPath(new URL('../scripts/platop-mcp.mjs', import.meta.url));
 async function fixture(t) {
@@ -57,7 +57,7 @@ test('MCP initializes, lists closed tools, and performs authenticated local set/
   assert.equal(initialized.result.protocolVersion, '2025-11-25');
   assert.deepEqual(initialized.result.capabilities, { tools: { listChanged: false } });
   const tools = (await request('tools/list')).result.tools;
-  assert.deepEqual(tools.map(tool => tool.name), ['platop_status', 'platop_set_activity']);
+  assert.deepEqual(tools.map(tool => tool.name), ['platop_status', 'platop_set_activity', 'platop_action', 'platop_decorate']);
   assert.ok(tools.every(tool => tool.inputSchema.additionalProperties === false && tool.annotations.openWorldHint === false && tool.annotations.destructiveHint === false));
   assert.equal(tools[1].annotations.idempotentHint, false); // Active writes renew freshness.
   const initial = (await request('tools/call', { name: 'platop_status', arguments: {} })).result;
@@ -98,6 +98,42 @@ test('MCP rejects private data, URLs, paths, commands and invalid tools without 
   assert.equal((await request('tools/call', { name: 'platop_status', arguments: { path: '/private/path' } })).error.code, -32602);
   assert.equal((await request('unknown/method')).error.code, -32601);
   assert.ok((await request('tools/call', { name: 'platop_status' })).result.structuredContent.teams.every(team => team.state === 'unknown'));
+});
+
+test('MCP office tools enforce owned actors and bounded data-only primitive capability', async t => {
+  const { request, initialize } = await fixture(t);
+  await initialize();
+  const tools = (await request('tools/list')).result.tools;
+  const action = tools.find(tool => tool.name === 'platop_action');
+  const decorate = tools.find(tool => tool.name === 'platop_decorate');
+  assert.equal(action.inputSchema.additionalProperties, false);
+  assert.deepEqual(action.inputSchema.properties.kind.enum, ['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave']);
+  assert.equal(decorate.inputSchema.properties.parts.maxItems, 12);
+  assert.equal(decorate.inputSchema.properties.parts.items.additionalProperties, false);
+  const arrived = (await request('tools/call', { name: 'platop_action', arguments: { teamId: 'email', kind: 'arrive' } })).result;
+  assert.equal(arrived.isError, false);
+  assert.equal(arrived.structuredContent.actions['email-owl'].kind, 'arrive');
+  assert.deepEqual(arrived.structuredContent.actions['email-owl'].target, { officeId: 'email', place: 'door' });
+  const decorated = (await request('tools/call', { name: 'platop_decorate', arguments: {
+    teamId: 'email', slot: 'wall', parts: [{ shape: 'sphere', color: '#abcdef', glow: true }],
+  } })).result;
+  assert.equal(decorated.isError, false);
+  assert.equal(decorated.structuredContent.assets.email.wall.parts[0].glow, true);
+  for (const [name, args] of [
+    ['platop_action', { teamId: 'email', actorId: 'bridge-jarvis', kind: 'work' }],
+    ['platop_action', { teamId: 'email', kind: 'work', target: { officeId: 'email', place: 'desk' } }],
+    ['platop_action', { teamId: 'email', kind: 'leave', text: 'PRIVATE_CHAT' }],
+    ['platop_decorate', { teamId: 'email', slot: 'wall', parts: [{ shape: 'box', file: '/PRIVATE/file' }] }],
+    ['platop_decorate', { teamId: 'email', slot: 'wall', parts: [{ shape: 'sphere', segments: 1000000 }] }],
+    ['platop_decorate', { teamId: 'email', slot: 'wall', parts: Array.from({ length: 13 }, () => ({ shape: 'box' })) }],
+  ]) {
+    const result = await request('tools/call', { name, arguments: args });
+    assert.equal(result.error.code, -32602);
+    assert.ok(!JSON.stringify(result).includes('PRIVATE'));
+  }
+  const cleared = (await request('tools/call', { name: 'platop_decorate', arguments: { teamId: 'email', slot: 'wall', parts: [] } })).result;
+  assert.equal(cleared.isError, false);
+  assert.equal(cleared.structuredContent.assets, undefined);
 });
 
 test('MCP reports visualization failure without exposing token or paths, then recovers', async t => {
@@ -141,7 +177,7 @@ test('local activity client never follows redirects carrying the private write t
 test('local activity client strips unexpected response fields and bounds oversized responses', async t => {
   let oversized = false;
   const snapshot = { app: 'platop', schemaVersion: 1, teams: TEAM_IDS.map(teamId => ({ teamId, state: 'unknown', source: 'manual', updatedAt: null, private: 'PRIVATE' })), serverTime: new Date().toISOString(), token: 'PRIVATE' };
-  const server = http.createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(oversized ? 'x'.repeat(9000) : JSON.stringify(snapshot)); });
+  const server = http.createServer((req, res) => { res.setHeader('Content-Type', 'application/json'); res.end(JSON.stringify(oversized ? { ...snapshot, extra: 'x'.repeat(MAX_SNAPSHOT_BYTES) } : snapshot)); });
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   t.after(() => new Promise(resolve => server.close(resolve)));
   assert.ok(!JSON.stringify(await requestActivity(undefined, { port: server.address().port })).includes('PRIVATE'));

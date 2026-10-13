@@ -3,12 +3,14 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Activity, Character, SceneHandle, SceneState, Team } from './types';
 import { CLIP_NAMES, fetchCharacter, fetchManifest, type ClipName } from './scene/assets';
 import { disposeObject, SceneKit } from './scene/primitives';
-import { animateCharacter, makeProxy } from './scene/proxies';
-import { makeCampus, makeRoom, type Room } from './scene/rooms';
+import { animateCharacter, makeProxy, AuthoredFootPose } from './scene/proxies';
+import { makeCampus, makeRoom, campusNavigation, type Room } from './scene/rooms';
 import { ActorContactBatch, freezeStaticAuthoredMeshes, SceneBatches } from './scene/performanceBatching';
 import { FramePacer } from './scene/framePacing';
 import { FrameOutput } from './scene/frameOutput';
 import { enableFlatMappedWallSinglePass } from './scene/flatMappedWalls';
+import { OfficeMotor, OfficeNavigator, makeOfficeMap, WALK_SPEED } from './scene/officeNavigation';
+import { OfficeAssetsRenderer } from './scene/officeAssets';
 
 // Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -31,6 +33,13 @@ interface Actor {
   sleepHeight: number;
   index: number;
   facing: number;
+  motor: OfficeMotor;
+  liveMotor: OfficeMotor;
+  previewMotor: OfficeMotor;
+  poseSettling?: number;
+  seatedFeet?: AuthoredFootPose;
+  proxySeatLift?: number;
+  physicalOffice?: string;
   mixer?: THREE.AnimationMixer;
   actions?: Partial<Record<ClipName, THREE.AnimationAction>>;
   clip?: ClipName;
@@ -158,6 +167,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     const room = makeRoom(team, teamIndex, kit) as InteractiveRoom;
     rooms.set(team.id, room);
     scene.add(room.root);
+  });
+  const navigator = new OfficeNavigator(makeOfficeMap(rooms, teams, campusNavigation));
+  const officeAssets = new OfficeAssetsRenderer(rooms);
+  teams.slice(0, 6).forEach(team => {
+    const room = rooms.get(team.id)!;
     team.members.forEach((character, index) => {
       const root = new THREE.Group();
       root.name = character.id;
@@ -166,22 +180,27 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       model.traverse((object) => { if ((object as THREE.Mesh).isMesh) (object as THREE.Mesh).castShadow = false; });
       const sleepHeight = new THREE.Box3().setFromObject(model).max.y + 0.2;
       root.add(model);
-      const home = room.actorHomes?.[index]?.clone()
-        ?? new THREE.Vector3((index - (team.members.length - 1) / 2) * 0.9, 0.1, 0.55 + (index % 2) * 0.16);
+      const desk = navigator.desk(character.id)!;
+      const home = new THREE.Vector3(desk.position[0], desk.seatHeight ?? desk.floorY, desk.position[1]);
+      // Swift's folded transit pose is bounded separately from its spread idle wings.
+      const radius = character.kind === 'swift' ? 0.6 : character.kind === 'owl' ? 0.7 : 0.61;
+      const motor = new OfficeMotor(character.id, team.id, radius, navigator, desk);
+      const previewMotor = new OfficeMotor(character.id, team.id, radius, navigator, desk);
       root.position.copy(home);
-      root.rotation.y = room.actorFacing?.[index] ?? 0;
+      root.rotation.y = desk.facing ?? 0;
       const sleep = sleepIndicator(sharedSleepMaterial ??= makeSleepMaterial());
       sleep.position.set(0.2, sleepHeight, 0);
       sleep.visible = false;
       root.add(sleep);
-      room.root.add(root);
+      // Ownership stays with the team; physical presence can cross rooms.
+      scene.add(root);
       const contact = new THREE.Mesh(contactGeometry, new THREE.MeshBasicMaterial({ map: contactTexture, color: '#76664f', opacity: 0.3, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
       contact.rotation.x = -Math.PI / 2;
       contact.scale.set(0.95, 0.65, 1);
-      contact.position.set(home.x, home.y + 0.008, home.z);
+      contact.position.set(home.x, desk.floorY + 0.008, home.z);
       contact.renderOrder = 1;
-      room.root.add(contact);
-      actors.push({ character, teamId: team.id, root, model, home, contact, sleep, sleepHeight, index, facing: room.actorFacing?.[index] ?? 0 });
+      scene.add(contact);
+      actors.push({ character, teamId: team.id, root, model, home, contact, sleep, sleepHeight, index, facing: desk.facing ?? 0, motor, liveMotor: motor, previewMotor });
     });
   });
   const worldBounds = new THREE.Box3().setFromObject(scene);
@@ -214,7 +233,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   host.dataset.proxyCount = String(actors.length);
   host.dataset.loadedCharacters = '0';
 
-  let state: SceneState = { selectedTeam: teams[0]?.id ?? '', activity: {}, decorations: {}, paused: false, reducedMotion: false };
+  let state: SceneState = { selectedTeam: teams[0]?.id ?? '', activity: {}, decorations: {}, paused: false, reducedMotion: false, controlMode: 'live' };
   let disposed = false;
   let contextLost = false;
   let nativeVisible = (window as Window & { __PLATOP_DESKTOP_VISIBLE__?: boolean }).__PLATOP_DESKTOP_VISIBLE__ !== false;
@@ -285,8 +304,10 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   controls.listenToKeyEvents(canvas);
   controls.update();
   controls.saveState();
-  const wallFades: Array<{ normal: THREE.Vector3; twoSided: boolean; materials: Array<{ material: THREE.Material; opacity: number; depthWrite: boolean }> }> = [];
-  rooms.forEach((room) => {
+  type WallFade = { normal: THREE.Vector3; twoSided: boolean; officeId?: string; materials: Array<{ material: THREE.Material; opacity: number; depthWrite: boolean }> };
+  const wallFades: WallFade[] = [];
+  const assetWallFades: WallFade[] = [];
+  rooms.forEach((room, officeId) => {
     for (const wall of room.walls ?? []) {
       const clones = new Map<THREE.Material, THREE.Material>();
       wall.root.traverse((object) => {
@@ -304,12 +325,12 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         renderable.material = Array.isArray(renderable.material) ? renderable.material.map(clone) : clone(renderable.material);
       });
       enableFlatMappedWallSinglePass(wall.root);
-      wallFades.push({ normal: wall.normal.clone().transformDirection(room.root.matrixWorld), twoSided: !!wall.twoSided, materials: [...clones.values()].map((material) => ({ material, opacity: material.opacity, depthWrite: material.depthWrite })) });
+      wallFades.push({ officeId, normal: wall.normal.clone().transformDirection(room.root.matrixWorld), twoSided: !!wall.twoSided, materials: [...clones.values()].map((material) => ({ material, opacity: material.opacity, depthWrite: material.depthWrite })) });
     }
   });
   function fadeWalls(): void {
     const towardCamera = camera.position.clone().sub(controls.target).normalize();
-    wallFades.forEach((wall) => {
+    [...wallFades, ...assetWallFades].forEach((wall) => {
       const facing = wall.twoSided ? Math.abs(towardCamera.dot(wall.normal)) : towardCamera.dot(wall.normal);
       const opacity = 1 - THREE.MathUtils.smoothstep(facing, 0.05, 0.35) * 0.93;
       wall.materials.forEach(({ material, opacity: originalOpacity, depthWrite }) => {
@@ -317,6 +338,57 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         material.depthWrite = opacity > 0.99 && depthWrite;
       });
     });
+  }
+  function refreshAssetWallFades(): void {
+    assetWallFades.length = 0;
+    rooms.forEach((room, officeId) => {
+      const wall = wallFades.find(entry => entry.officeId === officeId && entry.normal.x < -0.5);
+      const materials: WallFade['materials'] = [];
+      room.root.children.filter(object => object.userData.decorSlot === 'wall').forEach(root => root.traverse(object => {
+        const material = (object as THREE.Mesh).material;
+        if (!material || Array.isArray(material)) return;
+        material.transparent = true;
+        const originalDepth = material.userData.officeWallDepthWrite;
+        if (typeof originalDepth !== 'boolean') material.userData.officeWallDepthWrite = material.depthWrite;
+        materials.push({ material, opacity: 1, depthWrite: material.userData.officeWallDepthWrite });
+      }));
+      if (materials.length) assetWallFades.push({ officeId, normal: wall?.normal ?? new THREE.Vector3(-1, 0, 0), twoSided: wall?.twoSided ?? true, materials });
+    });
+    fadeWalls();
+  }
+  const roomLamps = [...rooms].map(([id, room]) => {
+    const lights: Array<{ light: THREE.PointLight; intensity: number }> = [];
+    const glow: Array<{ material: THREE.Material & { opacity: number }; opacity: number }> = [];
+    const shades: Array<{ material: THREE.MeshStandardMaterial; intensity: number }> = [];
+    room.root.traverse(object => {
+      if ((object as THREE.PointLight).isPointLight) {
+        const light = object as THREE.PointLight;
+        lights.push({ light, intensity: light.intensity });
+      }
+      const material = (object as THREE.Mesh | THREE.Sprite).material;
+      if (!material || Array.isArray(material)) return;
+      if (material.blending === THREE.AdditiveBlending) glow.push({ material, opacity: material.opacity });
+      if ((material as THREE.MeshStandardMaterial).isMeshStandardMaterial && (material as THREE.MeshStandardMaterial).emissive.getHexString() === 'efb450') {
+        const shade = material as THREE.MeshStandardMaterial;
+        shades.push({ material: shade, intensity: shade.emissiveIntensity });
+      }
+    });
+    return { id, lights, glow, shades, occupied: true, nextOccupied: false };
+  });
+  const lampOffices = new Map(roomLamps.map(entry => [entry.id, entry]));
+  function updateRoomLamps(): void {
+    for (const office of roomLamps) office.nextOccupied = false;
+    for (const actor of actors) if (actor.motor.present && actor.physicalOffice) {
+      const office = lampOffices.get(actor.physicalOffice);
+      if (office) office.nextOccupied = true;
+    }
+    for (const office of roomLamps) {
+      if (office.occupied === office.nextOccupied) continue;
+      office.occupied = office.nextOccupied;
+      for (const entry of office.lights) entry.light.intensity = office.occupied ? entry.intensity : 0;
+      for (const entry of office.glow) entry.material.opacity = office.occupied ? entry.opacity : 0;
+      for (const entry of office.shades) entry.material.emissiveIntensity = office.occupied ? entry.intensity : 0;
+    }
   }
   const gestures = new Map<number, { x: number; y: number; dragged: boolean }>();
   function cameraChanged(): void {
@@ -399,7 +471,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const activity = (id: string): Activity => state.activity[id] ?? 'unknown';
   function cadence(): number {
     if (!visible() || still()) return 0;
-    if (idleTeamId || settlingRemaining > 0 || teams.some((team) => {
+    if (idleTeamId || settlingRemaining > 0 || actors.some(actor => (state.controlMode !== 'offline' && actor.motor.pending) || (actor.root.visible && (actor.poseSettling ?? 0) > 0)) || teams.some((team) => {
       const status = activity(team.id);
       return status === 'active' || status === 'sleeping';
     })) return 30;
@@ -416,6 +488,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       else actor.mixer.update(0);
     }
     actor.clip = clip;
+    actor.poseSettling = 0.35;
   }
 
   function smoothProxyPose(actor: Actor, delta: number): void {
@@ -443,38 +516,77 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function updateActors(delta: number): void {
     const frozen = still();
     actors.forEach((actor) => {
-      if (idleTeamId && actor.teamId !== idleTeamId) return;
-      const status = activity(actor.teamId);
-      const phase = (motionTime + actor.index * 2.1) % 13;
-      const moving = status === 'active' && phase < 5.2 && !frozen;
-      const angle = motionTime * 0.95 + actor.index * 1.6;
-      // Reach home before the walk/work boundary, rather than teleporting from
-      // the edge of the path. The same envelope starts each lap gently.
-      const travel = moving ? THREE.MathUtils.smoothstep(phase, 0, 0.65)
-        * (1 - THREE.MathUtils.smoothstep(phase, 4.55, 5.2)) : 0;
+      const motor = actor.motor;
+      // Offscreen motors remain cheap and allow a visitor to enter the office
+      // being watched. Their skeletons/materials are evaluated only on screen.
+      if (!frozen && state.controlMode !== 'offline') motor.update(delta);
+      actor.physicalOffice = motor.officeId;
+      const shown = motor.present && (!idleTeamId || actor.physicalOffice === idleTeamId);
+      if (shown && !actor.root.visible) actor.proxyPose = undefined;
+      actor.root.visible = shown;
+      actor.contact.visible = shown;
+      if (!shown) { actor.sleep.visible = false; return; }
+      const moving = motor.moving && !frozen && state.controlMode !== 'offline';
+      const status: Activity = state.controlMode === 'offline' ? 'waiting' : motor.mode === 'rest' ? 'sleeping'
+        : motor.mode === 'work' || motor.mode === 'walk' || motor.mode === 'celebrate' ? 'active' : 'waiting';
+      const floating = actor.character.kind === 'swift' ? 0.18 * Math.min(1, motor.speed / WALK_SPEED) : 0;
+      const cheer = Math.abs(Math.sin(motionTime * 7)) * motor.celebration * 0.08;
+      // A paused view switch reveals the latest motor snapshot coherently; it
+      // does not advance that snapshot or leave the contact at another place.
+      actor.root.position.set(motor.x, motor.y + floating + cheer, motor.z);
+      actor.root.rotation.y = motor.heading;
+      const seatLift = Math.max(0, motor.y - motor.floorY);
+      if (frozen && actor.seatedFeet) {
+        actor.seatedFeet.restore();
+        actor.seatedFeet.apply(seatLift);
+      } else if (frozen && !actor.mixer && actor.proxySeatLift !== undefined && actor.proxySeatLift !== seatLift) {
+        const personality = actor.model.userData.personality as { feet: THREE.Object3D[] } | undefined;
+        personality?.feet.forEach(foot => { foot.position.y += actor.proxySeatLift! - seatLift; });
+        actor.proxySeatLift = seatLift;
+      }
       if (!frozen) {
-        const blend = 1 - Math.exp(-Math.max(0, delta) / 0.12);
-        const floating = actor.character.kind === 'swift' ? 0.18 * travel : 0;
-        actor.root.position.x = THREE.MathUtils.lerp(actor.root.position.x, actor.home.x + Math.sin(angle) * 0.28 * travel, blend);
-        actor.root.position.y = THREE.MathUtils.lerp(actor.root.position.y, actor.home.y + floating, blend);
-        actor.root.position.z = THREE.MathUtils.lerp(actor.root.position.z, actor.home.z + Math.cos(angle) * 0.3 * travel, blend);
-        const deskFacing = actor.facing + (status === 'active' ? 0.08 * Math.sin(motionTime * 0.5 + actor.index) : 0);
-        const pathFacing = Math.atan2(Math.cos(angle), -Math.sin(angle));
-        const pathTurn = Math.atan2(Math.sin(pathFacing - deskFacing), Math.cos(pathFacing - deskFacing));
-        const facing = deskFacing + pathTurn * travel;
-        const turn = Math.atan2(Math.sin(facing - actor.root.rotation.y), Math.cos(facing - actor.root.rotation.y));
-        actor.root.rotation.y += THREE.MathUtils.clamp(turn * blend, -3 * delta, 3 * delta);
         if (!actor.mixer) {
-          animateCharacter(actor.model, status, motionTime, actor.index, moving, false);
+          animateCharacter(actor.model, motor.mode === 'walk' && !moving ? 'waiting' : status, motionTime, actor.index, moving, false, {
+            phase: motor.walkPhase, speed: motor.speed, seatLift: motor.y - motor.floorY, celebration: motor.celebration,
+            foldWings: actor.character.kind === 'swift' && (motor.mode === 'walk' || Math.hypot(motor.x - actor.home.x, motor.z - actor.home.z) > 0.1),
+          });
+          actor.proxySeatLift = seatLift;
           smoothProxyPose(actor, delta);
         }
       }
       actor.sleep.visible = status === 'sleeping' && !actor.authoredSleepFx;
       if (!frozen) actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
-      actor.contact.position.set(actor.root.position.x, actor.home.y + 0.008, actor.root.position.z);
-      if (!frozen) selectClip(actor, status === 'sleeping' ? 'Sleep' : status === 'active' ? moving ? 'Move' : 'Work' : 'Idle');
-      if (actor.mixer && !frozen && (status === 'active' || status === 'sleeping' || idleTeamId === actor.teamId || settlingRemaining > 0)) actor.mixer.update(delta);
+      actor.contact.position.set(motor.x, motor.floorY + 0.008, motor.z);
+      if (!frozen) {
+        actor.seatedFeet?.restore();
+        selectClip(actor, state.controlMode === 'offline' ? 'Idle' : status === 'sleeping' ? 'Sleep' : moving ? 'Move' : motor.mode === 'work' || motor.mode === 'celebrate' ? 'Work' : 'Idle');
+        // Authored locomotion stays synchronized to real travelled distance.
+        const move = actor.actions?.Move;
+        if (move) {
+          const rate = motor.speed / WALK_SPEED;
+          move.setEffectiveTimeScale(rate);
+          if (actor.clip === 'Move') {
+            const duration = move.getClip().duration;
+            move.time = ((motor.distance / WALK_SPEED - delta * rate) % duration + duration) % duration;
+          }
+        }
+        if (actor.mixer && (status === 'active' || status === 'sleeping' || (actor.poseSettling ?? 0) > 0 || !!idleTeamId)) {
+          actor.mixer.update(delta);
+        }
+        actor.seatedFeet?.apply(seatLift);
+        actor.poseSettling = Math.max(0, (actor.poseSettling ?? 0) - delta);
+      }
     });
+    updateRoomLamps();
+  }
+
+  function applyMotorState(): void {
+    if (still() || !visible() || state.controlMode === 'offline') return;
+    for (const actor of actors) {
+      actor.motor.fallback(activity(actor.teamId));
+      const action = state.controlMode === 'live' ? state.actions?.[actor.character.id] : undefined;
+      if (action) actor.motor.apply(action);
+    }
   }
 
   function renderFrame(): void {
@@ -650,6 +762,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
   function wake(_interactive = false): void {
     if (disposed) return;
+    applyMotorState();
     const isAnimating = cadence() > 0;
     const isVisible = visible();
     if (wasAnimating !== isAnimating || wasVisible !== isVisible) {
@@ -788,14 +901,28 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function applyIdleCamera(): void {
     const room = idleTeamId ? rooms.get(idleTeamId) : undefined;
     if (!room) return;
-    const homes = room.actorHomes ?? [];
-    const deskZ = homes.length ? homes.reduce((sum, home) => sum + home.z, 0) / homes.length : 0;
-    const halfWidth = Math.max(1.4, ...homes.map((home) => Math.abs(home.x) + 0.65));
+    const desks = room.navigation.desks;
+    const deskZ = room.navigation.task[1];
+    const nearZ = Math.max(deskZ + 1.05, ...desks.map(desk => desk.position[1] + 0.85));
+    const farZ = Math.min(deskZ - 1.05, ...desks.map(desk => desk.position[1] - 0.85));
     camera.fov = 38;
     camera.clearViewOffset();
-    const distance = Math.max(4.4 - deskZ, halfWidth / (Math.tan(THREE.MathUtils.degToRad(19)) * camera.aspect) * 1.05);
-    controls.target.copy(room.center).add(new THREE.Vector3(0, 1.4, deskZ));
-    camera.position.copy(room.center).add(new THREE.Vector3(0, 2.5, deskZ + distance));
+    // Look across both desk sides, above monitor tops. Fit the whole seated
+    // head-to-foot volume so a foreground back cannot fill the window.
+    controls.target.copy(room.center).add(new THREE.Vector3(0, 1.25, (nearZ + farZ) / 2));
+    const direction = new THREE.Vector3(0.65, 0.62, 0.48).normalize();
+    const forward = direction.clone().negate();
+    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
+    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
+    const tanVertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+    const tanHorizontal = tanVertical * camera.aspect;
+    let distance = 6.8;
+    for (const x of [-2.3, 2.3]) for (const y of [room.navigation.floorY, 3.2]) for (const z of [farZ, nearZ]) {
+      const point = room.center.clone().add(new THREE.Vector3(x, y, z)).sub(controls.target);
+      distance = Math.max(distance, point.dot(direction) + Math.abs(point.dot(right)) / tanHorizontal,
+        point.dot(direction) + Math.abs(point.dot(up)) / tanVertical);
+    }
+    camera.position.copy(controls.target).addScaledVector(direction, distance * 1.2);
     camera.updateProjectionMatrix();
     controls.update();
     fadeWalls();
@@ -918,6 +1045,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
             actor.root.add(gltf.scene);
             actor.root.userData.assetStatus = 'authored-model';
             actor.mixer = new THREE.AnimationMixer(gltf.scene);
+            actor.seatedFeet = new AuthoredFootPose(gltf.scene);
+            actor.seatedFeet.apply(Math.max(0, actor.motor.y - actor.motor.floorY));
             actor.actions = {};
             const runtimeClips = CLIP_NAMES.map((name) => gltf.animations.find((candidate) => candidate.name === asset.clips[name]));
             if (runtimeClips.every((clip): clip is THREE.AnimationClip => !!clip)) {
@@ -957,13 +1086,26 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       });
       if (newlyInactive.length) settlingRemaining = 1;
       if (idleTeamId && newlyInactive.some((team) => team.id !== idleTeamId)) deferredCampusSettle = true;
-      state = { ...next, activity: { ...next.activity }, decorations: { ...next.decorations } };
+      const priorControl = state.controlMode;
+      state = { ...next, controlMode: next.controlMode ?? 'live', activity: { ...next.activity }, decorations: { ...next.decorations } };
+      if (priorControl !== state.controlMode) for (const actor of actors) {
+        actor.motor = state.controlMode === 'preview' ? actor.previewMotor : actor.liveMotor;
+        actor.proxyPose = undefined;
+      }
       const nextDecorationSignature = teams.map((team) => `${team.id}:${(state.decorations[team.id] ?? []).join(',')}`).join('|');
       if (nextDecorationSignature !== decorationSignature) {
         decorationSignature = nextDecorationSignature;
         renderer.shadowMap.needsUpdate = true;
         batches.invalidateVisibility();
+        navigator.setDecorations(state.decorations);
+        actors.forEach(actor => { actor.liveMotor.replan(); actor.previewMotor.replan(); });
       }
+      if (officeAssets.sync(state.assets)) {
+        refreshAssetWallFades();
+        batches.rebuild();
+        renderer.shadowMap.needsUpdate = true;
+      }
+      applyMotorState();
       rooms.forEach((room, id) => {
         room.outline.visible = id === state.selectedTeam;
         const chosen = state.decorations[id] ?? [];
@@ -999,6 +1141,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       actors.forEach((actor) => { actor.mixer?.stopAllAction(); actor.mixer?.uncacheRoot(actor.model); });
       contacts.dispose();
       batches.dispose();
+      officeAssets.dispose();
+      assetWallFades.length = 0;
       output.dispose();
       const resources = new THREE.Group();
       resources.add(scene, retiredProxies);

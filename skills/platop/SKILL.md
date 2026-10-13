@@ -1,15 +1,17 @@
 ---
 name: platop
-description: Show selected Codex teams as public activity states through the local PLaTOP MCP or CLI, or wrap an authorized local command with activity heartbeats. Use when the user asks to visualize team activity; this skill does not run their chats or business workflows.
+description: Show selected Codex teams in the local PLaTOP office, report public activity, and give their avatars small movement or decoration intents through local MCP. This skill does not run their chats or business workflows.
 ---
 
 # PLaTOP
 
-PLaTOP is a small local 3D office. Characters show a team activity state; the playground is not the source of truth for chat execution. The bridge accepts only a stable team ID, a state, and an enum source. Keep transcripts, message bodies, customer details, credentials, task names, and private chat IDs out of telemetry and public repository files.
+PLaTOP is a small local 3D office. Characters show a team activity state; the playground is not the source of truth for chat execution. Its closed vocabulary accepts public activity, avatar movement intents and bounded geometric decoration recipes. Keep transcripts, message bodies, customer details, credentials, task names, and private chat IDs out of telemetry and public repository files.
 
 Prefer the locally registered PLaTOP MCP tools when the current host exposes them: `platop_status` reads the public snapshot; `platop_set_activity` accepts exactly `{ "teamId": "merchant", "state": "active" }` with the closed team/state vocabulary below. The host may prefix tool names with the MCP server name. Never pass paths, URLs, tokens, commands, task names, message text, or chat IDs as tool arguments. The MCP is a local stdio process; it talks only to the loopback bridge and reads its write token privately.
 
-If MCP tools are not loaded in this chat, locate the user's PLaTOP repository and use `node <repo>/scripts/platop.mjs` as a fallback. The default bridge is `http://127.0.0.1:4317`; `npm start` serves a previously built UI. Read `<repo>/docs/ACTIVITY-BRIDGE.md` when configuring a client or creating a snapshot. MCP registration does not prove that a pre-existing chat has loaded the tools. A missing bridge means visualization is unavailable; do not invent live activity.
+If the requested MCP tool is not loaded in this chat, locate the user's PLaTOP repository and use its bounded local MCP client: `node <repo>/scripts/platop-mcp-client.mjs status` or `node <repo>/scripts/platop-mcp-client.mjs set <team> <state>`. It calls the same fixed local stdio server through MCP initialization, tool discovery and tool invocation; callers supply only the closed public arguments described here. This uses MCP without claiming that the chat host loaded its tools. If the local MCP client is unavailable, the existing `scripts/platop.mjs` direct CLI remains a last-resort visualization fallback. A failed or unconfirmed write must not be retried automatically.
+
+The default bridge is `http://127.0.0.1:4317`; `npm start` serves a previously built UI. Read `<repo>/docs/ACTIVITY-BRIDGE.md` when configuring a client or creating a snapshot. MCP registration does not prove that a pre-existing chat has loaded the tools. A missing bridge means visualization is unavailable; do not invent live activity.
 
 ## Observe selected chats
 
@@ -22,7 +24,7 @@ Map freshly observed execution status conservatively:
 - Waiting for user input, approval, or a recoverable failure: `waiting`.
 - Not loaded, unavailable, ambiguous, or not observed: `unknown`.
 
-For each observation, call `platop_set_activity` with the public team ID and observed state, or use `node <repo>/scripts/platop.mjs set <team> <state> --source codex` when the MCP is unavailable. Native tool availability and status fields vary by host: if a native tool cannot establish execution status, use `unknown`. Avoid reading chat output just to guess whether it is still running. A completed final response with current native idle status is sleeping; an old final response alone does not prove current idle.
+For each observation, call `platop_set_activity` with the public team ID and observed state, or use `node <repo>/scripts/platop-mcp-client.mjs set <team> <state>` when host MCP tools are unavailable. The MCP assigns source `skill`. Native tool availability and status fields vary by host: if a native tool cannot establish execution status, use `unknown`. Avoid reading chat output just to guess whether it is still running. A completed final response with current native idle status is sleeping; an old final response alone does not prove current idle.
 
 For a bounded monitor explicitly requested by the user, prefer native `wait_threads` with cursors, then update public states when status changes. This initial skill provides manual or in-turn updates and command wrapping; it does not install a background native chat monitor. Do not create recurring automation unless separately requested.
 
@@ -39,3 +41,26 @@ node <repo>/scripts/platop.mjs run <team> -- <executable> <argument> ...
 The wrapper publishes active, sends heartbeats, and publishes sleeping on exit 0 or waiting on failure. It passes arguments directly to the executable. Do not introduce a shell command string or `sh -c` to turn untrusted text into code. The skill does not authorize any additional command, outreach, deployment, message, or live business action.
 
 The local token and state stay in ignored `.local/`. Never display or copy the token into a prompt, URL, browser code, screenshot, snapshot, or committed file. The MCP and CLI read the token privately.
+
+## Small motor skills and their own space
+
+Agents choose their office's visual personality. Use a single intent when it suits the current authorized work; do not narrate each animation frame or schedule extra chat turns for movement. Activity reporting remains independent: walking, sleeping or leaving the office never starts or stops real work. Do not fabricate a holiday, work result or chat state to justify an animation.
+
+`platop_action` accepts `{teamId, actorId?, kind, target?}`. Omit `actorId` for the team's primary character; an explicit public character ID must belong to that team. Kinds are `walk_to`, `work`, `rest`, `celebrate`, `arrive`, `leave`. `walk_to` requires `target: {officeId, place}` where officeId is one of the six public teams and place is `desk`, `door` or `lounge`. `arrive` defaults to the owner's door. A visitor uses the other office's lounge rather than occupying its assigned chair. `work` and `rest` return to the assigned desk; `leave` walks out and keeps the avatar absent until `arrive`. Send an intent once; the scene owns routing, turning and animation. A failed or unconfirmed write must not be retried automatically.
+
+Examples through the same local MCP fallback:
+
+```sh
+node <repo>/scripts/platop-mcp-client.mjs action support walk_to '{"target":{"officeId":"reflection","place":"lounge"}}'
+node <repo>/scripts/platop-mcp-client.mjs action support work
+node <repo>/scripts/platop-mcp-client.mjs action support leave
+node <repo>/scripts/platop-mcp-client.mjs action support arrive
+```
+
+`platop_decorate` accepts `{teamId, slot, parts}`. Slots are `desk`, `shelf`, `wall`, `floor`, `festive`. Agents can compose up to 12 simple parts into one asset per slot. Shapes are `box`, `sphere`, `cylinder`, `cone`, `torus`; optional normalized `position`, `size`, `rotation` are three-number arrays, `color` is `#rrggbb`, and `glow` is a boolean. Defaults are position/rotation zero, size `[0.3,0.3,0.3]`, warm cream, glow false. Positions are within ±1.2, sizes 0.04–1.2, rotations ±π; the full rotated part must fit the bounded slot. No scripts, file paths, downloads, text, images or URLs are accepted. Glow adds no live light. A new recipe replaces that slot; empty `parts` removes it. Placement, scale and clearance are handled by the scene so decorations cannot block the office routes.
+
+```sh
+node <repo>/scripts/platop-mcp-client.mjs decorate support desk '[{"shape":"sphere","color":"#91a98d"},{"shape":"cylinder","position":[0,-0.25,0],"size":[0.35,0.25,0.35],"color":"#c5a276"}]'
+```
+
+Decoration is optional, local visual expression. Preserve each automation's existing schedule, notifications, authority and business safeguards. Do not create extra automations, send messages or perform business actions to personalize this office.

@@ -1,19 +1,24 @@
 import { useEffect, useState } from 'react';
 import { teams } from './teams';
 import type { Snapshot, TeamState } from './types';
+import { parseOfficeSnapshot } from '../server/office-protocol.mjs';
 const allowed = new Set(['active', 'sleeping', 'waiting', 'unknown']);
 export function parseSnapshot(value: unknown): Snapshot | null {
   if (!value || typeof value !== 'object') return null;
   const data = value as Record<string, unknown>;
-  if (!Array.isArray(data.teams) || typeof data.serverTime !== 'string') return null;
+  if (!Array.isArray(data.teams) || data.teams.length > teams.length || typeof data.serverTime !== 'string' || !Number.isFinite(Date.parse(data.serverTime))) return null;
   const safe: TeamState[] = [];
+  const seen = new Set();
   for (const raw of data.teams) {
     if (!raw || typeof raw !== 'object') return null;
     const row = raw as Record<string, unknown>;
-    if (!teams.some(t => t.id === row.teamId) || typeof row.state !== 'string' || !allowed.has(row.state) || (row.updatedAt !== null && (typeof row.updatedAt !== 'string' || !Number.isFinite(Date.parse(row.updatedAt)))) || typeof row.source !== 'string') return null;
+    if (!teams.some(t => t.id === row.teamId) || typeof row.state !== 'string' || !allowed.has(row.state) || (row.updatedAt !== null && (typeof row.updatedAt !== 'string' || !Number.isFinite(Date.parse(row.updatedAt)))) || typeof row.source !== 'string' || !['codex', 'skill', 'demo', 'manual'].includes(row.source)) return null;
+    if (seen.has(row.teamId)) return null;
+    seen.add(row.teamId);
     safe.push({ teamId: row.teamId as string, state: row.state as TeamState['state'], updatedAt: row.updatedAt as string | null, source: row.source.slice(0, 24) });
   }
-  return { teams: safe, serverTime: data.serverTime };
+  try { return { teams: safe, serverTime: data.serverTime, ...parseOfficeSnapshot(data) }; }
+  catch { return null; }
 }
 export function useActivity() {
   const [snapshot, setSnapshot] = useState<Snapshot | null>(null);

@@ -57,9 +57,9 @@ Every GLB has the four app clips (`Idle`, `Move`, `Work`, `Sleep`) and two extra
 - **Glows:** materials named `glow_*` are unlit (`KHR_materials_unlit`). Set `toneMapped = false` on them if tone mapping washes them out.
 - **`extras`** (ignored by `parseManifest`, available to the app): `name`, `team`, `height`, `footprint`, `locomotion`, `airborne`, `moveSpeed`, extra clips, `clipDurations`, `sockets.zzz` / `sockets.bubble` heights, and `voice.preset` (pass it to `voiceFor(preset, id)`; see [SOUND.md](SOUND.md)).
 
-## Decor — "Make it their own"
+## Authored decor library
 
-`public/assets/decor/manifest.json` maps every team to a **plant**, a **lamp** and an **art** piece, matching the app's Plant · Lamp · Art upgrades. The lamps and art come from each team's own portrait:
+`public/assets/decor/manifest.json` maps every team to a **plant**, a **lamp** and an **art** piece, retained from the earlier Plant · Lamp · Art controls. Those viewer controls have been removed. Agents now own decoration through bounded primitive recipes in the local PLaTOP skill; this authored library remains available as source material. The lamps and art come from each team's own portrait:
 
 | Team | Art | Lamp | Plant |
 | --- | --- | --- | --- |

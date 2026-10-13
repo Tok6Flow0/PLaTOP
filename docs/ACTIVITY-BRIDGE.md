@@ -60,7 +60,7 @@ node scripts/platop.mjs run support -- node scripts/authorized-task.mjs
 
 ## Local MCP
 
-`node scripts/platop-mcp.mjs` exposes two tools over MCP stdio: `platop_status` accepts an empty object, and `platop_set_activity` accepts exactly a public `teamId` and `state`. The adapter does not launch commands, read chats, take arbitrary paths or URLs, or make external network requests. Writes use source `skill`. Active calls renew the two-minute freshness timeout; they are intentionally not marked idempotent. Both tools are closed-world and nondestructive; only status is read-only.
+`node scripts/platop-mcp.mjs` exposes four tools over MCP stdio: `platop_status` accepts an empty object, `platop_set_activity` accepts exactly a public `teamId` and `state`, and `platop_action` / `platop_decorate` accept the bounded office intents below. The adapter does not launch commands, read chats, take arbitrary paths or URLs, or make external network requests. Writes use source `skill`. Active calls renew the two-minute freshness timeout; they are intentionally not marked idempotent. All tools are closed-world and nondestructive; only status is read-only.
 
 The MCP uses the same ignored local token and loopback-only bridge as the CLI. It rejects redirects, bounds messages and response bodies, validates returned states, and returns generic failures without tokens, paths, private identifiers, or task contents. No SDK or cloud service is required. Its [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports), [initialization](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle), and [tool messages](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) follow the MCP specification; supported protocol versions are 2024-11-05 through 2025-11-25.
 
@@ -70,8 +70,80 @@ To register with a local Codex host, use its supported `codex mcp add` command, 
 codex mcp add platop -- <absolute-node-path> <absolute-repo-path>/scripts/platop-mcp.mjs
 ```
 
-Personal installation paths belong only in host configuration. Do not commit them. Codex CLI and the desktop app share this configuration, but saving it does not prove an existing chat has loaded the tools. The [desktop setup guide](https://developers.openai.com/codex/mcp) calls for Restart after saving a server. A host that exposes the supported [MCP configuration reload API](https://developers.openai.com/codex/app-server) can queue a runtime refresh instead. Do not interrupt active work just to restart the host; the skill's CLI fallback works until MCP tools are actually available. Registration, a successful protocol test, and actual tool availability in a particular chat are separate checks.
+Personal installation paths belong only in host configuration. Do not commit them. Codex CLI and the desktop app share this configuration, but saving it does not prove an existing chat has loaded the tools. The [desktop setup guide](https://developers.openai.com/codex/mcp) calls for Restart after saving a server. A host that exposes the supported [MCP configuration reload API](https://developers.openai.com/codex/app-server) can queue a runtime refresh instead. Do not interrupt active work just to restart the host; the skill's bounded local MCP client works until host tools are actually available. Registration, a successful protocol test, and actual tool availability in a particular chat are separate checks.
 
-The distributable skill is [skills/platop/SKILL.md](../skills/platop/SKILL.md). Install it by linking or copying that folder into the local Codex skills directory. It prefers MCP tools when available and uses the CLI otherwise, with native chat tools and a private user-defined mapping to public team IDs. Installation alone does not observe or activate a chat.
+The distributable skill is [skills/platop/SKILL.md](../skills/platop/SKILL.md). Install it by linking or copying that folder into the local Codex skills directory. It prefers host MCP tools when available and otherwise uses the local MCP client below, with native chat tools and a private user-defined mapping to public team IDs. Installation alone does not observe or activate a chat.
+
+### MCP client for existing chats
+
+```sh
+node scripts/platop-mcp-client.mjs status
+node scripts/platop-mcp-client.mjs set support active
+node scripts/platop-mcp-client.mjs set support sleeping
+```
+
+This client launches only its fixed sibling MCP server with the current Node
+executable, no shell, no caller-supplied program and no new dependency. It runs
+initialization, tool discovery and invocation over stdio, verifies the server,
+tool vocabulary and public snapshot, and confirms the requested state before
+printing success. Writes have source `skill`. Callers cannot supply paths,
+tokens, URLs, commands, private IDs or message text as tool arguments.
+
+An eight-second deadline and bounded input streams prevent a stalled or noisy
+server from lingering. Child stderr is discarded, failures are generic, and
+only validated public fields are returned. The child receives only the existing
+operator-controlled `PLATOP_ROOT` and `PLATOP_PORT` settings; unrelated credentials
+and Node preload variables are not inherited. The process closes after each
+call and is terminated if it fails to close. Failed or ambiguous writes are
+not retried automatically. The original direct CLI remains a last-resort
+fallback if no MCP call was attempted; a visualization failure never authorizes
+new business work or blocks the already-authorized task.
+
+This is actual local MCP protocol use, but it does not mean the chat host has
+loaded native MCP tools. Existing automation runs can use the client without
+restarting the host or changing their schedules and authority.
 
 For user-authorized existing scheduled team tasks, add the skill to their current prompt: publish active at the beginning, renew it about every 30 seconds while working, sleeping after completion, waiting for required input, and unknown for unavailable observations. Preserve their cadence, target chat, notification policy, and underlying business authorization. A missing avatar bridge must never trigger extra business actions or prevent the authorized workflow from continuing. This integration supplies task-owned observations; it does not independently prove that all scheduled runs have executed successfully.
+
+
+## Agent-owned office intents
+
+The optional `actions` and `assets` maps extend the existing public state snapshot
+without changing its activity fields. `POST /api/actions` and `POST /api/assets`
+require the same local token, loopback Host, exact Origin (when supplied) and
+8 KiB body limit as activity writes. The browser never receives the token.
+Current office state is atomically saved to ignored `.local/office.json` with
+0600 permissions and a 128 KiB limit; there is no history, transcript or arbitrary
+metadata field. Public character IDs must belong to the supplied team.
+
+- `platop_action`: `{teamId, actorId?, kind, target?}`. Kinds are `walk_to`,
+  `work`, `rest`, `celebrate`, `arrive`, `leave`. `walk_to` requires
+  `{officeId, place}` with a public team ID and `desk`, `door` or `lounge`.
+  `arrive` defaults to the owner's door. Other kinds reject targets. Each accepted
+  intent has a fresh server UUID; the motor consumes an ID once, owns routing
+  and turn easing, and keeps departed characters absent until arrival.
+- `platop_decorate`: `{teamId, slot, parts}` replaces one of `desk`, `shelf`,
+  `wall`, `floor`, `festive`. Empty parts clears the slot. Up to 12 normalized
+  primitive parts (`box`, `sphere`, `cylinder`, `cone`, `torus`) have bounded
+  position, size, rotation, hex color and boolean glow. Rotated extents stay
+  within a fixed slot; no code, file path, URL, text or external asset is accepted.
+  Glow is material emission and creates no additional light. At most 30 current
+  assets / 360 parts exist. Unchanged recipes do not emit redundant updates.
+
+Both local transports support the same short commands:
+
+```sh
+node scripts/platop-mcp-client.mjs action support walk_to '{"target":{"officeId":"reflection","place":"lounge"}}'
+node scripts/platop-mcp-client.mjs action support work
+node scripts/platop-mcp-client.mjs action support leave
+node scripts/platop-mcp-client.mjs action support arrive
+node scripts/platop-mcp-client.mjs decorate support desk '[{"shape":"sphere","color":"#91a98d"}]'
+node scripts/platop-mcp-client.mjs decorate support desk '[]'
+```
+
+The original direct CLI accepts `action` and `decorate` with the same inline JSON
+arguments as a last-resort fallback. Neither transport accepts a file or program
+for these intents. Failed or unconfirmed writes are never retried automatically.
+Office appearance and presence are visual choices; they do not execute, pause
+or authorize business work. Preview uses separate simulated motors. Disconnect
+preserves the live position and presence until a valid connection returns.

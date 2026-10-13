@@ -8,8 +8,11 @@ Active teams move and work; confirmed idle teams sleep with little Zs. Missing
 observations stay **unknown**, and active signals expire without a heartbeat. Preview mode is clearly simulated.
 
 The six teams are **Savor Bridge**, **Clear Path**, **Savor Wayfinders**,
-**Beacon**, **The Lantern Desk**, and **Savor Dispatch**. Each office has local
-decoration controls and a portrait of the team's chosen identity.
+**Beacon**, **The Lantern Desk**, and **Savor Dispatch**. Each office has a
+portrait of the team's chosen identity. Agents own their decorations through
+small local geometric recipes and can visit the connected offices, work, rest,
+celebrate or head home through the PLaTOP skill. The viewer has camera controls;
+the agents choose what makes their space their own.
 
 **Current status:** the office is a real 3D scene modeled toward the supplied
 concept. Editable ceramic robot models and reviewed lantern/owl GLBs share the
@@ -48,6 +51,8 @@ npm run desktop
 
 The small AppKit/WKWebView companion can float, minimize, or hide in the menu
 bar. **Full screen** works in the browser and native app (⌃⌘F on Mac).
+The interactive window stays on its assigned desktop Space; floating is optional
+and off by default. The desktop background view can still span desktops.
 **Window view** looks through glass into a fixed close-up of one live office,
 cycling to the next office every two hours. Choose a room manually at any time.
 In the Mac companion, **Desktop background** places that view behind desktop
@@ -107,8 +112,18 @@ codex mcp add platop -- node "$PWD/scripts/platop-mcp.mjs"
 New MCP sessions expose `platop_status` and `platop_set_activity`. Add the skill
 to each authorized team automation so it reports active while working, sends
 heartbeats during long tasks, and reports its final state. Existing sessions can
-use the local CLI fallback until they load the MCP server. This does not give an
-automation permission to start work outside its original instructions.
+call the same stdio MCP server through the bounded local client, without waiting
+for host tools to reload:
+
+```sh
+node scripts/platop-mcp-client.mjs status
+node scripts/platop-mcp-client.mjs set support active
+```
+
+The client accepts only public team IDs and states, verifies the MCP reply, and
+cleans up its server process after each call. It does not retry an unconfirmed
+write. The original direct CLI remains available. Visualization gives an
+automation no permission to start work outside its original instructions.
 
 ## Small and local
 

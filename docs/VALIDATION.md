@@ -500,3 +500,84 @@ One installed PLaTOP bundle and one running app instance were found. The existin
 native executable passes strict signature verification and is updated in place
 through its local frontend. Private mappings, credentials, raw measurements and
 location remain outside version control.
+
+## Connected office, agent motor skills and desktop isolation — 2026-10-13
+
+The interactive native window no longer opts into every macOS Space, and floating
+is off by default. The existing bundle was rebuilt in place, relaunched and
+assigned to a dedicated desktop; metadata confirmed that its window belonged to
+that Space alone and the original desktop was restored. The click-through desktop
+background retains its intended all-desktop behavior. Native occlusion can now
+pause rendering while the interactive office is on another Space.
+
+The circular chair orbit has been replaced by event-driven floor routing and
+small visual motors. Characters have assigned desk headings, explicit chair
+egress, bounded speed/acceleration/turning, distance-driven steps, and connected
+door/corridor/entry paths. The largest authored models and folded swift transit
+pose determine clearance. Preview has separate motors; offline preserves live
+position and presence. Departures stay absent until an arrival intent. Activity
+signals still govern wake/rest transitions after a completed ordinary intent.
+The viewer's Plant/Lamp/Art controls have been removed. Empty rooms turn their
+owned lamp lights and glow off; returning characters and visitors restore them
+on an occupancy edge, without clocks, extra render loops or shared-material edits.
+
+Two local MCP tools add bounded visual intents and primitive decoration recipes.
+They share existing loopback, token, Origin and body limits. Current sanitized
+state is atomically persisted privately with no history. Asset geometry is
+shared and low-poly; materials are rough with optional emission, no extra lights.
+Updates rebuild scene batches only on actual recipe changes. Replacement/removal
+releases materials, final disposal releases shared geometry, and desk/shelf/floor
+recipes align their bottoms with their support surface. Shared validators also
+run in the browser and are included in frontend build fingerprints.
+
+The bounded local stdio MCP client performs initialize, discovery and invocation,
+then validates the public acknowledgement and process exit. It rejects private
+arguments, arbitrary tools/programs/paths, malformed replies and oversized streams;
+its fixed deadline terminates stalled children. It inherits only existing local
+bridge settings, discards stderr and never retries an unconfirmed write. All six
+existing automations were updated to use this actual MCP fallback when host tools
+are absent. Readback preserved their schedules, targets, names, status,
+notifications and business authority. Fresh native observations were published as
+skill-source states without running or prompting the business workflows. This
+proves integration and local protocol use, not that every future scheduled run
+will execute successfully or that old chat hosts have loaded native MCP tools.
+
+The additional visible-rendering CPU target remains unproven. A private exact
+static-indexing trial matched images, actor states and shadow maps while reducing
+unique static vertices by 68%, but the matched native capture increased median
+CPU from 27.64% to 28.77% of one core. It was rejected. A private WebGPU prototype
+was not adopted: output shading differed and no matched native CPU result was
+completed. Neither experiment is included in the shipped renderer. These results
+must not be described as an overall 20–30% CPU improvement. Cinematic 30 FPS
+pacing remains the supported visible-animation target.
+
+
+Final source validation passes all 172 tests and the production build. Real-layout
+checks cover all 16 characters, assigned desk egress, every office door/lounge and
+the exterior exit with legacy decorations on and off. Authored owl feet preserve
+standing world positions through all runtime clips and reversible seated offsets;
+the folded swift silhouette fits its measured transit radius. A separate security
+review found no additional blocker in the bounded office/transport changes.
+Twenty-five rendered checks pass with no runtime or GL errors, including visitors
+entering a selected window, paused reveal/contact coherence, action precedence,
+departure/arrival lamp edges, preview isolation, offline presence, all six office
+windows, recipe visibility, pause and disposal. These are functional and rendering
+checks, not a guarantee of display-presentation FPS on every device.
+
+
+A separate native background capture kept the interactive app on its dedicated
+Space while the original desktop remained active. With unchanged process launch
+identities, diagnostics off, a 26-second warmup and three 13-second cumulative
+counter windows, app + GPU-process + WebContent CPU measured 0.016% of one core
+at the median (about 0.02% rounded). The served index/build fingerprint matched
+the captured production build. This verifies the offscreen pause; it is a
+background measurement, not a matched visible-rendering improvement or a GPU,
+whole-machine, power or battery measurement.
+
+Independent screenshot critique identified close-up framing blockers: monitors and
+near seated heads hid faces, and the window mullion crossed the email owl. A
+bounded higher diagonal camera now fits the seated head-to-foot and desk-depth
+volume. All six revised windows passed the independent qualitative review and
+the same 25 rendered checks were repeated successfully. This does not establish
+95% fidelity to the concept or display frame pacing; lighting remains a possible
+future polish area. Temporary QA browsers and servers were closed.

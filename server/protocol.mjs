@@ -3,6 +3,7 @@ export const STATES = Object.freeze(['active', 'sleeping', 'waiting', 'unknown']
 export const SOURCES = Object.freeze(['codex', 'skill', 'demo', 'manual']);
 export const ACTIVE_TTL_MS = 120_000;
 export const MAX_BODY_BYTES = 8192;
+export const MAX_SNAPSHOT_BYTES = 131_072;
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

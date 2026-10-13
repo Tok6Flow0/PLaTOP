@@ -78,7 +78,7 @@ final class PlaygroundDelegate: NSObject, NSApplicationDelegate, NSWindowDelegat
 
     init(address: PlaygroundAddress) {
         self.address = address
-        floating = UserDefaults.standard.object(forKey: "floatWindow") as? Bool ?? true
+        floating = UserDefaults.standard.object(forKey: "floatWindow") as? Bool ?? false
         super.init()
     }
 
@@ -170,7 +170,7 @@ final class PlaygroundDelegate: NSObject, NSApplicationDelegate, NSWindowDelegat
         window.isReleasedWhenClosed = false
         window.tabbingMode = .disallowed
         window.delegate = self
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenPrimary]
+        window.collectionBehavior = [.fullScreenPrimary]
         window.level = interactiveWindowLevel
         window.setFrameAutosaveName(frameAutosaveName)
         window.center()
@@ -592,7 +592,7 @@ final class PlaygroundDelegate: NSObject, NSApplicationDelegate, NSWindowDelegat
     }
     func windowDidExitFullScreen(_ notification: Notification) {
         fullscreenTransitioning = false
-        window.collectionBehavior = [.canJoinAllSpaces, .fullScreenPrimary]
+        window.collectionBehavior = [.fullScreenPrimary]
         window.level = interactiveWindowLevel
         if desktopAfterFullscreen {
             desktopAfterFullscreen = false

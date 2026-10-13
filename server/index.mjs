@@ -5,6 +5,8 @@ import { timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { createStore, ensureToken } from './store.mjs';
 import { MAX_BODY_BYTES, parseUpdates } from './protocol.mjs';
+import { createOfficeStore } from './office-store.mjs';
+import { parseAction, parseDecoration } from './office-protocol.mjs';
 import { handleWeatherRequest } from './weather.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -56,6 +58,8 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
   const localDirectory = path.join(canonicalRoot, '.local');
   const token = await ensureToken(localDirectory);
   const store = await createStore({ localDirectory, now, ttlMs });
+  const office = await createOfficeStore({ localDirectory });
+  const snapshot = () => ({ ...store.snapshot(), ...office.snapshot() });
   const clients = new Set();
   let boundPort;
   let distDirectory;
@@ -84,14 +88,14 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
       let pathname;
       try { pathname = safePath(request.url ?? '/'); } catch { return sendJSON(response, 400, { error: 'Invalid path.' }); }
       if (pathname.split('/').some(segment => segment.startsWith('.'))) return sendJSON(response, 404, { error: 'Build file not found.' });
-      if (pathname === '/api/state' && request.method === 'GET') return sendJSON(response, 200, store.snapshot());
+      if (pathname === '/api/state' && request.method === 'GET') return sendJSON(response, 200, snapshot());
       if (await handleWeatherRequest(request, response, new URL(request.url, `http://127.0.0.1:${boundPort}`))) return;
       if (pathname === '/api/events' && request.method === 'GET') {
         if (clients.size >= 12) return sendJSON(response, 503, { error: 'Local connection limit reached.' });
         response.writeHead(200, { ...SECURITY_HEADERS, 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', 'Connection': 'keep-alive', 'X-Accel-Buffering': 'no' });
         response.write('retry: 5000\n\n');
         clients.add(response);
-        response.write(`event: state\ndata: ${JSON.stringify(store.snapshot())}\n\n`);
+        response.write(`event: state\ndata: ${JSON.stringify(snapshot())}\n\n`);
         request.on('close', () => clients.delete(response));
         return;
       }
@@ -101,9 +105,24 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
         try { updates = parseUpdates(await readJSON(request)); } catch (error) {
           return sendJSON(response, error.status ?? 400, { error: 'Invalid public activity update.' });
         }
-        const snapshot = await store.update(updates);
-        emit(snapshot);
-        return sendJSON(response, 200, snapshot);
+        await store.update(updates);
+        const current = snapshot();
+        emit(current);
+        return sendJSON(response, 200, current);
+      }
+      if (['/api/actions', '/api/assets'].includes(pathname) && request.method === 'POST') {
+        if (!authorized(request.headers.authorization, token)) return sendJSON(response, 401, { error: 'Local token required.' });
+        let payload;
+        try {
+          const input = await readJSON(request);
+          payload = pathname === '/api/actions' ? parseAction(input) : parseDecoration(input);
+        } catch (error) {
+          return sendJSON(response, error.status ?? 400, { error: 'Invalid public office data.' });
+        }
+        const result = pathname === '/api/actions' ? await office.action(payload) : await office.decorate(payload);
+        const current = snapshot();
+        if (result.changed) emit(current);
+        return sendJSON(response, 200, current);
       }
       if (pathname.startsWith('/api/')) return sendJSON(response, 404, { error: 'Unknown local endpoint.' });
       if (!['GET', 'HEAD'].includes(request.method)) return sendJSON(response, 405, { error: 'Method not allowed.' });
@@ -136,7 +155,7 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
       else client.write(': heartbeat\n\n');
     }
   }, heartbeatMs);
-  const expiry = setInterval(() => { if (store.expire()) emit(store.snapshot()); }, expiryCheckMs);
+  const expiry = setInterval(() => { if (store.expire()) emit(snapshot()); }, expiryCheckMs);
   heartbeat.unref(); expiry.unref();
   return {
     port: boundPort,
