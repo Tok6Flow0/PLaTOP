@@ -14,10 +14,10 @@ export const ACTION_KINDS = Object.freeze(['walk_to', 'work', 'rest', 'celebrate
 export const PLACES = Object.freeze(['desk', 'door', 'lounge', 'whiteboard', 'cabinet']);
 export const ACTION_GESTURES = Object.freeze(['work', 'think', 'file', 'talk', 'wait']);
 export const DECOR_SLOTS = Object.freeze(['desk', 'shelf', 'wall', 'floor', 'festive']);
-export const DECOR_SHAPES = Object.freeze(['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'leaf']);
-export const DECOR_FINISHES = Object.freeze(['matte', 'ceramic', 'wood', 'metal']);
+export const DECOR_SHAPES = Object.freeze(['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'leaf', 'arch', 'vase', 'cushion', 'dome']);
+export const DECOR_FINISHES = Object.freeze(['matte', 'ceramic', 'wood', 'metal', 'fabric', 'stone', 'lacquer']);
 export const ROOM_LIGHT_MODES = Object.freeze(['day', 'cozy', 'night', 'off']);
-export const MAX_DECOR_PARTS = 12;
+export const MAX_DECOR_PARTS = 24;
 export const DEFAULT_DECOR_COLOR = '#efe3c8';
 const record = value => value !== null && typeof value === 'object' && !Array.isArray(value);
 const exact = (value, keys, required = keys) => record(value)
@@ -35,15 +35,19 @@ function paletteFields(value, allowEmpty = false) {
 }
 
 function lightingFields(value, allowEmpty = false) {
-  if (!exact(value, ['color', 'brightness', 'mode'], []) || (!allowEmpty && !Object.keys(value).length)) throw invalid();
+  if (!exact(value, ['color', 'brightness', 'mode', 'ambientColor', 'ambientBrightness', 'ambientPosition'], []) || (!allowEmpty && !Object.keys(value).length)) throw invalid();
   const result = {};
   for (const [key, input] of Object.entries(value)) {
-    if (key === 'color') {
+    if (key === 'color' || key === 'ambientColor') {
       if (!hexColor(input)) throw invalid();
-      result.color = input.toLowerCase();
-    } else if (key === 'brightness') {
+      result[key] = input.toLowerCase();
+    } else if (key === 'brightness' || key === 'ambientBrightness') {
       if (typeof input !== 'number' || !Number.isFinite(input) || input < 0 || input > 1.5) throw invalid();
-      result.brightness = input;
+      result[key] = input;
+    } else if (key === 'ambientPosition') {
+      const position = vector(input, undefined, -2.5, 3);
+      if (Math.abs(position[0]) > 2.5 || Math.abs(position[2]) > 2.5 || position[1] < 0.6) throw invalid();
+      result.ambientPosition = position;
     } else {
       if (!ROOM_LIGHT_MODES.includes(input)) throw invalid();
       result.mode = input;

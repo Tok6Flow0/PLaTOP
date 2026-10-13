@@ -2,7 +2,7 @@
 import { once } from 'node:events';
 import { requestActivity, requestAction, requestDecoration, requestRoomStyle } from '../server/client.mjs';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
+import { ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 const MAX_MESSAGE_BYTES = 16_384;
@@ -38,10 +38,10 @@ const TOOLS = [
   },
   {
     name: 'platop_decorate', title: 'Create a bounded local office decoration',
-    description: 'Make one office decoration from up to 12 smooth primitive parts; [] clears it. Choose shape, finish, colour and emissive glow. Each position plus bounding-sphere radius must fit +/-1.5. No files, code, URLs, labels or extra lights.',
+    description: 'Compose your own local setting from up to 24 smooth fitted parts; [] clears the slot. Choose shapes including open arches, hollow vessels, cushions and domes, finishes, colour and emissive glow. Each position plus bounding-sphere radius must fit +/-1.5. No files, code, URLs, labels or extra lights.',
     inputSchema: { type: 'object', properties: {
       teamId: { type: 'string', enum: TEAM_IDS }, slot: { type: 'string', enum: DECOR_SLOTS },
-      parts: { type: 'array', maxItems: 12, items: { type: 'object', properties: {
+      parts: { type: 'array', maxItems: MAX_DECOR_PARTS, items: { type: 'object', properties: {
         shape: { type: 'string', enum: DECOR_SHAPES },
         position: { type: 'array', items: { type: 'number', minimum: -1.2, maximum: 1.2 }, minItems: 3, maxItems: 3 },
         size: { type: 'array', items: { type: 'number', minimum: 0.04, maximum: 1.2 }, minItems: 3, maxItems: 3 },
@@ -53,7 +53,7 @@ const TOOLS = [
   },
   {
     name: 'platop_style', title: 'Style your local office',
-    description: 'Choose office wall, rug and furniture colours or lamp colour, brightness and mood. Omitted fields preserve the current look; reset:true restores the default room. Choices affect only this local visual office.',
+    description: 'Choose your office wall, rug and furniture colours, task lamp colour/brightness and mood. Independently choose ambientColor, ambientBrightness and one room-local ambientPosition (x/z +/-2.5, y 0.6..3). Omitted fields preserve the current look; reset:true restores the default room. Choices affect only this local visual office.',
     inputSchema: { type: 'object', properties: {
       teamId: { type: 'string', enum: TEAM_IDS },
       palette: { type: 'object', properties: Object.fromEntries(['wall', 'rug', 'furniture'].map(key => [key, { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }])), minProperties: 1, additionalProperties: false },
@@ -61,6 +61,12 @@ const TOOLS = [
         color: { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' },
         brightness: { type: 'number', minimum: 0, maximum: 1.5 },
         mode: { type: 'string', enum: ROOM_LIGHT_MODES },
+        ambientColor: { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' },
+        ambientBrightness: { type: 'number', minimum: 0, maximum: 1.5 },
+        ambientPosition: { type: 'array', prefixItems: [
+          { type: 'number', minimum: -2.5, maximum: 2.5 }, { type: 'number', minimum: 0.6, maximum: 3 },
+          { type: 'number', minimum: -2.5, maximum: 2.5 },
+        ], items: false, minItems: 3, maxItems: 3 },
       }, minProperties: 1, additionalProperties: false },
       reset: { const: true },
     }, required: ['teamId'], additionalProperties: false, oneOf: [

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
 import ts from 'typescript';
-import { DECOR_SHAPES, DECOR_SLOTS, DECOR_FINISHES, parseDecoration } from '../server/office-protocol.mjs';
+import { DECOR_SHAPES, DECOR_SLOTS, DECOR_FINISHES, MAX_DECOR_PARTS, parseDecoration } from '../server/office-protocol.mjs';
 
 const source = await readFile(new URL('../src/scene/officeAssets.ts', import.meta.url), 'utf8');
 const javascript = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText
@@ -88,7 +88,7 @@ test('geometry is shared across offices; replacement/removal releases only old m
 
 test('unit primitive bounds stay within slot limits and grounded recipes rest on their support surfaces', t => {
   const { renderer, rooms, meshes } = fixture(t);
-  const parts = DECOR_SHAPES.map((shape, index) => ({ shape, size: [0.4, 0.6, 0.8], position: [0, index * 0.1, 0], rotation: [0.3, -0.2, 0.5] }));
+  const parts = DECOR_SHAPES.map((shape, index) => ({ shape, size: [0.4, 0.6, 0.8], position: [0, index * 0.06, 0], rotation: [0.3, -0.2, 0.5] }));
   renderer.sync({ merchant: Object.fromEntries(DECOR_SLOTS.map(slot => [slot, asset(parts)])) });
   for (const mesh of meshes()) {
     const bounds = mesh.geometry.boundingBox;
@@ -104,6 +104,7 @@ test('unit primitive bounds stay within slot limits and grounded recipes rest on
     if (['desk', 'shelf', 'floor'].includes(root.userData.decorSlot)) {
       assert.ok(Math.abs(bounds.min.y - 1) < 1e-6, 'recipe bottom aligns with anchor support height');
     } else assert.equal(root.position.y, 1, 'wall and festive recipes retain their named center');
+    if (root.userData.decorSlot === 'wall') assert.ok(Math.abs(bounds.min.x) < 1e-6, 'mounting face meets the wall regardless of recipe depth');
     assert.equal(root.scale.x, scales[root.userData.decorSlot]);
     assert.ok(bounds.getSize(new THREE.Vector3()).x <= 3 * root.scale.x + 1e-6);
     assert.ok(bounds.getSize(new THREE.Vector3()).y <= 3 * root.scale.y + 1e-6);
@@ -115,8 +116,8 @@ test('finish choices produce distinct stable material response without texture l
   const { renderer, meshes } = fixture(t);
   renderer.sync({ merchant: { desk: asset(DECOR_FINISHES.map(finish => ({ shape: 'capsule', finish }))) } });
   const materials = meshes().map(mesh => mesh.material);
-  assert.deepEqual(materials.map(material => material.roughness), [0.82, 0.34, 0.78, 0.3]);
-  assert.deepEqual(materials.map(material => material.metalness), [0, 0, 0, 0.65]);
+  assert.deepEqual(materials.map(material => material.roughness), [0.82, 0.34, 0.78, 0.3, 0.97, 0.9, 0.17]);
+  assert.deepEqual(materials.map(material => material.metalness), [0, 0, 0, 0.65, 0, 0, 0.08]);
   assert.ok(materials.every(material => material.map === null && material.normalMap === null));
   assert.equal(new Set(meshes().map(mesh => mesh.geometry)).size, 1);
 });
@@ -130,7 +131,7 @@ test('invalid/private/unbounded display data cannot allocate resources or erase 
     { merchant: { desk: { ...recipe.merchant.desk, url: 'PRIVATE_URL' } } },
     { merchant: { desk: asset([{ shape: 'box' }], 'PRIVATE_ID') } },
     { merchant: { desk: { id: ID, parts: [{ shape: 'box', size: [100, 100, 100] }] } } },
-    { merchant: { desk: { id: ID, parts: Array.from({ length: 13 }, () => ({ shape: 'box' })) } } },
+    { merchant: { desk: { id: ID, parts: Array.from({ length: MAX_DECOR_PARTS + 1 }, () => ({ shape: 'box' })) } } },
     { merchant: { PRIVATE_SLOT: recipe.merchant.desk } }, { PRIVATE_TEAM: { desk: recipe.merchant.desk } },
   ]) {
     assert.equal(renderer.sync(invalid), false);
@@ -141,4 +142,28 @@ test('invalid/private/unbounded display data cannot allocate resources or erase 
   assert.equal(first.scale.x, 0.3, 'caller mutation cannot alter constructed transforms');
   assert.equal(renderer.sync({ merchant: { desk: asset([]) } }), true);
   assert.equal(meshes().length, 0);
+});
+
+test('sculpted forms have actual open negative space and hollow vessel geometry', t => {
+  const { renderer, meshes } = fixture(t);
+  renderer.sync({ merchant: { desk: asset([{ shape: 'arch' }, { shape: 'vase' }]) } });
+  const [arch, vase] = meshes().map(mesh => new THREE.Mesh(mesh.geometry, mesh.material));
+  const ray = new THREE.Raycaster(new THREE.Vector3(0, -0.25, 2), new THREE.Vector3(0, 0, -1));
+  assert.equal(ray.intersectObject(arch).length, 0, 'the arch opening is open rather than painted onto a block');
+  ray.ray.origin.set(0.4, -0.25, 2);
+  assert.ok(ray.intersectObject(arch).length > 0, 'the arch legs remain solid');
+  ray.ray.origin.set(0, 2, 0); ray.ray.direction.set(0, -1, 0);
+  const hits = ray.intersectObject(vase);
+  assert.ok(hits.length > 0 && hits[0].point.y < 0, 'the vessel mouth opens to a recessed interior floor');
+  assert.ok(meshes().every(mesh => mesh.geometry.getAttribute('normal').array.every(Number.isFinite)));
+});
+
+test('the complete 24-part slot budget remains bounded with shared source geometry', t => {
+  const { renderer, meshes } = fixture(t);
+  const parts = Array.from({ length: MAX_DECOR_PARTS }, (_, index) => ({ shape: DECOR_SHAPES[index % DECOR_SHAPES.length] }));
+  renderer.sync({ merchant: Object.fromEntries(DECOR_SLOTS.map(slot => [slot, asset(parts)])) });
+  assert.equal(meshes().length, DECOR_SLOTS.length * MAX_DECOR_PARTS);
+  assert.equal(new Set(meshes().map(mesh => mesh.geometry)).size, DECOR_SHAPES.length);
+  assert.ok(meshes().reduce((total, mesh) => total + (mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3, 0)
+    <= DECOR_SLOTS.length * MAX_DECOR_PARTS * 512);
 });

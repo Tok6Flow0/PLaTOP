@@ -94,6 +94,15 @@ office choice before printing success. Activity writes have source `skill`;
 office choices retain only current public visual data. Callers cannot supply paths,
 tokens, URLs, commands, private IDs or message text as tool arguments.
 
+Tool discovery is the capability preflight: the client checks the advertised
+shape and finish enums, part limit and ambient-light fields before invoking a
+write. Older schemas keep their original vocabulary and budget. Recipes that
+fit those schemas still work; a schema that predates finishes receives the
+original recipe without the default `matte` field. Unsupported shapes, finishes,
+part counts or ambient fields fail before `tools/call`. Server version alone is
+not evidence that a new capability is available. The public snapshot remains
+`schemaVersion:1`, including its original activity fields.
+
 An eight-second deadline and bounded input streams prevent a stalled or noisy
 server from lingering. Child stderr is discarded, failures are generic, and
 only validated public fields are returned. The child receives only the existing
@@ -118,7 +127,7 @@ without changing its activity fields. `POST /api/actions`, `POST /api/assets` an
 require the same local token, loopback Host, exact Origin (when supplied) and
 8 KiB body limit as activity writes. The browser never receives the token.
 Current office state is atomically saved to ignored `.local/office.json` with
-0600 permissions. Public snapshots are bounded to 128 KiB; persistence reserves
+0600 permissions. Public snapshots are bounded to 256 KiB; persistence reserves
 8 KiB of that budget for the remaining snapshot fields. A candidate that exceeds
 the limit leaves the previous state intact. There is no history, transcript or arbitrary
 metadata field. Public character IDs must belong to the supplied team.
@@ -133,20 +142,26 @@ metadata field. Public character IDs must belong to the supplied team.
   the motor consumes an ID once, owns routing and turn easing, and keeps
   departed characters absent until arrival.
 - `platop_decorate`: `{teamId, slot, parts}` replaces one of `desk`, `shelf`,
-  `wall`, `floor`, `festive`. Empty parts clears the slot. Up to 12 normalized
-  primitive parts (`box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`) have bounded
+  `wall`, `floor`, `festive`. Empty parts clears the slot. Up to 24 normalized
+  parts (`box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`, `arch`,
+  `vase`, `cushion`, `dome`) have bounded
   position, size, rotation, hex color and boolean glow. `finish` chooses `matte`
-  (the default), `ceramic`, `wood` or `metal`. Positions default to zero within
+  (the default), `ceramic`, `wood`, `metal`, `fabric`, `stone` or `lacquer`.
+  Arches retain their opening, vases have a hollow rim, and cushions and domes
+  provide fitted curved surfaces. Positions default to zero within
   ±1.2, sizes default to `[0.3,0.3,0.3]` within 0.04–1.2, rotations default to zero
   within ±π, colour defaults to warm cream and glow defaults to false. Every
   primitive is normalized to its full width/height/depth before scaling. Rotated extents stay
   within a fixed slot; no code, file path, URL, text or external asset is accepted.
   Glow is material emission and creates no additional light. At most 30 current
-  assets / 360 parts exist. Unchanged recipes do not emit redundant updates.
+  assets / 720 parts exist. Unchanged recipes do not emit redundant updates.
 - `platop_style`: `{teamId, palette?, lighting?, reset?}`. `palette` accepts
   any of `wall`, `rug`, `furniture`, each a `#rrggbb` colour. `lighting` accepts
   `color` as `#rrggbb`, `brightness` from 0 to 1.5, and `mode` as `day`, `cozy`,
-  `night` or `off`. Supply at least one field; empty palette or lighting patches
+  `night` or `off`. Independent ambient choices are `ambientColor` as `#rrggbb`,
+  `ambientBrightness` from 0 to 1.5, and `ambientPosition` as `[x,y,z]` relative
+  to the room centre, with x/z within ±2.5 and y within 0.6–3. Numeric values must
+  be finite. Supply at least one field; empty palette or lighting patches
   are rejected. Only explicit fields merge into the team's current choices.
   `{teamId, reset:true}` is exclusive and removes the room style, restoring the
   authored palette and lamp settings. Reset does not remove the team's assets.
@@ -158,8 +173,15 @@ may be empty. Omitted fields preserve the authored appearance or the preceding
 choice. At most six room styles exist. Palette changes tint only tagged room
 surfaces, leaving plants and character identities intact. Lamp mood and colour
 affect that room's existing lamps and glows; an explicit lighting choice can
-enable one bounded, shadow-free room fill. `off` also suppresses its decoration
-emission. Global daylight remains readable. Room choices do not change paths,
+enable one bounded, shadow-free room fill. Its colour and brightness use
+`ambientColor` and `ambientBrightness` when supplied, otherwise they inherit
+`color` and `brightness`; its default position is `[0,2.4,-0.5]`. Ambient
+brightness is independent of task-lamp brightness, while the shared mode scales
+both: `day` uses 1, `cozy` 0.75, `night` 0.35 and `off` 0. A physically present
+avatar, including a visitor, makes the room occupied; activity badges do not
+control occupancy. Empty rooms and `off` suppress task lamps, ambient fill and
+decoration emission. A zero ambient brightness hides the fill. Global daylight
+remains readable. Room choices do not change paths,
 wall openings or camera bounds.
 
 Both local transports support the same short commands:

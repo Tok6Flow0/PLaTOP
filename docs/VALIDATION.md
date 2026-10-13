@@ -617,3 +617,37 @@ read access to scene/motor objects was injected into the served module; no QA
 hooks were added to product source. Fixture data, screenshots and the runner
 stayed outside the repository. These checks did not send intents to live teams
 or establish that existing chats have loaded the updated skill.
+
+## Graphics and agent studio refinement — 2026-10-13
+
+All 222 Node tests pass. The production TypeScript/Vite build and portrait/source
+fingerprints pass, with the existing large-chunk advisory. Skill Creator's
+`quick_validate.py` passes using the existing temporary PyYAML dependency; no
+host Python environment or installed skill was changed.
+
+Regression coverage includes avatar clearance and floor contact, real routes
+between all named places, all 11 decoration geometries and 7 finishes, hollow
+vessel/arch openings, grounded supports, flush wall mounting, physical wall
+anchors and matching cutaway normals in all six rooms, private closed-schema
+validation, sparse ambient lighting merge/reset and legacy capability preflight.
+The full 720-part public snapshot remains inside the new 256 KiB cap; a maximal
+24-part intent fits the unchanged 8 KiB request cap and crosses initialized
+stdio transport successfully. Object geometries remain pooled and disposable.
+
+Source/current and baseline/current captures at a verified 1536 × 1024 viewport
+were inspected together over successive passes. Final independent desktop
+review found no P1/P2 visual blocker. All 22 current portraits load; window
+view/exit and zoom controls work, and the captured browser warning/error log
+is empty. A narrow-viewport override failed to resize the browser, so that
+capture was excluded rather than reported as mobile evidence. This review does
+not supersede earlier mobile evidence or establish current native frame pacing.
+
+An independent agent read the revised skill and chose its own room palette,
+lighting and four compositions (23 parts) in an isolated bridge. It inspected
+two actual rendered iterations and revised its floor lamp through confirmed
+MCP, with 18 purposeful confirmed stdio calls overall. Verification of desk and
+shelf objects is limited to overview scale, not fine detail. MCP cleanup proved
+no decorations/styles remained and the fixture preview/bridge stopped. The
+live office, user-owned chats, installed skill and automation schedules were
+not changed. Rendered comparison and limitations are recorded in
+`design-qa.md` and `docs/GRAPHICS-REVIEW.md`.

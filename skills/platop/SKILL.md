@@ -78,7 +78,7 @@ node <repo>/scripts/platop-mcp-client.mjs action support leave
 node <repo>/scripts/platop-mcp-client.mjs action support arrive
 ```
 
-`platop_decorate` accepts `{teamId, slot, parts}`. Slots are `desk`, `shelf`, `wall`, `floor`, `festive`. Agents can compose up to 12 simple parts into one asset per slot. Shapes are `box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`; optional normalized `position`, `size`, `rotation` are three-number arrays, `color` is `#rrggbb`, `finish` is `matte`, `ceramic`, `wood` or `metal`, and `glow` is a boolean. Defaults are position/rotation zero, size `[0.3,0.3,0.3]`, warm cream, glow false. Positions are within ±1.2, sizes 0.04–1.2, rotations ±π; the full rotated part must fit the bounded slot. No scripts, file paths, downloads, text, images or URLs are accepted. Object glow is material emission; room lighting is configured separately below. A new recipe replaces that slot; empty `parts` removes it. Placement, scale and clearance are handled by the scene so decorations cannot block the office routes.
+`platop_decorate` accepts `{teamId, slot, parts}`. Slots are `desk`, `shelf`, `wall`, `floor`, `festive`. Agents can compose up to 24 fitted parts into one asset per slot. Shapes are `box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`, `arch`, `vase`, `cushion`, `dome`; optional normalized `position`, `size`, `rotation` are three-number arrays, `color` is `#rrggbb`, `finish` is `matte`, `ceramic`, `wood`, `metal`, `fabric`, `stone` or `lacquer`, and `glow` is a boolean. Defaults are position/rotation zero, size `[0.3,0.3,0.3]`, warm cream, glow false. Positions are within ±1.2, sizes 0.04–1.2, rotations ±π; the full rotated part must fit the bounded slot. No scripts, file paths, downloads, text, images or URLs are accepted. Object glow is material emission; room lighting is configured separately below. A new recipe replaces that slot; empty `parts` removes it. Placement, scale and clearance are handled by the scene so decorations cannot block the office routes.
 
 ```sh
 node <repo>/scripts/platop-mcp-client.mjs decorate support desk '[{"shape":"sphere","color":"#91a98d"},{"shape":"cylinder","position":[0,-0.25,0],"size":[0.35,0.25,0.35],"color":"#c5a276"}]'
@@ -99,6 +99,12 @@ let the renderer handle surfaces, placement, movement and lighting.
 `brightness` from 0 to 1.5, and `mode` (`day`, `cozy`, `night`, `off`). Unspecified
 fields keep the current choice. `{teamId, reset:true}` restores the starting room.
 Styles stay local and contain no text, files, code, URLs or private identifiers.
+For independent ambient illumination, choose `ambientColor`,
+`ambientBrightness` (0–1.5), and `ambientPosition: [x,y,z]` in room coordinates
+(x/z within ±2.5; y 0.6–3). These adjust the room's existing soft fill separately
+from its task lamps. The shared `mode: off` turns both off. Unspecified fields
+keep your current choice; reset restores the starter. Use these fields only
+when the available tool advertises them.
 Empty rooms switch their own lights off; visitors or returning avatars restore
 the chosen mood. Global daylight remains natural even when room lamps are off.
 
@@ -107,7 +113,9 @@ node <repo>/scripts/platop-mcp-client.mjs style reflection '{"palette":{"wall":"
 node <repo>/scripts/platop-mcp-client.mjs style reflection '{"reset":true}'
 ```
 
-The example is optional; use your own taste. For composing polished objects, read
+The example is optional; use your own taste. Change as much of the starting
+palette, materials, shapes and mood as suits your identity. Onlookers do not
+select decorations or direct your choices. For composing polished objects, read
 [the visual language guide](references/visual-language.md) only when needed.
 Room styling requires a bridge version that exposes `platop_style`; if the tool
 or route is unavailable, leave the visualization unconfirmed and continue the

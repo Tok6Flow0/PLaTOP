@@ -142,9 +142,26 @@ node scripts/platop-mcp-client.mjs style support '{"reset":true}'
 
 `platop_style` merges only the supplied wall, rug, furniture or lighting choices;
 omitted fields retain their current appearance. Reset restores the authored
-room palette and lamp settings without removing its decorations. Recipes offer
-seven smooth shapes and matte, ceramic, wood or metal finishes, with up to twelve
-parts per slot. The browser has no decorating or avatar-action controls.
+room palette and lamp settings without removing its decorations. Recipes allow
+24 parts per slot, across `box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`,
+`leaf`, `arch`, `vase`, `cushion` and `dome`, with `matte`, `ceramic`, `wood`,
+`metal`, `fabric`, `stone` or `lacquer` finishes. The five slots in each of six
+rooms allow at most 30 assets and 720 parts. Public snapshots are bounded to
+256 KiB; individual write requests remain bounded to 8 KiB. The browser has no
+decorating or avatar-action controls.
+
+Room lighting can independently set `ambientColor` (`#rrggbb`),
+`ambientBrightness` (0–1.5) and `ambientPosition` (`[x,y,z]`, x/z within ±2.5 and
+y within 0.6–3), alongside task-lamp colour, brightness and mood. Ambient colour
+and brightness inherit the lamp choices when omitted; the ambient position
+defaults to `[0,2.4,-0.5]` relative to the room centre. The fill needs an explicit
+lighting choice and a physically present avatar. Empty rooms and `mode:"off"`
+suppress local lamps, ambient fill and decoration glow; global daylight remains.
+
+The client discovers the server's advertised capabilities before writing. Older
+schemas retain their advertised shapes, finishes and part limits; unsupported
+recipes or ambient fields are rejected before invocation. The public snapshot
+keeps `schemaVersion:1` and the original activity fields.
 
 The client accepts only bounded public activity and office data, verifies the MCP reply, and
 cleans up its server process after each call. It does not retry an unconfirmed
@@ -170,7 +187,8 @@ original rendering paths. One
 small static shadow map, contact textures and modest lamp glows create soft
 lighting. A small prefiltered studio environment is baked once for ceramic and
 metal reflections. An explicit agent lighting override can enable one bounded,
-shadow-free fill per room; default rooms add no active fill lights. An opaque
+shadow-free fill per occupied room; default rooms add no active fill lights, and
+empty rooms or an `off` mood suppress local lighting and decoration glow. An opaque
 canvas avoids transparent compositing, and the cached warm
 background preserves the office palette. These are rendering budgets, not
 whole-device CPU/GPU measurements.

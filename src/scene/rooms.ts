@@ -106,7 +106,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     return cabinet;
   }
   beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -rearExtension / 2], [6.12, 0.22, 5.9 + depthGain + rearExtension]);
-  floorSurface(interior, '#dec9ac', [0, 0.087, -rearExtension / 2], [5.94, 5.7 + depthGain + rearExtension]);
+  floorSurface(interior, '#d3b897', [0, 0.087, -rearExtension / 2], [5.94, 5.7 + depthGain + rearExtension]);
   rug(interior, kit, palette.rug, 0, 0.35, isFoyer ? 4.1 : 4.55, 4.2);
 
   function wall(kind: 'back' | 'left' | 'right', x: number, z: number, width: number, depth: number): THREE.Group {
@@ -135,6 +135,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       beveledBlock(section, kit, '#eee5d6', [x, 3.4, z], [width + 0.06, 0.12, depth + 0.045]);
     } else {
       const inside = kind === 'left' ? 1 : -1;
+      if (rearDoor) {
+        const inset = beveledBlock(section, kit, palette.wall, [x + inside * 0.11, 1.66, z], [0.035, 3.05, depth - 0.18], 0.012);
+        inset.userData.roomSurface = 'wall';
+      }
       kit.mesh(section, 'roundedBox', '#eee5d6', [x + inside * 0.105, 0.22, z], [0.045, 0.2, depth - 0.08]);
       beveledBlock(section, kit, '#f0e8db', [x, 3.4, z], [width + 0.045, 0.12, depth + 0.08]);
       if ((index % 3 === 0 && kind === 'left') || (index % 3 === 2 && kind === 'right')) {
@@ -185,8 +189,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if (index % 3 !== 2) wall('right', 3.0, -0.57 - rearExtension / 2, 0.18, 4.7 + depthGain + rearExtension);
   } else {
     [-3.0, 3.0].forEach((x) => {
-      kit.mesh(interior, 'roundedBox', '#e7dfd1', [x, 0.48, 0.48], [0.17, 0.8, 4.75 + depthGain]);
-      kit.mesh(interior, 'roundedBox', '#f3ece1', [x, 0.9, 0.48], [0.22, 0.1, 4.77 + depthGain]);
+      const parapet = new THREE.Group(); root.add(parapet);
+      kit.mesh(parapet, 'roundedBox', '#e7dfd1', [x, 0.48, 0.48], [0.17, 0.8, 4.75 + depthGain]);
+      kit.mesh(parapet, 'roundedBox', '#f3ece1', [x, 0.9, 0.48], [0.22, 0.1, 4.77 + depthGain]);
+      walls.push({ root: parapet, normal: new THREE.Vector3(Math.sign(x), 0, 0), twoSided: true });
     });
     shelf(interior, kit, -2.32, -1.55, 2, false, 0.82);
     const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, 0.25); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
@@ -296,7 +302,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const assetSlots: Room['assetSlots'] = {
     desk: { position: [0, 0.84, tableZ + 0.3] },
     shelf: { position: isFoyer ? [-2.32, 1.27, -1.55] : [-2.26, 1.55, backZ + 0.57] },
-    wall: { position: [-2.35, 2.1, 1.7], rotation: [0, Math.PI / 2, 0] },
+    // The foyer has a low parapet, not an imaginary full-height wall.
+    wall: { position: [-2.85, isFoyer ? 0.5 : 2.1, 1.7], rotation: [0, Math.PI / 2, 0] },
     floor: { position: [-2.15, OFFICE_FLOOR_Y, 1.0] },
     festive: { position: [0, 3.5, backZ + 0.4] },
   };

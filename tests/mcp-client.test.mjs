@@ -7,7 +7,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { createBridge } from '../server/index.mjs';
 import { TEAM_IDS, STATES } from '../server/protocol.mjs';
-import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, ROOM_LIGHT_MODES } from '../server/office-protocol.mjs';
+import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES } from '../server/office-protocol.mjs';
 
 const exec = promisify(execFile);
 const FAILURE = 'PLaTOP MCP activity is unconfirmed. Check the local bridge and public team/state arguments.';
@@ -83,6 +83,15 @@ test('local MCP client uses actual initialize/list/call protocol and authenticat
     assert.equal(team.source, 'skill');
     assert.ok(team.updatedAt);
   }
+  const parts = Array.from({ length: MAX_DECOR_PARTS }, (_, index) => ({ shape: DECOR_SHAPES[index % DECOR_SHAPES.length],
+    finish: DECOR_FINISHES[index % DECOR_FINISHES.length], position: Array(3).fill(-0.0000012345678901234567),
+    size: Array(3).fill(0.12345678901234568), rotation: Array(3).fill(-0.0000012345678901234567) }));
+  assert.match((await cli(['decorate', 'intake', 'floor', JSON.stringify(parts)], env)).stdout, /decoration saved/);
+  assert.match((await cli(['style', 'intake', JSON.stringify({ lighting: { color: '#aabbcc', brightness: 0.4,
+    ambientColor: '#eeddcc', ambientBrightness: 0.8, ambientPosition: [-2.5, 0.6, 2.5] } })], env)).stdout, /room style saved/);
+  const studio = JSON.parse((await cli(['status'], env)).stdout);
+  assert.equal(studio.assets.intake.floor.parts.length, MAX_DECOR_PARTS);
+  assert.deepEqual(studio.rooms.intake.lighting.ambientPosition, [-2.5, 0.6, 2.5]);
   const token = (await readFile(path.join(root, '.local/token'), 'utf8')).trim();
   assert.ok(!JSON.stringify(initial).includes(token));
 });
@@ -120,6 +129,41 @@ test('original four-tool MCP servers keep status and matte recipes compatible wi
   assert.ok(call);
   assert.equal(call.params.arguments.parts[0].finish, undefined);
   assert.ok(!messages.some(message => message.method === 'tools/call' && message.params.name === 'platop_action'), 'unsupported new intents fail before a write');
+});
+
+test('earlier studio servers accept their supported recipes and reject expanded choices before writing', async t => {
+  const studioTools = [
+    { name: 'platop_decorate', inputSchema: { additionalProperties: false, properties: {
+      slot: { enum: DECOR_SLOTS }, parts: { maxItems: 12, items: { properties: {
+        shape: { enum: DECOR_SHAPES.slice(0, 7) }, finish: { enum: DECOR_FINISHES.slice(0, 4) },
+      } } },
+    } } },
+    { name: 'platop_style', inputSchema: { additionalProperties: false, properties: {
+      lighting: { properties: { mode: { enum: ROOM_LIGHT_MODES }, color: {}, brightness: {} } },
+    } } },
+  ];
+  const { root, cli } = await fixture(t, server(`
+    if(message.method==='tools/list')tools.push(...${JSON.stringify(studioTools)});
+    if(message.method==='tools/call'&&message.params.name==='platop_decorate'){
+      const args=message.params.arguments;
+      snapshot.assets={[args.teamId]:{[args.slot]:{id:'00000000-0000-4000-8000-000000000001',parts:args.parts}}};
+    }
+    if(message.method==='tools/call'&&message.params.name==='platop_style'){
+      const args=message.params.arguments;
+      snapshot.rooms={[args.teamId]:{id:'00000000-0000-4000-8000-000000000001',palette:args.palette??{},lighting:args.lighting??{}}};
+    }
+  `));
+  assert.match((await cli(['decorate', 'hr', 'desk', '[{"shape":"capsule","finish":"ceramic"}]'])).stdout, /decoration saved/);
+  assert.match((await cli(['style', 'hr', '{"lighting":{"mode":"cozy","brightness":0.5}}'])).stdout, /room style saved/);
+  for (const parts of [[{ shape: 'arch' }], [{ shape: 'sphere', finish: 'stone' }], Array(13).fill({ shape: 'sphere' })]) {
+    await assert.rejects(cli(['decorate', 'hr', 'desk', JSON.stringify(parts)]), sanitized);
+  }
+  for (const lighting of [{ ambientColor: '#aabbcc' }, { ambientBrightness: 0.5 }, { ambientPosition: [0, 1, 0] }]) {
+    await assert.rejects(cli(['style', 'hr', JSON.stringify({ lighting })]), sanitized);
+  }
+  const calls = (await readFile(path.join(root, 'methods.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse)
+    .filter(message => message.method === 'tools/call');
+  assert.equal(calls.length, 2, 'unsupported shapes, finishes, part budgets and light fields never reach a write');
 });
 
 test('interaction client requires a matching public gesture in the acknowledged current action', async t => {

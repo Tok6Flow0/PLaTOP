@@ -89,7 +89,7 @@ mkdir -p "$LOCAL_DIR"
 PROBE_FILE="$LOCAL_DIR/server-probe-$$.json"
 trap 'rm -f "$PROBE_FILE"' EXIT
 bridge_is_ready() {
-  /usr/bin/curl --silent --fail --noproxy '*' --max-time 2 --max-filesize 131072 \
+  /usr/bin/curl --silent --fail --noproxy '*' --max-time 2 --max-filesize 262144 \
     "$PLAYGROUND_URL/api/state" -o "$PROBE_FILE" || return 1
   "$NODE_BIN" --input-type=module -e '
     import { readFileSync } from "node:fs";

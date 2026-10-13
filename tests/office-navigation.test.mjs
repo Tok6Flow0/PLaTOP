@@ -321,6 +321,21 @@ test('real sixteen-avatar layout connects every assigned desk, interaction stop,
   }
 });
 
+test('wall decoration anchors bind to a real wall or the foyer parapet', async t => {
+  const { rooms, kit, disposeObject } = await realLayout();
+  t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
+  for (const [id, room] of rooms) {
+    const anchor = room.assetSlots.wall.position;
+    const wall = room.walls.find(wall => wall.normal.x < -0.5);
+    assert.ok(wall, `${id} has a matching physical wall and cutaway normal`);
+    room.root.updateMatrixWorld(true);
+    const point = room.root.localToWorld(new THREE.Vector3(...anchor));
+    const bounds = new THREE.Box3().setFromObject(wall.root);
+    assert.ok(bounds.distanceToPoint(point) < 0.07, `${id} mount sits against its actual wall`);
+    assert.ok(point.y >= bounds.min.y && point.y <= bounds.max.y, `${id} mount fits its wall height`);
+  }
+});
+
 test('every interaction stop faces a nearby real prop with full avatar clearance', async t => {
   const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
   t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });

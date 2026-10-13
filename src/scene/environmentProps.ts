@@ -82,7 +82,17 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
   texturedPlane(parent, texture, position, size[0], size[1], true);
 }
 export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: number, z: number, width: number, depth: number, words?: string[]): void {
-  surface(kit.mesh(parent, 'roundedBox', color, [x, 0.111, z], [width, 0.035, depth], undefined, 'fabric'), 'rug');
+  const outline = (w: number, d: number, radius: number) => {
+    const shape = new THREE.Shape(), left = -w / 2, right = w / 2, bottom = -d / 2, top = d / 2;
+    shape.moveTo(left + radius, bottom); shape.lineTo(right - radius, bottom);
+    shape.quadraticCurveTo(right, bottom, right, bottom + radius); shape.lineTo(right, top - radius);
+    shape.quadraticCurveTo(right, top, right - radius, top); shape.lineTo(left + radius, top);
+    shape.quadraticCurveTo(left, top, left, top - radius); shape.lineTo(left, bottom + radius);
+    shape.quadraticCurveTo(left, bottom, left + radius, bottom); return shape;
+  };
+  const pile = new THREE.ExtrudeGeometry(outline(width, depth, .30), {depth:.035,bevelEnabled:false,curveSegments:8});
+  const base = new THREE.Mesh(pile, kit.material(color, 'fabric')); base.rotation.x = -Math.PI / 2;
+  base.position.set(x,.0935,z); base.receiveShadow = true; parent.add(base); surface(base,'rug');
   const texture = canvasTexture(512, 512, (context) => {
     context.fillStyle = color; context.fillRect(0, 0, 512, 512);
     context.strokeStyle = 'rgba(255,245,214,.12)'; context.lineWidth = 1;
@@ -101,6 +111,10 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
     if (words) { context.fillStyle = '#4e4c37'; context.font = '38px Georgia, serif'; context.textAlign = 'center'; words.forEach((word, i) => context.fillText(word, 256, 136 + i * 69)); }
   });
   const weave = surface(texturedPlane(parent, texture, [x, 0.13, z], width - 0.11, depth - 0.11, true), 'rug');
+  weave.geometry.dispose();
+  weave.geometry = new THREE.ShapeGeometry(outline(width - .11, depth - .11, .25), 8);
+  const points = weave.geometry.getAttribute('position'), uv = weave.geometry.getAttribute('uv');
+  for (let i=0;i<points.count;i++) uv.setXY(i,points.getX(i)/(width-.11)+.5,points.getY(i)/(depth-.11)+.5);
   (weave.material as THREE.MeshStandardMaterial).roughness = 0.98;
   (weave.material as THREE.MeshStandardMaterial).envMapIntensity = 0.2;
 }
@@ -164,7 +178,12 @@ export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   group.name = 'Desk chair';
   stool(group, kit, 0, 0, color);
   [-0.27, 0.27].forEach((dx) => surface(kit.mesh(group, 'roundedDetail', '#96714c', [dx, 0.79, -0.23], [0.075, 0.55, 0.075], undefined, 'wood'), 'furniture'));
-  kit.mesh(group, 'roundedBox', color, [0, 1.02, -0.25], [0.65, 0.53, 0.13], [0.1, 0, 0], 'fabric');
+  const backGeometry = new RoundedBoxGeometry(.65,.53,.15,3,.07);
+  const positions = backGeometry.getAttribute('position');
+  for(let i=0;i<positions.count;i++) positions.setZ(i,positions.getZ(i)+positions.getX(i)**2*.18);
+  backGeometry.computeVertexNormals();
+  const back = new THREE.Mesh(backGeometry,kit.material(color,'fabric')); back.position.set(0,1.02,-.25); back.rotation.x=.1;
+  back.castShadow=back.receiveShadow=true;group.add(back);
   return group;
 }
 export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
@@ -244,8 +263,8 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   const vertex = (t: number, across: number): Point => {
-    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.65 : broad ? 0.65 : 0.85) * (spear ? 0.06 : herb ? 0.13 : broad ? 0.22 : 0.12), bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.24 : broad ? 0.29 : 0.36);
-    const length = herb ? 0.53 : broad ? 0.68 : 1.05;
+    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.65 : broad ? 0.65 : 0.72) * (spear ? 0.06 : herb ? 0.15 : broad ? 0.22 : 0.17), bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.24 : broad ? 0.29 : 0.36);
+    const length = herb ? 0.53 : broad ? 0.68 : 0.93;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
     return [width * across, t * length + 0.012 * cup, bend - 0.035 * cup];
   };

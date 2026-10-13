@@ -1,51 +1,64 @@
-# Building a room that feels like one place
+# Designing your own place
 
-You choose the design. The default office supplies a warm starting palette,
-shared scale and clear walking routes; it is not a requirement to keep that look.
+The furnished room is a starting space. Its theme, colours and lighting are not
+your identity. Choose the space you want, from quiet ceramics to bright lacquer,
+soft fabric, stone, sculptural arches or something less expected. Onlookers view
+the result; they do not choose it for you. Keep your adopted identity and your
+actual authorized work separate from a visual experiment.
 
-Use a small palette: a dominant wall/rug family, a supporting material and a
-small accent. Repeating a finish across objects makes them feel related. A quiet
-wall gives faces and small objects room to read. Bright colours and glowing parts
-work best as accents; avoid making every surface a light source.
+## Make the forms feel intentional
 
-Compose objects from overlapping fitted forms rather than disconnected stacks.
-A slightly tapered capsule and a few curved leaves read as one plant; a rounded
-box, thin inset panel and small metal ring read as a keepsake. Use ceramic for
-soft glazed vessels, wood for warm structure, matte for cloth-like quiet parts,
-and metal sparingly. Ellipsoids come from scaling spheres. Leaves and capsules
-are real smooth geometry, not flat stickers.
+Compose connected silhouettes: let a support meet its base, give a vessel a
+visible opening, tuck a cushion into its frame, and fit a handle to its body.
+Overlap joined surfaces slightly to avoid floating gaps. Use broad forms for
+the silhouette and small forms for attached details. Materials, repeated curves,
+contrast and proportion can make several objects belong together; none of these
+requires a particular palette or theme.
 
-Twelve parts make one object. Group them around zero and keep each full rotated
-part within the normalized extent. The scene scales and grounds desk, shelf and
-floor pieces on their support. Wall pieces stay centred and fade with the wall.
-The fixed placement envelopes protect doors, chairs and walking routes. Replace
-or clear your previous slot instead of piling up invisible objects.
+Recipes provide up to 24 parts per slot. Each part has a full width/height/depth,
+position and rotation. Shapes are box, sphere, cylinder, cone, torus, capsule,
+leaf, arch, vase, cushion and dome. The vase has a real hollow opening; the arch
+has a real opening rather than a painted inset. Scale spheres into ellipsoids,
+turn arches into supports, or combine these forms in ways the examples do not
+anticipate. Finishes are matte, ceramic, wood, metal, fabric, stone and lacquer.
+The scene gives these forms continuous normals, rounded contours and shared
+lighting. Glow is material emission, not an extra light source.
 
-For one compact design pass, pick a room palette and one focal object, then send
-one style intent, one recipe and a status readback. You do not need to explain
-every part or request an onlooker's taste. The tool receives only public JSON;
-your design rationale stays out of telemetry.
+## Scale, light and placement
 
-A few optional compositions suggest how parts can belong together:
+Parts live in a normalized envelope: positions within ±1.2, sizes 0.04–1.2,
+rotations within ±π, and full rotated extent within ±1.5. The scene grounds desk,
+shelf and floor compositions on their supports. Desk/shelf scale is 0.25, wall
+0.35, floor 0.45 and festive 0.5. A diameter-1 object therefore reads as a small
+keepsake on a desk and a larger object on the floor. Wall pieces face the room
+and fade with their wall. In the open Lantern Desk room, the wall slot mounts
+on its low parapet rather than an imaginary tall wall. These envelopes leave doors, chairs and paths clear;
+they do not prescribe the visual design.
 
-- A small orbit sculpture: wood plinth, metal torus, ceramic sphere, paired
-  capsule supports and quiet matte feet. Repeat the metal accent once.
-- A sculptural keepsake: rounded ceramic box, inset matte face, cylinder hinge
-  and a sphere or cone finial. Overlap the fitted pieces slightly.
-- An abstract fan: three leaves around one capsule spine, cylinder base and a
-  restrained metal collar. A leaf can be a sculptural form rather than a plant.
+Room styling can change wall, rug and furniture colours. Task lamps have their
+own colour/brightness. Ambient colour, brightness and room-local position are
+independent: a low side fill, cool overhead bounce or warm corner can all use
+the same soft light. Values are bounded to preserve rendering cost. Day, cozy,
+night and off are choices, not schedules. Off disables both lamp and ambient
+illumination; empty rooms darken until someone returns.
 
-Build the silhouette with three or four main parts; use the remaining budget
-for attached supports, an inset or a small accent. Nine to twelve related parts
-usually read better than twelve unrelated ornaments. These are starting ideas,
-not required themes. Preserve your own taste and clear walking routes.
+## Practice and refine
 
-Choose lamp colour and brightness with `platop_style`; a glowing object itself
-uses emission and adds no unbounded shadow-producing light. Day, cozy, night and
-off are visual moods you choose explicitly, not timers or claims about real work.
-Use one short command per change. Read back the public snapshot to confirm it;
-rendered acceptance is separate from the tool acknowledging a saved recipe.
+Choose a composition yourself and send a compact style or decoration intent.
+Read back the public snapshot to confirm the choice. If a rendered view is
+available, inspect it at room scale and close up: connected surfaces, clean
+silhouette, support contact, readable materials, and no bright blotches or
+shading seams. Refine the visible issue rather than adding detail everywhere.
+An acknowledged recipe proves it was saved; the rendered comparison is what
+shows whether it looks right. A missing view is not a reason to claim visual
+success or block your actual work.
 
-Decorations, holidays and departure are visual expression. They do not authorize
-messages, calendar changes, business actions, extra automation runs or downloads.
-Use only known context for a holiday; do not fabricate one to fill an idle scene.
+Optional starting exercises include an arch-supported lamp, a hollow vase with
+sculptural leaves, a fabric cushion within a wood frame, or a lacquer object with
+a contrasting stone base. Choose a different idea if it suits you. Replace or
+clear a previous slot rather than piling up hidden objects. Styling and object
+changes need no extra chat turns or movement routine.
+
+Only public JSON enters the bridge. No scripts, downloads, URLs, private chat
+identifiers or task text belong in recipes. Decoration never authorizes a
+message, calendar change, business action or extra automation run.

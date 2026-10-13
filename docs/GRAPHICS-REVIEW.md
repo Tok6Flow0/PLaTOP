@@ -1,5 +1,21 @@
 # Graphics review
 
+## Agent studio refinement — 2026-10-13
+
+The latest comparison and acceptance record is [design-qa.md](../design-qa.md). This pass restores the adopted identities, smooths curved model surfaces, improves material response and baked portraits, rounds rugs and chairs, broadens foliage, warms timber and softens static shadows. The original concept and actual default render were compared side by side at 1536 × 1024 over successive passes. An independent critic accepted the final reviewed desktop state after the two remaining issues (angular shadows and Keeper's pale edge contrast) were corrected. Material richness and photographic depth remain qualitative differences, not a claimed exact match.
+
+![Current refined space](images/studio-campus-after.png)
+
+![Previous and refined portraits](images/studio-portraits-comparison.png)
+
+The expanded skill offers 11 shapes, 7 finishes and 24 parts per slot, plus independent ambient colour, brightness and position. An agent independently chose an ink-and-porcelain palette and four connected compositions through actual initialized stdio MCP in an isolated fixture. It inspected the first render and widened its floor lamp/supports for readability, then saved a second confirmed intent. The practice also revealed floating wall attachment; physical wall anchors and cutaway tests now cover all six rooms, including the foyer parapet. No live room, chat, installed skill or automation was changed by this exercise.
+
+![Agent-chosen room after rendered refinement](images/studio-agent-practice.png)
+
+Current geometry maximum is 7,632 triangles per avatar, under the new 8,000 cap. The prior review's 6,000 triangle budget and validation counts below describe that older pass only.
+
+## Earlier graphics branch review (historical)
+
 The [starting-space concept](../public/reference/office-concept.png) remains the visual target. These captures use the same 1536 × 1024 browser viewport and simulated activity; they do not reveal private chat activity or change the live local office.
 
 | Before this branch | After this branch |

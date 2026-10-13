@@ -8,8 +8,8 @@ export type OfficePlace = 'desk' | 'door' | 'lounge' | 'whiteboard' | 'cabinet';
 export type OfficeGesture = 'work' | 'think' | 'file' | 'talk' | 'wait';
 export interface OfficeAction { id: string; actorId: string; kind: OfficeActionKind; target?: { officeId: string; place: OfficePlace }; gesture?: OfficeGesture; }
 export type DecorSlot = 'desk' | 'shelf' | 'wall' | 'floor' | 'festive';
-export type DecorShape = 'box' | 'sphere' | 'cylinder' | 'cone' | 'torus' | 'capsule' | 'leaf';
-export type DecorFinish = 'matte' | 'ceramic' | 'wood' | 'metal';
+export type DecorShape = 'box' | 'sphere' | 'cylinder' | 'cone' | 'torus' | 'capsule' | 'leaf' | 'arch' | 'vase' | 'cushion' | 'dome';
+export type DecorFinish = 'matte' | 'ceramic' | 'wood' | 'metal' | 'fabric' | 'stone' | 'lacquer';
 export type Vec3Tuple = [number, number, number];
 export interface DecorPart { shape: DecorShape; position: Vec3Tuple; size: Vec3Tuple; rotation: Vec3Tuple; color: string; glow: boolean; finish: DecorFinish; }
 export interface OfficeAsset { id: string; parts: DecorPart[]; }
@@ -17,7 +17,7 @@ export type OfficeActions = Partial<Record<string, OfficeAction>>;
 export type OfficeAssets = Partial<Record<string, Partial<Record<DecorSlot, OfficeAsset>>>>;
 export interface RoomPalette { wall: string; rug: string; furniture: string; }
 export type RoomLightMode = 'day' | 'cozy' | 'night' | 'off';
-export interface RoomLighting { color: string; brightness: number; mode: RoomLightMode; }
+export interface RoomLighting { color: string; brightness: number; mode: RoomLightMode; ambientColor: string; ambientBrightness: number; ambientPosition: Vec3Tuple; }
 export interface OfficeRoomStyle { id: string; palette: Partial<RoomPalette>; lighting: Partial<RoomLighting>; }
 export interface RoomStyleUpdate { teamId: string; palette?: Partial<RoomPalette>; lighting?: Partial<RoomLighting>; reset?: true; }
 export type OfficeRooms = Partial<Record<string, OfficeRoomStyle>>;

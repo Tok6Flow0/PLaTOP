@@ -5,7 +5,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { mkdtemp, mkdir, writeFile, readFile, stat, symlink, rm } from 'node:fs/promises';
 import { createBridge } from '../server/index.mjs';
-import { TEAM_IDS } from '../server/protocol.mjs';
+import { TEAM_IDS, MAX_BODY_BYTES } from '../server/protocol.mjs';
 
 async function fixture(t, options = {}) {
   const root = await mkdtemp(path.join(os.tmpdir(), 'platop-test-'));
@@ -141,7 +141,7 @@ test('rejects private fields, arbitrary state/source/IDs, malformed JSON, duplic
     assert.equal(response.status, 400);
     assert.ok(!response.text.includes('PRIVATE_TEXT'));
   }
-  assert.equal((await request('/api/events', { method: 'POST', auth: true, body: 'x'.repeat(8193) })).status, 413);
+  assert.equal((await request('/api/events', { method: 'POST', auth: true, body: 'x'.repeat(MAX_BODY_BYTES + 1) })).status, 413);
   assert.equal((await request('/api/events', { method: 'POST', auth: true, body: '{}', headers: { 'Content-Type': 'text/plain' } })).status, 415);
   assert.ok((await request()).json.teams.every(team => team.state === 'unknown'));
 });

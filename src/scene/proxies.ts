@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Activity, Character } from '../types';
 import { SceneKit } from './primitives';
-import { characterMesh, characterMaterial, characterSmile, curvedFace, type CharacterForm, type CharacterFinish } from './characterGeometry';
+import { characterMesh, characterMaterial, characterSmile, characterStroke, characterEyeArc, curvedFace, type CharacterForm, type CharacterFinish } from './characterGeometry';
 
 interface Personality {
   kind: Character['kind'];
@@ -20,15 +20,14 @@ interface Personality {
 function joint(parent: THREE.Object3D, name: string, at: [number, number, number]): THREE.Group {
   const group = new THREE.Group(); group.name = name; group.position.set(...at); parent.add(group); return group;
 }
-/** Editable clay characters. All surfaces, finishes and joints belong to this scene. */
+/** Source portraits expressed as fitted ceramic, brass and folded-paper forms. */
 export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const group = new THREE.Group(); group.name = `${character.id}:reference-character`;
   group.userData.assetStatus = 'reference-model';
   const { id, kind } = character;
-  const cream = '#eee4d0', ink = '#243c43', gold = '#bd9155';
-  const wayfinder = id.startsWith('intake-'), leader = id === 'bridge-jarvis';
-  const bodyColor = wayfinder ? '#e5ddca' : id === 'bridge-keeper' ? '#71917c' : id === 'hr-compass' ? '#a6ae91' : character.color;
-  const headColor = kind === 'robot' ? id === 'hr-lens' ? '#a5b69b' : id === 'hr-relay' ? '#d6d6b7' : cream : character.color;
+  const cream = '#eee4d0', ink = '#19333b', gold = '#bf9654';
+  const wayfinder = id.startsWith('intake-'), hr = id.startsWith('hr-'), leader = id === 'bridge-jarvis';
+  const bodyColor = wayfinder ? '#e7ddc8' : id === 'hr-compass' ? '#eee2c7' : character.color;
   const body = joint(group, 'body', [0, .57, 0]), head = joint(group, 'head', [0, 1.08, 0]);
   const data: Personality = { kind, body, head, bodyY: .57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
   const sculpt = (parent: THREE.Object3D, form: CharacterForm, color: string, at: [number, number, number],
@@ -36,126 +35,270 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     characterMesh(kit, parent, form, color, at, scale, rotation, finish);
   const ring = (parent: THREE.Object3D, color: string, diameter: number, at: [number, number, number], rotation?: [number, number, number]) =>
     sculpt(parent, 'ring', color, at, [diameter, diameter, diameter], rotation, 'brass');
-
-  if (kind === 'robot') {
-    // A single continuous pear-shaped torso joins the shoulders and belly.
-    // Small inset panels sit on that shell, instead of separate stacked blocks.
-    sculpt(body, 'torso', bodyColor, [0, -.005, 0], [.57, .66, .46]);
-    sculpt(body, 'detail', leader ? '#5e836c' : character.accent, [0, -.025, .225], [.17, .21, .035], undefined, 'glaze');
-    sculpt(body, 'limb', '#647e70', [0, .35, 0], [.17, .15, .17]);
-    sculpt(head, 'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, 'glaze');
-    curvedFace(kit, head, '#8da59a', .614, .427, .011, [0, .005, 0], 'glaze');
-    curvedFace(kit, head, ink, .566, .379, .020, [0, .005, 0]);
-    sculpt(head, 'detail', '#78948f', [-.135, .116, .341], [.15, .024, .008], [0, 0, -.12], 'glaze');
-    characterSmile(kit, head, '#14292e', .048, .026, [0, -.073, .365]);
+  const stroke = (parent: THREE.Object3D, color: string, points: Array<[number, number, number]>, radius = .007, finish: CharacterFinish = 'brass') =>
+    characterStroke(kit, parent, color, points, radius, finish);
+  const eyes = (parent: THREE.Object3D, separation: number, y: number, z: number, closed = false, color = ink, size = 1) => {
     [-1, 1].forEach(sign => {
-      sculpt(head, 'limb', character.accent, [sign * .425, -.01, 0], [.20, .11, .20], [0, 0, Math.PI / 2], 'glaze');
-      sculpt(head, 'detail', bodyColor, [sign * .473, -.01, 0], [.055, .14, .14], undefined, 'glaze');
-      const eye = sculpt(head, 'detail', '#10242a', [sign * .119, .020, .359], [.075, .106, .018], undefined, 'ink');
+      const eye = closed ? characterEyeArc(kit, parent, color, [sign * separation, y, z], .043 * size, .026 * size)
+        : sculpt(parent, 'detail', color, [sign * separation, y, z], [.061 * size, .082 * size, .025 * size], undefined, 'ink');
       data.eyes.push(eye);
-      data.highlights.push(sculpt(head, 'detail', '#e1ece0', [sign * .119 - .012, .047, .371], [.020, .023, .006], undefined, 'glaze'));
-      const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * .34, .18, 0]);
-      sculpt(arm, 'limb', bodyColor, [sign * .005, -.145, 0], [.235, .42, .25], [0, 0, sign * -.11]);
-      const extremity = wayfinder ? '#344d5a' : id.startsWith('hr-') ? '#60775b' : '#426a58';
-      sculpt(arm, 'bean', extremity, [0, -.32, .025], [.205, .20, .21]); data.arms.push(arm);
-      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .155, .10, .025]);
-      sculpt(foot, 'bean', extremity, [0, 0, 0], [.25, .20, .35]);
-      const cuff = sculpt(foot, 'ankle', bodyColor, [0, .13, -.025], [.16, .22, .15]);
+      if (!closed) data.highlights.push(sculpt(parent, 'detail', '#fff8df', [sign * separation - .010 * size, y + .020 * size, z + .014 * size], [.015 * size, .019 * size, .007], undefined, 'glaze'));
+    });
+  };
+  const compass = (parent: THREE.Object3D, at: [number, number, number], diameter = .22, color = gold) => {
+    const emblem = joint(parent, 'compass-emblem', at);
+    ring(emblem, color, diameter, [0, 0, 0]);
+    if (wayfinder) sculpt(emblem, 'detail', '#2b4252', [0, 0, -.006], [diameter * .88, diameter * .88, .025], undefined, 'clay');
+    sculpt(emblem, 'compassStar', color, [0, 0, .010], [diameter * .78, diameter * .90, .11], [0, 0, -.08], 'brass');
+    sculpt(emblem, 'detail', '#ead3a0', [0, 0, .027], [.033, .033, .015], undefined, 'brass');
+  };
+  const limbs = (color: string, extremity: string, compact = false, robed = false) => {
+    [-1, 1].forEach(sign => {
+      const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (robed ? .26 : compact ? .30 : .32), .16, 0]);
+      sculpt(arm, robed ? 'wing' : 'limb', color, [sign * .003, robed ? -.17 : -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * (robed ? .20 : -.13)]);
+      if (!robed) sculpt(arm, 'bean', extremity, [0, -.29, .025], [.18, .18, .20]); data.arms.push(arm);
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * (leader ? .125 : .15), leader ? .08 : hr || wayfinder ? .055 : .10, .025]);
+      sculpt(foot, 'bean', extremity, [0, 0, 0], [leader ? .32 : .24, leader ? .16 : hr || wayfinder ? .11 : .20, leader ? .43 : .32]);
+      const cuff = sculpt(foot, 'ankle', color, [0, .13, -.025], [.16, .22, .15]);
       cuff.name = sign < 0 ? 'ankle_l' : 'ankle_r'; data.feet.push(foot);
     });
-    sculpt(head, 'limb', '#76927e', [0, .394, 0], [.044, .15, .044], undefined, 'brass');
-    sculpt(head, 'detail', leader ? '#c98a45' : character.accent, [0, .498, 0], [.133, .148, .133], undefined, 'glaze');
-    if (id === 'bridge-scout' || id === 'hr-lens') ring(head, '#a3b5a4', .195, [.119, .018, .374]);
+  };
+  if (kind === 'robot') {
     if (id === 'bridge-keeper') {
-      kit.mesh(body, 'roundedDetail', '#ecdfbf', [.18, -.08, .25], [.22, .28, .055], [0, 0, -.10]);
-      kit.mesh(body, 'roundedDetail', '#668977', [.18, -.08, .28], [.187, .24, .012], [0, 0, -.10]);
-    }
-    if (wayfinder) {
-      kit.mesh(body, 'roundedDetail', '#385362', [0, .025, .226], [.185, .19, .026]);
-      // Each navigator keeps its own tiny, readable symbol without widening the
-      // walking silhouette or hiding its hands under unrelated props.
-      if (id === 'intake-jarvis') {
-        sculpt(body, 'detail', '#d4b576', [0, .036, .246], [.055, .075, .012], [0, 0, -.55], 'brass');
-      } else if (id === 'intake-beacon') {
-        sculpt(head, 'limb', '#c19a61', [0, .475, 0], [.125, .22, .125], undefined, 'brass');
-        sculpt(head, 'detail', '#efd39a', [0, .595, 0], [.105, .105, .105], undefined, 'glaze');
-      } else if (id === 'intake-relay') {
-        [-.045, 0, .045].forEach(y => kit.mesh(body, 'roundedDetail', '#d4d9c5', [0, y + .035, .244], [.105, .013, .011]));
+      // The source is a little standing book, including actual recessed pages,
+      // rounded covers, folded corner and the seedling volume held in its arms.
+      sculpt(body, 'book', '#cdb68e', [0, .18, -.025], [.66, 1.16, .43], [0, 0, -.035], 'glaze');
+      sculpt(body, 'book', '#f2e8d1', [.015, .18, .016], [.575, 1.10, .37], [0, 0, -.035]);
+      [-.125, -.105, -.085].forEach(z => stroke(body, '#bba480', [[.296, -.26, z], [.296, .63, z]], .003, 'clay'));
+      // The warm binding stays readable at roster size while the broad pages
+      // and face keep Keeper's pale-paper identity.
+      stroke(body, '#bda783', [[-.274, -.32, .195], [-.278, .08, .195], [-.263, .62, .195]], .005, 'clay');
+      sculpt(head, 'book', '#e4d7ba', [0, -.025, .216], [.47, .30, .03], undefined, 'clay');
+      eyes(head, .112, .018, .247, true);
+      sculpt(head, 'pageFold', '#fff4da', [.22, .28, .22], [.20, .23, .10], [0, 0, -.12], 'paper');
+      limbs(cream, cream, true);
+      const book = joint(body, 'seedling-book', [0, -.08, .29]); book.rotation.z = -.06;
+      sculpt(book, 'book', '#d8c69b', [0, 0, 0], [.31, .34, .07]);
+      sculpt(book, 'book', '#36574f', [0, 0, .025], [.28, .32, .04], undefined, 'glaze');
+      stroke(book, gold, [[0, -.11, .052], [0, -.025, .052], [.035, .052, .052]], .007);
+      sculpt(book, 'tuft', gold, [-.035, .025, .055], [.065, .10, .017], [0, 0, .6], 'brass');
+      sculpt(book, 'tuft', gold, [.035, .055, .055], [.065, .10, .017], [0, 0, -.6], 'brass');
+      data.arms.forEach((arm, index) => { arm.rotation.z = index ? -.37 : .37; });
+    } else if (hr) {
+      // Clear Path are ceramic robed guardians rather than repainted robots.
+      sculpt(body, 'spiritBody', bodyColor, [0, -.015, 0], [.82, .90, .60], undefined, 'glaze');
+      const headColor = id === 'hr-relay' ? '#2b6265' : id === 'hr-lens' ? '#91a78e' : '#eee3cb';
+      head.position.y = 1.04; data.headY = 1.04;
+      sculpt(head, id === 'hr-relay' ? 'spiritRelayHood' : 'spiritHood', headColor, [0, 0, 0], [.67, .65, .57], undefined, 'glaze');
+      const radii: [number, number, number] = [.340, .31, .275];
+      if (id === 'hr-relay') {
+        curvedFace(kit, head, '#306064', .43, .35, .006, [0, 0, 0], 'glaze', radii);
+        eyes(head, .113, .025, .290, false, '#112c30');
+        stroke(body, '#d0a257', [[-.10, -.005, .276], [.04, .08, .276], [.04, -.09, .276]], .009);
+        [[-.10, -.005], [.04, .08], [.04, -.09]].forEach(([x,y]) => sculpt(body, 'detail', '#e0b76d', [x, y, .288], [.062, .062, .021], undefined, 'brass'));
+        sculpt(body, 'cape', '#28595c', [-.04, .02, -.005], [1.02, 1.10, 1], [0, 0, -.08], 'glaze');
       } else {
-        sculpt(head, 'tuft', '#75977c', [-.035, .455, 0], [.08, .15, .045], [0, 0, .42]);
-        sculpt(head, 'tuft', '#8ba789', [.038, .472, 0], [.08, .13, .045], [0, 0, -.48]);
+        curvedFace(kit, head, '#f4ead1', .48, .43, .009, [0, 0, 0], 'clay', radii);
+        curvedFace(kit, head, id === 'hr-lens' ? '#758f79' : '#eee2c7', .395, .35, .015, [0, 0, 0], 'glaze', radii);
+        eyes(head, .108, .020, .294, false, '#173b38', id === 'hr-lens' ? 1.1 : .90);
+        if (id === 'hr-lens') {
+          const lens = ring(head, '#e5d8b8', .39, [0, .005, .292]); lens.scale.y *= 1.08;
+          stroke(head, '#dfd0ae', [[-.145, -.15, .295], [-.23, -.26, .20]], .021, 'clay');
+          ring(body, '#466557', .18, [0, -.035, .276]);
+          stroke(body, '#466557', [[-.062, -.10, .280], [-.13, -.18, .277]], .013, 'clay');
+        } else {
+          sculpt(head, 'hoodTip', '#eee3cb', [0, .38, -.03], [.35, .55, .31], [0, 0, -.12], 'glaze');
+          sculpt(head, 'detail', '#d6b271', [-.035, .70, -.03], [.10, .10, .10], undefined, 'brass');
+          compass(body, [0, -.025, .277], .24);
+        }
       }
+      characterSmile(kit, head, '#244c43', .043, .021, [0, -.068, .298]);
+      limbs(bodyColor, bodyColor, true, true);
+    } else {
+      if (leader) { body.position.y = .70; data.bodyY = .70; head.position.y = 1.30; data.headY = 1.30; }
+      if (id === 'intake-jarvis') { body.position.y = .62; data.bodyY = .62; head.position.y = 1.10; data.headY = 1.10; }
+      sculpt(body, wayfinder ? 'cloak' : leader ? 'merchantTorso' : 'torso', bodyColor, [0, -.005, 0], [wayfinder ? .68 : .57, leader ? 1.04 : id === 'intake-jarvis' ? .80 : .66, .46], undefined, 'glaze');
+      sculpt(body, 'limb', wayfinder ? '#b6aa8c' : bodyColor, [0, .35, 0], [.18, .15, .18]);
+      const headColor = wayfinder ? cream : bodyColor;
+      sculpt(head, 'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, 'glaze');
+      curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, .010, [0, .005, 0], 'clay');
+      curvedFace(kit, head, wayfinder ? '#273b4a' : '#f2e2bf', .583, .401, .019, [0, .005, 0], wayfinder ? 'ink' : 'clay');
+      if (id === 'bridge-scout') {
+        // One generously sized magnifier is Scout's face, not a tiny monocle
+        // pasted onto the same visor worn by every other character.
+        ring(head, '#bd9756', .252, [-.123, .016, .359]);
+        sculpt(head, 'detail', '#456f6c', [-.123, .016, .362], [.204, .228, .043], undefined, 'glaze');
+        const eye = sculpt(head, 'detail', '#163638', [-.125, .024, .386], [.131, .156, .032], undefined, 'ink'); data.eyes.push(eye);
+        data.highlights.push(sculpt(head, 'detail', '#fff3d3', [-.151, .061, .405], [.036, .046, .010], undefined, 'glaze'));
+        data.eyes.push(characterEyeArc(kit, head, '#294843', [.119, .017, .362], .044, .029));
+        stroke(head, '#bd9756', [[-.212, -.076, .350], [-.27, -.16, .281]], .020);
+        compass(body, [0, -.025, .240], .24);
+        sculpt(head, 'paperWing', '#d4a05f', [0, .485, -.01], [.13, .24, .13], [0, 0, -.24], 'brass');
+        sculpt(head, 'limb', '#527669', [0, .395, 0], [.04, .13, .04], undefined, 'brass');
+      } else {
+        if (id === 'intake-compass') [-1, 1].forEach(sign => data.eyes.push(characterEyeArc(kit, head, '#ffe0a0', [sign * .121, .048, .365], .044, -.026)));
+        else eyes(head, .121, .030, .365, true, wayfinder ? '#ffe0a0' : '#493a2d');
+        characterSmile(kit, head, wayfinder ? '#101f2a' : '#735131', .046, .023, [0, -.068, .365]);
+        if (wayfinder) {
+          sculpt(body, 'cape', '#2b4252', [0, .02, -.005], [1, .96, .94], undefined, 'clay');
+          [-1, 1].forEach(sign => sculpt(body, 'capePanel', '#304757', [sign * .195, .20, .12], [.37, id === 'intake-jarvis' ? .68 : .40, .26], [0, sign * .30, sign * -.30]));
+          // Collar piping and a clasp join the cape to the ceramic shell.
+          stroke(body, '#bb9659', [[-.29, .24, .12], [-.16, .31, .22], [0, .32, .25], [.16, .31, .22], [.29, .24, .12]], .008);
+          sculpt(body, 'detail', gold, [0, .30, .263], [.044, .044, .022], undefined, 'brass');
+          if (id === 'intake-jarvis') {
+            sculpt(head, 'hoodTip', '#273b4a', [0, .399, -.025], [.29, .31, .23]);
+            compass(head, [0, .44, .095], .115);
+            compass(body, [0, .035, .243], .225);
+            stroke(body, '#c4a977', [[-.16, -.28, .174], [.10, -.14, .233], [-.09, -.03, .252], [.12, .12, .234]], .013, 'clay');
+          } else if (id === 'intake-beacon') {
+            sculpt(head, 'limb', '#b8a07b', [0, .427, 0], [.205, .15, .205], undefined, 'brass');
+            sculpt(head, 'limb', '#f0c57e', [0, .542, 0], [.14, .14, .14], undefined, 'amber');
+            [-1, 1].forEach(sign => sculpt(head, 'limb', '#695840', [sign * .065, .542, 0], [.013, .13, .013], undefined, 'brass'));
+            sculpt(head, 'lanternCap', '#7d684c', [0, .645, 0], [.24, .13, .23], undefined, 'brass');
+            sculpt(body, 'limb', '#a47d4c', [0, .005, .247], [.053, .23, .022], undefined, 'brass');
+            stroke(body, gold, [[-.11, .07, .25], [-.07, .07, .25], [-.095, .13, .25]], .006);
+            stroke(body, gold, [[.11, .07, .25], [.07, .07, .25], [.095, .13, .25]], .006);
+          } else if (id === 'intake-relay') {
+            sculpt(head, 'book', '#f1e4c8', [0, .479, -.02], [.19, .26, .018], [-.20, 0, .10], 'paper');
+            sculpt(head, 'scroll', '#eadabb', [0, .605, -.003], [.10, .21, .10], [0, 0, Math.PI / 2], 'paper');
+            [-.01, .04, .09].forEach(y => stroke(head, '#b59063', [[-.065, .43 + y, .017], [.065, .43 + y, .017]], .003, 'clay'));
+            sculpt(body, 'book', '#efe5cf', [0, .015, .242], [.22, .24, .018], undefined, 'paper');
+            stroke(body, '#6a7067', [[-.055, .055, .262], [.015, .055, .262]], .007, 'clay');
+            stroke(body, '#bd8053', [[-.035, -.025, .263], [0, -.06, .263], [.072, .025, .263]], .012, 'clay');
+          } else {
+            stroke(head, '#435b60', [[0, .38, 0], [0, .47, 0], [.06, .56, 0]], .018, 'clay');
+            sculpt(head, 'tuft', '#3c565c', [-.045, .51, 0], [.10, .19, .037], [0, 0, -.57]);
+            sculpt(head, 'tuft', '#3c565c', [.067, .474, .005], [.095, .14, .037], [0, 0, .70]);
+            sculpt(head, 'detail', '#d7a460', [.073, .57, 0], [.065, .065, .065], undefined, 'brass');
+            stroke(body, gold, [[0, -.13, .248], [0, .12, .248]], .007);
+            [-1, 1].forEach(sign => {
+              stroke(body, gold, [[0, -.04, .25], [sign * .08, .005, .25], [sign * .08, .08, .25]], .006);
+              ring(body, gold, .036, [sign * .08, .105, .256]);
+            });
+          }
+        } else {
+          ring(body, '#e0bb7a', .25, [0, .025, .238]);
+          stroke(body, '#e0bb7a', [[-.085, -.015, .25], [-.045, .035, .25], [0, .045, .25], [.045, .035, .25], [.085, -.015, .25]], .010);
+          stroke(body, '#a95730', [[-.16, .20, .185], [-.19, -.12, .177], [0, -.29, .115], [.19, -.12, .177], [.16, .20, .185]], .006, 'clay');
+          sculpt(head, 'limb', '#aa7442', [0, .394, 0], [.04, .14, .04], undefined, 'brass');
+          sculpt(head, 'detail', '#d89a48', [0, .495, 0], [.112, .134, .112], undefined, 'brass');
+        }
+      }
+      [-1, 1].forEach(sign => {
+        sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], 'glaze');
+        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [.045, .117, .117], undefined, 'glaze');
+      });
+      limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#325c52');
     }
-    group.scale.setScalar(leader ? 1.18 : id === 'bridge-scout' ? 1.03 : 1.10);
+    group.scale.setScalar(leader ? 1.06 : id === 'bridge-scout' ? 1.03 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : hr ? .99 : 1.10);
   } else if (kind === 'lantern') {
-    const green = id === 'support-beacon' ? '#3f6e50' : '#ad8246';
-    head.position.y = .64; data.headY = .64; body.position.y = .14; data.bodyY = .14;
-    sculpt(body, 'lanternBase', green, [0, 0, 0], [.60, .28, .55], undefined, 'glaze');
-    sculpt(body, 'limb', gold, [0, .13, 0], [.48, .065, .44], undefined, 'brass');
-    const light = sculpt(head, 'lanternGlass', id === 'support-beacon' ? '#e9b15d' : '#efc075', [0, 0, 0], [.435, .59, .405], undefined, 'amber');
-    // Distinct amber finishes let the two lanterns breathe independently.
-    data.glow = light.material;
-    sculpt(head, 'detail', '#ffe4a0', [-.055, .17, .17], [.045, .12, .012], [0, 0, -.13], 'amber');
-    [-1, 1].forEach(sign => {
-      // Bowed rails follow the glass rather than framing a luminous cube.
-      const points = [[sign * .19, -.31, 0], [sign * .265, -.16, 0], [sign * .271, .12, 0], [sign * .19, .31, 0]];
-      const railPath = new THREE.CatmullRomCurve3(points.map(point => new THREE.Vector3(...point as [number, number, number])));
-      const rail = new THREE.Mesh(new THREE.TubeGeometry(railPath, 12, .038, 8, false), characterMaterial(kit, green, 'glaze'));
-      rail.castShadow = true; rail.receiveShadow = true; head.add(rail);
-      const eye = sculpt(head, 'detail', ink, [sign * .088, .025, .211], [.046, .064, .015], undefined, 'ink'); data.eyes.push(eye);
-      data.highlights.push(sculpt(head, 'detail', '#ffedc2', [sign * .088 - .008, .041, .221], [.012, .014, .006], undefined, 'glaze'));
-    });
-    characterSmile(kit, head, '#826331', .034, .019, [0, -.052, .218]);
-    sculpt(head, 'lanternCap', green, [0, .377, 0], [.64, .28, .585], undefined, 'glaze');
-    sculpt(head, 'limb', gold, [0, .535, 0], [.105, .055, .105], undefined, 'brass');
-    ring(head, green, .26, [0, .681, 0]);
-    sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'glaze');
-    if (id === 'reflection-lumen') group.scale.setScalar(1.25);
-  } else if (kind === 'owl') {
-    const navy = id === 'email-owl', feathers = navy ? '#2d4256' : id === 'reflection-quill' ? '#d7cbb5' : '#e8dfcc';
-    body.position.y = .49; data.bodyY = .49; head.position.y = .91; data.headY = .91;
-    sculpt(body, 'owlBody', feathers, [0, 0, 0], [.70, .83, .55]);
-    sculpt(body, 'sphere', navy ? '#465c6c' : '#f1e7d1', [0, -.015, .234], [.46, .58, .15]);
-    sculpt(head, 'owlHead', feathers, [0, 0, 0], [.78, .65, .54], undefined, 'glaze');
-    [-1, 1].forEach(sign => {
-      // Facial discs are fitted patches on the same curved head surface. Their
-      // near-touching cream rims form one owl mask rather than two eyeballs.
-      curvedFace(kit, head, navy ? '#dbcdae' : '#f5ecd8', .355, .405, .013, [sign * .169, -.006, 0], 'clay', [.417, .325, .27]);
-      sculpt(head, 'detail', '#a58b5d', [sign * .162, -.006, .271], [.165, .224, .032], undefined, 'glaze');
-      const eye = sculpt(head, 'detail', '#1d3038', [sign * .162, .002, .293], [.104, .148, .025], undefined, 'ink'); data.eyes.push(eye);
-      data.highlights.push(sculpt(head, 'detail', '#faf7e9', [sign * .162 - .020, .039, .309], [.028, .038, .008], undefined, 'glaze'));
-      sculpt(head, 'tuft', feathers, [sign * .242, .283, -.038], [.19, .27, .16], [0, 0, sign * -.36]);
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
-      sculpt(wing, 'wing', navy ? '#334c61' : '#d9ceb9', [sign * .015, -.145, 0], [.205, .53, .30], [0, 0, sign * .23]); data.wings.push(wing);
-      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .145, .08, .08]);
-      sculpt(foot, 'bean', gold, [0, 0, 0], [.19, .16, .235], undefined, 'clay'); data.feet.push(foot);
-    });
-    sculpt(head, 'beak', gold, [0, -.103, .301], [.108, .16, .12], [Math.PI / 2, 0, Math.PI], 'brass');
-    if (id === 'reflection-quill') {
-      kit.mesh(body, 'detailCylinder', '#c09b5f', [.37, .01, .165], [.036, .48, .036], [0, 0, -.35]);
-      sculpt(body, 'beak', '#5e5c54', [.29, -.216, .165], [.037, .072, .037], [0, 0, Math.PI - .35]);
+    const support = id === 'support-beacon', green = support ? '#2c5b42' : '#ad8246';
+    if (support) {
+      // Beacon's source is an embracing conversation lantern with a solid green
+      // shell, not an exposed bulb held between metal rails.
+      body.position.y = .38; data.bodyY = .38; head.position.y = .94; data.headY = .94;
+      sculpt(body, 'torso', green, [0, -.005, 0], [.64, .60, .48], undefined, 'glaze');
+      sculpt(head, 'helmet', green, [0, 0, 0], [.80, .75, .61], undefined, 'glaze');
+      const radii: [number, number, number] = [.424, .375, .305];
+      curvedFace(kit, head, '#c19445', .60, .465, .009, [0, -.002, 0], 'brass', radii, true);
+      const light = curvedFace(kit, head, '#efbc66', .554, .419, .017, [0, -.002, 0], 'amber', radii, true);
+      data.glow = light.material as THREE.MeshStandardMaterial;
+      eyes(head, .119, .015, .332, true, '#274e38', 1.02);
+      sculpt(head, 'lanternCap', green, [0, .376, -.008], [.55, .19, .48], undefined, 'glaze');
+      ring(head, green, .25, [0, .564, -.008]);
+      [-1, 1].forEach(sign => {
+        const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * .25, .10, .06]);
+        sculpt(arm, 'limb', green, [sign * -.075, -.13, .12], [.23, .38, .25], [0, 0, sign * -.64], 'glaze'); data.arms.push(arm);
+        const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .14, .085, .02]);
+        sculpt(foot, 'bean', green, [0, 0, 0], [.265, .17, .32], undefined, 'glaze'); data.feet.push(foot);
+      });
+    } else {
+      head.position.y = .64; data.headY = .64; body.position.y = .14; data.bodyY = .14;
+      sculpt(body, 'lanternBase', green, [0, 0, 0], [.60, .28, .55], undefined, 'brass');
+      sculpt(body, 'limb', '#c39a59', [0, .13, 0], [.48, .065, .44], undefined, 'brass');
+      const light = sculpt(head, 'hexGlass', '#efc075', [0, 0, 0], [.55, .61, .50], undefined, 'amber'); data.glow = light.material;
+      [-1, 1].forEach(sign => {
+        stroke(head, '#ad8246', [[sign * .25, -.31, .025], [sign * .23, -.08, .025], [sign * .21, .13, .025], [sign * .19, .31, .025]], .022);
+        sculpt(head, 'detail', '#d4ab63', [sign * .224, -.265, .054], [.031, .031, .031], undefined, 'brass');
+      });
+      eyes(head, .088, .025, .216, true, '#75562e', .67);
+      characterSmile(kit, head, '#826331', .034, .022, [0, -.052, .218]);
+      sculpt(head, 'hexCap', green, [0, .377, 0], [.67, .28, .59], undefined, 'brass');
+      sculpt(head, 'limb', gold, [0, .535, 0], [.105, .055, .105], undefined, 'brass');
+      sculpt(head, 'fineRing', green, [0, .681, 0], [.26, .30, .26], undefined, 'brass');
+      sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'brass');
+      group.scale.setScalar(1.25);
     }
-    if (id === 'reflection-echo') {
-      ring(body, gold, .21, [.365, .035, .215]);
-      kit.mesh(body, 'detailCylinder', gold, [.365, -.115, .215], [.027, .19, .027]);
+  } else if (kind === 'owl') {
+    const navy = id === 'email-owl', feathers = navy ? '#293b51' : id === 'reflection-quill' ? '#ccbba0' : '#e4d5b8';
+    body.position.y = .49; data.bodyY = .49; head.position.y = .91; data.headY = .91;
+    sculpt(body, navy ? 'owlBody' : 'paperBody', feathers, [0, 0, 0], [.70, .83, .55], undefined, navy ? 'feather' : 'paper');
+    sculpt(head, navy ? 'owlHead' : 'paperBody', navy ? feathers : id === 'reflection-echo' ? '#c7aa83' : '#cfb18a', [0, 0, 0], [.78, .65, .54], undefined, navy ? 'feather' : 'paper');
+    [-1, 1].forEach(sign => {
+      if (navy) curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'clay', [.417, .325, .27]);
+      else {
+        sculpt(head, 'paperDisc', '#bca17c', [sign * .169, -.012, .281], [.393, .448, .10], [0, sign * -.08, sign * -.12], 'paper');
+        sculpt(head, 'paperDisc', '#f0e2c3', [sign * .169, -.012, .292], [.365, .42, .10], [0, sign * -.08, sign * -.12], 'paper');
+      }
+      if (navy) sculpt(head, 'detail', '#c49b54', [sign * .162, .002, .282], [.193, .237, .035], undefined, 'brass');
+      if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .315], .050, .033));
+      else {
+        const eye = sculpt(head, 'detail', navy ? '#13252d' : '#302c22', [sign * .162, .011, .307], [navy ? .135 : .116, navy ? .170 : .136, .039], undefined, 'ink'); data.eyes.push(eye);
+        data.highlights.push(sculpt(head, 'detail', '#fff9e7', [sign * .162 - .025, .053, .330], [.035, .043, .010], undefined, 'glaze'));
+      }
+      if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], [1, 1, 1], undefined, 'feather');
+      else {
+        sculpt(head, 'pageFold', '#bc9c74', [sign * .245, .285, -.018], [.26, .20, .14], [0, 0, sign * -.45], 'paper');
+        sculpt(head, 'pageFold', '#e0c7a0', [sign * .171, .218, .272], [.28, .16, .10], [0, 0, sign * -.45], 'paper');
+      }
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
+      sculpt(wing, navy ? 'wing' : 'paperWing', navy ? '#31485e' : '#d0bea0', [sign * .015, -.145, 0], [.205, .53, .30], [0, 0, sign * .23], navy ? 'feather' : 'paper');
+      if (navy) {
+        sculpt(wing, sign < 0 ? 'featherFanL' : 'featherFanR', '#30465e', [0, -.035, 0], [1, 1, 1], undefined, 'feather');
+      } else sculpt(wing, 'pageFold', '#e5d0ac', [sign * .025, -.15, .13], [.18, .34, .08], [0, 0, sign * -.24], 'paper');
+      data.wings.push(wing);
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .145, .08, .08]);
+      if (navy) [-1, 0, 1].forEach(toe => sculpt(foot, 'toe', gold, [toe * .053, 0, .012 - Math.abs(toe) * .012], [.075, .16, .20], [0, toe * -.12, 0], 'brass'));
+      else sculpt(foot, 'paperWing', gold, [0, 0, 0], [.19, .16, .235], undefined, 'paper');
+      data.feet.push(foot);
+    });
+    sculpt(head, 'beak', gold, [0, -.096, .320], [.096, .184, .13], [Math.PI / 2, 0, Math.PI], navy ? 'brass' : 'paper');
+    if (id === 'reflection-quill') {
+      kit.mesh(body, 'detailCylinder', '#c99c4a', [.35, .01, .19], [.042, .48, .042], [0, 0, -.35]);
+      sculpt(body, 'beak', '#514d42', [.27, -.216, .19], [.040, .075, .040], [0, 0, Math.PI - .35]);
+      sculpt(body, 'pageFold', '#e4d2b1', [-.07, -.04, .31], [.33, .46, .08], [0, 0, .20], 'paper');
+      sculpt(body, 'pageFold', '#d0b58b', [.10, -.15, .31], [.27, .36, .07], [0, 0, -.34], 'paper');
+    } else if (id === 'reflection-echo') {
+      ring(body, gold, .245, [.28, .07, .32]);
+      ring(body, '#ead5a5', .212, [.28, .07, .327]);
+      stroke(body, gold, [[.28, -.055, .32], [.25, -.25, .32]], .020);
+      sculpt(body, 'pageFold', '#ebdcbe', [-.075, -.03, .31], [.35, .44, .07], [0, 0, -.16], 'paper');
+      sculpt(body, 'pageFold', '#cfb68e', [.09, -.14, .31], [.28, .36, .07], [0, 0, -.35], 'paper');
     }
     if (navy) {
-      kit.mesh(body, 'roundedDetail', cream, [0, -.12, .322], [.215, .14, .025]);
-      const flap = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-.085, .043, 0), new THREE.Vector3(0, -.018, 0), new THREE.Vector3(.085, .043, 0)]), new THREE.LineBasicMaterial({ color: '#ac9e7d' }));
-      flap.position.set(0, -.12, .337); body.add(flap);
+      sculpt(body, 'breastFeathers', '#293e54', [0, -.09, .276], [1, 1, 1], undefined, 'feather');
+      sculpt(body, 'book', '#dcb26a', [0, -.075, .30], [.19, .135, .016], undefined, 'brass');
+      stroke(body, '#835d31', [[-.083, -.025, .315], [0, -.090, .315], [.083, -.025, .315]], .005, 'clay');
     }
   } else {
-    body.position.y = .69; data.bodyY = .69; head.position.y = .89; data.headY = .89;
-    sculpt(body, 'owlBody', '#cba56a', [0, 0, 0], [.42, .40, .69]);
-    sculpt(head, 'helmet', '#cfad76', [0, 0, .17], [.37, .33, .35]);
+    // Swift's split tail, creased ochre wings and teal folded edge are solid
+    // low-poly paper surfaces rather than flattened ceramic spheres.
+    body.position.y = .37; data.bodyY = .37; head.position.y = .65; data.headY = .65;
+    sculpt(body, 'swiftBody', '#cda44e', [0, 0, 0], [1, 1, 1], [0, 0, -.08], 'paper');
+    sculpt(head, 'swiftHead', '#deb664', [0, 0, .08], [1, 1, 1], [0, 0, .05], 'paper');
     [-1, 1].forEach(sign => {
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .20, .06, 0]);
-      sculpt(wing, 'wing', '#d8b67d', [sign * .24, 0, -.02], [.63, .085, .33], [0, sign * .35, sign * .05]); data.wings.push(wing);
-      const eye = sculpt(head, 'detail', ink, [sign * .114, .018, .321], [.038, .053, .018], undefined, 'ink'); data.eyes.push(eye);
-      data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign * .114 - .007, .031, .332], [.011, .014, .005], undefined, 'glaze'));
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .16, .14, -.03]);
+      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#d9b15b', [0, 0, 0], [.66, .68, .70], undefined, 'paper');
+      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#507e76', [0, -.012, -.012], [.63, .63, .71], undefined, 'paper'); data.wings.push(wing);
+      wing.rotation.z = -sign * .45;
+      const eye = sculpt(head, 'detail', ink, [sign * .115, .027, .196], [.046, .058, .030], [0, sign * .28, 0], 'ink'); data.eyes.push(eye);
+      data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign * .115 - .008, .043, .215], [.013, .016, .006], undefined, 'glaze'));
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .09, .05, .03]);
+      sculpt(foot, 'toe', '#957446', [0, 0, 0], [.065, .10, .16], undefined, 'clay');
+      sculpt(foot, 'limb', '#957446', [0, .13, -.025], [.019, .24, .019], undefined, 'clay'); data.feet.push(foot);
     });
-    sculpt(head, 'beak', '#b78647', [0, -.037, .362], [.09, .15, .085], [Math.PI / 2, 0, 0]);
-    sculpt(body, 'wing', '#648b80', [0, -.014, -.36], [.28, .065, .33]);
+    sculpt(head, 'pageFold', '#a77d38', [0, -.037, .329], [.085, .095, .18], [Math.PI / 2, 0, -.10], 'paper');
+    sculpt(body, 'paperTail', '#477b73', [0, -.075, -.34], [.28, .36, .035], [Math.PI / 2, 0, 0], 'paper');
   }
   data.eyes.forEach(eye => { eye.userData.restEyeY = eye.scale.y; });
   data.feet.forEach(foot => { foot.userData.restFootY = foot.position.y; foot.userData.restFootZ = foot.position.z; });

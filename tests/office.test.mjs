@@ -9,8 +9,8 @@ import os from 'node:os';
 import ts from 'typescript';
 import { createBridge } from '../server/index.mjs';
 import { requestActivity, requestAction, requestDecoration, requestRoomStyle } from '../server/client.mjs';
-import { TEAM_IDS, MAX_SNAPSHOT_BYTES } from '../server/protocol.mjs';
-import { TEAM_ACTORS, ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SHAPES, DECOR_FINISHES, DECOR_SLOTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseOfficeSnapshot, parseRoomStyle } from '../server/office-protocol.mjs';
+import { TEAM_IDS, MAX_BODY_BYTES, MAX_SNAPSHOT_BYTES } from '../server/protocol.mjs';
+import { TEAM_ACTORS, ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SHAPES, DECOR_FINISHES, DECOR_SLOTS, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseOfficeSnapshot, parseRoomStyle } from '../server/office-protocol.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
 
 const exec = promisify(execFile);
@@ -119,7 +119,7 @@ test('primitive recipes normalize defaults and reject unbounded counts, values, 
     { shape: 'box', segments: 1000000 }, { shape: 'box', position: [0, 0] }, { shape: 'box', finish: 'shader' },
   ]) assert.throws(() => parseDecoration({ ...ASSET, parts: [part] }));
   for (const value of [
-    { ...ASSET, parts: Array.from({ length: 13 }, () => ({ shape: 'box' })) },
+    { ...ASSET, parts: Array.from({ length: MAX_DECOR_PARTS + 1 }, () => ({ shape: 'box' })) },
     { ...ASSET, parts: new Array(2) }, { ...ASSET, slot: 'private-slot' }, { ...ASSET, teamId: 'private-team' },
     { ...ASSET, path: '/private/file' }, { ...ASSET, source: 'manual' },
   ]) assert.throws(() => parseDecoration(value));
@@ -136,7 +136,7 @@ test('office HTTP writes require existing local token/origin protections and san
     assert.equal((await request(route, { body, auth: true, headers: { Origin: 'https://example.invalid' } })).status, 403);
     assert.equal((await request(route, { body, auth: true, headers: { 'Sec-Fetch-Site': 'cross-site' } })).status, 403);
     assert.equal((await request(route, { body, auth: true, headers: { 'Content-Type': 'text/plain' } })).status, 415);
-    assert.equal((await request(route, { body: 'x'.repeat(8193), auth: true })).status, 413);
+    assert.equal((await request(route, { body: 'x'.repeat(MAX_BODY_BYTES + 1), auth: true })).status, 413);
     const invalid = await request(route, { body: { ...body, token, path: '/private/file', text: 'PRIVATE_TEXT' }, auth: true });
     assert.equal(invalid.status, 400);
     assert.ok(!invalid.text.includes(token) && !invalid.text.includes('PRIVATE'));
@@ -150,6 +150,9 @@ test('office HTTP writes require existing local token/origin protections and san
 test('room style accepts only explicit bounded visual overrides and exclusive reset', () => {
   assert.deepEqual(parseRoomStyle(STYLE), { ...STYLE, palette: { wall: '#a1b2c3' } });
   for (const mode of ROOM_LIGHT_MODES) assert.equal(parseRoomStyle({ teamId: 'hr', lighting: { mode } }).lighting.mode, mode);
+  assert.deepEqual(parseRoomStyle({ teamId: 'hr', lighting: { ambientColor: '#AACCEE', ambientBrightness: 0, ambientPosition: [-2.5, 0.6, 2.5] } }).lighting,
+    { ambientColor: '#aaccee', ambientBrightness: 0, ambientPosition: [-2.5, 0.6, 2.5] });
+  assert.deepEqual(parseRoomStyle({ teamId: 'hr', lighting: { ambientPosition: [2.5, 3, -2.5] } }).lighting.ambientPosition, [2.5, 3, -2.5]);
   assert.deepEqual(parseRoomStyle({ teamId: 'hr', reset: true }), { teamId: 'hr', reset: true });
   for (const value of [
     { teamId: 'hr' }, { teamId: 'hr', palette: {} }, { teamId: 'hr', lighting: {} },
@@ -157,7 +160,11 @@ test('room style accepts only explicit bounded visual overrides and exclusive re
     { ...STYLE, palette: { wall: '#123456', text: 'PRIVATE' } },
     { ...STYLE, lighting: { mode: 'automatic', schedule: 'PRIVATE' } },
     ...[-0.1, 1.6, NaN, Infinity, '1'].map(brightness => ({ teamId: 'hr', lighting: { brightness } })),
+    ...[-0.1, 1.6, NaN, Infinity, '1'].map(ambientBrightness => ({ teamId: 'hr', lighting: { ambientBrightness } })),
+    ...[[0, 0.59, 0], [0, 3.01, 0], [-2.51, 1, 0], [0, 1, 2.51], [0, 1], [0, NaN, 0], [0, 1, '0']]
+      .map(ambientPosition => ({ teamId: 'hr', lighting: { ambientPosition } })),
     { teamId: 'hr', lighting: { color: 'https://PRIVATE' } },
+    { teamId: 'hr', lighting: { ambientColor: 'https://PRIVATE' } },
     { teamId: 'hr', reset: false }, { ...STYLE, reset: true },
     { ...STYLE, command: 'PRIVATE' }, { ...STYLE, path: '/PRIVATE/file' }, { ...STYLE, teamId: 'PRIVATE' },
   ]) assert.throws(() => parseRoomStyle(value));
@@ -165,6 +172,10 @@ test('room style accepts only explicit bounded visual overrides and exclusive re
   const copy = parseRoomStyle(input);
   input.palette.wall = '#000000'; input.lighting.brightness = 100;
   assert.equal(copy.palette.wall, '#a1b2c3'); assert.equal(copy.lighting.brightness, 0.8);
+  const positionInput = { teamId: 'hr', lighting: { ambientPosition: [0, 1, 0] } };
+  const positionCopy = parseRoomStyle(positionInput);
+  positionInput.lighting.ambientPosition[0] = 900;
+  assert.equal(positionCopy.lighting.ambientPosition[0], 0);
   const id = '00000000-0000-4000-8000-000000000001';
   for (const rooms of [
     { hr: { id, palette: {}, lighting: {} } },
@@ -234,7 +245,7 @@ test('slot replacement, identical recipes, clearing and full bounded office capa
   assert.equal(same.assets.merchant.desk.id, id);
   const changed = await requestDecoration({ ...ASSET, parts: [{ shape: 'cone' }] }, client);
   assert.notEqual(changed.assets.merchant.desk.id, id);
-  const parts = Array.from({ length: 12 }, (_, index) => ({ shape: DECOR_SHAPES[index % DECOR_SHAPES.length] }));
+  const parts = Array.from({ length: MAX_DECOR_PARTS }, (_, index) => ({ shape: DECOR_SHAPES[index % DECOR_SHAPES.length] }));
   for (const teamId of TEAM_IDS) for (const slot of DECOR_SLOTS) await requestDecoration({ teamId, slot, parts }, client);
   const full = await requestActivity(undefined, client);
   assert.equal(Object.values(full.assets).flatMap(slots => Object.values(slots)).length, 30);
@@ -255,13 +266,15 @@ test('slot replacement, identical recipes, clearing and full bounded office capa
 
 test('full office capacity with precise vectors, finishes, actor intents and room styles stays below the bounded snapshot ceiling', async t => {
   const { root, client } = await fixture(t);
-  const part = { shape: 'cylinder', position: Array(3).fill(-0.12345678901234566), size: Array(3).fill(1.1234567890123457),
-    rotation: Array(3).fill(-3.1234567890123457), color: '#ffffff', finish: 'ceramic', glow: true };
+  const part = { shape: 'cylinder', position: Array(3).fill(-0.0000012345678901234567), size: Array(3).fill(0.12345678901234568),
+    rotation: Array(3).fill(-0.0000012345678901234567), color: '#ffffff', finish: 'ceramic', glow: false };
+  assert.ok(Buffer.byteLength(JSON.stringify(parseDecoration({ teamId: 'reflection', slot: 'festive', parts: Array(MAX_DECOR_PARTS).fill(part) }))) < MAX_BODY_BYTES);
   for (const teamId of TEAM_IDS) {
     for (const actorId of TEAM_ACTORS[teamId]) await requestAction({ teamId, actorId, kind: 'walk_to', target: { officeId: 'reflection', place: 'lounge' } }, client);
-    for (const slot of DECOR_SLOTS) await requestDecoration({ teamId, slot, parts: Array(12).fill(part) }, client);
+    for (const slot of DECOR_SLOTS) await requestDecoration({ teamId, slot, parts: Array(MAX_DECOR_PARTS).fill(part) }, client);
     await requestRoomStyle({ teamId, palette: { wall: '#123456', rug: '#234567', furniture: '#345678' },
-      lighting: { color: '#456789', brightness: 1.1234567890123457, mode: 'night' } }, client);
+      lighting: { color: '#456789', brightness: 1.1234567890123457, mode: 'night', ambientColor: '#fedcba', ambientBrightness: 1.1234567890123457,
+        ambientPosition: [-2.1234567890123457, 2.1234567890123457, 2.1234567890123457] } }, client);
   }
   const snapshot = await requestActivity(undefined, client);
   assert.equal(Object.keys(snapshot.actions).length, ACTOR_IDS.length);
@@ -269,6 +282,10 @@ test('full office capacity with precise vectors, finishes, actor intents and roo
   assert.equal(Object.keys(snapshot.rooms).length, TEAM_IDS.length);
   assert.ok(Buffer.byteLength(JSON.stringify(snapshot)) < MAX_SNAPSHOT_BYTES);
   assert.ok((await stat(path.join(root, '.local/office.json'))).size < MAX_SNAPSHOT_BYTES - 8192);
+  assert.ok(Object.values(snapshot.assets).flatMap(slots => Object.values(slots)).every(asset => asset.parts.length === MAX_DECOR_PARTS));
+  const mcp = fileURLToPath(new URL('../scripts/platop-mcp-client.mjs', import.meta.url));
+  const viaMcp = await exec(process.execPath, [mcp, 'status'], { env: { ...process.env, PLATOP_ROOT: root, PLATOP_PORT: String(client.port) }, maxBuffer: 1_048_576, timeout: 12_000 });
+  assert.deepEqual(JSON.parse(viaMcp.stdout).assets, snapshot.assets);
 });
 
 test('corrupt or symlinked office persistence never exposes private content or follows outside files', async t => {

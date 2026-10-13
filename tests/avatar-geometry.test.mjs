@@ -100,7 +100,7 @@ test('sculpted forms share scene resources, preserve the environment finish, and
   characterGeometry(otherKit, 'helmet').dispose(); otherKit.dispose();
 });
 
-test('hero geometry is smooth and bounded, with fewer than six thousand triangles per character', () => {
+test('hero geometry is smooth and bounded, with fewer than eight thousand triangles per character', () => {
   const kit = new SceneKit(), all = new THREE.Group();
   for (const character of members) {
     const model = makeProxy(character, kit); all.add(model);
@@ -111,7 +111,7 @@ test('hero geometry is smooth and bounded, with fewer than six thousand triangle
       assert.ok(geometry.attributes.normal, `${character.id} has surface normals`);
       assert.equal(mesh.material.flatShading, false, `${character.id} avoids faceted lighting`);
     }
-    assert.ok(triangles < 6000, `${character.id}: ${triangles} triangle geometry budget`);
+    assert.ok(triangles < 8000, `${character.id}: ${triangles} triangle geometry budget`);
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
     assert.ok(size.y < 2, `${character.id} stays inside existing character standing heights`);
@@ -169,10 +169,11 @@ test('walking and explicit resting suppress stationary gestures until the charac
   disposeObject(all); kit.dispose();
 });
 
-test('continuous clay surfaces keep matching normals across duplicated UV seams without adding triangles', () => {
+test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
   const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
-  const expectedTriangles = { torso: 336, owlBody: 288, lanternGlass: 336, lanternCap: 384,
-    lanternBase: 384, limb: 224, beak: 192, helmet: 720, owlHead: 720, wing: 352, tuft: 168 };
+  const expectedTriangles = { torso: 768, owlBody: 768, lanternGlass: 336, lanternCap: 384,
+    lanternBase: 384, limb: 224, beak: 192, helmet: 1216, owlHead: 1216, wing: 352, tuft: 168,
+    spiritBody: 768, cloak: 768, merchantTorso: 768 };
   for (const [form, count] of Object.entries(expectedTriangles)) {
     const geometry = characterGeometry(kit, form), position = geometry.attributes.position;
     const uv = geometry.attributes.uv, normal = geometry.attributes.normal;
@@ -197,7 +198,7 @@ test('robot cuffs join feet to their torso and lantern warmth adds no real light
     const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
     assert.equal(model.getObjectsByProperty('isLight', true).length, 0, `${character.id} adds no shadow or light passes`);
     if (character.kind === 'robot') {
-      const torso = meshes(model).find(mesh => mesh.geometry === characterGeometry(kit, 'torso'));
+      const torso = model.userData.personality.body.children.find(child => child.isMesh);
       const torsoBounds = new THREE.Box3().setFromObject(torso);
       for (const name of ['ankle_l', 'ankle_r']) {
         const cuff = model.getObjectByName(name), foot = cuff.parent.children.find(mesh => mesh.geometry === characterGeometry(kit, 'bean'));
@@ -216,5 +217,32 @@ test('robot cuffs join feet to their torso and lantern warmth adds no real light
   }
   const helmet = characterGeometry(kit, 'helmet'); helmet.computeBoundingBox();
   assert.ok(helmet.boundingBox.min.z > -.45 && helmet.boundingBox.max.z === .5, 'helmet back is subtly flattened while the fitted face stays intact');
+  disposeObject(all); kit.dispose();
+});
+
+test('reference identities retain book, guardian, conversation lantern, feather and folded-paper silhouettes', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  const models = new Map(members.map(character => {
+    const model = makeProxy(character, kit); all.add(model); return [character.id, model];
+  }));
+  const has = (id, form) => meshes(models.get(id)).some(mesh => mesh.geometry === characterGeometry(kit, form));
+  assert.ok(has('bridge-keeper', 'book') && has('bridge-keeper', 'pageFold'), 'Keeper retains its dimensional book and folded page');
+  for (const id of ['hr-compass', 'hr-lens', 'hr-relay']) {
+    assert.ok(has(id, 'spiritBody') && !has(id, 'helmet'), `${id} remains a ceramic guardian`);
+  }
+  for (const id of ['intake-jarvis', 'intake-beacon', 'intake-relay', 'intake-compass']) {
+    assert.ok(has(id, 'cape') && has(id, 'capePanel'), `${id} retains a fitted navigation cape`);
+  }
+  assert.ok(has('support-beacon', 'helmet') && !has('support-beacon', 'lanternGlass'), 'Beacon keeps its embracing conversation shell');
+  for (const id of ['reflection-echo', 'reflection-quill']) {
+    assert.ok(has(id, 'paperBody') && has(id, 'paperWing'), `${id} retains dimensional paper folds`);
+  }
+  assert.ok(has('email-swift', 'swiftBody') && has('email-swift', 'paperTail'), 'Swift retains its creased bird body and split tail');
+  assert.ok(has('email-owl', 'featherFanL') && has('email-owl', 'featherFanR') && has('email-owl', 'breastFeathers'),
+    'Courier retains layered feather construction');
+  for (const model of models.values()) for (const mesh of meshes(model)) {
+    assert.equal(mesh.material.transparent, false, 'identity surfaces add no transparent render pass');
+    assert.ok(mesh.scale.x > 0 && mesh.scale.y > 0 && mesh.scale.z > 0, 'identity surfaces retain valid winding');
+  }
   disposeObject(all); kit.dispose();
 });

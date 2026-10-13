@@ -8,8 +8,27 @@ const SLOT_SCALE: Record<DecorSlot, number> = { desk: 0.25, shelf: 0.25, wall: 0
 const FINISH: Record<DecorFinish, { roughness: number; metalness: number }> = {
   matte: { roughness: 0.82, metalness: 0 }, ceramic: { roughness: 0.34, metalness: 0 },
   wood: { roughness: 0.78, metalness: 0 }, metal: { roughness: 0.3, metalness: 0.65 },
+  fabric: { roughness: 0.97, metalness: 0 }, stone: { roughness: 0.9, metalness: 0 },
+  lacquer: { roughness: 0.17, metalness: 0.08 },
 };
 interface RenderedAsset { root: THREE.Group; signature: string; materials: THREE.MeshStandardMaterial[]; }
+
+function archGeometry(): THREE.BufferGeometry {
+  // One continuous outline leaves the opening clear; bevels catch soft light.
+  const shape = new THREE.Shape().moveTo(-0.5, -0.5).lineTo(-0.5, 0);
+  for (let step = 1; step <= 12; step++) {
+    const angle = Math.PI * (1 - step / 12);
+    shape.lineTo(Math.cos(angle) * 0.5, Math.sin(angle) * 0.5);
+  }
+  shape.lineTo(0.5, -0.5).lineTo(0.3, -0.5).lineTo(0.3, 0);
+  for (let step = 1; step <= 12; step++) {
+    const angle = Math.PI * step / 12;
+    shape.lineTo(Math.cos(angle) * 0.3, Math.sin(angle) * 0.3);
+  }
+  shape.lineTo(-0.3, -0.5).closePath();
+  return new THREE.ExtrudeGeometry(shape, { depth: 0.3, steps: 1, bevelEnabled: true,
+    bevelThickness: 0.025, bevelSize: 0.025, bevelSegments: 2 });
+}
 
 /** Bounded local primitive recipes update only when an office snapshot changes. */
 export class OfficeAssetsRenderer {
@@ -23,12 +42,20 @@ export class OfficeAssetsRenderer {
     let geometry = this.geometries.get(shape);
     if (!geometry) {
       geometry = shape === 'box' ? new RoundedBoxGeometry(1, 1, 1, 2, 0.12)
-        : shape === 'sphere' || shape === 'leaf' ? new THREE.SphereGeometry(0.5, 16, 10)
+        : shape === 'sphere' || shape === 'leaf' || shape === 'cushion' ? new THREE.SphereGeometry(0.5, 16, 10)
         : shape === 'cylinder' ? new THREE.LatheGeometry([[0, -0.5], [0.42, -0.5], [0.48, -0.48], [0.5, -0.42],
           [0.5, 0.42], [0.48, 0.48], [0.42, 0.5], [0, 0.5]].map(([x, y]) => new THREE.Vector2(x, y)), 20)
         : shape === 'cone' ? new THREE.LatheGeometry([[0, -0.5], [0.41, -0.5], [0.48, -0.48], [0.5, -0.43],
           [0.15, 0.34], [0.07, 0.46], [0, 0.5]].map(([x, y]) => new THREE.Vector2(x, y)), 20)
         : shape === 'capsule' ? new THREE.CapsuleGeometry(0.3, 0.4, 4, 16)
+        : shape === 'arch' ? archGeometry()
+        : shape === 'vase' ? new THREE.LatheGeometry([[0, -0.5], [0.26, -0.5], [0.4, -0.46], [0.5, -0.28],
+          [0.44, 0.08], [0.28, 0.32], [0.27, 0.46], [0.3, 0.5], [0.23, 0.5], [0.22, 0.32],
+          [0.34, 0.04], [0.39, -0.25], [0.24, -0.39], [0, -0.39]].map(([x, y]) => new THREE.Vector2(x, y)), 18)
+        : shape === 'dome' ? new THREE.LatheGeometry([new THREE.Vector2(0, 0), ...Array.from({ length: 11 }, (_, index) => {
+          const angle = Math.PI / 2 * index / 10;
+          return new THREE.Vector2(Math.cos(angle) * 0.5, Math.sin(angle) * 0.5);
+        })], 20)
         : new THREE.TorusGeometry(0.35, 0.15, 8, 24);
       if (shape === 'leaf') {
         const positions = geometry.getAttribute('position');
@@ -38,6 +65,13 @@ export class OfficeAssetsRenderer {
           positions.setXYZ(index, positions.getX(index) * taper, y,
             positions.getZ(index) * (0.35 + 0.65 * taper));
         }
+        geometry.computeVertexNormals();
+      }
+      if (shape === 'cushion') {
+        const positions = geometry.getAttribute('position');
+        const rounded = (value: number, power: number) => Math.sign(value) * Math.pow(Math.abs(value * 2), power) / 2;
+        for (let index = 0; index < positions.count; index++) positions.setXYZ(index,
+          rounded(positions.getX(index), 0.62), rounded(positions.getY(index), 0.85), rounded(positions.getZ(index), 0.62));
         geometry.computeVertexNormals();
       }
       // Every recipe size means full width/height/depth, including a torus's
@@ -79,6 +113,9 @@ export class OfficeAssetsRenderer {
     const bounds = new THREE.Box3().setFromObject(root);
     root.position.set(...anchor.position);
     if (slot === 'desk' || slot === 'shelf' || slot === 'floor') root.position.y -= bounds.min.y;
+    // Wall recipes extend into the room from its actual interior surface.
+    // Their depth and local offsets must not bury or float the mounting face.
+    if (slot === 'wall') root.position.x -= bounds.min.x;
     root.updateMatrix();
     root.matrixAutoUpdate = false;
     room.root.add(root);

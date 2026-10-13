@@ -2,8 +2,9 @@ export const TEAM_IDS = Object.freeze(['merchant', 'hr', 'intake', 'support', 'r
 export const STATES = Object.freeze(['active', 'sleeping', 'waiting', 'unknown']);
 export const SOURCES = Object.freeze(['codex', 'skill', 'manual']);
 export const ACTIVE_TTL_MS = 120_000;
+// A full 24-part recipe and all 30 occupied slots retain exact numeric values.
 export const MAX_BODY_BYTES = 8192;
-export const MAX_SNAPSHOT_BYTES = 131_072;
+export const MAX_SNAPSHOT_BYTES = 262_144;
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);

@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_FINISHES, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
+import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, MAX_DECOR_PARTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
 import { sanitizedSnapshot } from '../server/client.mjs';
 
@@ -20,6 +20,8 @@ const record = value => value !== null && typeof value === 'object' && !Array.is
 const exact = (value, keys) => record(value) && Object.keys(value).length === keys.length
   && keys.every(key => Object.hasOwn(value, key));
 const fail = () => new Error(FAILURE);
+const boundedEnum = (value, allowed) => Array.isArray(value) && value.length > 0
+  && new Set(value).size === value.length && value.every(item => allowed.includes(item));
 
 /** A fixed local stdio transport; callers can supply only public tool arguments. */
 export async function callPlatopMcp(name, args = {}) {
@@ -110,13 +112,25 @@ export async function callPlatopMcp(name, args = {}) {
         if (tools.has('platop_style') && JSON.stringify(tools.get('platop_style').inputSchema?.properties?.lighting?.properties?.mode?.enum) !== JSON.stringify(ROOM_LIGHT_MODES)) throw fail();
         let wireArgs = args;
         if (name === 'platop_decorate') {
-          const finishSchema = tools.get(name).inputSchema?.properties?.parts?.items?.properties?.finish;
-          if (finishSchema && JSON.stringify(finishSchema.enum) !== JSON.stringify(DECOR_FINISHES)) throw fail();
+          const partSchema = tools.get(name).inputSchema?.properties?.parts;
+          const finishSchema = partSchema?.items?.properties?.finish;
+          const shapeSchema = partSchema?.items?.properties?.shape;
+          const shapes = shapeSchema?.enum ?? DECOR_SHAPES.slice(0, 5);
+          const finishes = finishSchema?.enum ?? ['matte'];
+          const budget = partSchema?.maxItems ?? 12;
+          if (!boundedEnum(shapes, DECOR_SHAPES) || !boundedEnum(finishes, DECOR_FINISHES)
+            || !Number.isInteger(budget) || budget < 0 || budget > MAX_DECOR_PARTS
+            || args.parts.length > budget || args.parts.some(part => !shapes.includes(part.shape) || !finishes.includes(part.finish))) throw fail();
           // Original four-tool servers predate finishes and the two organic
           // shapes. Keep their original recipes usable without widening them.
           if (!finishSchema) {
-            if (args.parts.some(part => part.finish !== 'matte' || ['capsule', 'leaf'].includes(part.shape))) throw fail();
             wireArgs = { ...args, parts: args.parts.map(({ finish, ...part }) => part) };
+          }
+        }
+        if (name === 'platop_style') {
+          const lightingProperties = tools.get(name).inputSchema?.properties?.lighting?.properties;
+          for (const key of ['ambientColor', 'ambientBrightness', 'ambientPosition']) {
+            if (Object.hasOwn(args.lighting ?? {}, key) && !Object.hasOwn(lightingProperties ?? {}, key)) throw fail();
           }
         }
         stage = 2;
@@ -139,7 +153,7 @@ export async function callPlatopMcp(name, args = {}) {
         if (name === 'platop_style') {
           const style = snapshot.rooms?.[args.teamId];
           if (args.reset ? style !== undefined : !style || ['palette', 'lighting'].some(section =>
-            Object.entries(args[section] ?? {}).some(([key, value]) => style[section][key] !== value))) throw fail();
+            Object.entries(args[section] ?? {}).some(([key, value]) => JSON.stringify(style[section][key]) !== JSON.stringify(value)))) throw fail();
         }
         stage = 3;
         stop(snapshot);

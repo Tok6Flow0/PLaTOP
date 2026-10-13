@@ -15,9 +15,9 @@ import { StudioEnvironment, StudioRoomFinishes, roomLightingFactor } from './sce
 import { StaticContacts, actorContactHeight } from './scene/staticContacts';
 import { agentExpression, type AgentExpression } from './scene/agentExpression';
 
-// Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
+// Keep cinematic 3D at a bounded 1.5 backing pixels per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
-const SCENE_PIXEL_RATIO_CAP = 1;
+const SCENE_PIXEL_RATIO_CAP = 1.5;
 const CAMPUS_FOV = 20;
 const CAMPUS_ELEVATION = THREE.MathUtils.degToRad(39);
 
@@ -131,15 +131,15 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   camera.position.set(0, 38, 27);
   camera.lookAt(0, 0.7, 0);
   camera.updateMatrixWorld();
-  scene.add(new THREE.HemisphereLight('#fffaf1', '#a39b8d', 1.15));
-  const sunlight = new THREE.DirectionalLight('#fff2df', 2.15);
+  scene.add(new THREE.HemisphereLight('#fff7e8', '#9b8c75', 0.95));
+  const sunlight = new THREE.DirectionalLight('#fff2df', 2.3);
   sunlight.position.set(-9, 19, 11);
   sunlight.castShadow = true;
-  sunlight.shadow.mapSize.set(1024, 1024);
+  sunlight.shadow.mapSize.set(2048, 2048);
   sunlight.shadow.bias = -0.0004;
   sunlight.shadow.normalBias = 0.025;
-  sunlight.shadow.radius = 5;
-  sunlight.shadow.blurSamples = 8;
+  sunlight.shadow.radius = 14;
+  sunlight.shadow.blurSamples = 12;
   sunlight.shadow.camera.near = 1;
   sunlight.shadow.camera.far = 80;
   sunlight.shadow.camera.left = -16;
@@ -443,9 +443,15 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       }
       for (const entry of office.assets) entry.material.emissiveIntensity = entry.intensity * factor;
       const fill = roomFillLights.get(office.id)!;
-      fill.visible = !!lighting && Object.keys(lighting).length > 0 && factor > 0;
-      fill.intensity = 0.8 * factor;
-      fill.color.set(lighting?.color ?? '#ffe8bf');
+      const ambientFactor = roomLightingFactor({ ...lighting, brightness: lighting?.ambientBrightness ?? lighting?.brightness });
+      fill.visible = office.occupied && !!lighting && Object.keys(lighting).length > 0 && ambientFactor > 0;
+      fill.intensity = 0.8 * ambientFactor;
+      fill.color.set(lighting?.ambientColor ?? lighting?.color ?? '#ffe8bf');
+      const room = rooms.get(office.id)!;
+      const position = lighting?.ambientPosition ?? [0, 2.4, -0.5];
+      fill.position.set(room.center.x + position[0], position[1], room.center.z + position[2]);
+      fill.updateMatrix();
+      fill.updateMatrixWorld(true);
     }
   }
   const gestures = new Map<number, { x: number; y: number; dragged: boolean }>();

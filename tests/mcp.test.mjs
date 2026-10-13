@@ -110,7 +110,7 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
   assert.deepEqual(action.inputSchema.properties.kind.enum, ['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave', 'interact']);
   assert.deepEqual(action.inputSchema.properties.gesture.enum, ['work', 'think', 'file', 'talk', 'wait']);
   assert.deepEqual(action.inputSchema.properties.target.properties.place.enum, ['desk', 'door', 'lounge', 'whiteboard', 'cabinet']);
-  assert.equal(decorate.inputSchema.properties.parts.maxItems, 12);
+  assert.equal(decorate.inputSchema.properties.parts.maxItems, 24);
   assert.equal(decorate.inputSchema.properties.parts.items.additionalProperties, false);
   const arrived = (await request('tools/call', { name: 'platop_action', arguments: { teamId: 'email', kind: 'arrive' } })).result;
   assert.equal(arrived.isError, false);
@@ -123,10 +123,13 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
     assert.equal(interacted.structuredContent.actions['email-owl'].target.place, place);
   }
   const decorated = (await request('tools/call', { name: 'platop_decorate', arguments: {
-    teamId: 'email', slot: 'wall', parts: [{ shape: 'sphere', color: '#abcdef', glow: true }],
+    teamId: 'email', slot: 'wall', parts: [{ shape: 'arch', finish: 'stone', color: '#abcdef', glow: true },
+      { shape: 'vase', finish: 'lacquer' }, { shape: 'cushion', finish: 'fabric' }, { shape: 'dome' }],
   } })).result;
   assert.equal(decorated.isError, false);
   assert.equal(decorated.structuredContent.assets.email.wall.parts[0].glow, true);
+  assert.deepEqual(decorated.structuredContent.assets.email.wall.parts.map(part => part.shape), ['arch', 'vase', 'cushion', 'dome']);
+  assert.deepEqual(decorated.structuredContent.assets.email.wall.parts.map(part => part.finish), ['stone', 'lacquer', 'fabric', 'matte']);
   for (const [name, args] of [
     ['platop_action', { teamId: 'email', actorId: 'bridge-jarvis', kind: 'work' }],
     ['platop_action', { teamId: 'email', kind: 'work', target: { officeId: 'email', place: 'desk' } }],
@@ -137,7 +140,7 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
     ['platop_action', { teamId: 'email', kind: 'work', gesture: 'work' }],
     ['platop_decorate', { teamId: 'email', slot: 'wall', parts: [{ shape: 'box', file: '/PRIVATE/file' }] }],
     ['platop_decorate', { teamId: 'email', slot: 'wall', parts: [{ shape: 'sphere', segments: 1000000 }] }],
-    ['platop_decorate', { teamId: 'email', slot: 'wall', parts: Array.from({ length: 13 }, () => ({ shape: 'box' })) }],
+    ['platop_decorate', { teamId: 'email', slot: 'wall', parts: Array.from({ length: 25 }, () => ({ shape: 'box' })) }],
   ]) {
     const result = await request('tools/call', { name, arguments: args });
     assert.equal(result.error.code, -32602);
@@ -156,16 +159,24 @@ test('MCP room studio exposes compact closed style choices and rejects nonvisual
   assert.equal(tool.inputSchema.properties.palette.additionalProperties, false);
   assert.equal(tool.inputSchema.properties.lighting.additionalProperties, false);
   assert.deepEqual(tool.inputSchema.properties.lighting.properties.mode.enum, ['day', 'cozy', 'night', 'off']);
+  assert.equal(tool.inputSchema.properties.lighting.properties.ambientBrightness.maximum, 1.5);
+  assert.deepEqual(tool.inputSchema.properties.lighting.properties.ambientPosition.prefixItems.map(axis => [axis.minimum, axis.maximum]),
+    [[-2.5, 2.5], [0.6, 3], [-2.5, 2.5]]);
   const styled = (await request('tools/call', { name: 'platop_style', arguments: {
-    teamId: 'support', palette: { wall: '#284E39', furniture: '#7a5239' }, lighting: { color: '#FFCC88', brightness: 0.7, mode: 'cozy' },
+    teamId: 'support', palette: { wall: '#284E39', furniture: '#7a5239' }, lighting: { color: '#FFCC88', brightness: 0.7, mode: 'cozy',
+      ambientColor: '#AABBCC', ambientBrightness: 0.2, ambientPosition: [-2, 1.5, 2] },
   } })).result;
   assert.equal(styled.isError, false);
   assert.deepEqual(styled.structuredContent.rooms.support.palette, { wall: '#284e39', furniture: '#7a5239' });
-  assert.deepEqual(styled.structuredContent.rooms.support.lighting, { color: '#ffcc88', brightness: 0.7, mode: 'cozy' });
+  assert.deepEqual(styled.structuredContent.rooms.support.lighting, { color: '#ffcc88', brightness: 0.7, mode: 'cozy',
+    ambientColor: '#aabbcc', ambientBrightness: 0.2, ambientPosition: [-2, 1.5, 2] });
   for (const argumentsValue of [
     { teamId: 'support', palette: { wall: '#123456', url: 'PRIVATE_URL' } },
     { teamId: 'support', lighting: { mode: 'cozy', schedule: 'PRIVATE' } },
     { teamId: 'support', lighting: { brightness: 1000000 } },
+    { teamId: 'support', lighting: { ambientBrightness: 1000000 } },
+    { teamId: 'support', lighting: { ambientPosition: [0, 0, 0] } },
+    { teamId: 'support', lighting: { ambientPosition: [3, 2, 0] } },
     { teamId: 'support', lighting: { mode: 'off' }, command: 'PRIVATE' },
     { teamId: 'support', reset: true, palette: { wall: '#123456' } },
   ]) {
