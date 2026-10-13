@@ -429,3 +429,74 @@ computer-use access to Codex settings was blocked. No business workflow was
 triggered for testing, and no schedule, notification or authority was changed.
 Private mappings, tokens, raw captures and location remain local. Temporary QA
 browsers and servers are closed; the live bridge remains running.
+
+## Native CPU follow-up and local frame diagnostics — 2026-10-12
+
+This round uses `64102e2` as its reference. The final renderer, actor animation,
+matrix publication and sleep-label paths retain that reference's behavior. The
+only shipped code change expands the existing optional motion panel with recent
+actor, batch, contact, renderer submission and total JavaScript wall times,
+draw/triangle counts and authored/proxy model counts. Fixed buffers hold at most
+120 animated frames. Stage clocks, collection and summaries run only when the
+panel is enabled; buffers and fields clear on disable, visibility/cadence reset
+and disposal. Nothing is persisted, sent to the bridge or transmitted externally.
+These wall times include command submission and are not process CPU or GPU
+completion measurements.
+
+Native captures used the same app, GPU-process and WebContent launch identities,
+fixed preview activity, a 1712 × 778 window, 1109 × 538 scene buffer, DPR 1,
+opaque MSAA and the cinematic 30 FPS cadence. Diagnostics were closed during CPU
+sampling. Each capture used a 26-second warmup followed by three 13-second
+cumulative CPU-counter windows, bound to its exact source/output fingerprint.
+Views and dimensions were checked before and after sampling. QA browsers,
+builds and other owned heavy jobs were stopped during captures. Values sum the
+three app processes as a percentage of one CPU core, excluding whole-machine
+CPU, WindowServer, GPU execution time, power and battery.
+
+| Build or private trial | Median CPU, one core | Decision |
+| --- | ---: | --- |
+| Reference, initial / repeated | 27.88% / 28.10% | Retain renderer |
+| Matrix publication and actor-loop cleanup | 28.91% | Reject |
+| Cleanup plus sleep-sprite instancing | 29.12% | Reject |
+| Isolated sleep-sprite instancing | 29.22% | Reject |
+| Static translation uniforms | 27.95% | No reliable reduction; reject |
+| Selective actor TRS/world updates | 29.38% | Reject |
+| MSAA disabled | 28.28% | No reduction; reject |
+| Final, diagnostics disabled | 28.20% | CPU effectively unchanged |
+
+**The requested additional 20–30% CPU reduction is not established.** A 20% cut
+from the repeated reference would require at most 22.48% of one core. Lower
+draw counts and fewer matrix operations were not accepted as CPU savings.
+All rendering experiments remain private and are absent from the final source.
+
+Several rejected trials passed extensive visual checks: sleep-sprite instancing
+and selective transforms matched 44 deterministic views and 76 actor states
+exactly; the static-uniform trial changed at most 67 edge pixels out of 882,880.
+Their rendering or operation-count reductions did not establish a practical
+native CPU benefit. Final native timing reported 30.0 FPS, median 33 ms, p95
+34 ms, maximum 35 ms and zero intervals above 50.5 ms. These are recent renderer
+intervals, not guaranteed display-presentation timings. All 128 tests and the
+production build pass.
+
+Final diagnostics-only QA matched 14 neutral/sleeping campus and office images
+pixel-for-pixel against `64102e2`, with all 76 deterministic actor states and
+draw counts unchanged. Eighteen focused checks passed, including finite enabled
+metrics, reset after pause/visibility changes, field removal on disable,
+no metric-attribute writes while disabled animation progresses, fresh buffers
+on reenable and disposal cleanup. No GL or runtime errors occurred. Temporary
+QA browsers and preview servers were closed afterward.
+
+All six existing automations remain active, invoke `$platop`, prefer the local
+MCP tools and retain the working CLI fallback with active heartbeats and final
+states. Fresh native chat observations were published through that fallback;
+unloaded chats were marked unknown. The native app visibly confirms its local
+status bridge connection with preview off. Local stdio MCP initialization,
+tool listing and status readback succeed, but the registered tools are still
+absent from existing chat tool inventories. A host refresh is still needed;
+registration alone is not evidence that those chats loaded MCP. No business
+workflow, message, schedule, authority or notification setting was changed.
+
+One installed PLaTOP bundle and one running app instance were found. The existing
+native executable passes strict signature verification and is updated in place
+through its local frontend. Private mappings, credentials, raw measurements and
+location remain outside version control.

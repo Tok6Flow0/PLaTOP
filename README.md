@@ -131,6 +131,12 @@ lighting. An opaque canvas avoids transparent compositing, and the cached warm
 background preserves the office palette. These are rendering budgets, not
 whole-device CPU/GPU measurements.
 
+The optional motion panel (`Control–Option–P` on macOS) also shows recent actor,
+batch, contact and renderer submission work, draw counts and loaded model counts.
+Its 120-frame measurements stay local and run only while diagnostics are enabled.
+They measure JavaScript wall time, not process CPU or completed GPU work. See
+[measured optimization results](docs/VALIDATION.md) for native CPU comparisons.
+
 The bridge binds to loopback and accepts only public team IDs, activity states,
 and fixed source labels; it assigns timestamps locally. Chat contents, contacts, private thread IDs,
 and credentials are not published. The local token and latest sanitized state

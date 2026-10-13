@@ -243,6 +243,14 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const queryDiagnostics = new URLSearchParams(window.location.search).get('motion-debug') === '1';
   let diagnosticsEnabled = false;
   const diagnosticFields = ['sceneFrames', 'sceneMeasuredFps', 'sceneIntervalP50', 'sceneIntervalP95', 'sceneIntervalMax', 'sceneLongFrames', 'sceneTargetFps'] as const;
+  const stageFields = ['sceneActorsMeanMs', 'sceneBatchesMeanMs', 'sceneContactsMeanMs', 'sceneRenderMeanMs', 'sceneTotalMeanMs', 'sceneTotalP95Ms', 'sceneStageSamples'] as const;
+  const stageCapacity = 120;
+  let stageFrames: Float64Array | undefined;
+  let stageTotals: Float64Array | undefined;
+  let stageCurrent: Float64Array | undefined;
+  let stageFrameStart: number | undefined;
+  let stageCount = 0;
+  let stageIndex = 0;
   const resolutionFields = ['sceneDeviceDpr', 'sceneRenderDpr', 'sceneBufferWidth', 'sceneBufferHeight', 'sceneCssWidth', 'sceneCssHeight'] as const;
   const contextFields = ['sceneContextAlpha', 'sceneContextAntialias'] as const;
   const frameIntervals: number[] = [];
@@ -482,15 +490,25 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       bufferHeight = height;
       if (diagnosticsEnabled) resolutionDiagnostics();
     }
-    batches.sync();
-    contacts.sync(camera);
-    const renderStart = diagnosticsEnabled ? performance.now() : 0;
-    output.render(camera, !!idleTeamId);
-    if (diagnosticsEnabled) {
-      host.dataset.sceneDrawCalls = String(renderer.info.render.calls);
-      host.dataset.sceneTriangles = String(renderer.info.render.triangles);
-      host.dataset.sceneRenderMs = (performance.now() - renderStart).toFixed(2);
+    if (!diagnosticsEnabled) {
+      batches.sync();
+      contacts.sync(camera);
+      output.render(camera, !!idleTeamId);
+      return;
     }
+    const batchStart = performance.now();
+    batches.sync();
+    const contactStart = performance.now();
+    contacts.sync(camera);
+    const renderStart = performance.now();
+    output.render(camera, !!idleTeamId);
+    const renderEnd = performance.now();
+    stageCurrent![1] = contactStart - batchStart;
+    stageCurrent![2] = renderStart - contactStart;
+    stageCurrent![3] = renderEnd - renderStart;
+    host.dataset.sceneDrawCalls = String(renderer.info.render.calls);
+    host.dataset.sceneTriangles = String(renderer.info.render.triangles);
+    host.dataset.sceneRenderMs = (renderEnd - renderStart).toFixed(2);
   }
   function cancelFrame(): void {
     if (animationFrame !== undefined) window.cancelAnimationFrame(animationFrame);
@@ -501,6 +519,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     diagnosticLastFrame = undefined;
     diagnosticLastReport = -Infinity;
     frameIntervals.length = 0;
+    stageFrames?.fill(0);
+    stageTotals?.fill(0);
+    stageCount = 0;
+    stageIndex = 0;
+    stageFields.forEach((field) => { delete host.dataset[field]; });
     for (const field of diagnosticFields) {
       if (field !== 'sceneFrames' && field !== 'sceneTargetFps') delete host.dataset[field];
     }
@@ -514,6 +537,10 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       resetFrameObservations();
       diagnosticFields.forEach((field) => { delete host.dataset[field]; });
       if (enabled) {
+        stageFrames = new Float64Array(stageCapacity * 5);
+        stageTotals = new Float64Array(5);
+        stageCurrent = new Float64Array(5);
+        stageFrameStart = undefined;
         host.dataset.sceneMultiDraw = multiDraw ? '1' : '0';
         const attributes = renderer.getContext().getContextAttributes();
         if (attributes) {
@@ -522,6 +549,10 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         }
         resolutionDiagnostics();
       } else {
+        stageFrames = undefined;
+        stageTotals = undefined;
+        stageCurrent = undefined;
+        stageFrameStart = undefined;
         delete host.dataset.sceneMultiDraw;
         delete host.dataset.sceneDrawCalls;
         delete host.dataset.sceneTriangles;
@@ -554,20 +585,42 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     animationFrame = window.requestAnimationFrame(tick);
   }
   function recordFrame(now: number): void {
-    if (!motionDiagnostics()) return;
+    if (!motionDiagnostics() || width <= 0 || height <= 0) return;
+    // These are JavaScript wall times through command submission, not process
+    // CPU or GPU completion times. Keep all collection local and opt-in.
+    const total = performance.now() - now;
+    const continuous = cadence() > 0;
+    if (continuous && stageFrameStart === now) {
+      stageCurrent![4] = total;
+      const offset = stageIndex * 5;
+      for (let index = 0; index < 5; index++) {
+        stageTotals![index] += stageCurrent![index] - stageFrames![offset + index];
+        stageFrames![offset + index] = stageCurrent![index];
+      }
+      stageIndex = (stageIndex + 1) % stageCapacity;
+      stageCount = Math.min(stageCount + 1, stageCapacity);
+    }
+    host.dataset.sceneCpuMs = total.toFixed(2);
     diagnosticFrameCount += 1;
     host.dataset.sceneFrames = String(diagnosticFrameCount);
-    if (diagnosticLastFrame !== undefined && cadence() > 0) {
+    if (diagnosticLastFrame !== undefined && continuous) {
       frameIntervals.push(now - diagnosticLastFrame);
       if (frameIntervals.length > 120) frameIntervals.shift();
     }
-    diagnosticLastFrame = cadence() > 0 ? now : undefined;
-    if (now - diagnosticLastReport < 500 || !frameIntervals.length) return;
+    diagnosticLastFrame = continuous ? now : undefined;
+    if (now - diagnosticLastReport < 500) return;
     diagnosticLastReport = now;
+    if (stageCount) {
+      for (let index = 0; index < 5; index++) host.dataset[stageFields[index]] = (stageTotals![index] / stageCount).toFixed(3);
+      const totals = Array.from({ length: stageCount }, (_, index) => stageFrames![index * 5 + 4]).sort((a, b) => a - b);
+      host.dataset.sceneTotalP95Ms = totals[Math.min(totals.length - 1, Math.floor(totals.length * 0.95))].toFixed(3);
+      host.dataset.sceneStageSamples = String(stageCount);
+    }
+    if (!frameIntervals.length) return;
     const sorted = [...frameIntervals].sort((a, b) => a - b);
     const percentile = (fraction: number) => sorted[Math.min(sorted.length - 1, Math.floor(sorted.length * fraction))];
-    const total = frameIntervals.reduce((sum, interval) => sum + interval, 0);
-    host.dataset.sceneMeasuredFps = (1000 * frameIntervals.length / total).toFixed(2);
+    const intervalTotal = frameIntervals.reduce((sum, interval) => sum + interval, 0);
+    host.dataset.sceneMeasuredFps = (1000 * frameIntervals.length / intervalTotal).toFixed(2);
     host.dataset.sceneIntervalP50 = percentile(0.5).toFixed(2);
     host.dataset.sceneIntervalP95 = percentile(0.95).toFixed(2);
     host.dataset.sceneIntervalMax = sorted[sorted.length - 1].toFixed(2);
@@ -581,15 +634,16 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       lastTick = now;
       motionTime += delta;
       const frameStart = performance.now();
-      updateActors(delta);
+      if (diagnosticsEnabled) {
+        stageFrameStart = frameStart;
+        updateActors(delta);
+        stageCurrent![0] = performance.now() - frameStart;
+      } else updateActors(delta);
       settlingRemaining = Math.max(0, settlingRemaining - delta);
       const isAnimating = cadence() > 0;
       if (wasAnimating !== isAnimating) resetFrameObservations();
       wasAnimating = isAnimating;
       renderFrame();
-      if (diagnosticsEnabled) {
-        host.dataset.sceneCpuMs = (performance.now() - frameStart).toFixed(2);
-      }
       recordFrame(frameStart);
     }
     schedule();
@@ -966,6 +1020,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.sceneMultiDraw;
       delete host.dataset.idleTeam;
       diagnosticFields.forEach((field) => { delete host.dataset[field]; });
+      stageFields.forEach((field) => { delete host.dataset[field]; });
+      stageFrames = undefined;
+      stageTotals = undefined;
+      stageCurrent = undefined;
+      stageFrameStart = undefined;
       resolutionFields.forEach((field) => { delete host.dataset[field]; });
       contextFields.forEach((field) => { delete host.dataset[field]; });
     }

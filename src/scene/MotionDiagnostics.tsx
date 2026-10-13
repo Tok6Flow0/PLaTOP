@@ -15,6 +15,17 @@ interface MotionStats {
   viewport: string;
   contextAlpha: string;
   contextAntialias: string;
+  actorsMs: string;
+  batchesMs: string;
+  contactsMs: string;
+  renderMs: string;
+  totalMs: string;
+  totalP95Ms: string;
+  stageSamples: string;
+  draws: string;
+  triangles: string;
+  loadedCharacters: string;
+  proxies: string;
 }
 
 function value(raw: string | undefined, digits = 1): string {
@@ -51,7 +62,13 @@ export function MotionDiagnostics({ host }: { host: RefObject<HTMLDivElement | n
         buffer: `${value(data.sceneBufferWidth, 0)} × ${value(data.sceneBufferHeight, 0)}`,
         viewport: `${value(data.sceneCssWidth, 0)} × ${value(data.sceneCssHeight, 0)}`,
         contextAlpha: data.sceneContextAlpha === '0' ? 'opaque' : data.sceneContextAlpha === '1' ? 'transparent' : '—',
-        contextAntialias: data.sceneContextAntialias === '0' ? 'off' : data.sceneContextAntialias === '1' ? 'on' : '—' });
+        contextAntialias: data.sceneContextAntialias === '0' ? 'off' : data.sceneContextAntialias === '1' ? 'on' : '—',
+        actorsMs: value(data.sceneActorsMeanMs, 3), batchesMs: value(data.sceneBatchesMeanMs, 3),
+        contactsMs: value(data.sceneContactsMeanMs, 3), renderMs: value(data.sceneRenderMeanMs, 3),
+        totalMs: value(data.sceneTotalMeanMs, 3), totalP95Ms: value(data.sceneTotalP95Ms, 3),
+        stageSamples: value(data.sceneStageSamples, 0), draws: value(data.sceneDrawCalls, 0),
+        triangles: value(data.sceneTriangles, 0), loadedCharacters: value(data.loadedCharacters, 0),
+        proxies: value(data.proxyCount, 0) });
     };
     sample();
     const timer = window.setInterval(sample, 1000);
@@ -67,6 +84,10 @@ export function MotionDiagnostics({ host }: { host: RefObject<HTMLDivElement | n
     <p>Pixel ratio: display {stats?.deviceDpr ?? '—'} · scene {stats?.renderDpr ?? '—'}</p>
     <p>Scene buffer {stats?.buffer ?? '—'} px · viewport {stats?.viewport ?? '—'} CSS px</p>
     <p>Canvas {stats?.contextAlpha ?? '—'} · MSAA {stats?.contextAntialias ?? '—'} · FXAA off</p>
-    <small>Recent renderer timing only. Nothing is saved or sent.</small>
+    <p>Mean work: actors {stats?.actorsMs ?? '—'} ms · batches {stats?.batchesMs ?? '—'} ms · contacts {stats?.contactsMs ?? '—'} ms · submit {stats?.renderMs ?? '—'} ms</p>
+    <p>Total work: mean {stats?.totalMs ?? '—'} ms · p95 {stats?.totalP95Ms ?? '—'} ms · samples {stats?.stageSamples ?? '—'} / 120</p>
+    <p>Draws {stats?.draws ?? '—'} · triangles {stats?.triangles ?? '—'}</p>
+    <p>Authored characters {stats?.loadedCharacters ?? '—'} · proxy characters {stats?.proxies ?? '—'}</p>
+    <small>Recent JavaScript wall times include command submission; they are not process CPU or GPU times. Nothing is saved or sent.</small>
   </aside>;
 }
