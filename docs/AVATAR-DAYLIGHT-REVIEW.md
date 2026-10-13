@@ -27,7 +27,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 8 | 7.5/10 | 8.1/10 | 7.8/10 — B |
 | Pass 9 | 7.7/10 | 8.2/10 | 7.9/10 — B |
 | Pass 10 | 7.9/10 | 8.1/10 | 8.0/10 — B+ |
-| Pass 11 | Pending | Pending | Independent review pending |
+| Pass 11 | 8.1/10 | 8.1/10 | 8.1/10 — B+ |
+| Pass 12 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -99,6 +100,17 @@ adds stronger hood overlap. Revised feather layers clear their supporting
 body and include a neck transition. A new geometric clearance regression test
 covers the clipping caught during close-up inspection. All 259 tests and the
 production build pass; the independent visual result remains separate.
+The eleventh review found the ensemble coherent and generally well constructed,
+but still below the reference in paper construction, feather language and pose.
+Pass 12 adds true thin folded wings, layered chest/brow/ear folds and a finer
+lantern base. Keeper cups the held book, Jarvis has a rounded-square housing,
+Swift is smaller with a shorter beak and vertical folded tail, and Beacon has
+continuous swept arms with a matte finish and thicker smiling eyes. The navy
+owl has finer overlapping feathers and a more inward-looking head posture.
+HR companion heights and the navigator cape's flare are also revised.
+The all-angle inspection exposed a mirrored-normal bug and an inside-out arm;
+both were fixed. Four new tests cover thin closed sheets, mirrored color and
+normal fidelity, and outward-facing arms. All 263 tests and the build pass.
 
 ## Local-clock atmosphere
 
@@ -143,6 +155,8 @@ test suites were stopped during the samples.
 | Pass 10 night | 59.99 | 1.2 ms | 91 | 330,563 |
 | Pass 11 noon | 60.00 | 2.6 ms | 91 | 330,659 |
 | Pass 11 night | 59.99 | 2.8 ms | 91 | 330,659 |
+| Pass 12 noon | 59.99 | 4.4 ms | 91 | 330,835 |
+| Pass 12 night | 60.01 | 4.6 ms | 91 | 330,835 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed

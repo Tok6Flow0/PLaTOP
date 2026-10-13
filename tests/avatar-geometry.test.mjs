@@ -107,6 +107,17 @@ test('Beacon has a real face opening with an outward-facing green shell',()=>{
   material.dispose();geometry.dispose();bezel.geometry.dispose();kit.dispose();
 });
 
+test('Beacon clasped forearms show their outward-facing surfaces in front of the belly',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='support-beacon'),kit);
+  model.updateMatrixWorld(true);
+  for(const sign of [-1,1]){
+    const arm=model.getObjectByName(sign<0?'embracingArmL':'embracingArmR');
+    const hit=new THREE.Raycaster(new THREE.Vector3(sign*.20,.30,1),new THREE.Vector3(0,0,-1)).intersectObject(arm,false)[0];
+    assert.ok(hit&&hit.point.z>.24,'the visible clasp is a closed outward surface, not the inside of a swept tube');
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('owl plumage covers all four sides within the existing cached geometry budget',()=>{
   const kit=new SceneKit(),geometry=characterGeometry(kit,'breastFeathers'),p=geometry.attributes.position;
   const quadrants=new Set();
@@ -136,6 +147,29 @@ test('visible breast feather planes stay outside the curved owl body',()=>{
     assert.ok(hit&&point.distanceTo(centre)>hit.point.distanceTo(centre)+.002,'outward-facing feather triangle clears its supporting body');
   }
   disposeObject(model);kit.dispose();
+});
+
+test('paper wings and lapels have matching creased backs and closed thin edges',()=>{
+  const kit=new SceneKit();
+  for(const form of ['paperOwlWingR','paperChestL','paperChestR','paperBrow']){
+    const geometry=characterGeometry(kit,form),p=geometry.attributes.position,columns=new Map(),edges=new Map();
+    const key=i=>[p.getX(i),p.getY(i),p.getZ(i)].map(v=>Math.round(v*1e6)).join(':');
+    for(let i=0;i<p.count;i++){
+      const xy=[p.getX(i),p.getY(i)].map(v=>Math.round(v*1e6)).join(':');
+      const zs=columns.get(xy)??new Set();zs.add(Math.round(p.getZ(i)*1e6));columns.set(xy,zs);
+    }
+    for(const zs of columns.values()){
+      assert.equal(zs.size,2,`${form} keeps both folded sheet surfaces`);
+      const [a,b]=[...zs].sort((a,b)=>a-b);assert.ok(Math.abs(b-a-10000)<=1,`${form} is .010 units thick, not a solid wedge`);
+    }
+    for(let i=0;i<p.count;i+=3)for(let j=0;j<3;j++){
+      const a=key(i+j),b=key(i+(j+1)%3),edgeKey=[a,b].sort().join('/');
+      const edge=edges.get(edgeKey)??{count:0,balance:0};edge.count++;edge.balance+=a<b?1:-1;edges.set(edgeKey,edge);
+    }
+    for(const edge of edges.values()){assert.equal(edge.count,2);assert.equal(edge.balance,0);}
+    geometry.dispose();
+  }
+  kit.dispose();
 });
 
 test('rounded-square helmet cheeks retain a closely fitted visor and rim on the actual curved shell', () => {
@@ -316,7 +350,7 @@ test('the cape lining clears the real torso around the shoulders, sides, and bac
 
 test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
   const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
-  const expectedTriangles = { torso: 768, owlBody: 768, lanternGlass: 336, lanternCap: 384,
+  const expectedTriangles = { torso: 768, owlBody: 768, lanternGlass: 336, lanternCap: 384, bridgeHelmet:1216,
     lanternBase: 384, limb: 224, beak: 192, helmet: 1216, owlHead: 1216, wing: 352, tuft: 168,
     spiritBody: 768, spiritFigure:2048, spiritLens:2048, spiritRelay:2048, cloak: 768, merchantTorso: 768 };
   for (const [form, count] of Object.entries(expectedTriangles)) {
@@ -335,6 +369,25 @@ test('continuous clay surfaces keep matching normals across duplicated UV seams 
     geometry.dispose();
   }
   kit.dispose();
+});
+
+test('mirrored paper folds retain vertex colors at their reflected corners',()=>{
+  const kit=new SceneKit(),right=characterGeometry(kit,'paperEarR'),left=characterGeometry(kit,'paperEarL');
+  const rp=right.attributes.position,lp=left.attributes.position,rc=right.attributes.color,lc=left.attributes.color;
+  for(let i=0;i<rp.count;i+=3)for(const[j,k]of[[0,0],[1,2],[2,1]]){
+    assert.equal(lp.getX(i+j),-rp.getX(i+k));assert.equal(lp.getY(i+j),rp.getY(i+k));
+    assert.equal(lc.getX(i+j),rc.getX(i+k));assert.equal(lc.getY(i+j),rc.getY(i+k));assert.equal(lc.getZ(i+j),rc.getZ(i+k));
+  }
+  right.dispose();left.dispose();kit.dispose();
+});
+
+test('mirroring continuous arms preserves smooth normals instead of introducing flat facets',()=>{
+  const kit=new SceneKit(),right=characterGeometry(kit,'embracingArmR'),left=characterGeometry(kit,'embracingArmL');
+  const rn=right.attributes.normal,ln=left.attributes.normal;
+  for(let i=0;i<rn.count;i+=3)for(const[j,k]of[[0,0],[1,2],[2,1]]){
+    assert.equal(ln.getX(i+j),-rn.getX(i+k));assert.equal(ln.getY(i+j),rn.getY(i+k));assert.equal(ln.getZ(i+j),rn.getZ(i+k));
+  }
+  right.dispose();left.dispose();kit.dispose();
 });
 
 test('robot cuffs join feet to their torso and lantern warmth adds no real lights', () => {
