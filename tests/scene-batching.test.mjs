@@ -286,6 +286,103 @@ test('hidden offices skip animated subtree updates and resume with current trans
   assert.equal(new THREE.Vector3().setFromMatrixPosition(matrix).x, 9);
 });
 
+test('hidden actor surfaces are skipped between office switches and resume current colors and poses', t => {
+  const scene = new THREE.Scene();
+  const rooms = [new THREE.Group(), new THREE.Group()];
+  const actors = rooms.map(room => { const actor = new THREE.Group(); room.add(actor); return actor; });
+  const geometry = new THREE.BoxGeometry();
+  const materials = [new THREE.MeshStandardMaterial({ color: '#477963' }), new THREE.MeshStandardMaterial({ color: '#bd8148' })];
+  const sources = actors.map((actor, actorIndex) => Array.from({ length: 24 }, (_, index) => {
+    const mesh = new THREE.Mesh(geometry, materials[actorIndex]);
+    mesh.position.x = index * 0.1;
+    actor.add(mesh);
+    return mesh;
+  }));
+  scene.add(...rooms);
+  const batches = new SceneBatches(scene, new Set(actors));
+  t.after(() => { batches.dispose(); geometry.dispose(); materials.forEach(material => material.dispose()); });
+  batches.rebuild();
+  const batch = scene.getObjectByName('Shared character draws').children[0];
+  assert.equal(batch.count, 48);
+  let hiddenSurfaceReads = 0;
+  for (const source of sources[1]) Object.defineProperty(source, 'visible', {
+    configurable: true, get() { hiddenSurfaceReads++; return true; },
+  });
+  rooms[1].visible = false;
+  batches.invalidateVisibility();
+  for (let frame = 0; frame < 6; frame++) batches.sync();
+  assert.equal(batch.count, 24);
+  assert.equal(hiddenSurfaceReads, 0, 'a hidden actor needs no per-surface visibility reads');
+  sources[1][3].position.y = 2;
+  materials[1].color.setRGB(0.2, 0.3, 0.4);
+  rooms[1].visible = true;
+  batches.invalidateVisibility(); batches.sync();
+  assert.equal(batch.count, 48);
+  assert.ok(hiddenSurfaceReads > 0);
+  const matrix = new THREE.Matrix4(), color = new THREE.Color();
+  batch.getMatrixAt(27, matrix); batch.getColorAt(27, color);
+  assert.equal(matrix.elements[13], 2);
+  assert.ok(Math.abs(color.r - 0.2) < 1e-7 && Math.abs(color.g - 0.3) < 1e-7 && Math.abs(color.b - 0.4) < 1e-7);
+  rooms[0].visible = false; batches.invalidateVisibility(); batches.sync();
+  assert.equal(batch.count, 24);
+  for (let part = 0; part < 24; part++) assert.equal(batch.getVisibleAt(part), false);
+  for (let part = 24; part < 48; part++) assert.equal(batch.getVisibleAt(part), true);
+  batches.rebuild();
+  assert.equal(scene.getObjectByName('Shared character draws').children[0].count, 24);
+});
+
+for (const indexed of [true, false]) test(`${indexed ? 'indexed' : 'nonindexed'} actor spans omit hidden office vertices and restore every primitive on reentry`, t => {
+  const scene = new THREE.Scene(), rooms = [new THREE.Group(), new THREE.Group()];
+  const actors = Array.from({ length: 4 }, (_, index) => {
+    const actor = new THREE.Group(); rooms[Math.floor(index / 2)].add(actor); return actor;
+  });
+  const originals = [new THREE.BoxGeometry(), new THREE.SphereGeometry(0.5, 6, 4)];
+  const geometries = indexed ? originals : originals.map(geometry => geometry.toNonIndexed());
+  const material = new THREE.MeshStandardMaterial();
+  const sourcePairs = actors.map(actor => geometries.map(geometry => {
+    const source = new THREE.Mesh(geometry, material); actor.add(source); return source;
+  }));
+  scene.add(...rooms);
+  const batches = new SceneBatches(scene, new Set(actors));
+  t.after(() => { batches.dispose(); new Set([...geometries, ...originals]).forEach(geometry => geometry.dispose()); material.dispose(); });
+  batches.rebuild();
+  const mesh = scene.getObjectByName('Shared character draws').children[0];
+  assert.equal(mesh.instanceCount, 8);
+  const oneActorDraws = geometries.reduce((sum, geometry) => sum + (geometry.index?.count ?? geometry.attributes.position.count), 0);
+  const officeDraws = oneActorDraws * 2;
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: officeDraws * 2 });
+  sourcePairs.flat().forEach((source, part) => {
+    const range = mesh.getGeometryRangeAt(part);
+    const positions = source.geometry.attributes.position;
+    for (let vertex = 0; vertex < positions.count; vertex++) {
+      assert.equal(mesh.geometry.attributes.position.getX(range.vertexStart + vertex), positions.getX(vertex));
+      assert.equal(mesh.geometry.attributes.platopPart.getX(range.vertexStart + vertex), part);
+    }
+    if (indexed) for (let index = 0; index < source.geometry.index.count; index++) {
+      assert.equal(mesh.geometry.index.getX(range.drawStart + index), source.geometry.index.getX(index) + range.vertexStart);
+    }
+  });
+  rooms[1].visible = false; batches.invalidateVisibility(); batches.sync();
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: officeDraws });
+  assert.equal(mesh.count, 4);
+  rooms[0].visible = false; rooms[1].visible = true; batches.invalidateVisibility(); batches.sync();
+  assert.deepEqual(mesh.geometry.drawRange, { start: officeDraws, count: officeDraws });
+  assert.equal(mesh.count, 4);
+  sourcePairs[2][0].visible = false; batches.sync();
+  const omitted = geometries[0].index?.count ?? geometries[0].attributes.position.count;
+  assert.deepEqual(mesh.geometry.drawRange, { start: officeDraws + omitted, count: officeDraws - omitted });
+  assert.equal(mesh.getVisibleAt(4), false);
+  sourcePairs[2][0].visible = true;
+  rooms[1].visible = false; batches.invalidateVisibility(); batches.sync();
+  assert.equal(mesh.visible, false);
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: 0 });
+  rooms.forEach(room => { room.visible = true; }); batches.invalidateVisibility(); batches.sync();
+  assert.equal(mesh.count, 8);
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: officeDraws * 2 });
+  batches.rebuild();
+  assert.deepEqual(scene.getObjectByName('Shared character draws').children[0].geometry.drawRange, { start: 0, count: officeDraws * 2 });
+});
+
 test('fully instanced proxy containers skip duplicate rendering but preserve animation and blinks', t => {
   const { actor, moving, batches, dynamicBatch } = fixture(t, { prune: true });
   assert.equal(actor.visible, false);
@@ -518,7 +615,7 @@ test('transform palettes keep live transforms, linear colors and per-source and 
 test('transform palettes split incompatible geometry schemas and exclude transparent, clipped and partial geometry', t => {
   const { sources, batches, multi, actor } = multiFixture(t);
   assert.ok(multi);
-  sources[1].geometry.deleteAttribute('uv');
+  sources[1].geometry.setAttribute('customSurface', new THREE.BufferAttribute(new Float32Array(sources[1].geometry.attributes.position.count), 1));
   batches.rebuild();
   assert.equal(actor.parent.parent.getObjectByName('Shared character draws').children.length, 0);
   assert.ok(sources.every(mesh => mesh.layers.mask === 1));
@@ -528,10 +625,97 @@ test('transform palettes split incompatible geometry schemas and exclude transpa
   assert.ok(sources.every(mesh => mesh.layers.mask === 1));
   sources[0].material.transparent = false;
   sources[1].material.clippingPlanes = null;
+  sources[1].geometry.deleteAttribute('customSurface');
   sources[1].geometry.setAttribute('uv', new THREE.BufferAttribute(new Float32Array(sources[1].geometry.attributes.position.count * 2), 2));
   sources[1].geometry.setDrawRange(0, 3);
   batches.rebuild();
   assert.ok(sources.every(mesh => mesh.layers.mask === 1));
+});
+
+test('stock unmapped palettes ignore unused coordinate schemas and normal-map scales without editing sources', t => {
+  const { scene, sources, batches } = multiFixture(t);
+  const first = sources[0].geometry, second = sources[1].geometry;
+  second.deleteAttribute('uv');
+  for (const name of ['uv1', 'uv2', 'uv3']) first.setAttribute(name, first.attributes.uv.clone());
+  first.setAttribute('tangent', new THREE.BufferAttribute(new Float32Array(first.attributes.position.count * 4).fill(0.4), 4));
+  first.setAttribute('color', new THREE.BufferAttribute(new Float32Array(first.attributes.position.count * 3).fill(0.2), 3));
+  sources[1].material.normalScale.set(1, -1);
+  batches.rebuild();
+  const rendered = scene.getObjectByName('Shared character draws');
+  assert.equal(rendered.children.length, 1);
+  assert.deepEqual(Object.keys(rendered.children[0].geometry.attributes).sort(), ['normal', 'platopPart', 'position']);
+  assert.deepEqual(sources[1].material.normalScale.toArray(), [1, -1]);
+  assert.ok(first.hasAttribute('uv') && first.hasAttribute('uv1') && first.hasAttribute('tangent') && first.hasAttribute('color'));
+  assert.equal(second.hasAttribute('uv'), false);
+  sources.forEach(source => { source.material.vertexColors = true; });
+  second.setAttribute('color', new THREE.BufferAttribute(new Float32Array(second.attributes.position.count * 3).fill(0.6), 3));
+  batches.rebuild();
+  const colors = rendered.children[0].geometry.attributes.color;
+  assert.ok(colors);
+  assert.equal(colors.getX(0), Math.fround(0.2));
+  assert.equal(colors.getX(first.attributes.position.count), Math.fround(0.6));
+  const map = new THREE.Texture();
+  t.after(() => map.dispose());
+  sources.forEach(source => { source.material.normalMap = map; });
+  batches.rebuild();
+  assert.equal(rendered.children.length, 0, 'normal-mapped inputs retain their original shader and attributes');
+  assert.ok(sources.every(source => source.layers.mask === 1 && source.material.normalMap === map));
+});
+
+test('unused normal-scale normalization preserves each source’s former ordinary normal path', t => {
+  const scene = new THREE.Scene(), actor = new THREE.Group(), geometry = new THREE.BoxGeometry();
+  const materials = [new THREE.MeshStandardMaterial(), new THREE.MeshStandardMaterial()];
+  materials[1].normalScale.set(1, -1);
+  const sources = materials.map(material => new THREE.Mesh(geometry, material));
+  actor.scale.set(1, 1.4, 0.8); actor.add(...sources); scene.add(actor);
+  const batches = new SceneBatches(scene, new Set([actor]));
+  t.after(() => { batches.dispose(); geometry.dispose(); materials.forEach(material => material.dispose()); });
+  batches.rebuild();
+  const mesh = scene.getObjectByName('Shared character draws').children[0];
+  assert.equal(mesh.normalMode, 'mesh', 'normal-map conventions cannot reclassify former ordinary meshes as instances');
+  const shader = { vertexShader: THREE.ShaderLib.standard.vertexShader, fragmentShader: THREE.ShaderLib.standard.fragmentShader, uniforms: {} };
+  mesh.material.onBeforeCompile(shader, {});
+  assert.match(shader.vertexShader, /transpose\( inverse\( mat3\( batchingMatrix \) \) \)/);
+  assert.ok(sources.every(source => source.layers.mask === 2));
+});
+
+for (const indexed of [true, false]) test(`${indexed ? 'indexed' : 'nonindexed'} static draw spans preserve source order and clipped gaps across visibility changes`, t => {
+  const scene = new THREE.Scene(), rooms = Array.from({ length: 3 }, () => new THREE.Group());
+  scene.add(...rooms);
+  const sources = Array.from({ length: 6 }, (_, index) => {
+    const geometry = new THREE.BoxGeometry(1 + index * 0.1, 1, 1);
+    const mesh = new THREE.Mesh(indexed ? geometry : geometry.toNonIndexed(), new THREE.MeshStandardMaterial({ color: index * 100 }));
+    if (!indexed) geometry.dispose();
+    rooms[index % 3].add(mesh);
+    return mesh;
+  });
+  const batches = new SceneBatches(scene, new Set());
+  t.after(() => { batches.dispose(); sources.forEach(source => { source.geometry.dispose(); source.material.dispose(); }); });
+  batches.rebuild();
+  const mesh = scene.getObjectByName('Shared character draws').children[0];
+  assert.ok(mesh.viewSpace);
+  const fullCount = indexed ? mesh.geometry.index.count : mesh.geometry.attributes.position.count;
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: fullCount });
+  rooms[0].visible = rooms[2].visible = false;
+  batches.invalidateVisibility(); batches.sync();
+  const first = mesh.getGeometryRangeAt(1), last = mesh.getGeometryRangeAt(4);
+  assert.deepEqual(mesh.geometry.drawRange, { start: first.drawStart, count: last.drawStart + last.drawCount - first.drawStart });
+  assert.equal(mesh.count, 2);
+  assert.equal(mesh.getVisibleAt(2), false);
+  assert.equal(mesh.getVisibleAt(3), false);
+  const version = mesh.matricesTexture.version;
+  batches.sync(); batches.sync();
+  assert.equal(mesh.matricesTexture.version, version, 'static spans and palettes stay cached between visibility changes');
+  sources[1].visible = false; batches.invalidateVisibility(); batches.sync();
+  assert.deepEqual(mesh.geometry.drawRange, { start: last.drawStart, count: last.drawCount });
+  rooms[1].visible = false; batches.invalidateVisibility(); batches.sync();
+  assert.equal(mesh.visible, false);
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: 0 });
+  sources[1].visible = true;
+  rooms.forEach(room => { room.visible = true; }); batches.invalidateVisibility(); batches.sync();
+  assert.deepEqual(mesh.geometry.drawRange, { start: 0, count: fullCount });
+  batches.rebuild();
+  assert.deepEqual(scene.getObjectByName('Shared character draws').children[0].geometry.drawRange, { start: 0, count: fullCount });
 });
 
 test('unlit opaque colors use transform palettes while emissive and transparent surfaces stay separate', t => {
@@ -827,7 +1011,7 @@ test('PBR surface palettes work without multi-draw and retain incompatible nativ
   assert.ok(enabled.sources.every(source => source.layers.mask === 1));
 });
 
-test('a single ordinary mesh retains every original vertex, index and stable part identity', t => {
+test('a single ordinary mesh retains consumed vertex inputs, every index and stable part identity', t => {
   const { sources, multi } = multiFixture(t, false);
   assert.equal(multi.isMesh, true);
   assert.equal(multi.isBatchedMesh, undefined, 'renderer submits one geometry, rather than an ANGLE multi-draw loop');
@@ -841,6 +1025,11 @@ test('a single ordinary mesh retains every original vertex, index and stable par
     const vertexCount = source.geometry.attributes.position.count;
     for (const [name, attribute] of Object.entries(source.geometry.attributes)) {
       const merged = multi.geometry.getAttribute(name);
+      if (name === 'uv') {
+        assert.equal(merged, undefined, 'unused stock-shader UVs stay only on the original picking resource');
+        assert.equal(source.geometry.getAttribute(name), attribute);
+        continue;
+      }
       for (let component = 0; component < attribute.array.length; component++) {
         assert.equal(merged.array[vertexOffset * attribute.itemSize + component], attribute.array[component], `${name} keeps source Float32 inputs`);
       }

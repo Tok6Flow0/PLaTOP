@@ -300,3 +300,74 @@ After matched sampling, the final app was restored to the live Beacon desktop
 background with preview and diagnostics off, animation unpaused and the local
 status bridge connected. Temporary QA browsers and preview servers were closed;
 the live bridge and updated native instance remain running.
+
+## Further hidden-office rendering reduction — 2026-10-12
+
+The reference for this round is `364db94`, including the improvements above.
+Hidden actor roots now skip per-surface scans, while individual visible parts
+retain their current transforms, colors and visibility. Static and dynamic
+palette geometries restrict their draw ranges to the first and last visible
+parts. Internal gaps retain shader clipping; authored geometry, transform math,
+normal modes, source picking and ownership remain intact.
+
+Cloned, unmapped stock-shader inputs omit unused UV/tangent attributes and
+disabled vertex colors. Palette compatibility ignores an unused normal-map
+scale, while original mesh grouping retains it to preserve the original normal
+mode. Mapped inputs, active vertex colors, custom attributes and unsupported
+materials retain their existing paths. This consolidates dynamic palettes from
+eight to five groups. Steady campus draws fall from 55 to 52. Beacon keeps 18
+draws but submits 36,688 triangles instead of 174,968 (79.0% fewer); its static
+palette elements fall from 405,438 to 69,174 (82.9% fewer). These geometry counts
+are not CPU or GPU execution-time measurements.
+
+Independent deterministic Metal comparisons covered 44 views: every view was
+at least 99.997508% pixel-identical to the reference, with at most 22 changed
+pixels and maximum mean RGB difference 0.001316/255. Reviewed differences were
+isolated owl eye/beak overlap samples, with no shape, color, shadow, floor or rug
+regression. Extension-disabled output matched the candidate exactly. Seven
+additional actual production-bundle comparisons corroborated the result.
+All 76 sampled actor states matched exactly, and 35 functional/resource checks
+passed, including draw-range coverage, hidden-office return, current matrices,
+part visibility, picking, context recovery and disposal.
+
+Native CPU comparisons used the same app, GPU-process and WebContent launch
+identities, fixed preview activity, DPR 1, opaque MSAA and cinematic 30 FPS.
+The window was 1712 × 778 CSS pixels; campus rendered at 1109 × 538 and the
+Beacon window at 1712 × 778. Dimensions were checked before and after each
+capture. Diagnostics and QA browsers were closed during CPU sampling. Each
+capture used a 26-second warmup and three 13-second cumulative-counter windows,
+with exact frontend fingerprints. An earlier comparison with uncertain window
+size was excluded. CPU values below sum the three processes as a percentage of
+one core; they do not measure whole-machine CPU, GPU execution, power or battery.
+
+Initial matched capture medians fell from 29.04% to 27.62% for campus (4.9%)
+and from 20.91% to 19.16% for Beacon (8.4%). A subsequent reference repeat was
+excluded because the app changed into Desktop Background before its post-capture
+view check. These are initial matched results with capture-to-capture uncertainty,
+not a matched desktop-background comparison. This round has **not established the
+requested
+additional 20–30% CPU reduction**. Geometry savings must not be presented as that
+CPU result. Broader matrix caches and timer-based frame scheduling were avoided
+because earlier trials regressed CPU or fractional-refresh frame pacing.
+
+Recent-window candidate native diagnostics reported 30.0 FPS, median 33 ms,
+p95 34 ms, maximum 37 ms for campus and 35 ms for Beacon, with zero intervals
+above 50.5 ms. These measure renderer timing, not guaranteed display presentation.
+The production build succeeds and all **125 tests** pass.
+
+All six existing automations are active and retain the PLaTOP skill, MCP
+preference, CLI fallback, activity heartbeats and final-state updates. Fresh
+support and email runs successfully published genuine wake and sleep updates
+through the fallback. Local stdio MCP initialization, tool listing and bridge
+status readback succeed; existing chats still require a host refresh to load
+those registered tools. No business workflow was triggered for testing, and no
+schedule, notification preference or business authority was expanded. Private
+chat mappings, tokens, raw process measurements and location remain local.
+
+The existing native bundle retains its current executable and passes strict
+signature verification. The final frontend was updated in place and its served
+fingerprint matches the current source and build. One installed PLaTOP bundle
+was found, with one running app instance. After sampling, the final build was
+restored to the live Beacon desktop background with preview and diagnostics
+off and animation unpaused. Temporary GPU QA browsers and preview servers were
+closed; the live bridge and updated native app remain running.

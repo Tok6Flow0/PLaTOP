@@ -9,8 +9,12 @@ interface Source {
   color: THREE.Color;
 }
 interface Batch { mesh: THREE.InstancedMesh; sources: Source[]; slots: Source[]; dynamic: boolean; }
-interface PaletteBatch { mesh: TransformPaletteMesh; sources: Source[]; dynamic: boolean; }
+interface PaletteBatch { mesh: TransformPaletteMesh; sources: Source[]; dynamic: boolean; drawStart: number; drawEnd: number; }
+interface DynamicPalettePart { batch: PaletteBatch; source: Source; index: number; }
+interface DynamicPaletteRoot { parts: DynamicPalettePart[]; visible: boolean; }
 type NormalMode = 'instance' | 'mesh';
+interface PaletteRange { vertexStart: number; vertexCount: number; drawStart: number; drawCount: number; }
+const unusedCoordinates = new Set(['uv', 'uv1', 'uv2', 'uv3', 'tangent']);
 
 /** Original CPU-composed view/normal uniforms, packed once per camera change. */
 class CameraTransformPalette {
@@ -60,7 +64,7 @@ class TransformPaletteMesh extends THREE.Mesh<THREE.BufferGeometry, OpaqueMateri
   private readonly shadowPalette?: CameraTransformPalette;
   private worldVersion = 0;
   constructor(geometry: THREE.BufferGeometry, material: OpaqueMaterial, readonly instanceCount: number,
-    private readonly ranges: Array<{ vertexStart: number; vertexCount: number }>, readonly normalMode: NormalMode,
+    private readonly ranges: PaletteRange[], readonly normalMode: NormalMode,
     readonly viewSpace = false) {
     super(geometry, material);
     const matrixSize = Math.max(4, Math.ceil(Math.sqrt(instanceCount * 4) / 4) * 4);
@@ -102,7 +106,7 @@ class TransformPaletteMesh extends THREE.Mesh<THREE.BufferGeometry, OpaqueMateri
   }
   getVisibleAt(index: number): boolean { return this.matrices[index * 16 + 15] === 1; }
   getGeometryIdAt(index: number): number { return index; }
-  getGeometryRangeAt(index: number): { vertexStart: number; vertexCount: number } { return this.ranges[index]; }
+  getGeometryRangeAt(index: number): PaletteRange { return this.ranges[index]; }
   configureShader(shader: THREE.WebGLProgramParametersWithUniforms, colors: boolean, shadow = false): void {
     const declarations = `
 uniform highp sampler2D batchingTexture;
@@ -298,6 +302,8 @@ export class SceneBatches {
   private readonly root = new THREE.Group();
   private batches: Batch[] = [];
   private paletteBatches: PaletteBatch[] = [];
+  private readonly dynamicPaletteRoots = new Map<THREE.Object3D, DynamicPaletteRoot>();
+  private readonly dynamicRootOrder = new Map<THREE.Object3D, number>();
   private readonly geometryKeys = new WeakMap<THREE.BufferGeometry, string>();
   private readonly visibility = new WeakMap<THREE.Object3D, { frame: number; visible: boolean }>();
   private readonly renderPrunedRoots = new Map<THREE.Object3D, boolean>();
@@ -308,6 +314,7 @@ export class SceneBatches {
   constructor(private readonly scene: THREE.Scene, private readonly dynamicRoots?: ReadonlySet<THREE.Object3D>,
     private readonly prunableRoots?: ReadonlySet<THREE.Object3D>, _multiDraw = false, mapArrayLimits?: StaticMapArrayLimits) {
     this.mapArrays = new StaticMapArrays(mapArrayLimits);
+    dynamicRoots?.forEach(root => this.dynamicRootOrder.set(root, this.dynamicRootOrder.size));
     this.root.name = 'Shared character draws';
     this.root.matrixAutoUpdate = false;
     scene.add(this.root);
@@ -321,6 +328,15 @@ export class SceneBatches {
       ancestor = ancestor.parent;
     }
     return false;
+  }
+
+  private dynamicRoot(object: THREE.Object3D): THREE.Object3D | undefined {
+    if (!this.dynamicRoots) return;
+    let ancestor: THREE.Object3D | null = object;
+    while (ancestor && ancestor !== this.scene) {
+      if (this.dynamicRoots.has(ancestor)) return ancestor;
+      ancestor = ancestor.parent;
+    }
   }
 
   private isVisible(object: THREE.Object3D): boolean {
@@ -367,7 +383,7 @@ export class SceneBatches {
     return [material.type, surfaceFactors ? undefined : pbr?.roughness, surfaceFactors ? undefined : pbr?.metalness, material.side, material.shadowSide,
       pbr?.flatShading, material.vertexColors, material.fog, material.toneMapped, material.depthTest,
       material.depthWrite, material.depthFunc, material.colorWrite, material.polygonOffset, material.polygonOffsetFactor,
-      material.polygonOffsetUnits, pbr?.normalScale.toArray().join(','), material.blending,
+      material.polygonOffsetUnits, (!surfaceFactors || pbr?.normalMap) ? pbr?.normalScale.toArray().join(',') : undefined, material.blending,
       material.wireframe, material.wireframeLinewidth, material.alphaTest, material.alphaHash, material.premultipliedAlpha,
       material.visible, material.dithering, material.alphaToCoverage, material.forceSinglePass, material.precision,
       material.blendSrc, material.blendDst, material.blendEquation, material.blendSrcAlpha, material.blendDstAlpha,
@@ -376,8 +392,17 @@ export class SceneBatches {
       material.stencilFuncMask, material.stencilFail, material.stencilZFail, material.stencilZPass].join(':');
   }
 
-  private schemaKey(geometry: THREE.BufferGeometry): string {
-    return `${!!geometry.index}:` + Object.entries(geometry.attributes).sort(([a], [b]) => a.localeCompare(b))
+  private unusedAttribute(name: string, material: OpaqueMaterial): boolean {
+    // The stock unmapped shaders never consume UVs/tangents or disabled vertex
+    // colours. Keep every attribute whenever a map can use it, and edit only
+    // cloned geometry, leaving authored resources and picking data intact.
+    if (material.map || Object.entries(material).some(([field, value]) => field.endsWith('Map') && value)) return false;
+    return unusedCoordinates.has(name) || (name === 'color' && !material.vertexColors);
+  }
+
+  private schemaKey(geometry: THREE.BufferGeometry, material: OpaqueMaterial): string {
+    return `${!!geometry.index}:` + Object.entries(geometry.attributes)
+      .filter(([name]) => !this.unusedAttribute(name, material)).sort(([a], [b]) => a.localeCompare(b))
       .map(([name, attribute]) => `${name}:${attribute.array.constructor.name}:${attribute.itemSize}:${attribute.normalized}:${(attribute as THREE.BufferAttribute).gpuType}`).join('|');
   }
 
@@ -394,7 +419,7 @@ export class SceneBatches {
       || Object.values(mesh.geometry.attributes).some((attribute) => attribute instanceof THREE.Float16BufferAttribute)) return null;
     // Compatible actors can share a draw across offices. Their world matrices
     // and independent visibility bits remain in the existing per-part palette.
-    return `${this.schemaKey(mesh.geometry)}:${this.materialKey(mesh.material, true)}:${mesh.castShadow}:${mesh.receiveShadow}:${mesh.renderOrder}:${dynamic}:${normalMode}`;
+    return `${this.schemaKey(mesh.geometry, mesh.material)}:${this.materialKey(mesh.material, true)}:${mesh.castShadow}:${mesh.receiveShadow}:${mesh.renderOrder}:${dynamic}:${normalMode}`;
   }
 
   private addPaletteBatch(sources: Source[], dynamic: boolean, normalMode: NormalMode, mapArray?: THREE.DataArrayTexture): boolean {
@@ -404,6 +429,11 @@ export class SceneBatches {
     if (!dynamic) {
       const materialId = (source: Source) => (source.mesh.material as OpaqueMaterial & { readonly id: number }).id;
       sources = [...sources].sort((a, b) => materialId(a) - materialId(b) || a.mesh.id - b.mesh.id);
+    } else if (this.dynamicRoots) {
+      // Actor roots are supplied in office order. Keep each actor's existing
+      // primitive order, while making a selected office one contiguous span.
+      sources = [...sources].sort((a, b) =>
+        this.dynamicRootOrder.get(this.dynamicRoot(a.mesh)!)! - this.dynamicRootOrder.get(this.dynamicRoot(b.mesh)!)!);
     }
     const first = sources[0].mesh;
     const standard = (first.material as THREE.MeshStandardMaterial).isMeshStandardMaterial;
@@ -415,13 +445,17 @@ export class SceneBatches {
     // Distinct PBR scalars share the shader, but each geometry keeps its exact
     // Float32 inputs. Flat varyings avoid interpolating a constant surface value.
     let vertexStart = 0;
-    const ranges: Array<{ vertexStart: number; vertexCount: number }> = [];
+    let drawStart = 0;
+    const ranges: PaletteRange[] = [];
     const geometries = sources.map(({ mesh }, part) => {
       const pbr = mesh.material as THREE.MeshStandardMaterial;
       const geometry = mesh.geometry.clone();
+      for (const name of Object.keys(geometry.attributes)) if (this.unusedAttribute(name, mesh.material)) geometry.deleteAttribute(name);
       const count = geometry.attributes.position.count;
-      ranges.push({ vertexStart, vertexCount: count });
+      const drawCount = geometry.index?.count ?? count;
+      ranges.push({ vertexStart, vertexCount: count, drawStart, drawCount });
       vertexStart += count;
+      drawStart += drawCount;
       geometry.setAttribute('platopPart', new THREE.BufferAttribute(new Float32Array(count).fill(part), 1));
       if (surfaceFactors) {
         const factors = new Float32Array(count * 2);
@@ -491,7 +525,15 @@ export class SceneBatches {
       mesh.setColorAt(index, original.material.color);
     });
     this.root.add(mesh);
-    this.paletteBatches.push({ mesh, sources, dynamic });
+    const batch = { mesh, sources, dynamic, drawStart: Infinity, drawEnd: 0 };
+    this.paletteBatches.push(batch);
+    if (dynamic && this.dynamicRoots) sources.forEach((source, index) => {
+      const root = this.dynamicRoot(source.mesh);
+      if (!root) return;
+      const group = this.dynamicPaletteRoots.get(root) ?? { parts: [], visible: true };
+      group.parts.push({ batch, source, index });
+      this.dynamicPaletteRoots.set(root, group);
+    });
     return true;
   }
 
@@ -637,6 +679,19 @@ export class SceneBatches {
     if (this.dynamicRoots) {
       for (const root of this.dynamicRoots) if (this.isVisible(root)) root.updateMatrixWorld(true);
     } else this.scene.updateMatrixWorld();
+    // The authored hierarchy is stable between rebuilds. Reject a hidden
+    // actor once, instead of walking all of its surfaces in every global batch.
+    // Individual eye/clip visibility remains live within each visible actor.
+    for (const batch of this.paletteBatches) if (batch.dynamic) { batch.drawStart = Infinity; batch.drawEnd = 0; }
+    for (const [root, group] of this.dynamicPaletteRoots) {
+      const visible = this.isVisible(root);
+      if (visible) {
+        for (const { batch, source, index } of group.parts) this.syncPalettePart(batch, source, index);
+      } else if (group.visible) {
+        for (const { batch, index } of group.parts) batch.mesh.setVisibleAt(index, false);
+      }
+      group.visible = visible;
+    }
     for (const batch of this.batches) {
       const { mesh, sources, slots, dynamic } = batch;
       if (!dynamic && !this.staticVisibilityDirty) continue;
@@ -666,23 +721,38 @@ export class SceneBatches {
         }
       }
     }
-    for (const { mesh, sources, dynamic } of this.paletteBatches) {
+    for (const batch of this.paletteBatches) {
+      const { mesh, sources, dynamic } = batch;
+      if (dynamic && this.dynamicRoots) {
+        mesh.visible = mesh.count > 0;
+        mesh.geometry.setDrawRange(mesh.visible ? batch.drawStart : 0, mesh.visible ? batch.drawEnd - batch.drawStart : 0);
+        continue;
+      }
       if (!dynamic && !this.staticVisibilityDirty) continue;
-      let visibleCount = 0;
+      batch.drawStart = Infinity;
+      batch.drawEnd = 0;
       sources.forEach((source, index) => {
-        const visible = this.isVisible(source.mesh);
-        mesh.setVisibleAt(index, visible);
-        if (!visible) return;
-        visibleCount++;
-        mesh.setMatrixAt(index, source.mesh.matrixWorld);
-        if (!source.color.equals(source.mesh.material.color)) {
-          mesh.setColorAt(index, source.mesh.material.color);
-          source.color.copy(source.mesh.material.color);
-        }
+        this.syncPalettePart(batch, source, index);
       });
-      mesh.visible = visibleCount > 0;
+      mesh.visible = mesh.count > 0;
+      mesh.geometry.setDrawRange(mesh.visible ? batch.drawStart : 0, mesh.visible ? batch.drawEnd - batch.drawStart : 0);
     }
     this.staticVisibilityDirty = false;
+  }
+
+  private syncPalettePart(batch: PaletteBatch, source: Source, index: number): void {
+    const { mesh } = batch;
+    const visible = this.isVisible(source.mesh);
+    mesh.setVisibleAt(index, visible);
+    if (!visible) return;
+    const range = mesh.getGeometryRangeAt(index);
+    batch.drawStart = Math.min(batch.drawStart, range.drawStart);
+    batch.drawEnd = Math.max(batch.drawEnd, range.drawStart + range.drawCount);
+    mesh.setMatrixAt(index, source.mesh.matrixWorld);
+    if (!source.color.equals(source.mesh.material.color)) {
+      mesh.setColorAt(index, source.mesh.material.color);
+      source.color.copy(source.mesh.material.color);
+    }
   }
 
   private clear(): void {
@@ -702,6 +772,7 @@ export class SceneBatches {
       mesh.material.dispose();
     }
     this.paletteBatches = [];
+    this.dynamicPaletteRoots.clear();
   }
 
   dispose(): void { this.clear(); this.mapArrays.dispose(); this.root.removeFromParent(); }
