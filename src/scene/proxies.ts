@@ -313,11 +313,13 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     const navy = id === 'email-owl', feathers = navy ? '#293b51' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
     body.position.y = navy?.49:.41; data.bodyY = body.position.y; head.position.y = navy?.91:.81; data.headY = head.position.y;
     head.position.z=.025;
-    sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, 0], [.70, navy?.83:.70, navy?.55:.62], undefined, navy ? 'feather' : 'paper');
+    sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, 0], [.70, navy?.83:.70, navy?.55:.33], undefined, navy ? 'feather' : 'paper');
     sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
     if(!navy){
       sculpt(body,'paperChestL','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
       sculpt(body,'paperChestR','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
+      sculpt(body,'paperBackL','#ffffff',[0,0,0],[.70,.70,.36],undefined,'paper');
+      sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],[.70,.66,.36],[0,0,-.065],'paper');
       if(id==='reflection-echo')sculpt(head,'paperBrow','#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
       else for(const ear of ['paperEarL','paperEarR'] as const)sculpt(head,ear,'#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
     }
@@ -363,6 +365,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     else {
       body.scale.set(1.06,1,.46);
+      body.rotation.z=id==='reflection-echo'?-.055:.06;
+      body.getObjectByName(id==='reflection-echo'?'paperChestL':'paperChestR')!.rotation.z=id==='reflection-echo'?-.075:.065;
       // Keep the complete facial assembly together while making the folded
       // head a shallow wrapper, rather than a solid slab atop a narrow torso.
       head.scale.set(.93,.93,.72);
@@ -376,7 +380,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     sculpt(body, 'swiftBody', '#d2a34c', [0,0,0], [1,1,1], undefined, 'paper');
     [-1, 1].forEach(sign => {
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .078, .12, .075]);
-      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.62,.62,.76]:[.74,.74,.90], [-.13,0,0], 'paper');data.wings.push(wing);
+      sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.62,.59,.70]:[.74,.66,.80], [-.13,0,0], 'paper');data.wings.push(wing);
       const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .117], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
       data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.127], [.006,.013,.013], undefined, 'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);

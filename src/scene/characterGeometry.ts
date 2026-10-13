@@ -3,7 +3,7 @@ import type { SceneKit } from './primitives';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage';
@@ -488,7 +488,8 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         const py=y+point.y*(row===5?.14:.22),normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
-        const theta=angle+point.x*.225/Math.max(.12,radius*.70);
+        const vaneWidth=row===5?.115:row===4?.18:.225;
+        const theta=angle+point.x*vaneWidth/Math.max(.12,radius*.70);
         const relief=(.007+point.z*.026+(5-row)*.0025)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
@@ -569,6 +570,8 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperBody': return paperOwlBody();
     case 'paperChestL': return foldedSheet([[-.015,.46,.28],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.36]],[-.17,-.03,.38],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
     case 'paperChestR': return foldedSheet([[.02,.46,.28],[.37,.31,.10],[.28,-.50,.11],[.10,-.43,.34]],[.08,-.01,.43],['#ead3ad','#dac09a','#ccb089','#dfc49d']);
+    case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.28,-.50,.14],[.065,-.32,.29]],[-.21,.015,.36],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
+    case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
     case 'paperEarR': return foldedSheet([[.16,.32,.30],[.28,.41,.24],[.54,.51,.16],[.45,.29,.43]],[.30,.33,.46],['#d1b38b','#e3c79d','#c9a980','#dec299']);
     case 'paperEarL': return reflect(makeGeometry('paperEarR'));

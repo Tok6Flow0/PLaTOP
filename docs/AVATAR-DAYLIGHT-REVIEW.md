@@ -30,7 +30,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 11 | 8.1/10 | 8.1/10 | 8.1/10 — B+ |
 | Pass 12 | 8.2/10 | 8.1/10 | 8.1/10 — B+ |
 | Pass 13 | 8.1/10 | 8.2/10 | 8.1/10 — B+ |
-| Pass 14 | Pending | Pending | Independent review pending |
+| Pass 14 | 8.2/10 | 8.3/10 | 8.2/10 — B+ |
+| Pass 15 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -132,6 +133,12 @@ past the body's pole; their length is corrected and a regression assertion
 covers that limit. Local feather UV/cache tests were added. All 264 tests and
 the production build pass. One interrupted browser sample was discarded; the
 recorded measurements below are fresh completed samples.
+The fourteenth review found the repaired navigator boundaries clean and rated
+Beacon's identity fidelity 9/10, but still found fragmented lower owl feathers,
+flat upper wing shapes and solid-looking paper torsos. Pass 15 tapers the lower
+feather widths to the body, reduces Swift's wing span, and adds thin rear paper
+wrappers with asymmetric chest/body folds. All 264 tests and the production
+build pass. The independent quality threshold remains open.
 
 ## Local-clock atmosphere
 
@@ -182,6 +189,8 @@ test suites were stopped during the samples.
 | Pass 13 night | 60.00 | 4.1 ms | 91 | 329,523 |
 | Pass 14 noon | 60.00 | 3.1 ms | 93 | 329,379 |
 | Pass 14 night | 60.00 | 3.0 ms | 93 | 329,379 |
+| Pass 15 noon | 60.00 | 3.9 ms | 93 | 329,459 |
+| Pass 15 night | 60.00 | 1.2 ms | 93 | 329,459 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
