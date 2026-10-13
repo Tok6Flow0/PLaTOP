@@ -128,6 +128,23 @@ test('owl plumage covers all four sides within the existing cached geometry budg
   geometry.dispose();kit.dispose();
 });
 
+test('shallow owl irises follow their curved facial discs without clipping through them',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);
+  const point=new THREE.Vector3(),ray=new THREE.Raycaster();
+  const irises=meshes(model).filter(mesh=>mesh.name==='owl-iris');assert.equal(irises.length,2);
+  for(const iris of irises){
+    const disc=model.getObjectByName(`owl-facial-disc:${Math.sign(iris.position.x)}`),p=iris.geometry.attributes.position;
+    for(let i=0;i<p.count;i++){
+      point.fromBufferAttribute(p,i).applyMatrix4(iris.matrixWorld);
+      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+      const hit=ray.intersectObject(disc,false)[0];
+      assert.ok(hit&&point.z>hit.point.z+.0005,'every iris vertex clears the actual cream face, including its inward edge');
+    }
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('feather barbs use bounded local UVs and one scene-owned texture for every layered surface',()=>{
   const kit=new SceneKit();
   const texture=characterMaterial(kit,'#293e54','plumage').bumpMap;

@@ -324,12 +324,15 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       else for(const ear of ['paperEarL','paperEarR'] as const)sculpt(head,ear,'#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
     }
     [-1, 1].forEach(sign => {
-      if (navy) curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'facialFeather', [.417, .325, .27],false,undefined,.43,sign);
-      if (navy) sculpt(head, 'bean', '#c49b54', [sign * .162, .002, .289], [.157, .181, .051], undefined, 'brass');
+      const facialDisc=navy?curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'facialFeather', [.417, .325, .27],false,undefined,.43,sign):undefined;
+      const iris=navy?sculpt(head, 'bean', '#c49b54', [sign * .162, .002, .277], [.157, .181, .022], undefined, 'clay'):undefined;
+      if(iris&&facialDisc){iris.name='owl-iris';facialDisc.name=`owl-facial-disc:${sign}`;fitCharacterRelief(iris,facialDisc,.001);}
       if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162+(navy?.029:.006), navy?-.002:.011, navy?.313:.195], [navy ? .105 : .083, navy ? .125 : .098, navy?.045:.024], undefined, 'ink'); data.eyes.push(eye);
-        data.highlights.push(sculpt(head, 'detail', '#fff9e7', [sign * .162 + (navy?.012:-.010), navy?.031:.043, navy?.330:.208], [navy?.025:.020, navy?.030:.022, .006], undefined, 'glaze'));
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [sign * .162+(navy?.025:.006), navy?-.002:.011, navy?.290:.195], [navy ? .105 : .083, navy ? .125 : .098, navy?.035:.024], undefined, 'ink'); data.eyes.push(eye);
+        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * .162 + (navy?.009:-.010), navy?.031:.043, navy?.305:.208], [navy?.025:.020, navy?.030:.022, .006], undefined, 'glaze');
+        if(iris){fitCharacterRelief(eye,iris,.001);fitCharacterRelief(highlight,eye,.001);}
+        data.highlights.push(highlight);
       }
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.50,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');

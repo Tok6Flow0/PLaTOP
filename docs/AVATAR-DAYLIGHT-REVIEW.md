@@ -31,7 +31,8 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 12 | 8.2/10 | 8.1/10 | 8.1/10 — B+ |
 | Pass 13 | 8.1/10 | 8.2/10 | 8.1/10 — B+ |
 | Pass 14 | 8.2/10 | 8.3/10 | 8.2/10 — B+ |
-| Pass 15 | Pending | Pending | Independent review pending |
+| Pass 15 | 8.3/10 | 8.3/10 | 8.3/10 — B+ |
+| Pass 16 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -139,6 +140,15 @@ flat upper wing shapes and solid-looking paper torsos. Pass 15 tapers the lower
 feather widths to the body, reduces Swift's wing span, and adds thin rear paper
 wrappers with asymmetric chest/body folds. All 264 tests and the production
 build pass. The independent quality threshold remains open.
+The fifteenth review confirms the fragmented lower feathers are absent, but
+still finds blunt upper wing pieces, heavy paper forms and simplified clothing.
+Pass 16 uses curved, tapered flight feathers with a lengthwise centre ridge,
+and turns their roots inward under the shoulders. Shallow matte irises and
+glossy pupils are fitted to their actual curved support surfaces; a new
+regression checks that the iris edge cannot be clipped by the cream face.
+The covered wing core loses 72 triangles, keeping the existing 9,000-triangle
+character limit without adding a live effect or light. All 265 tests and the
+production build pass. Fresh desktop captures report no browser errors.
 
 ## Local-clock atmosphere
 
@@ -191,6 +201,8 @@ test suites were stopped during the samples.
 | Pass 14 night | 60.00 | 3.0 ms | 93 | 329,379 |
 | Pass 15 noon | 60.00 | 3.9 ms | 93 | 329,459 |
 | Pass 15 night | 60.00 | 1.2 ms | 93 | 329,459 |
+| Pass 16 noon | 60.01 | 3.9 ms | 93 | 329,483 |
+| Pass 16 night | 60.01 | 3.6 ms | 93 | 329,483 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed

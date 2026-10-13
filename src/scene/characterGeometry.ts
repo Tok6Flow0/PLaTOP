@@ -264,6 +264,30 @@ function feather(): THREE.BufferGeometry {
   return smoothDeformedSurface(polyhedron(points,faces));
 }
 
+/** Curved flight feathers use a lengthwise rachis, rather than a pyramid's
+ * single central apex. Four rounded sections keep the tip slender while
+ * spending only four more triangles than the small breast vanes. */
+function flightFeather():THREE.BufferGeometry {
+  const points:Tuple[]=[[0,.5,0]],faces:number[][]=[];
+  for(const t of [.18,.40,.64,.85])for(const side of [-1,0,1]){
+    const arch=Math.sin(Math.PI*t),width=.46*Math.pow(arch,.78)*(1-.12*t);
+    points.push([side*width,.5-1.12*t,.065*arch+.070*arch*(1-side*side)+.04*t*t]);
+  }
+  points.push([0,-.62,.04]);
+  faces.push([0,2,1],[0,3,2]);
+  for(let row=0;row<3;row++)for(let col=0;col<2;col++){
+    const a=1+row*3+col,b=a+1,c=a+3,d=c+1;
+    faces.push([a,b,d],[a,d,c]);
+  }
+  faces.push([10,11,13],[11,12,13]);
+  const count=points.length,front=faces.map(face=>[...face]);
+  points.push(...points.map(([x,y,z])=>[x,y,z-.010] as Tuple));
+  faces.push(...front.map(face=>face.map(i=>i+count).reverse()));
+  const rim=[0,1,4,7,10,13,12,9,6,3];
+  for(let i=0;i<rim.length;i++){const a=rim[i],b=rim[(i+1)%rim.length];faces.push([a,b,b+count,a+count]);}
+  return smoothDeformedSurface(polyhedron(points,faces));
+}
+
 function polyhedron(vertices: Tuple[], faces: number[][],faceColors?: string[]): THREE.BufferGeometry {
   const positions: number[] = [];
   const colors: number[]=[];
@@ -464,7 +488,7 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 
 /** One cached surface owns each layered fan; detail does not add pose matrices. */
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
-  const sculpt = feather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
+  const sculpt = breast?feather():flightFeather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
   sculpt.dispose();
   const count = breast ? 60 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
@@ -498,9 +522,9 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       }
       continue;
     }
-    const [row,column]=([[0,0],[0,1],[0,2],[1,0],[1,1],[2,0]] as const)[featherIndex],x=sign*(column*.065-.035+row*.023);
-    quaternion.setFromEuler(new THREE.Euler(0,0,-sign*(.12+column*.15)));
-    matrix.compose(new THREE.Vector3(x,.07-row*.13,.108+column*.010-row*.007),quaternion,new THREE.Vector3(.17,.27+row*.025,.018));normalMatrix.getNormalMatrix(matrix);
+    const [row,column]=([[0,0],[0,1],[0,2],[1,0],[1,1],[2,0]] as const)[featherIndex],x=sign*(column*.049-.030+row*.018);
+    quaternion.setFromEuler(new THREE.Euler(0,0,sign*(.24+column*.23)));
+    matrix.compose(new THREE.Vector3(x,.045-row*.105,.112+column*.008-row*.013),quaternion,new THREE.Vector3(.135,.30+row*.045,.16));normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
       point.fromBufferAttribute(source.attributes.position, i);uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
       point.applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
@@ -565,7 +589,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'cape': return cape();
     case 'capePanel': return folded([[-.5, .5], [.5, .20], [.45, -.5], [-.15, -.09]], .08, .018);
     case 'feather': return feather();
-    case 'featherCore': return new THREE.SphereGeometry(.5,10,6);
+    case 'featherCore': return new THREE.SphereGeometry(.5,8,5);
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return paperOwlBody();
     case 'paperChestL': return foldedSheet([[-.015,.46,.28],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.36]],[-.17,-.03,.38],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
