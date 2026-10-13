@@ -96,6 +96,19 @@ window app leaves the local bridge available; `npm run desktop -- --stop-server`
 stops a bridge owned by its launcher. See [desktop controls](docs/DESKTOP.md).
 No login item or autostart service is installed.
 
+## The light follows your day
+
+The office reads the device's local clock: soft morning light, daylight, a warm
+low sunset and a darker night with warm room lamps. The surrounding interface
+and team portrait also become dark at night. This needs no network request,
+location access or weather setup. The transitions are an artistic fixed-clock
+cycle, not a prediction of astronomical sunrise for your location.
+
+Lighting updates once per visible minute and reconciles after the app wakes.
+It does not start an agent, select an action or override an agent's explicit
+lamp-off choice. The [avatar and daylight review](docs/AVATAR-DAYLIGHT-REVIEW.md)
+separates visual judgments from measured rendering performance.
+
 ## Weather at your window
 
 In **Window view → Weather**, choose a city or request approximate device

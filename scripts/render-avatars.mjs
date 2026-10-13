@@ -36,6 +36,7 @@ const portraits=await page.evaluate(async()=>{
  const {plant,floorSurface}=await import('/src/scene/environmentProps.ts');
  const {EffectComposer}=await import('/node_modules/three/examples/jsm/postprocessing/EffectComposer.js');
  const {RenderPass}=await import('/node_modules/three/examples/jsm/postprocessing/RenderPass.js');
+ const {GTAOPass}=await import('/node_modules/three/examples/jsm/postprocessing/GTAOPass.js');
  const {BokehPass}=await import('/node_modules/three/examples/jsm/postprocessing/BokehPass.js');
  const {OutputPass}=await import('/node_modules/three/examples/jsm/postprocessing/OutputPass.js');
  const {teams}=await import('/src/teams.ts');
@@ -45,11 +46,11 @@ const portraits=await page.evaluate(async()=>{
  renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.04;
  const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(32,1,.1,40),kit=new SceneKit();
  const studio=new StudioEnvironment(renderer,scene);
- scene.add(new THREE.HemisphereLight('#fff8ee','#8c725a',.72));
- const key=new THREE.DirectionalLight('#fff2dd',1.8);key.position.set(-3,6,7);key.castShadow=true;
+ const ambient=new THREE.HemisphereLight('#fff8ee','#8c725a',.42);scene.add(ambient);
+ const key=new THREE.DirectionalLight('#fff2dd',2.5);key.position.set(-3,5,5);key.castShadow=true;
  key.shadow.mapSize.set(1024,1024);key.shadow.radius=12;key.shadow.blurSamples=12;key.shadow.bias=-.0003;
  Object.assign(key.shadow.camera,{left:-4,right:4,top:4,bottom:-4,near:1,far:20});scene.add(key);
- const fill=new THREE.DirectionalLight('#dde8e1',.28);fill.position.set(4,2,3);scene.add(fill);
+ const fill=new THREE.DirectionalLight('#dde8e1',.18);fill.position.set(4,2,3);scene.add(fill);
  const owned=new THREE.Group(),images={};
  // Real soft studio shadows are baked into the team portrait. They add no
  // lights, contact sprites or rendering passes to the running office.
@@ -65,8 +66,14 @@ const portraits=await page.evaluate(async()=>{
  kit.mesh(backdrop,'detailCylinder','#746347',[-.9,2.55,-2.5],[.018,.55,.018]);
  const composer=new EffectComposer(renderer,new THREE.WebGLRenderTarget(512,480,{samples:4,type:THREE.HalfFloatType}));
  const beauty=new RenderPass(scene,camera),bokeh=new BokehPass(scene,camera,{focus:5,aperture:.008,maxblur:.04}),output=new OutputPass();
- composer.addPass(beauty);composer.addPass(bokeh);composer.addPass(output);
- function render(name, members, team=false) {
+ const contact=new GTAOPass(scene,camera,512,480,undefined,{radius:.16,thickness:1,distanceExponent:2});contact.blendIntensity=.65;
+ composer.addPass(beauty);composer.addPass(contact);composer.addPass(bokeh);composer.addPass(output);
+ function render(name, members, team=false,night=false) {
+  ambient.color.set(night?'#91a9c3':'#fff8ee');ambient.groundColor.set(night?'#292536':'#8c725a');ambient.intensity=night?.22:.42;
+  key.color.set(night?'#ffc77e':'#fff2dd');key.intensity=night?1.65:2.5;
+  key.position.set(...(night?[-2,3,3]:[-3,5,5]));
+  fill.color.set(night?'#819bce':'#dde8e1');fill.intensity=night?.35:.18;
+  scene.environmentIntensity=night?.12:.32;wall.material.color.set(night?'#243441':'#b3a18b');
   const group=new THREE.Group();
   members.forEach((member,index)=>{
    const model=makeProxy(member,kit);
@@ -83,6 +90,9 @@ const portraits=await page.evaluate(async()=>{
      model.position.x=[-.36,-1.11,.42,1.18][index];
      model.position.z=index===0?.20:-.06;
      model.rotation.y=[0,.13,-.06,-.16][index];
+    }else if(members[0].id==='email-owl'){
+     model.position.set(index===0?-.28:.49,0,index===0?-.04:.19);
+     model.rotation.y=index===0?.07:-.95;
     }else{
      model.position.x=(index-(count-1)/2)*.82;
      model.position.z=index===Math.floor(count/2)?-.25:.12;
@@ -91,7 +101,7 @@ const portraits=await page.evaluate(async()=>{
    }
    group.add(model);
   });scene.add(group);group.updateMatrixWorld(true);
-  ground.visible=backdrop.visible=team;scene.background=team?new THREE.Color('#c9b79d'):null;
+  ground.visible=backdrop.visible=team;scene.background=team?new THREE.Color(night?'#1c2935':'#c9b79d'):null;
   const size=team?[512,480]:[256,256];renderer.setSize(...size,false);camera.aspect=size[0]/size[1];
   if(team){
    const box=new THREE.Box3().setFromObject(group),center=box.getCenter(new THREE.Vector3()),span=box.getSize(new THREE.Vector3());
@@ -100,7 +110,7 @@ const portraits=await page.evaluate(async()=>{
    camera.position.copy(target).add(new THREE.Vector3(.06,.055,1).normalize().multiplyScalar(dist));camera.lookAt(target);
   } else {
    const model=group.children[0],head=model.userData.personality.head;
-   const silhouette=members[0].kind==='lantern'||members[0].kind==='swift';
+   const silhouette=members[0].kind==='lantern'||members[0].kind==='swift'||members[0].id==='bridge-keeper'||members[0].id.startsWith('hr-');
    const box=new THREE.Box3().setFromObject(silhouette?model:head),center=box.getCenter(new THREE.Vector3()),span=box.getSize(new THREE.Vector3());
    center.y-=span.y*.06;
    const dist=Math.max(span.y*1.13,span.x*1.16)*.5/Math.tan(THREE.MathUtils.degToRad(camera.fov*.5));
@@ -112,8 +122,8 @@ const portraits=await page.evaluate(async()=>{
   images[name]=renderer.domElement.toDataURL('image/png');
   scene.remove(group);owned.add(group);
  }
- for(const team of teams){for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);}
- scene.remove(ground,backdrop);owned.add(ground,backdrop);beauty.dispose();bokeh.dispose();output.dispose();composer.dispose();key.shadow.dispose();studio.dispose();disposeObject(owned);kit.dispose();renderer.dispose();return images;
+ for(const team of teams){for(const member of team.members)render(member.id,[member]);render('team-'+team.id,team.members,true);render('team-'+team.id+'-night',team.members,true,true);}
+ scene.remove(ground,backdrop);owned.add(ground,backdrop);beauty.dispose();contact.dispose();bokeh.dispose();output.dispose();composer.dispose();key.shadow.dispose();studio.dispose();disposeObject(owned);kit.dispose();renderer.dispose();return images;
 });
 const files={};
 if(await portraitFingerprint(root)!==sourceFingerprint) throw Error('Portrait sources changed during rendering. Run the studio again.');

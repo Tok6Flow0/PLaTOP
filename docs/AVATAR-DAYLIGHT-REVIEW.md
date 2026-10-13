@@ -1,25 +1,70 @@
-# Avatar craft and local daylight — work in progress
+# Avatar craft and local daylight
 
-This branch follows the six original agent-supplied portraits in `public/portraits`, rather than replacing those identities with the generic ceramic helpers in the office concept. The portraits remain the reference; the generated roster and team images are renders of the actual runtime models.
+Branch: `codex/avatar-craft-local-daylight`. This is an in-progress refinement,
+not an accepted claim of matching the original illustrations.
 
-## Independent review record
+The six original team portraits in `public/portraits` are the identity references.
+Actual office models generate every roster icon and team portrait in
+`public/avatars`; the manifest hashes both their sources and resulting images.
+Night team portraits use the same geometry under a second baked lighting setup.
+The illustrated references are not substituted for live 3D models.
 
-The independent reviewer receives source portraits and frozen actual renders, not a requested score. It does not edit implementation. Scores below are subjective visual judgments, not pixel-accuracy measurements.
+## Independent review history
 
-Baseline: avatar craft **4.3/10**, reference fidelity **2.7/10**, overall **D+**. The reviewer identified missing book, hood, lighthouse, scroll, folded-paper and feather silhouettes; missing role emblems; generic facial expressions; and lost team staging. The campus composition was assessed separately at approximately 7/10. This is not an acceptance.
+A read-only reviewer compared frozen renders directly with the six references.
+The reviewer received no requested score and no instructions to approve.
 
-Pass 1 restores the distinct identities, fitted visors, magnifier, book, role emblems, feathers, paper folds and warm facial expressions. A shared micrograin texture stays inside the existing transform-palette batching path. All characters remain below 9,000 triangles and within their tested movement clearance. Independent reassessment is pending.
+| Submission | Craft | Identity fidelity | Overall |
+| --- | ---: | ---: | --- |
+| Starting models | 4.3/10 | 2.7/10 | D+ |
+| Pass 1 | 6.0/10 | 7.1/10 | C+ |
+| Pass 2 | 6.8/10 | 7.5/10 | B− |
+
+These are subjective visual judgments, not a pixel-similarity measurement.
+The requested acceptance threshold has not yet been met. Pass 1 restored the
+book keeper, robed guardians, navigator identities and folded bird. Pass 2
+addresses silhouette, connected robes, shorter Scout proportions, surface-fitted
+emblems, inward-facing paper surfaces, lantern framing and night integration.
+The pass-2 review still finds the folded bird and paper owls too coarse, the
+cape disconnected, the speech-bubble tail too subtle and several small edge
+artifacts. Lighting scores 7.5/10: night is cohesive, but dawn and sunset need
+stronger directional distinction. These remain open, not waived by test results.
 
 ## Local-clock atmosphere
 
-The device clock supplies a continuous, stylized day: dawn around 06:00, warm sunset around 18:00, and a dark blue night with warm occupied-room lighting. These are artistic clock phases, not an astronomical sunrise forecast. No coordinates, location permission, network request or weather response is required. Clock updates occur once per visible minute, sleep while hidden, and reconcile on focus. The same scene and camera are retained. Agent room choices, including lights off, remain authoritative.
+The device's local hours and minutes select a smoothly interpolated artistic
+day. There is no geolocation, weather dependency or network call. The existing
+sun, environment lighting, cached backdrop and bounded room fill lights are
+updated, not a second animation loop. One timer waits for the next visible
+minute; hidden/native-background views suspend it and reconcile on return.
+An agent's explicit lamp-off setting remains authoritative. Local time never
+chooses an avatar's action or reports work.
 
-The isolated development fixtures in `tools/` exercise fixed hours and a camera-only benchmark. They are not linked from the application, do not send agent commands, and are absent from the production build. Production always uses the device clock. Preview activity remains absent.
+## Rendering evidence
 
-## Performance baseline and verification
+The same isolated browser fixture was measured at 1000 × 800 CSS pixels,
+1.5 render DPR (1500 × 1200 backing buffer), sixteen offline avatars, existing
+depth-based contact shading, two seconds of warm-up and ten seconds of camera
+orbit. No real agent activity or bridge writes are used. Asset generation and
+test suites were stopped during the samples.
 
-Baseline commit: `e27b31e`. Same local browser and fixed 1000 × 800 scene, device DPR capped at 1.5, two-second warmup followed by ten seconds of orbit input, offline neutral agents. Baseline cadence was **59.99 fps**, frame-interval p95 **17.6 ms**, CPU submission p95 **2.3 ms**, 80 draw calls and 347,755 rendered triangles. Submission timings are not GPU timings and do not establish native-host or other-device performance.
+| Submission | Measured fps | CPU submission p95 | Draw calls | Triangles |
+| --- | ---: | ---: | ---: | ---: |
+| Baseline | 59.99 | 2.3 ms | 80 | 347,755 |
+| Pass 1 noon | 60.00 | 3.8 ms | 98 | 322,883 |
+| Pass 1 night | 60.00 | 3.8 ms | 98 | 322,883 |
+| Pass 2 noon | 60.00 | 3.0 ms | 94 | 322,662 |
+| Pass 2 night | 60.00 | 3.2 ms | 94 | 322,662 |
 
-The first texture experiment increased draw calls to 334 and was rejected. Shared-grain batching brought the measured count to 98 with 322,883 triangles; frame cadence remained approximately 60 fps. Per-pass final timings and the independent acceptance record will be appended after review.
+The static scene returns to zero scheduled rendering fps. Submission timing is
+JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
+cadence but do not show identical CPU cost, native WebKit performance, battery
+life, or sustained thermal behavior. Those claims would need separate evidence.
+The extra portrait-only contact pass is baked offline and adds no live pass.
+Character meshes remain under 9,000 triangles each and within tested motor
+clearances. Grain textures and geometry are scene-owned and reused.
 
-Pass 1: 251 automated tests and the production build pass. Tests cover all character transit footprints, grounded feet, fitted helmet surfaces, no invented work from activity reports, resource reuse/disposal, local-time continuity and hidden-clock suspension, cached dark backdrops, and shared-grain batching. Native installation and the live private chat bridge are unchanged.
+The dev-only `tools/graphics-lab.html` and `tools/clock-review.html?hour=23`
+provide repeatable performance and screenshot fixtures. They are not linked
+from the product or included as Vite production entry points. Production has
+no time slider, preview activity or onlooker control of agents.

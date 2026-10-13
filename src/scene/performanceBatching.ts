@@ -404,9 +404,10 @@ export class SceneBatches {
     // A shared immutable local character grain has ordinary UV semantics and
     // survives palette cloning. Arbitrary authored maps remain on their safe path.
     const sharedGrain = bump instanceof THREE.DataTexture && bump.userData.platopCharacterGrain === true;
+    const grainColour = sharedGrain && material.map === bump;
     if (material.transparent || material.opacity !== 1 || (standard && (material as THREE.MeshStandardMaterial).emissive.getHex() !== 0)
       || Object.entries(material).some(([name, value]) => name.endsWith('Map') && value && !(sharedGrain && name === 'bumpMap'))
-      || (!staticMap && (material.map || material.alphaTest)) || material.clippingPlanes?.length
+      || (!staticMap && ((material.map && !grainColour) || material.alphaTest)) || material.clippingPlanes?.length
       || material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile
       || (material.type !== 'MeshStandardMaterial' && material.type !== 'MeshBasicMaterial')) return null;
     const pbr = standard ? material as THREE.MeshStandardMaterial : undefined;
@@ -420,7 +421,7 @@ export class SceneBatches {
       material.blendEquationAlpha, material.blendColor.toArray().join(','), material.blendAlpha, pbr?.envMapIntensity,
       material.stencilWrite, material.stencilWriteMask, material.stencilFunc, material.stencilRef,
       material.stencilFuncMask, material.stencilFail, material.stencilZFail, material.stencilZPass,
-      sharedGrain ? bump.uuid : undefined, sharedGrain ? pbr?.bumpScale : undefined].join(':');
+      sharedGrain ? bump.uuid : undefined, sharedGrain ? pbr?.bumpScale : undefined, grainColour].join(':');
   }
 
   private unusedAttribute(name: string, material: OpaqueMaterial): boolean {

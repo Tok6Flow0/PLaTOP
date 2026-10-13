@@ -5,7 +5,7 @@ export type CharacterForm = 'torso' | 'helmet' | 'owlBody' | 'owlHead' | 'wing' 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart'
   | 'book' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'toe' | 'paperBody' | 'paperWing' | 'paperTail' | 'paperDisc' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftWingL' | 'swiftWingR'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'fineRing' | 'compassStar' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'brass' | 'amber' | 'paper' | 'feather';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -13,6 +13,7 @@ interface CharacterResources {
   geometry: Map<string, THREE.BufferGeometry>;
   material: Map<string, THREE.MeshStandardMaterial>;
   grain?: THREE.DataTexture;
+  glow?: THREE.DataTexture;
 }
 
 // Model resources belong to one office scene. Every cached surface is attached
@@ -92,6 +93,8 @@ function petal(tuft = false): THREE.BufferGeometry {
 
 /** Thick folded forms retain their creases through geometry, without a decal. */
 function folded(points: Array<[number, number]>, depth = .16, ridge = .10): THREE.BufferGeometry {
+  const area=points.reduce((sum,[x,y],i)=>{const next=points[(i+1)%points.length];return sum+x*next[1]-next[0]*y},0);
+  if(area<0)points=[...points].reverse();
   const vertices: number[] = [], indices: number[] = [];
   for (const [x, y] of points) vertices.push(x, y, depth * .5);
   const front = points.length; vertices.push(0, 0, depth * .5 + ridge);
@@ -163,8 +166,11 @@ function feather(): THREE.BufferGeometry {
 
 function polyhedron(vertices: Tuple[], faces: number[][]): THREE.BufferGeometry {
   const positions: number[] = [];
+  const centre=vertices.reduce((sum,p)=>sum.add(new THREE.Vector3(...p)),new THREE.Vector3()).divideScalar(vertices.length);
   for (const face of faces) for (let i = 1; i < face.length - 1; i++) {
-    for (const index of [face[0], face[i], face[i + 1]]) positions.push(...vertices[index]);
+    const a=new THREE.Vector3(...vertices[face[0]]),b=new THREE.Vector3(...vertices[face[i]]),c=new THREE.Vector3(...vertices[face[i+1]]);
+    const outward=b.clone().sub(a).cross(c.clone().sub(a)).dot(a.clone().add(b).add(c).multiplyScalar(1/3).sub(centre));
+    for (const index of outward<0?[face[0],face[i+1],face[i]]:[face[0], face[i], face[i + 1]]) positions.push(...vertices[index]);
   }
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.computeVertexNormals(); return geometry;
@@ -216,18 +222,19 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
     const row = Math.floor(featherIndex / 3), column = featherIndex % 3;
-    const x = breast ? (column - 1) * .105 : sign * (column * .045 - .035);
+    const x = breast ? (column - 1) * .135 : sign * (column * .045 - .035);
     quaternion.setFromEuler(new THREE.Euler(0, breast ? -x * 1.3 : 0, breast ? -x * .55 : -sign * (.20 + column * .18)));
     matrix.compose(new THREE.Vector3(x, breast ? .13 - row * .11 - Math.abs(x)*.18 : .12 - row * .11,
       breast ? .012 - Math.abs(x)*.34 - row*.016 : .102 + column*.012 - row*.018), quaternion,
-    new THREE.Vector3(breast ? .17 : .14, breast ? .225 : .30, .036)); normalMatrix.getNormalMatrix(matrix);
+    new THREE.Vector3(breast ? .215 : .14, breast ? .225 : .30, .036)); normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
       point.fromBufferAttribute(source.attributes.position, i).applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
+      if(breast)point.z=.285*Math.sqrt(Math.max(.04,1-(point.x/.37)**2-(point.y/.52)**2))+.028+point.z-(.012-Math.abs(x)*.34-row*.016);
       vertices.push(point.x, point.y, point.z); normals.push(normal.x, normal.y, normal.z);
     }
   }
   source.dispose(); const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3)); return geometry;
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3)); return breast?smoothDeformedSurface(geometry):geometry;
 }
 
 function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
@@ -258,7 +265,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperBody': return folded([[-.34, -.5], [.31, -.5], [.5, -.13], [.38, .31], [0, .5], [-.4, .29], [-.5, -.1]], .78, .13);
     case 'paperWing': return folded([[-.50, .43], [-.18, -.50], [.35, -.34], [.50, .36], [.12, .18]], .16, .14);
     case 'paperTail': return folded([[-.5, -.5], [0, -.26], [.5, -.5], [.27, .5], [-.27, .5]], .12, .07);
-    case 'paperDisc': return folded([[-.5, -.15], [-.30, -.5], [.28, -.46], [.5, -.07], [.29, .42], [-.22, .5]], .06, .028);
+    case 'paperDisc': return folded([[-.48,.08],[-.37,.34],[-.12,.49],[.19,.45],[.41,.26],[.49,-.10],[.20,-.50],[-.23,-.43],[-.42,-.22]], .06, .023);
     case 'pageFold': return folded([[-.5, .5], [.5, .5], [.5, -.5]], .04, .04);
     case 'hoodTip': return lathe([[0, -.5], [.49, -.5], [.43, -.32], [.30, -.12], [.21, .15], [.13, .36], [0, .6]], 16);
     case 'scroll': return new THREE.CylinderGeometry(.5, .5, 1, 12, 1, false, .12, Math.PI * 1.78);
@@ -267,16 +274,20 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .16], [.50, .32], [.42, .46], [0, .5]]);
     case 'swiftBody': return polyhedron([[0, -.30, .16], [-.20, .11, .03], [.20, .11, .03], [0, .29, .04], [0, -.23, -.24], [0, .08, -.31], [0, -.02, .27]], [[0, 1, 6], [1, 3, 6], [3, 2, 6], [2, 0, 6], [0, 4, 1], [1, 4, 5], [1, 5, 3], [3, 5, 2], [2, 5, 4], [2, 4, 0]]);
-    case 'swiftHead': return polyhedron([[0, .23, -.02], [-.17, .08, .10], [.17, .08, .10], [0, -.04, .23], [-.14, -.13, .07], [.14, -.13, .07], [0, -.02, -.17]], [[0, 1, 3], [0, 3, 2], [1, 4, 3], [3, 5, 2], [4, 5, 3], [0, 6, 1], [0, 2, 6], [1, 6, 4], [4, 6, 5], [5, 6, 2]]);
+    case 'swiftHead': { const g=new THREE.SphereGeometry(.19,12,8);const p=g.attributes.position;for(let i=0;i<p.count;i++)p.setZ(i,p.getZ(i)+(p.getY(i)<0?-.015:0));const faceted=g.toNonIndexed();g.dispose();faceted.computeVertexNormals();return faceted; }
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
-    case 'swiftWingR': return polyhedron([[0, .09, .10], [.72, .25, -.14], [.22, -.16, -.30], [.18, .055, -.035], [0, .075, .10], [.72, .235, -.14], [.22, -.175, -.30]], [[0, 3, 1], [1, 3, 2], [2, 3, 0], [4, 5, 6], [0, 1, 5, 4], [1, 2, 6, 5], [2, 0, 4, 6]]);
+    case 'swiftWingR': return polyhedron([[0,.13,.13],[.18,.34,-.46],[.09,-.24,-.30],[.08,-.015,-.075],[0,.11,.12],[.17,.325,-.455],[.08,-.25,-.295]],[[0,3,1],[1,3,2],[2,3,0],[4,5,6],[0,1,5,4],[1,2,6,5],[2,0,4,6]]);
+    case 'paperBeak': return polyhedron([[-.065,-.025,0],[.065,-.025,0],[0,.035,.24],[0,.065,0],[0,-.04,.19]],[[0,3,2],[3,1,2],[0,2,4],[2,1,4],[0,4,1],[0,1,3]]);
+    case 'pageCorner': return polyhedron([[-.5,.5,0],[.5,-.5,0],[.5,.5,-.10],[.12,.12,.34]],[[0,3,2],[3,1,2],[0,1,3]]);
+    case 'merchantBase': return softLathe([[0,-.5],[.44,-.5],[.5,-.28],[.5,.08],[.46,.38],[.33,.5],[0,.5]]);
+    case 'spiritFigure': return softLathe([[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75],[.09,.80],[0,.81]]);
     case 'owlBrowL': return sweptBrow(true);
     case 'owlBrowR': return sweptBrow();
     case 'featherFanL': return featherFan(-1);
     case 'featherFanR': return featherFan(1);
     case 'breastFeathers': return featherFan(1, true);
-    case 'hexGlass': return new THREE.CylinderGeometry(.36, .49, 1, 6);
-    case 'hexCap': return new THREE.CylinderGeometry(.05, .5, 1, 6);
+    case 'hexGlass': {const source=new THREE.CylinderGeometry(.36,.49,1,6),g=source.toNonIndexed();source.dispose();g.computeVertexNormals();return g;}
+    case 'hexCap': {const source=new THREE.CylinderGeometry(.08,.5,1,6),g=source.toNonIndexed();source.dispose();g.computeVertexNormals();return g;}
     case 'fineRing': return new THREE.TorusGeometry(.5, .027, 6, 28);
     case 'compassStar': return folded([[0, .5], [.07, .13], [.32, .32], [.13, .07], [.5, 0], [.13, -.07], [.32, -.32], [.07, -.13], [0, -.5], [-.07, -.13], [-.32, -.32], [-.13, -.07], [-.5, 0], [-.13, .07], [-.32, .32], [-.07, .13]], .03, .025);
   }
@@ -301,13 +312,27 @@ function surfaceGrain(kit: SceneKit): THREE.DataTexture {
   const size=256,data=new Uint8Array(size*size*4);let seed=181;
   for(let i=0;i<size*size;i++) {
     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
-    const grain=218+(seed>>>24)*.145;
+    const grain=183+(seed>>>24)*.28;
     data.set([grain,grain,grain,255],i*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
   texture.userData.platopCharacterGrain=true;
   texture.repeat.set(4,4);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps=true;texture.needsUpdate=true;owner.grain=texture;return texture;
+}
+
+/** Warm frosted glass has a luminous centre and a quiet amber edge. */
+function glassGlow(kit: SceneKit): THREE.DataTexture {
+  const owner=owned(kit);if(owner.glow)return owner.glow;
+  const size=128,data=new Uint8Array(size*size*4);
+  for(let y=0;y<size;y++)for(let x=0;x<size;x++){
+    const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5;
+    const glow=Math.exp(-(dx*dx*5+dy*dy*3.5));
+    const grain=((Math.imul(x+1,374761393)^Math.imul(y+1,668265263))>>>0)%23/255;
+    data.set([255,Math.round(97+147*glow-grain*40),Math.round(18+130*glow)],(y*size+x)*4);
+  }
+  const texture=new THREE.DataTexture(data,size,size);texture.needsUpdate=true;texture.magFilter=THREE.LinearFilter;
+  texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;owner.glow=texture;return texture;
 }
 
 export function characterMaterial(kit: SceneKit, color: string, finish: CharacterFinish = 'clay'): THREE.MeshStandardMaterial {
@@ -317,13 +342,14 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
     material = new THREE.MeshStandardMaterial({ color,
       roughness: finish === 'ink' ? .24 : finish === 'glaze' ? .51 : finish === 'brass' ? .32 : finish === 'amber' ? .30 : finish === 'paper' ? .94 : finish === 'feather' ? .82 : .76,
       metalness: finish === 'brass' ? .52 : 0,
-      ...(finish === 'amber' ? { emissive: '#ff9d2b', emissiveIntensity: .50 } : {}),
+      ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit) } : {}),
     });
     if (finish === 'ink') material.envMapIntensity = .65;
     if (finish === 'paper') material.envMapIntensity = .35;
     if (finish === 'feather') material.envMapIntensity = .42;
     if (['clay','glaze','paper','feather'].includes(finish)) {
       material.bumpMap=surfaceGrain(kit);material.bumpScale=finish==='glaze'?.008:finish==='feather'?.017:.012;
+      material.map=material.bumpMap;
     }
     cache.set(key, material);
   }
@@ -356,7 +382,9 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
         const angle = (corner + step / 7) * Math.PI / 2;
         let x = sx * (width / 2 - radius) + Math.cos(angle) * radius;
         let y = sy * (height / 2 - radius) + Math.sin(angle) * radius;
-        if (bubble && corner === 3 && step < 3) { x += width * .075 * (1 - step / 3); y -= height * .16 * (1 - step / 3); }
+        // A soft speech-tail continues the lower-right arc rather than adding
+        // a second hard corner that pierces the lantern shell.
+        if (bubble && corner === 3) { const tail=Math.sin(step/7*Math.PI)**4; x += width*.025*tail; y -= height*.12*tail; }
         boundary.push([x, y]);
       }
     });
@@ -395,7 +423,9 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     }
     geometry = new THREE.BufferGeometry();
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3)); geometry.setIndex(indices); cache.set(key, geometry);
+    geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(vertices.flatMap((value,index)=>index%3===0?[value/width+.5,vertices[index+1]/height+.5]:[]),2));
+    geometry.setIndex(indices); cache.set(key, geometry);
   }
   const mesh = new THREE.Mesh(geometry, characterMaterial(kit, color, finish));
   mesh.receiveShadow = true; parent.add(mesh); return mesh;
@@ -433,4 +463,24 @@ export function characterEyeArc(kit: SceneKit, parent: THREE.Object3D, color: st
   const mesh = characterStroke(kit, parent, color,
     [[-width, 0, 0], [-width * .6, height * .82, 0], [0, height, 0], [width * .6, height * .82, 0], [width, 0, 0]], .010, finish);
   mesh.position.set(...at); return mesh;
+}
+
+/** Stamp a thin ornamental relief onto a curved shell once, never per frame. */
+export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012): void {
+  shell.parent!.updateWorldMatrix(true,true);mark.updateWorldMatrix(true,true);
+  const ray=new THREE.Raycaster(),point=new THREE.Vector3(),inverse=new THREE.Matrix4();
+  const bounds=new THREE.Box3().setFromObject(mark);
+  mark.traverse(object=>{
+    const mesh=object as THREE.Mesh;if(!mesh.isMesh)return;
+    const geometry=mesh.geometry.clone(),position=geometry.attributes.position;
+    inverse.copy(mesh.matrixWorld).invert();
+    for(let i=0;i<position.count;i++) {
+      point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
+      const relief=Math.max(0,point.z-bounds.min.z);
+      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+      const hit=ray.intersectObject(shell,false)[0];
+      if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}
+    }
+    geometry.computeVertexNormals();mesh.geometry=geometry;
+  });
 }

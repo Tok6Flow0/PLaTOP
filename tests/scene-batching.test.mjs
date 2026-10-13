@@ -65,8 +65,9 @@ test('shared character micrograin stays batched with UVs and preserves map owner
   const {scene,actor,moving,batches}=fixture(t);
   const grain=new THREE.DataTexture(new Uint8Array(16),2,2);grain.userData.platopCharacterGrain=true;
   let disposed=0;grain.addEventListener('dispose',()=>disposed++);
-  moving.forEach(mesh=>{mesh.material.bumpMap=grain;mesh.material.bumpScale=.01});batches.rebuild();
+  moving.forEach(mesh=>{mesh.material.map=grain;mesh.material.bumpMap=grain;mesh.material.bumpScale=.01});batches.rebuild();
   const batch=scene.getObjectByName('Shared character draws').children.find(mesh=>mesh.isTransformPaletteMesh&&mesh.material.bumpMap===grain);
+  assert.equal(batch?.material.map,grain,'colour and microrelief reuse the same batched texture');
   assert.ok(batch&&batch.geometry.attributes.uv);assert.equal(batch.material.bumpScale,.01);
   assert.equal(batch.instanceCount,2);actor.position.x=3;scene.updateMatrixWorld(true);batches.sync();
   batches.dispose();assert.equal(disposed,0,'source material retains its grain');grain.dispose();

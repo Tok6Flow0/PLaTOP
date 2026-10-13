@@ -276,10 +276,10 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
   const expected={
     'bridge-jarvis':['merchantTorso','helmet','ring'],
     'bridge-scout':['helmet','compass-emblem','ring'],
-    'bridge-keeper':['book','pageFold','seedling-book'],
-    'hr-compass':['spiritBody','spiritHood','hoodTip','compass-emblem'],
-    'hr-lens':['spiritBody','spiritHood','ring'],
-    'hr-relay':['spiritBody','spiritRelayHood','cape'],
+    'bridge-keeper':['book','pageCorner','seedling-book'],
+    'hr-compass':['spiritFigure','hoodTip','compass-emblem'],
+    'hr-lens':['spiritFigure','ring'],
+    'hr-relay':['spiritFigure','wing'],
     'intake-jarvis':['torso','cape','hoodTip','compass-emblem'],
     'intake-beacon':['torso','lanternCap'],
     'intake-relay':['torso','scroll','book'],
@@ -303,4 +303,15 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
   assert.ok(grain.isDataTexture && grain.image.width===256 && grain.image.height===256);
   assert.equal(characterMaterial(kit,'#bbccdd','feather').bumpMap,grain,'all tactile materials reuse one micrograin');
   disposeObject(all);kit.dispose();
+});
+
+test('paper folds and compass relief expose their authored front planes with one-sided materials',()=>{
+  const kit=new SceneKit(),material=new THREE.MeshBasicMaterial();
+  for(const form of ['compassStar','paperDisc','pageFold','paperWing','capePanel']){
+    const mesh=new THREE.Mesh(characterGeometry(kit,form),material);mesh.updateMatrixWorld(true);
+    const ray=new THREE.Raycaster(new THREE.Vector3(.01,.01,2),new THREE.Vector3(0,0,-1));
+    const hit=ray.intersectObject(mesh)[0];
+    assert.ok(hit&&hit.point.z>0,`${form} front is not culled behind its own back plane`);
+  }
+  material.dispose();kit.dispose();
 });

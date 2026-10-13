@@ -14,7 +14,7 @@ test('rail and roster portraits are current renders of the shipped character mod
   assert.equal(manifest.sourceFingerprint, await portraitFingerprint(root), 'regenerate portraits when their model or studio changes');
   const approvals = JSON.parse(await readFile(new URL('../public/assets/approved.json', import.meta.url), 'utf8'));
   assert.deepEqual(approvals.characterIds, [], 'portrait studio must use the same procedural models as the office');
-  const expected = [...Object.values(TEAM_ACTORS).flat(), ...Object.keys(TEAM_ACTORS).map(id => `team-${id}`)].sort();
+  const expected = [...Object.values(TEAM_ACTORS).flat(), ...Object.keys(TEAM_ACTORS).flatMap(id => [`team-${id}`,`team-${id}-night`])].sort();
   assert.deepEqual(Object.keys(manifest.files).sort(), expected);
   for (const id of expected) {
     const png = await readFile(new URL(`../public/avatars/${id}.png`, import.meta.url));
