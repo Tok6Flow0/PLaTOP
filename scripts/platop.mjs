@@ -7,8 +7,8 @@ import { MAX_BODY_BYTES, SOURCES, TEAM_IDS, parseUpdate, parseUpdates } from '..
 import { requestActivity as request } from '../server/client.mjs';
 import { requestAction, requestDecoration, requestRoomStyle } from '../server/client.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
-const USAGE = `PLaTOP local activity\n\n  node scripts/platop.mjs status\n  node scripts/platop.mjs set <team> <state> [--source skill|codex|demo|manual]\n  node scripts/platop.mjs snapshot <public-snapshot.json>\n  node scripts/platop.mjs run <team> [--source skill|codex|demo|manual] -- <command> [args...]\n\nTeams: merchant, hr, intake, support, reflection, email\nStates: active, sleeping, waiting, unknown\n`;
-const OFFICE_USAGE = `\nLocal office visuals (inline JSON only):\n  node scripts/platop.mjs action <team> <kind> [<actor-and-target-json>]\n  node scripts/platop.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop.mjs style <team> <palette-and-lighting-json>\n\nAction options accept only actorId and target. Empty parts [] clears the slot. Style accepts palette, lighting or reset:true.\n`;
+const USAGE = `PLaTOP local activity\n\n  node scripts/platop.mjs status\n  node scripts/platop.mjs set <team> <state> [--source skill|codex|manual]\n  node scripts/platop.mjs snapshot <public-snapshot.json>\n  node scripts/platop.mjs run <team> [--source skill|codex|manual] -- <command> [args...]\n\nTeams: merchant, hr, intake, support, reflection, email\nStates: active, sleeping, waiting, unknown\n`;
+const OFFICE_USAGE = `\nLocal office visuals (inline JSON only):\n  node scripts/platop.mjs action <team> <kind> [<actor-target-and-gesture-json>]\n  node scripts/platop.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop.mjs style <team> <palette-and-lighting-json>\n\nAction options accept only actorId, target and gesture. interact requires target and gesture; other kinds reject gesture. Empty parts [] clears the slot. Style accepts palette, lighting or reset:true.\n`;
 
 function sourceOption(args) {
   if (args.length === 0) return 'skill';

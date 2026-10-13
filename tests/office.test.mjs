@@ -10,7 +10,7 @@ import ts from 'typescript';
 import { createBridge } from '../server/index.mjs';
 import { requestActivity, requestAction, requestDecoration, requestRoomStyle } from '../server/client.mjs';
 import { TEAM_IDS, MAX_SNAPSHOT_BYTES } from '../server/protocol.mjs';
-import { TEAM_ACTORS, ACTOR_IDS, ACTION_KINDS, DECOR_SHAPES, DECOR_FINISHES, DECOR_SLOTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseOfficeSnapshot, parseRoomStyle } from '../server/office-protocol.mjs';
+import { TEAM_ACTORS, ACTOR_IDS, ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SHAPES, DECOR_FINISHES, DECOR_SLOTS, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseOfficeSnapshot, parseRoomStyle } from '../server/office-protocol.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
 
 const exec = promisify(execFile);
@@ -48,13 +48,60 @@ test('actions default owned actors, normalize arrival targets and permit only na
   assert.deepEqual(parseAction(ACTION), { ...ACTION, actorId: 'bridge-jarvis' });
   assert.deepEqual(parseAction({ teamId: 'email', kind: 'arrive' }),
     { teamId: 'email', actorId: 'email-owl', kind: 'arrive', target: { officeId: 'email', place: 'door' } });
-  for (const kind of ACTION_KINDS.filter(kind => kind !== 'walk_to')) assert.equal(parseAction({ teamId: 'hr', kind }).kind, kind);
+  for (const kind of ACTION_KINDS.filter(kind => !['walk_to', 'interact'].includes(kind))) assert.equal(parseAction({ teamId: 'hr', kind }).kind, kind);
+  for (const kind of ['walk_to', 'arrive']) for (const place of PLACES) assert.equal(parseAction({ teamId: 'hr', kind, target: { officeId: 'email', place } }).target.place, place);
   for (const value of [
     { ...ACTION, actorId: 'email-owl' }, { ...ACTION, actorId: 'private-thread' },
     { teamId: 'merchant', kind: 'walk_to' }, { teamId: 'merchant', kind: 'work', target: ACTION.target },
     { ...ACTION, target: { officeId: 'hr', place: 'private' } }, { ...ACTION, target: { officeId: 'hr', place: 'desk', x: 2 } },
     { ...ACTION, id: 'caller-controlled' }, { ...ACTION, text: 'PRIVATE' }, { ...ACTION, kind: 'eval' },
   ]) assert.throws(() => parseAction(value));
+});
+
+test('interact requires the agent-chosen gesture and named target, with no gesture on other actions', () => {
+  const interaction = { teamId: 'hr', kind: 'interact', target: { officeId: 'merchant', place: 'whiteboard' }, gesture: 'think' };
+  assert.deepEqual(parseAction(interaction), { ...interaction, actorId: 'hr-compass' });
+  for (const gesture of ACTION_GESTURES) for (const place of PLACES) {
+    const parsed = parseAction({ ...interaction, actorId: 'hr-lens', gesture, target: { officeId: 'email', place } });
+    assert.equal(parsed.gesture, gesture); assert.equal(parsed.target.place, place);
+  }
+  for (const value of [
+    { teamId: 'hr', kind: 'interact', gesture: 'think' },
+    { teamId: 'hr', kind: 'interact', target: interaction.target },
+    { ...interaction, gesture: 'PRIVATE_THOUGHT' }, { ...interaction, gesture: null },
+    { ...interaction, gesture: { thought: 'PRIVATE' } }, { ...interaction, duration: 999 },
+    { ...interaction, actorId: 'email-owl' }, { ...interaction, reasoning: 'PRIVATE' },
+    { ...interaction, target: { officeId: 'merchant', place: 'whiteboard', text: 'PRIVATE' } },
+    ...ACTION_KINDS.filter(kind => kind !== 'interact').map(kind => ({ teamId: 'hr', kind, gesture: 'wait', ...(['walk_to', 'arrive'].includes(kind) ? { target: interaction.target } : {}) })),
+  ]) assert.throws(() => parseAction(value));
+  const input = structuredClone(interaction), normalized = parseAction(input);
+  input.target.place = 'PRIVATE'; input.gesture = 'PRIVATE';
+  assert.equal(normalized.target.place, 'whiteboard'); assert.equal(normalized.gesture, 'think');
+  const id = '00000000-0000-4000-8000-000000000001';
+  const action = { id, actorId: 'hr-compass', kind: 'interact', target: interaction.target, gesture: 'think' };
+  assert.deepEqual(parseOfficeSnapshot({ actions: { 'hr-compass': action } }).actions['hr-compass'], action);
+  for (const invalid of [{ ...action, gesture: undefined }, { ...action, target: undefined },
+    { ...action, kind: 'work' }, { ...action, private: 'PRIVATE' }]) assert.throws(() => parseOfficeSnapshot({ actions: { 'hr-compass': invalid } }));
+});
+
+test('interactions preserve the chosen gesture in current private persistence and sanitized restart readback', async t => {
+  const { root, request, client } = await fixture(t);
+  for (const [place, gesture] of [['whiteboard', 'think'], ['cabinet', 'file'], ['lounge', 'wait']]) {
+    const snapshot = await requestAction({ teamId: 'hr', actorId: 'hr-lens', kind: 'interact', target: { officeId: 'hr', place }, gesture }, client);
+    assert.equal(snapshot.actions['hr-lens'].gesture, gesture);
+    assert.equal(snapshot.actions['hr-lens'].target.place, place);
+    assert.match(snapshot.actions['hr-lens'].id, UUID);
+  }
+  const before = await requestActivity(undefined, client);
+  const rejected = await request('/api/actions', { auth: true, body: { teamId: 'hr', kind: 'interact', target: { officeId: 'hr', place: 'cabinet' }, gesture: 'PRIVATE_THOUGHT' } });
+  assert.equal(rejected.status, 400); assert.ok(!rejected.text.includes('PRIVATE'));
+  assert.deepEqual((await requestActivity(undefined, client)).actions, before.actions);
+  const saved = JSON.parse(await readFile(path.join(root, '.local/office.json'), 'utf8'));
+  assert.deepEqual(saved.actions, before.actions);
+  assert.deepEqual(Object.keys(saved.actions), ['hr-lens']);
+  assert.equal((await stat(path.join(root, '.local/office.json'))).mode & 0o777, 0o600);
+  const restarted = await createBridge({ root, port: 0 }); t.after(() => restarted.close());
+  assert.deepEqual((await requestActivity(undefined, { root, port: restarted.port })).actions, before.actions);
 });
 
 test('primitive recipes normalize defaults and reject unbounded counts, values, extents and private fields', () => {
@@ -315,6 +362,13 @@ export async function writeFile(...args){
   assert.deepEqual(store.snapshot(), beforeStyle);
   await store.style(STYLE);
   assert.equal(store.snapshot().rooms.merchant.palette.wall, '#a1b2c3');
+  const beforeInteraction = store.snapshot(), delayedInteraction = pauseNextWrite();
+  const interaction = store.action({ teamId: 'support', kind: 'interact', target: { officeId: 'support', place: 'whiteboard' }, gesture: 'think' });
+  await delayedInteraction.started;
+  assert.deepEqual(store.snapshot(), beforeInteraction);
+  delayedInteraction.release(false);
+  await interaction;
+  assert.equal(store.snapshot().actions['support-beacon'].gesture, 'think');
 });
 
 test('office SSE emits changed current data while identical recipes and absent clears stay quiet', async t => {
@@ -370,10 +424,13 @@ test('new direct CLI and actual stdio MCP transport preserve exact public action
     const cli = args => exec(process.execPath, [script, ...args], { env, timeout: 12_000, maxBuffer: 524_288 });
     assert.match((await cli(['action', 'email', 'arrive'])).stdout, /action queued/);
     assert.match((await cli(['action', 'email', 'walk_to', JSON.stringify({ actorId: 'email-swift', target: { officeId: 'intake', place: 'desk' } })])).stdout, /action queued/);
+    assert.match((await cli(['action', 'email', 'interact', JSON.stringify({ actorId: 'email-owl', target: { officeId: 'email', place: 'cabinet' }, gesture: 'file' })])).stdout, /action queued/);
     assert.match((await cli(['decorate', 'email', 'festive', JSON.stringify([{ shape: 'torus', glow: true }])])).stdout, /decoration saved/);
     assert.match((await cli(['style', 'email', JSON.stringify({ palette: { wall: '#123456' }, lighting: { mode: 'night' } })])).stdout, /room style saved/);
     const snapshot = JSON.parse((await cli(['status'])).stdout);
     assert.equal(snapshot.actions['email-swift'].target.officeId, 'intake');
+    assert.equal(snapshot.actions['email-owl'].target.place, 'cabinet');
+    assert.equal(snapshot.actions['email-owl'].gesture, 'file');
     assert.equal(snapshot.assets.email.festive.parts[0].shape, 'torus');
     assert.deepEqual(snapshot.rooms.email.palette, { wall: '#123456' });
     assert.equal(snapshot.rooms.email.lighting.mode, 'night');
@@ -381,6 +438,9 @@ test('new direct CLI and actual stdio MCP transport preserve exact public action
     for (const args of [
       ['action', 'email', 'work', '{"actorId":"bridge-jarvis"}'],
       ['action', 'email', 'work', '{"command":"PRIVATE_COMMAND"}'],
+      ['action', 'email', 'interact', '{"target":{"officeId":"email","place":"cabinet"}}'],
+      ['action', 'email', 'interact', '{"target":{"officeId":"email","place":"cabinet"},"gesture":"PRIVATE_REASONING"}'],
+      ['action', 'email', 'work', '{"gesture":"file"}'],
       ['decorate', 'email', 'desk', '/private/file'],
       ['decorate', 'email', 'desk', JSON.stringify([{ shape: 'box', url: 'PRIVATE_URL' }])],
       ['decorate', 'email', 'desk', 'x'.repeat(8193)],

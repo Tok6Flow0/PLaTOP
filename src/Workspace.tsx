@@ -8,12 +8,11 @@ import { MotionDiagnostics } from './scene/MotionDiagnostics';
 interface WorkspaceProps {
   state: SceneState;
   onSelect: (id: string) => void;
-  preview: boolean;
   idleTeam?: string | null;
   children?: ReactNode;
 }
 
-export function Workspace({ state, onSelect, preview, idleTeam = null, children }: WorkspaceProps) {
+export function Workspace({ state, onSelect, idleTeam = null, children }: WorkspaceProps) {
   const host = useRef<HTMLDivElement>(null);
   const engine = useRef<SceneHandle | null>(null);
   const [error, setError] = useState('');
@@ -30,7 +29,7 @@ export function Workspace({ state, onSelect, preview, idleTeam = null, children 
   useEffect(() => { engine.current?.setIdleView(idleTeam); }, [idleTeam]);
   const turn = Math.PI / 12;
   return <section className={`workspace${idleTeam ? ' window-workspace' : ''}`} aria-label={idleTeam ? 'Live office window' : 'Team workspace'}>
-    {!idleTeam && <div className="workspace-heading"><h1>The workspace</h1><p>{preview ? 'Simulated activity · your chats continue normally.' : 'Six teams. One shared home.'}</p></div>}
+    {!idleTeam && <div className="workspace-heading"><h1>The workspace</h1><p>Six teams. One shared home.</p></div>}
     <div ref={host} className="scene-host" data-testid="scene" aria-label={idleTeam ? 'A fixed close-up view into the live 3D office.' : 'Interactive 3D office. Use the visible controls to move, rotate, tilt or zoom.'} />
     {error && <div className="scene-error" role="status">{error}</div>}
     {!idleTeam && <>

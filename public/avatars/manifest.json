@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "generator": "scripts/render-avatars.mjs",
-  "sourceFingerprint": "4e54bc4dbe0f14f91e1439982782511bf70b19c596ac5d0b71da973fac81fedc",
+  "sourceFingerprint": "3acf3bba3ed37d2507167513023d539de7131189ba386799589a9d57830fcb54",
   "files": {
     "bridge-jarvis": "68f5830a9e692c6452ca06527e102b6ddca4091882b4f85c730be2b0622aa764",
     "bridge-scout": "6f47fd58faa16532201e3a1445a0af81ee34b1aee2e020b2c1cc4405147a7899",

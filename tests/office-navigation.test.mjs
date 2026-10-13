@@ -54,13 +54,27 @@ function fixture({ chair = false } = {}) {
     zones: [{ bounds: [-6, -3, 0, 3], floorY: .1, officeId: 'home' }, { bounds: [0, -3, 6, 3], floorY: .1, officeId: 'other' }],
     blockers: [{ bounds: [-.8, -1, .8, 1] }, ...(chair ? [{ bounds: [-4.3, -.3, -3.7, .3], officeId: 'home', deskIndex: 0 }] : [])],
     waypoints: [[-2, -2], [2, -2], [-2, 2], [2, 2]],
-    anchors: [home, { officeId: 'home', place: 'task', position: [-4, -2], floorY: .1 }, { officeId: 'other', place: 'lounge', position: [4, 0], floorY: .1 }, { officeId: 'other', place: 'door', position: [3, -2], floorY: .1 }],
+    anchors: [home, { officeId: 'home', place: 'task', position: [-4, -2], floorY: .1 },
+      { officeId: 'other', place: 'lounge', position: [4, 0], floorY: .1 },
+      { officeId: 'other', place: 'door', position: [3, -2], floorY: .1 },
+      { officeId: 'other', place: 'whiteboard', position: [4, -1.6], floorY: .1, facing: Math.PI },
+      { officeId: 'other', place: 'cabinet', position: [4, 1.6], floorY: .1, facing: -Math.PI / 2 }],
     exit: [-5, -2], floorY: .1,
   };
   const navigator = new OfficeNavigator(map);
   return { navigator, home, motor: new OfficeMotor('actor', 'home', .4, navigator, home) };
 }
 function run(motor, limit = 4000) { for (let index = 0; index < limit && motor.pending; index++) motor.update(1 / 30); assert.equal(motor.pending, false); }
+
+test('switching to reduced motion settles the current chosen route once without replaying it', () => {
+  const { motor, navigator } = fixture();
+  const action = { id: 'current', actorId: 'actor', kind: 'interact', target: { officeId: 'other', place: 'whiteboard' }, gesture: 'think' };
+  assert.equal(motor.apply(action), true); motor.update(.1); assert.equal(motor.pending, true);
+  assert.equal(motor.restore(action), true);
+  assert.deepEqual([motor.x, motor.z], navigator.anchor('other', 'whiteboard').position);
+  assert.equal(motor.pending, false); assert.equal(motor.gesture, 'think');
+  assert.equal(motor.restore(action), false);
+});
 
 test('routes across connected floor rectangles around furniture with continuous clearance', () => {
   const { navigator } = fixture();
@@ -129,21 +143,22 @@ test('leave hides only after reaching exit; arrive walks back without teleportin
   run(motor); assert.equal(motor.mode, 'work'); assert.deepEqual([motor.x, motor.z], [-4, 0]);
 });
 
-test('active fallback is one purposeful task-to-desk trip, independent explicit actions take precedence', () => {
+test('activity reports never move avatars, select gestures, or release explicit routes and poses', () => {
   const { motor } = fixture();
-  motor.fallback('active'); assert.equal(motor.mode, 'walk'); run(motor);
-  assert.ok(motor.distance >= 3.9); assert.equal(motor.mode, 'work');
-  const distance = motor.distance;
-  for (let index = 0; index < 600; index++) { motor.fallback('active'); motor.update(1 / 30); }
-  assert.equal(motor.distance, distance);
+  const statuses = ['active', 'sleeping', 'waiting', 'unknown', 'active', 'sleeping'];
+  const initial = [motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.distance, motor.gesture];
+  for (let index = 0; index < 600; index++) { motor.fallback(statuses[index % statuses.length]); motor.update(1 / 30); }
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.distance, motor.gesture], initial);
   motor.apply({ id: 'one', actorId: 'actor', kind: 'walk_to', target: { officeId: 'other', place: 'lounge' } });
-  motor.fallback('sleeping'); run(motor); assert.deepEqual([motor.x, motor.z], [4, 0]);
-  motor.fallback('sleeping'); assert.deepEqual([motor.x, motor.z], [4, 0]);
-  motor.fallback('active'); run(motor); assert.deepEqual([motor.x, motor.z], [-4, 0]);
-  assert.equal(motor.mode, 'work');
+  for (let index = 0; index < 4000 && motor.pending; index++) { motor.fallback(statuses[index % statuses.length]); motor.update(1 / 30); }
+  assert.deepEqual([motor.x, motor.z], [4, 0]); assert.equal(motor.mode, 'idle');
+  const completed = [motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.distance];
+  for (let index = 0; index < 600; index++) { motor.fallback(statuses[index % statuses.length]); motor.update(1 / 30); }
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.distance], completed);
+  assert.equal(motor.manual, true, 'only the agent can replace its intent');
 });
 
-test('activity changes never respawn an absent avatar; arrival restores future bridge transitions', () => {
+test('activity changes never respawn an absent avatar or release an explicit arrival or rest', () => {
   const { motor } = fixture();
   motor.fallback('active'); run(motor);
   motor.apply({ id: 'leave', actorId: 'actor', kind: 'leave' }); run(motor);
@@ -151,7 +166,9 @@ test('activity changes never respawn an absent avatar; arrival restores future b
   motor.apply({ id: 'return', actorId: 'actor', kind: 'arrive' });
   motor.fallback('sleeping'); run(motor); assert.equal(motor.mode, 'work');
   motor.fallback('active'); run(motor); assert.equal(motor.mode, 'work');
-  motor.fallback('sleeping'); run(motor); assert.equal(motor.mode, 'rest');
+  motor.fallback('sleeping'); run(motor); assert.equal(motor.mode, 'work');
+  motor.apply({ id: 'rest', actorId: 'actor', kind: 'rest' }); run(motor);
+  motor.fallback('active'); assert.equal(motor.mode, 'rest');
 });
 
 test('invalid targets and actor ids cannot displace avatars; zero elapsed time freezes motor pose', () => {
@@ -172,16 +189,107 @@ test('decoration changes invalidate graph clearance and safely reject an obstruc
   assert.equal(navigator.route([-4, 0], [4, 0], .4), null);
 });
 
-test('persisted work/rest at startup wins the initial bridge state and later transitions still release it', () => {
+test('persisted work/rest at startup stays agent-owned through later bridge transitions', () => {
   const { motor } = fixture();
   motor.fallback('active'); motor.apply({ id: 'persisted', actorId: 'actor', kind: 'rest' });
   assert.equal(motor.mode, 'rest'); assert.equal(motor.pending, false);
   motor.fallback('active'); assert.equal(motor.mode, 'rest');
   motor.fallback('sleeping'); assert.equal(motor.mode, 'rest');
-  motor.fallback('active'); run(motor); assert.equal(motor.mode, 'work');
+  motor.fallback('active'); run(motor); assert.equal(motor.mode, 'rest');
+  motor.apply({ id: 'agent-work', actorId: 'actor', kind: 'work' }); run(motor); assert.equal(motor.mode, 'work');
 });
 
-test('real sixteen-avatar layout connects every assigned desk, six doors/lounges and exit with decoration on/off', async t => {
+test('opening a new view restores the last chosen interaction or departure without staging a trip', () => {
+  const { motor, navigator } = fixture({ chair: true });
+  const interaction = { id: 'chosen', actorId: 'actor', kind: 'interact', gesture: 'file', target: { officeId: 'other', place: 'cabinet' } };
+  assert.equal(motor.restore(interaction), true);
+  const cabinet = navigator.anchor('other', 'cabinet');
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading], [cabinet.position[0], cabinet.floorY, cabinet.position[1], cabinet.facing]);
+  assert.equal(motor.gesture, 'file'); assert.equal(motor.mode, 'interact');
+  assert.equal(motor.distance, 0); assert.equal(motor.pending, false);
+  assert.equal(motor.restore(interaction), false); assert.equal(motor.apply(interaction), false);
+  const chosen = [motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.gesture, motor.distance];
+  assert.equal(motor.restore({ ...interaction, id: 'missing', target: { officeId: 'missing', place: 'cabinet' } }), false);
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.gesture, motor.distance], chosen);
+  assert.equal(motor.apply({ id: 'next', actorId: 'actor', kind: 'work' }), true);
+  assert.deepEqual([motor.x, motor.z], cabinet.position, 'later intent starts at the restored place');
+  run(motor); assert.deepEqual([motor.x, motor.z], motor.home.position); assert.ok(motor.distance > 0);
+
+  const reopened = fixture({ chair: true }).motor;
+  const departure = { id: 'departed', actorId: 'actor', kind: 'leave' };
+  assert.equal(reopened.restore(departure), true); assert.equal(reopened.present, false);
+  assert.equal(reopened.pending, false); assert.equal(reopened.distance, 0);
+  assert.equal(reopened.apply(departure), false); reopened.fallback('active'); assert.equal(reopened.present, false);
+  assert.equal(reopened.apply({ id: 'return', actorId: 'actor', kind: 'arrive' }), true);
+  assert.deepEqual([reopened.x, reopened.z], reopened.navigator.map.exit);
+  run(reopened); assert.equal(reopened.present, true); assert.deepEqual([reopened.x, reopened.z], reopened.home.position);
+});
+
+test('restoration preserves target validation, assigned seats and neutral consumed celebrations', () => {
+  const { motor, navigator } = fixture({ chair: true });
+  for (const kind of ['work', 'rest']) {
+    assert.equal(motor.restore({ id: kind, actorId: 'actor', kind }), true);
+    assert.deepEqual([motor.x, motor.y, motor.z], [motor.home.position[0], motor.home.seatHeight, motor.home.position[1]]);
+    assert.equal(motor.mode, kind); assert.equal(motor.pending, false);
+  }
+  assert.equal(motor.restore({ id: 'arrived', actorId: 'actor', kind: 'arrive', target: { officeId: 'other', place: 'door' } }), true);
+  assert.deepEqual([motor.x, motor.z], navigator.anchor('other', 'door').position);
+  assert.equal(motor.mode, 'idle'); assert.equal(motor.pending, false);
+  assert.equal(motor.restore({ id: 'visitor', actorId: 'actor', kind: 'walk_to', target: { officeId: 'other', place: 'desk' } }), true);
+  assert.deepEqual([motor.x, motor.z], navigator.anchor('other', 'lounge').position);
+  const before = [motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.gesture];
+  navigator.map.blockers.push({ bounds: [3.2, 0.8, 4.8, 2.4] }); navigator.setDecorations({});
+  assert.equal(motor.restore({ id: 'blocked', actorId: 'actor', kind: 'interact', target: { officeId: 'other', place: 'cabinet' }, gesture: 'file' }), false);
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.mode, motor.gesture], before);
+  assert.equal(motor.restore({ id: 'cheer', actorId: 'actor', kind: 'celebrate' }), true);
+  assert.equal(motor.mode, 'idle'); assert.equal(motor.celebration, 0); assert.equal(motor.pending, false);
+  assert.equal(motor.apply({ id: 'cheer', actorId: 'actor', kind: 'celebrate' }), false);
+  const untouched = fixture().motor;
+  assert.equal(untouched.restore({ id: 'other-actor', actorId: 'someone-else', kind: 'leave' }), false);
+  assert.equal(untouched.present, true); assert.equal(untouched.mode, 'idle');
+});
+
+test('explicit interaction travels once, faces the prop, and holds its gesture through status and heartbeat changes', () => {
+  const { motor, navigator } = fixture({ chair: true });
+  const action = { id: 'thinking', actorId: 'actor', kind: 'interact', gesture: 'think', target: { officeId: 'other', place: 'whiteboard' } };
+  assert.equal(motor.apply(action), true); assert.equal(motor.gesture, undefined);
+  for (let index = 0; index < 4000 && motor.pending; index++) {
+    assert.equal(motor.gesture, undefined, 'gesture starts only after movement and final facing');
+    motor.fallback(index % 2 ? 'active' : 'sleeping'); motor.update(1 / 30);
+  }
+  assert.equal(motor.pending, false); assert.equal(motor.mode, 'interact'); assert.equal(motor.gesture, 'think');
+  const anchor = navigator.anchor('other', 'whiteboard');
+  assert.deepEqual([motor.x, motor.z, motor.heading], [...anchor.position, anchor.facing]);
+  const held = [motor.x, motor.y, motor.z, motor.heading, motor.distance, motor.gesture];
+  for (let index = 0; index < 600; index++) {
+    assert.equal(motor.apply(action), false, 'repeat heartbeat id is stable');
+    motor.fallback(['waiting', 'unknown', 'active', 'sleeping'][index % 4]); motor.update(1 / 30);
+  }
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.distance, motor.gesture], held);
+  assert.equal(motor.apply({ ...action, id: 'invalid', target: { officeId: 'absent', place: 'whiteboard' } }), false);
+  assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.distance, motor.gesture], held, 'invalid interaction cannot replace a valid pose');
+  motor.apply({ id: 'work', actorId: 'actor', kind: 'work' }); assert.equal(motor.gesture, undefined);
+  run(motor); assert.equal(motor.mode, 'work'); assert.equal(motor.heading, motor.home.facing);
+});
+
+test('all gestures are agent choices at any valid target; visitors keep their own assigned desks', () => {
+  const { motor } = fixture();
+  for (const gesture of ['work', 'think', 'file', 'talk', 'wait']) {
+    assert.equal(motor.apply({ id: gesture, actorId: 'actor', kind: 'interact', gesture, target: { officeId: 'other', place: 'cabinet' } }), true);
+    run(motor); assert.equal(motor.gesture, gesture);
+  }
+  const held = [motor.x, motor.y, motor.z, motor.heading, motor.gesture];
+  motor.update(0); assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.gesture], held);
+  motor.apply({ id: 'visitor', actorId: 'actor', kind: 'interact', gesture: 'talk', target: { officeId: 'other', place: 'desk' } });
+  run(motor); assert.deepEqual([motor.x, motor.z], [4, 0]); assert.equal(motor.gesture, 'talk');
+  motor.apply({ id: 'leaving', actorId: 'actor', kind: 'leave' }); assert.equal(motor.gesture, undefined);
+  const paused = [motor.x, motor.y, motor.z, motor.heading, motor.distance];
+  motor.update(0); assert.deepEqual([motor.x, motor.y, motor.z, motor.heading, motor.distance], paused);
+  run(motor); assert.equal(motor.present, false); assert.equal(motor.gesture, undefined);
+  motor.fallback('active'); assert.equal(motor.present, false);
+});
+
+test('real sixteen-avatar layout connects every assigned desk, interaction stop, six doors/lounges and exit with decoration on/off', async t => {
   const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
   t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
   for (const decorated of [false, true]) {
@@ -191,18 +299,50 @@ test('real sixteen-avatar layout connects every assigned desk, six doors/lounges
       const home = navigator.desk(character.id), label = `${character.id} decorations=${decorated}`;
       assert.ok(navigator.segmentClear(home.position, home.egress, radius, home), `${label} assigned chair egress`);
       const create = () => new OfficeMotor(character.id, team.id, radius, navigator, home);
-      const active = create(); active.fallback('active'); assert.equal(active.blocked, false, `${label} purposeful fallback`); run(active);
-      assert.equal(active.heading, home.facing, `${label} exact desk facing`);
-      for (const target of teams) for (const place of ['door', 'lounge']) {
+      const active = create(); active.fallback('active'); assert.equal(active.blocked, false, `${label} inert activity report`);
+      assert.equal(active.distance, 0); assert.equal(active.mode, 'idle'); assert.equal(active.heading, home.facing, `${label} exact desk facing`);
+      for (const target of teams) for (const place of ['door', 'lounge', 'whiteboard', 'cabinet']) {
+        const anchor = navigator.anchor(target.id, place);
+        assert.ok(anchor, `${target.id}/${place} exists only for a real prop`);
         const motor = create();
         assert.equal(motor.apply({ id: `${target.id}-${place}`, actorId: character.id, kind: 'walk_to', target: { officeId: target.id, place } }), true, `${label} ${target.id}/${place}`);
-        run(motor); motor.apply({ id: 'return', actorId: character.id, kind: 'work' }); run(motor);
+        run(motor); assert.equal(motor.blocked, false);
+        assert.deepEqual([motor.x, motor.z], anchor.position);
+        if (anchor.facing !== undefined) assert.equal(motor.heading, anchor.facing);
+        const restored = create();
+        assert.equal(restored.restore({ id: 'reopened', actorId: character.id, kind: 'walk_to', target: { officeId: target.id, place } }), true, `${label} restore ${target.id}/${place}`);
+        assert.deepEqual([restored.x, restored.z], anchor.position); assert.equal(restored.pending, false);
+        motor.apply({ id: 'return', actorId: character.id, kind: 'work' }); run(motor);
         assert.deepEqual([motor.x, motor.z], home.position, `${label} return home`);
       }
       const leaving = create(); assert.equal(leaving.apply({ id: 'leave', actorId: character.id, kind: 'leave' }), true, `${label} exit`); run(leaving);
       assert.equal(leaving.present, false); leaving.apply({ id: 'arrive', actorId: character.id, kind: 'arrive' }); run(leaving); assert.equal(leaving.present, true);
     }
   }
+});
+
+test('every interaction stop faces a nearby real prop with full avatar clearance', async t => {
+  const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
+  t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
+  navigator.setDecorations(Object.fromEntries(teams.map(team => [team.id, ['plant', 'lamp', 'art']])));
+  for (const [officeId, room] of rooms) {
+    room.root.updateMatrixWorld(true);
+    for (const place of ['whiteboard', 'cabinet']) {
+      const anchor = navigator.anchor(officeId, place), prop = room.root.getObjectByName(`${officeId}:${place}`);
+      assert.ok(prop, `${officeId}/${place} has a physical prop`);
+      const bounds = new THREE.Box3().setFromObject(prop), center = prop.getWorldPosition(new THREE.Vector3());
+      assert.equal(bounds.isEmpty(), false, `${officeId}/${place} contains visible geometry`);
+      assert.equal(navigator.pointClear(anchor.position, .7), true, `${officeId}/${place} fits the largest avatar`);
+      const direction = Math.atan2(center.x - anchor.position[0], center.z - anchor.position[1]);
+      assert.ok(Math.abs(angleDifference(anchor.facing, direction)) < 1e-9, `${officeId}/${place} faces its prop`);
+      const stop = new THREE.Vector3(anchor.position[0], THREE.MathUtils.clamp(1.0, bounds.min.y, bounds.max.y), anchor.position[1]);
+      assert.ok(bounds.distanceToPoint(stop) < 1.35, `${officeId}/${place} is within a small interaction's reach`);
+    }
+  }
+  const reflection = rooms.get('reflection'), cabinet = reflection.root.getObjectByName('reflection:cabinet');
+  const facing = new THREE.Vector3(0, 0, 1).applyQuaternion(cabinet.getWorldQuaternion(new THREE.Quaternion()));
+  const stop = navigator.anchor('reflection', 'cabinet'), center = cabinet.getWorldPosition(new THREE.Vector3());
+  assert.ok(facing.dot(new THREE.Vector3(stop.position[0] - center.x, 0, stop.position[1] - center.z).normalize()) > .99, 'reflection files at the cabinet front');
 });
 
 test('folded Swift transit silhouette remains inside its certified clearance across a full wing cycle', async t => {

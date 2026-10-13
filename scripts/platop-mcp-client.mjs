@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTION_KINDS, DECOR_SLOTS, DECOR_FINISHES, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
+import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, DECOR_FINISHES, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
 import { sanitizedSnapshot } from '../server/client.mjs';
 
@@ -92,7 +92,20 @@ export async function callPlatopMcp(name, args = {}) {
         if (tools.size !== result.tools.length || !tools.has('platop_status') || !tools.has('platop_set_activity') || !tools.has(name)
           || JSON.stringify(tools.get('platop_set_activity').inputSchema?.properties?.teamId?.enum) !== JSON.stringify(TEAM_IDS)
           || JSON.stringify(tools.get('platop_set_activity').inputSchema?.properties?.state?.enum) !== JSON.stringify(STATES)) throw fail();
-        if (tools.has('platop_action') && JSON.stringify(tools.get('platop_action').inputSchema?.properties?.kind?.enum) !== JSON.stringify(ACTION_KINDS)) throw fail();
+        const actionProperties = tools.get('platop_action')?.inputSchema?.properties;
+        const actionKinds = actionProperties?.kind?.enum;
+        const actionPlaces = actionProperties?.target?.properties?.place?.enum;
+        if (tools.has('platop_action') && ![ACTION_KINDS, ACTION_KINDS.filter(kind => kind !== 'interact')]
+          .some(kinds => JSON.stringify(actionKinds) === JSON.stringify(kinds))) throw fail();
+        if (actionProperties?.gesture && JSON.stringify(actionProperties.gesture.enum) !== JSON.stringify(ACTION_GESTURES)) throw fail();
+        if (actionPlaces !== undefined && ![PLACES, PLACES.slice(0, 3)]
+          .some(places => JSON.stringify(actionPlaces) === JSON.stringify(places))) throw fail();
+        if (name === 'platop_action') {
+          if (!actionKinds.includes(args.kind)) throw fail();
+          if (args.gesture && JSON.stringify(actionProperties?.gesture?.enum) !== JSON.stringify(ACTION_GESTURES)) throw fail();
+          if (args.target && !PLACES.slice(0, 3).includes(args.target.place)
+            && !actionPlaces?.includes(args.target.place)) throw fail();
+        }
         if (tools.has('platop_decorate') && JSON.stringify(tools.get('platop_decorate').inputSchema?.properties?.slot?.enum) !== JSON.stringify(DECOR_SLOTS)) throw fail();
         if (tools.has('platop_style') && JSON.stringify(tools.get('platop_style').inputSchema?.properties?.lighting?.properties?.mode?.enum) !== JSON.stringify(ROOM_LIGHT_MODES)) throw fail();
         let wireArgs = args;
@@ -117,7 +130,7 @@ export async function callPlatopMcp(name, args = {}) {
         }
         if (name === 'platop_action') {
           const action = snapshot.actions?.[args.actorId];
-          if (!action || action.kind !== args.kind || JSON.stringify(action.target) !== JSON.stringify(args.target)) throw fail();
+          if (!action || action.kind !== args.kind || action.gesture !== args.gesture || JSON.stringify(action.target) !== JSON.stringify(args.target)) throw fail();
         }
         if (name === 'platop_decorate') {
           const asset = snapshot.assets?.[args.teamId]?.[args.slot];
@@ -173,7 +186,7 @@ export async function callPlatopMcp(name, args = {}) {
 export async function main(args = process.argv.slice(2)) {
   const [command = 'status', ...rest] = args;
   if (['--help', '-h', 'help'].includes(command) && rest.length === 0) {
-    console.log('PLaTOP local MCP\n\n  node scripts/platop-mcp-client.mjs status\n  node scripts/platop-mcp-client.mjs set <team> <state>\n  node scripts/platop-mcp-client.mjs action <team> <kind> [<actor-and-target-json>]\n  node scripts/platop-mcp-client.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop-mcp-client.mjs style <team> <palette-and-lighting-json>\n\nOnly bounded public activity and office data are accepted; no files, URLs or commands.');
+    console.log('PLaTOP local MCP\n\n  node scripts/platop-mcp-client.mjs status\n  node scripts/platop-mcp-client.mjs set <team> <state>\n  node scripts/platop-mcp-client.mjs action <team> <kind> [<actor-target-and-gesture-json>]\n  node scripts/platop-mcp-client.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop-mcp-client.mjs style <team> <palette-and-lighting-json>\n\ninteract requires target and gesture; other kinds reject gesture. Only bounded public activity and office data are accepted; no files, URLs or commands.');
     return 0;
   }
   if (command === 'status' && rest.length === 0) {

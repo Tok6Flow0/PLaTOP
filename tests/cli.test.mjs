@@ -42,6 +42,18 @@ test('CLI snapshot rejects private fields before any update and accepts a public
   assert.equal((await state()).teams[0].state, 'sleeping');
 });
 
+test('removed demo source cannot update telemetry or launch a wrapped command', async t => {
+  const { root, cli, state } = await fixture(t);
+  await cli(['set', 'merchant', 'sleeping', '--source', 'skill']);
+  const before = (await state()).teams;
+  await assert.rejects(cli(['set', 'merchant', 'active', '--source', 'demo']), error => error.code === 1);
+  const marker = path.join(root, 'demo-command-must-not-run');
+  await assert.rejects(cli(['run', 'merchant', '--source', 'demo', '--', process.execPath, '-e',
+    'require("node:fs").writeFileSync(process.argv[1], "unexpected")', marker]), error => error.code === 1);
+  await assert.rejects(access(marker));
+  assert.deepEqual((await state()).teams, before);
+});
+
 test('CLI run passes literal arguments without shell evaluation and marks successful work sleeping', async t => {
   const { root, cli, state } = await fixture(t);
   const marker = path.join(root, 'should-not-exist');

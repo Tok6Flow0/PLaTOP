@@ -581,3 +581,39 @@ volume. All six revised windows passed the independent qualitative review and
 the same 25 rendered checks were repeated successfully. This does not establish
 95% fidelity to the concept or display frame pacing; lighting remains a possible
 future polish area. Temporary QA browsers and servers were closed.
+
+## Agent-chosen expression — 2026-10-13
+
+The current expression path supersedes the status-driven wake/rest behavior
+described in earlier checkpoints. Explicit intents choose movement and poses;
+activity heartbeats do not. Unknown, stale or idle reports quiet ongoing
+interaction gestures, while current confirmed routes can move independently of
+an activity report. Initial load restores the last chosen place and presence
+without replaying a journey or proving an earlier arrival.
+The default approved GLB set remains empty; optional authored models retain only
+their shipped Idle, Move, Work and Sleep clips.
+
+The Skill Creator `quick_validate.py` check passes for `skills/platop`. PyYAML
+was supplied from a temporary dependency directory; project and host Python
+environments were not changed. An independent read-only skill scenario covered
+document review followed by a real team dependency. It led to narrower guidance
+for dependency waiting and actual coordination, with no prescribed action
+sequence. Documentation whitespace checks pass. These checks do not exercise
+live chat adoption or a rendered scene.
+
+The completed branch passes all 217 Node tests and the production TypeScript /
+Vite build. The existing large-chunk advisory remains. All sixteen avatars can
+reach every named place in all six rooms with decorations on or off. The
+portrait studio regenerated its fingerprint; the portrait pixels are unchanged.
+
+An isolated Chromium fixture at desktop (1440 × 1000) and mobile (390 × 844)
+verified page identity, meaningful rendering, no framework overlay or app
+errors, and camera/window controls. The fixture exercised an agent-selected
+waiting pose, unchanged position across a heartbeat, travel and final facing
+at the whiteboard, pause/resume, and restoration without replayed travel. It
+also verified that idle reports and same-place intents settle old gestures, and
+that reduced motion adopts departure and informative static gestures. Test-only
+read access to scene/motor objects was injected into the served module; no QA
+hooks were added to product source. Fixture data, screenshots and the runner
+stayed outside the repository. These checks did not send intents to live teams
+or establish that existing chats have loaded the updated skill.

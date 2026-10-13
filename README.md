@@ -2,11 +2,11 @@
 
 <img src="public/brand/platop-logo-128.png" alt="PLaTOP: a warm six-pane office window with a smiling robot" width="128" height="128" />
 
-A little local office for your AI teams. PLaTOP turns selected activity states
-into a cozy, top-down 3D playground with six offices and sixteen characters.
-Active teams move and work; confirmed idle teams sleep with little Zs. Missing
-observations stay **unknown**, and active signals expire without a heartbeat.
-The optional development preview is clearly labeled simulated.
+A little local office for your AI teams, with six offices and sixteen characters.
+Mapped agents retain their identity from their own chats and choose small,
+understated actions while doing real work. Activity reports remain separate:
+missing observations stay **unknown**, and active signals expire without a
+heartbeat. Status alone never chooses movement, work or sleep.
 
 The six teams are **Savor Bridge**, **Clear Path**, **Savor Wayfinders**,
 **Beacon**, **The Lantern Desk**, and **Savor Dispatch**. Each office has a
@@ -16,12 +16,18 @@ can visit the connected offices, work, rest, celebrate or head home through the
 PLaTOP skill. Viewers select a view and control the camera or pause playback;
 the agents choose how their space looks and what their avatars do.
 
+An agent might stay at its computer for document review, consider a problem at
+the whiteboard, file at the cabinet, or wait for another team in a lounge. These
+are optional expressions the agent chooses, not task categories or a scripted
+routine. Heartbeats never reissue an action.
+
 **Current status:** the office is a real 3D scene modeled toward the supplied
 concept. All sixteen default characters use a cohesive procedural ceramic,
 paper and lantern design from `src/scene/proxies.ts` and
 `src/scene/characterGeometry.ts`. Claude's sixteen GLB deliveries remain source
 assets; the current `public/assets/approved.json` has no enabled GLB IDs. A later
-review can opt individual GLBs back in. The [asset contract](docs/ASSET-CONTRACT.md) and
+review can opt individual GLBs back in; their animation is limited to the shipped
+Idle, Move, Work and Sleep clips. The [asset contract](docs/ASSET-CONTRACT.md) and
 [coordination board](docs/COORDINATION.md) record integration and approvals.
 A visual resemblance score is a subjective critique, not a pixel-equivalence measurement.
 
@@ -88,11 +94,17 @@ node scripts/platop.mjs set merchant sleeping --source manual
 node scripts/platop.mjs run support -- node --version
 ```
 
-`set` changes display state. `run` executes the specified local command with
+`set` changes the reported activity badge. `run` executes the specified local command with
 activity heartbeats, then reports sleeping on success or waiting on failure.
 Neither command starts or prompts a native chat. Active observations expire
 after two minutes without a heartbeat. See the [activity bridge](docs/ACTIVITY-BRIDGE.md)
 for snapshots, team IDs, and alternate ports.
+
+An explicit `rest` action chooses sleeping; an idle report does not. A current
+confirmed action can move its avatar while activity is unknown, but stale,
+unknown or idle reports quiet ongoing interaction gestures. Offline scenes preserve
+the last position and presence. Initial load restores the last chosen place
+without replaying its journey or proving a historical arrival.
 
 To install the optional [PLaTOP skill](skills/platop/SKILL.md), run from the
 repository root:
@@ -122,6 +134,7 @@ for host tools to reload:
 ```sh
 node scripts/platop-mcp-client.mjs status
 node scripts/platop-mcp-client.mjs set support active
+node scripts/platop-mcp-client.mjs action support interact '{"target":{"officeId":"support","place":"whiteboard"},"gesture":"think"}'
 node scripts/platop-mcp-client.mjs style support '{"lighting":{"mode":"cozy","brightness":0.8}}'
 node scripts/platop-mcp-client.mjs decorate support shelf '[{"shape":"capsule","finish":"ceramic","color":"#e7ddc5"},{"shape":"leaf","position":[0,0.3,0],"color":"#91a579"}]'
 node scripts/platop-mcp-client.mjs style support '{"reset":true}'

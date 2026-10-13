@@ -13,6 +13,7 @@ import { OfficeMotor, OfficeNavigator, makeOfficeMap, WALK_SPEED } from './scene
 import { OfficeAssetsRenderer } from './scene/officeAssets';
 import { StudioEnvironment, StudioRoomFinishes, roomLightingFactor } from './scene/studioEnvironment';
 import { StaticContacts, actorContactHeight } from './scene/staticContacts';
+import { agentExpression, type AgentExpression } from './scene/agentExpression';
 
 // Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -38,8 +39,7 @@ interface Actor {
   index: number;
   facing: number;
   motor: OfficeMotor;
-  liveMotor: OfficeMotor;
-  previewMotor: OfficeMotor;
+  expression?: AgentExpression;
   poseSettling?: number;
   seatedFeet?: AuthoredFootPose;
   proxySeatLift?: number;
@@ -202,7 +202,6 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       // Swift's folded transit pose is bounded separately from its spread idle wings.
       const radius = character.kind === 'swift' ? 0.6 : character.kind === 'owl' ? 0.7 : 0.61;
       const motor = new OfficeMotor(character.id, team.id, radius, navigator, desk);
-      const previewMotor = new OfficeMotor(character.id, team.id, radius, navigator, desk);
       root.position.copy(home);
       root.rotation.y = desk.facing ?? 0;
       const sleep = sleepIndicator(sharedSleepMaterial ??= makeSleepMaterial());
@@ -217,7 +216,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       contact.position.set(home.x, desk.floorY + 0.008, home.z);
       contact.renderOrder = 1;
       scene.add(contact);
-      actors.push({ character, teamId: team.id, root, model, home, contact, sleep, sleepHeight, index, facing: desk.facing ?? 0, motor, liveMotor: motor, previewMotor });
+      actors.push({ character, teamId: team.id, root, model, home, contact, sleep, sleepHeight, index, facing: desk.facing ?? 0, motor });
     });
   });
   const worldBounds = new THREE.Box3().setFromObject(scene);
@@ -250,7 +249,8 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   host.dataset.proxyCount = String(actors.length);
   host.dataset.loadedCharacters = '0';
 
-  let state: SceneState = { selectedTeam: teams[0]?.id ?? '', activity: {}, decorations: {}, paused: false, reducedMotion: false, controlMode: 'live' };
+  let state: SceneState = { selectedTeam: teams[0]?.id ?? '', activity: {}, decorations: {}, paused: false, reducedMotion: false, controlMode: 'offline' };
+  let restoredOffice = false;
   let disposed = false;
   let contextLost = false;
   let nativeVisible = (window as Window & { __PLATOP_DESKTOP_VISIBLE__?: boolean }).__PLATOP_DESKTOP_VISIBLE__ !== false;
@@ -530,20 +530,22 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   const activity = (id: string): Activity => state.activity[id] ?? 'unknown';
   function cadence(): number {
     if (!visible() || still()) return 0;
-    if (idleTeamId || settlingRemaining > 0 || actors.some(actor => (state.controlMode !== 'offline' && actor.motor.pending) || (actor.root.visible && (actor.poseSettling ?? 0) > 0)) || teams.some((team) => {
-      const status = activity(team.id);
-      return status === 'active' || status === 'sleeping';
+    if (idleTeamId || settlingRemaining > 0 || actors.some(actor => {
+      const live = state.controlMode !== 'offline';
+      const expression = agentExpression(actor.motor.mode, actor.motor.gesture, activity(actor.teamId), live, actor.motor.moving);
+      return (live && actor.motor.pending) || (actor.root.visible && ((actor.poseSettling ?? 0) > 0 || expression !== 'idle'));
     })) return 30;
     return 0;
   }
 
-  function selectClip(actor: Actor, clip: ClipName): void {
+  function selectClip(actor: Actor, clip: ClipName, immediate = false): void {
     if (!actor.mixer || !actor.actions || actor.clip === clip) return;
     const action = actor.actions[clip] ?? actor.actions.Idle;
     const previous = actor.clip ? actor.actions[actor.clip] : undefined;
     if (action && action !== previous) {
       action.reset().setEffectiveWeight(1).setEffectiveTimeScale(1).setLoop(THREE.LoopRepeat, Infinity).play();
-      if (previous) previous.crossFadeTo(action, 0.3, false);
+      if (previous && immediate) previous.stop();
+      else if (previous) previous.crossFadeTo(action, 0.3, false);
       else actor.mixer.update(0);
     }
     actor.clip = clip;
@@ -574,22 +576,32 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
 
   function updateActors(delta: number): void {
     const frozen = still();
+    const staticPose = !state.paused && (state.reducedMotion || systemReducedMotion);
+    const updatePose = !frozen || staticPose;
     actors.forEach((actor) => {
       const motor = actor.motor;
+      const report = activity(actor.teamId);
+      const live = state.controlMode !== 'offline';
       // Offscreen motors remain cheap and allow a visitor to enter the office
       // being watched. Their skeletons/materials are evaluated only on screen.
-      if (!frozen && state.controlMode !== 'offline') motor.update(delta);
+      if (!frozen && live) motor.update(delta);
       actor.physicalOffice = motor.officeId;
       const shown = motor.present && (!idleTeamId || actor.physicalOffice === idleTeamId);
       if (shown && !actor.root.visible) actor.proxyPose = undefined;
       actor.root.visible = shown;
       actor.contact.visible = shown;
       if (!shown) { actor.sleep.visible = false; return; }
-      const moving = motor.moving && !frozen && state.controlMode !== 'offline';
-      const status: Activity = state.controlMode === 'offline' ? 'waiting' : motor.mode === 'rest' ? 'sleeping'
-        : motor.mode === 'work' || motor.mode === 'walk' || motor.mode === 'celebrate' ? 'active' : 'waiting';
+      const moving = motor.moving && !frozen && live;
+      const expression = agentExpression(motor.mode, motor.gesture, report, live, moving);
+      if (!state.paused && actor.expression !== expression) {
+        actor.expression = expression;
+        if (staticPose) actor.proxyPose = undefined;
+        else actor.poseSettling = 0.35;
+      }
+      const status: Activity = expression === 'rest' ? 'sleeping' : expression === 'idle' ? 'waiting' : 'active';
+      const gesture = expression === 'work' || expression === 'think' || expression === 'file' || expression === 'talk' || expression === 'wait' ? expression : undefined;
       const floating = actor.character.kind === 'swift' ? 0.18 * Math.min(1, motor.speed / WALK_SPEED) : 0;
-      const cheer = Math.abs(Math.sin(motionTime * 7)) * motor.celebration * 0.08;
+      const cheer = expression === 'celebrate' ? Math.abs(Math.sin(motionTime * 7)) * motor.celebration * 0.08 : 0;
       // A paused view switch reveals the latest motor snapshot coherently; it
       // does not advance that snapshot or leave the contact at another place.
       actor.root.position.set(motor.x, motor.y + floating + cheer, motor.z);
@@ -603,24 +615,26 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         personality?.feet.forEach(foot => { foot.position.y += (actor.proxySeatLift! - seatLift) / actor.model.scale.y; });
         actor.proxySeatLift = seatLift;
       }
-      if (!frozen) {
+      if (updatePose) {
         if (!actor.mixer) {
-          animateCharacter(actor.model, motor.mode === 'walk' && !moving ? 'waiting' : status, motionTime, actor.index, moving, false, {
-            phase: motor.walkPhase, speed: motor.speed, seatLift: motor.y - motor.floorY, celebration: motor.celebration,
+          animateCharacter(actor.model, motor.mode === 'walk' && !moving ? 'waiting' : gesture && gesture !== 'work' ? 'waiting' : status, motionTime, actor.index, moving, staticPose, {
+            phase: motor.walkPhase, speed: motor.speed, seatLift: motor.y - motor.floorY, celebration: expression === 'celebrate' ? motor.celebration : 0,
+            gesture,
             foldWings: actor.character.kind === 'swift' && (motor.mode === 'walk' || Math.hypot(motor.x - actor.home.x, motor.z - actor.home.z) > 0.1),
           });
           actor.proxySeatLift = seatLift;
-          smoothProxyPose(actor, delta);
+          if (staticPose) actor.proxyPose = undefined;
+          else smoothProxyPose(actor, delta);
         }
       }
       actor.sleep.visible = status === 'sleeping' && !actor.authoredSleepFx;
-      if (!frozen) actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
+      if (updatePose) actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' && !staticPose ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
       const contactOffice = actor.physicalOffice ? rooms.get(actor.physicalOffice) : undefined;
       const contactY = actorContactHeight(motor.floorY, motor.x - (contactOffice?.center.x ?? 0), motor.z - (contactOffice?.center.z ?? 0), contactOffice?.root.userData.rugSurface);
       actor.contact.position.set(motor.x, contactY, motor.z);
-      if (!frozen) {
+      if (updatePose) {
         actor.seatedFeet?.restore();
-        selectClip(actor, state.controlMode === 'offline' ? 'Idle' : status === 'sleeping' ? 'Sleep' : moving ? 'Move' : motor.mode === 'work' || motor.mode === 'celebrate' ? 'Work' : 'Idle');
+        selectClip(actor, !live ? 'Idle' : status === 'sleeping' ? 'Sleep' : moving ? 'Move' : status === 'active' && (motor.mode === 'work' || gesture === 'work' || motor.mode === 'celebrate') ? 'Work' : 'Idle', staticPose);
         // Authored locomotion stays synchronized to real travelled distance.
         const move = actor.actions?.Move;
         if (move) {
@@ -632,7 +646,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
           }
         }
         if (actor.mixer && (status === 'active' || status === 'sleeping' || (actor.poseSettling ?? 0) > 0 || !!idleTeamId)) {
-          actor.mixer.update(delta);
+          actor.mixer.update(staticPose ? 0 : delta);
         }
         actor.seatedFeet?.apply(seatLift);
         actor.poseSettling = Math.max(0, (actor.poseSettling ?? 0) - delta);
@@ -642,12 +656,15 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   }
 
   function applyMotorState(): void {
-    if (still() || !visible() || state.controlMode === 'offline') return;
+    if (state.paused || !visible() || state.controlMode === 'offline') return;
     for (const actor of actors) {
-      actor.motor.fallback(activity(actor.teamId));
       const action = state.controlMode === 'live' ? state.actions?.[actor.character.id] : undefined;
-      if (action) actor.motor.apply(action);
+      if (action) {
+        if (!restoredOffice || state.reducedMotion || systemReducedMotion) actor.motor.restore(action);
+        else actor.motor.apply(action);
+      }
     }
+    restoredOffice = true;
   }
 
   function renderFrame(): void {
@@ -1151,7 +1168,6 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       const priorControl = state.controlMode;
       state = { ...next, controlMode: next.controlMode ?? 'live', activity: { ...next.activity }, decorations: { ...next.decorations } };
       if (priorControl !== state.controlMode) for (const actor of actors) {
-        actor.motor = state.controlMode === 'preview' ? actor.previewMotor : actor.liveMotor;
         actor.proxyPose = undefined;
       }
       const nextDecorationSignature = teams.map((team) => `${team.id}:${(state.decorations[team.id] ?? []).join(',')}`).join('|');
@@ -1160,7 +1176,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         renderer.shadowMap.needsUpdate = true;
         batches.invalidateVisibility();
         navigator.setDecorations(state.decorations);
-        actors.forEach(actor => { actor.liveMotor.replan(); actor.previewMotor.replan(); });
+        actors.forEach(actor => actor.motor.replan());
       }
       if (officeAssets.sync(state.assets)) {
         refreshAssetWallFades();

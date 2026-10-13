@@ -21,6 +21,7 @@ export interface RoomNavigation {
   door: NavigationPoint;
   lounge: NavigationPoint;
   task: NavigationPoint;
+  interactions: Partial<Record<'whiteboard' | 'cabinet', { position: NavigationPoint; facing: number }>>;
   waypoints: NavigationPoint[];
   desks: DeskNavigation[];
 }
@@ -84,6 +85,26 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const frontPlantZ = index < 3 ? 3.0 : isFoyer ? 3.4 : 3.21;
   const interior = new THREE.Group();
   root.add(interior);
+  function filingCabinet(x: number, z: number, rotation = 0, inset = true): THREE.Group {
+    const cabinet = new THREE.Group(); cabinet.name = `${team.id}:cabinet`;
+    cabinet.position.set(x, 0, z); cabinet.rotation.y = rotation; root.add(cabinet);
+    if (!inset) {
+      beveledBlock(cabinet, kit, '#98744f', [0, 0.55, 0], [0.94, 0.88, 0.2], 0.025);
+      beveledBlock(cabinet, kit, '#b18a5e', [0, 1.02, 0], [1.02, 0.08, 0.24], 0.02);
+      for (const x of [-0.31, 0.31]) kit.mesh(cabinet, 'roundedDetail', '#98744f', [x, 1.13, -0.05], [0.04, 0.22, 0.04], undefined, 'wood');
+    }
+    const front = inset ? 0.44 : 0.105;
+    for (const y of inset ? [0.4, 0.82] : [0.37, 0.77]) {
+      const drawer = kit.mesh(cabinet, 'roundedDetail', '#ad946c', [0, y, front], [0.79, 0.3, 0.045], undefined, 'wood');
+      drawer.userData.roomSurface = 'furniture';
+      kit.mesh(cabinet, 'roundedDetail', '#d8c8a3', [0, y + 0.035, front + 0.031], [0.17, 0.047, 0.018], undefined, 'metal');
+      kit.mesh(cabinet, 'roundedDetail', '#796c50', [0, y - 0.055, front + 0.026], [0.17, 0.025, 0.025], undefined, 'metal');
+    }
+    // Keep a real prop root for the interaction stop; scene batching still
+    // combines its compatible surfaces with the rest of the office at draw time.
+    tidyStaticMeshes(cabinet);
+    return cabinet;
+  }
   beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -rearExtension / 2], [6.12, 0.22, 5.9 + depthGain + rearExtension]);
   floorSurface(interior, '#dec9ac', [0, 0.087, -rearExtension / 2], [5.94, 5.7 + depthGain + rearExtension]);
   rug(interior, kit, palette.rug, 0, 0.35, isFoyer ? 4.1 : 4.55, 4.2);
@@ -133,7 +154,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   if (!isFoyer) {
     const back = wall('back', 0, backZ, 6.1, 0.2);
     sign(back, kit, team.name, 0, 3.1, -2.69 - halfGain - rearExtension, team.name.length > 14 ? 3.8 : 3.45);
-    board(back, kit, palette.board, palette.symbol, rearDoor ? -0.5 : 0, 1.84, -2.67 - halfGain - rearExtension, index === 3 ? '#315946' : '#6a6657');
+    const whiteboard = new THREE.Group(); whiteboard.name = `${team.id}:whiteboard`;
+    whiteboard.position.set(rearDoor ? -0.5 : 0, 0, -2.67 - halfGain - rearExtension); back.add(whiteboard);
+    board(whiteboard, kit, palette.board, palette.symbol, 0, 1.84, 0, index === 3 ? '#315946' : '#6a6657');
     shelf(interior, kit, -2.26, -2.32 - halfGain - rearExtension, index, index % 2 === 1);
     if (rearDoor) {
       const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, -1.65); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
@@ -144,6 +167,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       blockers.push({ bounds: [-2.9, -2.22, -2.02, -1.08] });
     } else shelf(interior, kit, 2.27, -2.31 - halfGain - rearExtension, index + 1, false);
     const shelfZ = -2.32 - halfGain - rearExtension;
+    filingCabinet(-2.26, shelfZ);
     blockers.push({ bounds: [-2.83, shelfZ - 0.38, -1.7, shelfZ + 0.48] });
     if (!rearDoor) blockers.push({ bounds: [1.72, shelfZ - 0.38, 2.82, shelfZ + 0.48] });
     plant(interior, kit, -2.45, -2.22 - halfGain - rearExtension, 0.74, 1.48, '#b5aa8a');
@@ -174,6 +198,15 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       plant(interior, kit, x, -3.25, i === 1 ? 0.61 : 0.7, 0.1, '#c7b896', i === 1 ? 'herb' : 'leaf');
       blockers.push({ bounds: [x - 0.3, -3.55, x + 0.3, -2.95] });
     }
+    // A compact board and filing base fit the open foyer's rear aisle without
+    // closing its doorway or moving its existing plants, seats or shelves.
+    const whiteboard = new THREE.Group(); whiteboard.name = `${team.id}:whiteboard`;
+    whiteboard.position.set(2.78, 0.4, -3.4); whiteboard.rotation.y = -Math.PI / 2;
+    whiteboard.scale.set(0.4, 0.72, 0.75); root.add(whiteboard);
+    board(whiteboard, kit, palette.board, palette.symbol, 0, 1.84, 0, '#6a6657');
+    tidyStaticMeshes(whiteboard);
+    filingCabinet(2.78, -3.4, -Math.PI / 2, false);
+    blockers.push({ bounds: [2.63, -3.95, 2.9, -2.85] });
   }
 
   const tableZ = isFoyer ? -0.5 : index < 3 ? -0.95 : -0.1;
@@ -247,11 +280,19 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const door: NavigationPoint = index < 3 ? [0, 3.65] : [doorX, backZ];
   const frontCross = Math.max(...desks.map(desk => desk.egress[1]), tableZ + 2.1);
   const rearCross = Math.min(...desks.map(desk => desk.egress[1]), tableZ - 2.1);
+  // Interaction stops face real props and share the certified walking aisles.
+  const cabinetStop: NavigationPoint = isFoyer ? [1.42, -3.4]
+    : rearDoor ? [-0.8, backZ + 0.9] : [-1.25, backZ + 1.85];
+  const cabinetProp: NavigationPoint = isFoyer ? [2.78, -3.4] : [-2.26, backZ + 0.56];
+  const interactions: RoomNavigation['interactions'] = {
+    cabinet: { position: cabinetStop, facing: Math.atan2(cabinetProp[0] - cabinetStop[0], cabinetProp[1] - cabinetStop[1]) },
+    whiteboard: { position: isFoyer ? [1.42, -3.4] : [rearDoor ? -0.5 : 0, backZ + (rearDoor ? 0.9 : 1.15)], facing: isFoyer ? Math.PI / 2 : Math.PI },
+  };
   const navigation: RoomNavigation = { floorY: OFFICE_FLOOR_Y,
     bounds: [-2.9, index < 3 ? backZ + 0.12 : backZ - 1.4, 2.9, index < 3 ? 4.9 : 4.25],
-    blockers, door, lounge: [0, isFoyer ? 2.5 : index < 3 ? 2.1 : 1.7], task: [aisleX, tableZ],
+    blockers, door, lounge: [0, isFoyer ? 2.5 : index < 3 ? 2.1 : 1.7], task: [aisleX, tableZ], interactions,
     waypoints: [door, [doorX, backZ + 0.8], [aisleX, backZ + 1.05], [aisleX, rearCross], [aisleX, tableZ],
-      [aisleX, frontCross], [0, frontCross], [0, index < 3 ? 4.7875 : 4.0], ...desks.map(desk => desk.egress)], desks };
+      [aisleX, frontCross], [0, frontCross], [0, index < 3 ? 4.7875 : 4.0], ...(isFoyer ? [[1.4, -2.03], [aisleX, -2.03]] as NavigationPoint[] : []), ...desks.map(desk => desk.egress)], desks };
   const assetSlots: Room['assetSlots'] = {
     desk: { position: [0, 0.84, tableZ + 0.3] },
     shelf: { position: isFoyer ? [-2.32, 1.27, -1.55] : [-2.26, 1.55, backZ + 0.57] },

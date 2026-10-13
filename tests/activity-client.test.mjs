@@ -99,6 +99,26 @@ test('an unavailable initial fetch never invents a connection', async () => {
   client.unmount();
 });
 
+test('removed demo records never connect the browser or replace a valid observed snapshot', async () => {
+  const client = activityClient();
+  const simulated = snapshot('active');
+  simulated.teams[0].source = 'demo';
+  client.resolveFetch(simulated);
+  await flush();
+  assert.equal(client.value.connected, false);
+  assert.equal(client.value.snapshot, null);
+  client.stream.state(simulated);
+  assert.equal(client.value.connected, false);
+  assert.equal(client.value.snapshot, null);
+  client.stream.state(snapshot('sleeping'));
+  const observed = client.value.snapshot;
+  assert.equal(client.value.connected, true);
+  client.stream.state(simulated);
+  assert.equal(client.value.connected, true);
+  assert.equal(client.value.snapshot, observed);
+  client.unmount();
+});
+
 test('a successful initial fetch connects before the stream reports an outcome', async () => {
   const client = activityClient();
   client.resolveFetch(snapshot('sleeping', '2026-10-12T12:00:00.000Z'));
@@ -184,9 +204,15 @@ test('office intents and bounded recipes survive SSE while malformed office data
   client.stream.state(value);
   assert.equal(client.value.snapshot.actions['support-beacon'].kind, 'leave');
   assert.equal(client.value.snapshot.assets.support.desk.parts[0].color, '#aabbcc');
+  value.actions['support-beacon'] = { id: '12345678-1234-4123-8123-123456789abe', actorId: 'support-beacon', kind: 'interact', target: { officeId: 'support', place: 'cabinet' }, gesture: 'file' };
+  client.stream.state(value);
+  assert.equal(client.value.snapshot.actions['support-beacon'].gesture, 'file');
+  assert.deepEqual(client.value.snapshot.actions['support-beacon'].target, { officeId: 'support', place: 'cabinet' });
   const prior = client.value.snapshot;
   for (const invalid of [
     { ...value, actions: { privateChatId: value.actions['support-beacon'] } },
+    { ...value, actions: { 'support-beacon': { ...value.actions['support-beacon'], gesture: 'PRIVATE_REASONING' } } },
+    { ...value, actions: { 'support-beacon': { ...value.actions['support-beacon'], kind: 'work' } } },
     { ...value, assets: { support: { desk: { ...value.assets.support.desk, url: 'https://invalid.example' } } } },
     { ...value, teams: [value.teams[0], value.teams[0]] },
     { ...value, serverTime: 'invalid' },

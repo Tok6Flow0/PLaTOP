@@ -12,7 +12,7 @@ export function parseSnapshot(value: unknown): Snapshot | null {
   for (const raw of data.teams) {
     if (!raw || typeof raw !== 'object') return null;
     const row = raw as Record<string, unknown>;
-    if (!teams.some(t => t.id === row.teamId) || typeof row.state !== 'string' || !allowed.has(row.state) || (row.updatedAt !== null && (typeof row.updatedAt !== 'string' || !Number.isFinite(Date.parse(row.updatedAt)))) || typeof row.source !== 'string' || !['codex', 'skill', 'demo', 'manual'].includes(row.source)) return null;
+    if (!teams.some(t => t.id === row.teamId) || typeof row.state !== 'string' || !allowed.has(row.state) || (row.updatedAt !== null && (typeof row.updatedAt !== 'string' || !Number.isFinite(Date.parse(row.updatedAt)))) || typeof row.source !== 'string' || !['codex', 'skill', 'manual'].includes(row.source)) return null;
     if (seen.has(row.teamId)) return null;
     seen.add(row.teamId);
     safe.push({ teamId: row.teamId as string, state: row.state as TeamState['state'], updatedAt: row.updatedAt as string | null, source: row.source.slice(0, 24) });

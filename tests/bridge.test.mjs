@@ -104,6 +104,27 @@ test('accepts closed-vocabulary batches atomically and persists no history or ex
   assert.equal((await stat(path.join(root, '.local', 'state.json'))).mode & 0o777, 0o600);
 });
 
+test('removed demo source is rejected without changing activity or private persistence, including mixed batches', async t => {
+  const { root, request } = await fixture(t);
+  const established = await request('/api/events', { method: 'POST', auth: true, body: { teamId: 'merchant', state: 'active', source: 'skill' } });
+  const file = path.join(root, '.local', 'state.json');
+  const saved = await readFile(file, 'utf8');
+  for (const body of [
+    { teamId: 'merchant', state: 'sleeping', source: 'demo' },
+    { teams: [{ teamId: 'hr', state: 'waiting', source: 'codex' }, { teamId: 'merchant', state: 'sleeping', source: 'demo' }] },
+  ]) {
+    assert.equal((await request('/api/events', { method: 'POST', auth: true, body })).status, 400);
+    assert.deepEqual((await request()).json.teams, established.json.teams);
+    assert.equal(await readFile(file, 'utf8'), saved);
+  }
+  await writeFile(file, JSON.stringify({ teams: [{ teamId: 'merchant', state: 'active', source: 'demo', updatedAt: new Date().toISOString() }] }));
+  const restored = await createBridge({ root, port: 0 }); t.after(() => restored.close());
+  const response = await fetch(`http://127.0.0.1:${restored.port}/api/state`);
+  const snapshot = await response.json();
+  assert.ok(snapshot.teams.every(team => team.state === 'unknown' && team.updatedAt === null));
+  assert.ok(snapshot.teams.every(team => team.source !== 'demo'));
+});
+
 test('rejects private fields, arbitrary state/source/IDs, malformed JSON, duplicates and oversized data', async t => {
   const { request } = await fixture(t);
   const invalid = [

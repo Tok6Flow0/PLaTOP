@@ -85,11 +85,15 @@ test('sculpted forms share scene resources, preserve the environment finish, and
   const material = characterMaterial(kit, '#eee4d0', 'glaze');
   assert.equal(characterMaterial(kit, '#eee4d0', 'glaze'), material);
   const before = models.map(model => meshes(model).map(mesh => [mesh.geometry.uuid, mesh.material.uuid]));
+  const objects = all.getObjectsByProperty('isObject3D', true).map(object => object.uuid);
+  const gestures = ['work', 'think', 'file', 'talk', 'wait'];
   for (let frame = 0; frame < 90; frame++) models.forEach((model, index) => {
     animateCharacter(model, frame < 30 ? 'sleeping' : 'active', frame / 30, index, frame >= 60, false,
-      { phase: frame / 6, speed: .85, seatLift: 0, celebration: 0, foldWings: true });
+      { phase: frame / 6, speed: .85, seatLift: 0, celebration: 0, foldWings: true, gesture: gestures[frame % gestures.length] });
   });
   assert.deepEqual(models.map(model => meshes(model).map(mesh => [mesh.geometry.uuid, mesh.material.uuid])), before);
+  assert.deepEqual(all.getObjectsByProperty('isObject3D', true).map(object => object.uuid), objects,
+    'agent gestures mutate the existing joints without adding scene objects');
   let disposed = 0; originalGeometry.addEventListener('dispose', () => disposed++);
   disposeObject(all); assert.equal(disposed, 1, 'shared fitted form is released exactly once by the scene disposer');
   kit.dispose();
@@ -111,6 +115,56 @@ test('hero geometry is smooth and bounded, with fewer than six thousand triangle
     model.updateMatrixWorld(true);
     const bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
     assert.ok(size.y < 2, `${character.id} stays inside existing character standing heights`);
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('activity alone stays neutral and every agent-chosen gesture has an understated pose for each character', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  const pose = { phase: 0, speed: 0, seatLift: 0, celebration: 0 };
+  const gestures = ['work', 'think', 'file', 'talk', 'wait'];
+  const joints = p => [p.head, ...p.arms, ...p.wings].flatMap(joint => joint.rotation.toArray().slice(0, 3));
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    const p = model.userData.personality;
+    animateCharacter(model, 'waiting', 1.2, 0, false, false, pose);
+    const neutral = joints(p);
+    for (const status of ['active', 'waiting', 'unknown']) for (const time of [0, 1.2, 9.5]) {
+      animateCharacter(model, status, time, 0, false, false, pose);
+      assert.deepEqual(joints(p), neutral, `${character.id}/${status} does not invent work or interaction`);
+    }
+    const selected = [];
+    for (const gesture of gestures) {
+      animateCharacter(model, 'active', 1.2, 0, false, false, { ...pose, gesture });
+      const expression = joints(p); selected.push(expression.join(':'));
+      assert.notDeepEqual(expression, neutral, `${character.id}/${gesture} differs from no intent`);
+      assert.ok(expression.every(angle => Number.isFinite(angle) && Math.abs(angle) < .7),
+        `${character.id}/${gesture} keeps small finite joint angles`);
+      assert.deepEqual(model.position.toArray(), [0, 0, 0], `${character.id}/${gesture} has no root motion`);
+      // A genuine waiting report must not erase the agent's chosen expression.
+      animateCharacter(model, 'waiting', 1.2, 0, false, false, { ...pose, gesture });
+      assert.deepEqual(joints(p), expression, `${character.id}/${gesture} remains independent of activity`);
+    }
+    assert.equal(new Set(selected).size, gestures.length, `${character.id} has five readable choices`);
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('walking and explicit resting suppress stationary gestures until the character can interact', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  const pose = { phase: .8, speed: .85, seatLift: 0, celebration: 0, foldWings: true };
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    const p = model.userData.personality;
+    const joints = () => [p.head, ...p.arms, ...p.wings].flatMap(joint => joint.rotation.toArray().slice(0, 3));
+    for (const [status, moving] of [['active', true], ['sleeping', false]]) {
+      animateCharacter(model, status, 1.2, 0, moving, false, pose);
+      const expected = joints();
+      for (const gesture of ['work', 'think', 'file', 'talk', 'wait']) {
+        animateCharacter(model, status, 1.2, 0, moving, false, { ...pose, gesture });
+        assert.deepEqual(joints(), expected, `${character.id}/${gesture} does not conflict with ${moving ? 'walking' : 'rest'}`);
+      }
+    }
   }
   disposeObject(all); kit.dispose();
 });

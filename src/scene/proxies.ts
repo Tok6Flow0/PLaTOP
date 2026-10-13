@@ -164,7 +164,11 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
 }
 
 /** Small character-specific gestures; no physics, root motion or extra render loop. */
-export interface LocomotionPose { phase: number; speed: number; seatLift: number; celebration: number; foldWings?: boolean }
+export interface LocomotionPose {
+  phase: number; speed: number; seatLift: number; celebration: number; foldWings?: boolean;
+  /** Chosen by the agent; activity reporting never selects a work gesture. */
+  gesture?: 'work' | 'think' | 'file' | 'talk' | 'wait';
+}
 
 /** Keep authored feet grounded when the room raises a seated avatar's body. */
 export class AuthoredFootPose {
@@ -211,13 +215,30 @@ export function animateCharacter(model: THREE.Object3D, status: Activity, time: 
   const p = model.userData.personality as Personality | undefined; if (!p) return;
   const t = frozen ? 0 : time + index * 0.7;
   const asleep = status === 'sleeping';
-  const working = status === 'active' && !moving;
+  const gesture = !moving && !asleep ? locomotion?.gesture : undefined;
+  const working = gesture === 'work';
   const phase = locomotion?.phase ?? t * 6;
   const stride = locomotion ? Math.min(1, locomotion.speed / 0.85) : 1;
   const celebration = locomotion?.celebration ?? 0;
   p.body.position.y = p.bodyY + (asleep ? Math.sin(t * 1.4) * 0.012 : moving ? Math.abs(Math.sin(phase)) * 0.028 * stride : 0);
-  p.head.rotation.set(asleep ? 0.16 : working ? 0.09 : moving ? 0.025 : 0, working ? Math.sin(t * 1.3) * 0.09 : 0, asleep ? 0.10 : moving ? Math.sin(phase) * 0.035 * stride : 0);
-  p.arms.forEach((arm, i) => { arm.rotation.x = celebration ? -1.4 * celebration : moving ? -Math.sin(phase + i * Math.PI) * 0.38 * stride : working ? -0.5 + Math.sin(t * 6 + i) * 0.09 : asleep ? -0.16 : 0; });
+  // Head poses keep the same intent readable for lanterns without limbs, while
+  // hands or wings make the small gesture suit each character's silhouette.
+  p.head.rotation.set(asleep ? 0.16 : moving ? 0.025 : working ? (p.kind === 'owl' ? .10 : .065)
+      : gesture === 'think' ? -.025 : gesture === 'file' ? (p.kind === 'owl' ? .11 : .07)
+      : gesture === 'talk' ? .015 + Math.sin(t * 1.2) * .012 : gesture === 'wait' ? .018 : 0,
+    gesture === 'think' ? Math.sin(t * .35) * .04 : working ? Math.sin(t * .6) * .015
+      : gesture === 'file' ? -.025 : gesture === 'talk' ? Math.sin(t * .7) * .025 : 0,
+    asleep ? .10 : moving ? Math.sin(phase) * .035 * stride
+      : gesture === 'think' ? (p.kind === 'owl' ? .07 : -.045)
+      : gesture === 'file' ? -.015 : gesture === 'wait' ? .025 : 0);
+  p.arms.forEach((arm, i) => {
+    arm.rotation.x = celebration ? -1.4 * celebration : moving ? -Math.sin(phase + i * Math.PI) * .38 * stride
+      : working ? -.43 + Math.sin(t * 3.3 + i * 1.4) * .025
+      : gesture === 'think' ? (i ? -.62 : -.10) + Math.sin(t * .55) * .012
+      : gesture === 'file' ? -.36 - (i ? .16 : .06) * (.5 + Math.sin(t * .85) * .5)
+      : gesture === 'talk' ? (i ? -.17 : -.08) + Math.sin(t * 1.1 + i) * .04
+      : gesture === 'wait' ? -.06 : asleep ? -.16 : 0;
+  });
   p.feet.forEach((foot, i) => {
     const step = Math.sin(phase + i * Math.PI);
     foot.rotation.x = moving ? Math.max(0, step) * 0.34 * stride : 0;
@@ -230,6 +251,9 @@ export function animateCharacter(model: THREE.Object3D, status: Activity, time: 
     wing.rotation.z = p.kind === 'swift' && locomotion?.foldWings
       ? (i ? -1 : 1) * (1.05 + (moving ? Math.sin(phase * 1.4) * 0.08 : 0))
       : (i ? 1 : -1) * (celebration ? 0.65 * celebration : moving ? Math.sin(phase * 1.2) * 0.35 * stride : asleep ? 0.10 : 0);
+    wing.rotation.x = working ? -.09 + Math.sin(t * 2.2 + i) * .018
+      : gesture === 'think' ? (i ? -.16 : 0) : gesture === 'file' ? -.12 + Math.sin(t * .85 + i) * .025
+      : gesture === 'talk' ? Math.sin(t * 1.1 + i) * .035 : gesture === 'wait' ? -.035 : 0;
   });
   const blink = !frozen && status === 'active' && t % 4.7 < 0.12;
   p.eyes.forEach(eye => { eye.scale.y = eye.userData.restEyeY * (asleep ? 0.13 : blink ? 0.09 : 1); });

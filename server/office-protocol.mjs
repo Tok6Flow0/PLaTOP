@@ -10,8 +10,9 @@ export const TEAM_ACTORS = Object.freeze({
   email: Object.freeze(['email-owl', 'email-swift']),
 });
 export const ACTOR_IDS = Object.freeze(Object.values(TEAM_ACTORS).flat());
-export const ACTION_KINDS = Object.freeze(['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave']);
-export const PLACES = Object.freeze(['desk', 'door', 'lounge']);
+export const ACTION_KINDS = Object.freeze(['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave', 'interact']);
+export const PLACES = Object.freeze(['desk', 'door', 'lounge', 'whiteboard', 'cabinet']);
+export const ACTION_GESTURES = Object.freeze(['work', 'think', 'file', 'talk', 'wait']);
 export const DECOR_SLOTS = Object.freeze(['desk', 'shelf', 'wall', 'floor', 'festive']);
 export const DECOR_SHAPES = Object.freeze(['box', 'sphere', 'cylinder', 'cone', 'torus', 'capsule', 'leaf']);
 export const DECOR_FINISHES = Object.freeze(['matte', 'ceramic', 'wood', 'metal']);
@@ -67,7 +68,7 @@ export function parseRoomStyle(value) {
 }
 
 export function parseAction(value) {
-  if (!exact(value, ['teamId', 'actorId', 'kind', 'target'], ['teamId', 'kind'])) throw invalid();
+  if (!exact(value, ['teamId', 'actorId', 'kind', 'target', 'gesture'], ['teamId', 'kind'])) throw invalid();
   const { teamId, kind, actorId: suppliedActor } = value;
   if (!TEAM_IDS.includes(teamId) || !ACTION_KINDS.includes(kind)) throw invalid();
   const actorId = suppliedActor === undefined ? TEAM_ACTORS[teamId][0] : suppliedActor;
@@ -75,13 +76,18 @@ export function parseAction(value) {
   let target;
   if (Object.hasOwn(value, 'target')) {
     const inputTarget = value.target;
-    if (!['walk_to', 'arrive'].includes(kind) || !exact(inputTarget, ['officeId', 'place'])) throw invalid();
+    if (!['walk_to', 'arrive', 'interact'].includes(kind) || !exact(inputTarget, ['officeId', 'place'])) throw invalid();
     const { officeId, place } = inputTarget;
     if (!TEAM_IDS.includes(officeId) || !PLACES.includes(place)) throw invalid();
     target = { officeId, place };
-  } else if (kind === 'walk_to') throw invalid();
+  } else if (kind === 'walk_to' || kind === 'interact') throw invalid();
   else if (kind === 'arrive') target = { officeId: teamId, place: 'door' };
-  return { teamId, actorId, kind, ...(target ? { target } : {}) };
+  let gesture;
+  if (kind === 'interact') {
+    gesture = value.gesture;
+    if (!Object.hasOwn(value, 'gesture') || !ACTION_GESTURES.includes(gesture)) throw invalid();
+  } else if (Object.hasOwn(value, 'gesture')) throw invalid();
+  return { teamId, actorId, kind, ...(target ? { target } : {}), ...(gesture ? { gesture } : {}) };
 }
 
 function vector(value, fallback, minimum, maximum) {
@@ -123,10 +129,10 @@ export function parseOfficeSnapshot(value) {
     if (!record(value.actions) || Object.keys(value.actions).length > ACTOR_IDS.length) throw invalid();
     output.actions = Object.fromEntries(Object.entries(value.actions).map(([actorId, action]) => {
       const teamId = TEAM_IDS.find(team => TEAM_ACTORS[team].includes(actorId));
-      if (!teamId || !exact(action, ['id', 'actorId', 'kind', 'target'], ['id', 'actorId', 'kind'])
+      if (!teamId || !exact(action, ['id', 'actorId', 'kind', 'target', 'gesture'], ['id', 'actorId', 'kind'])
         || action.actorId !== actorId || !uuid(action.id)) throw invalid();
-      const parsed = parseAction({ teamId, actorId, kind: action.kind, ...(Object.hasOwn(action, 'target') ? { target: action.target } : {}) });
-      return [actorId, { id: action.id, actorId, kind: parsed.kind, ...(parsed.target ? { target: parsed.target } : {}) }];
+      const parsed = parseAction({ teamId, actorId, kind: action.kind, ...(Object.hasOwn(action, 'target') ? { target: action.target } : {}), ...(Object.hasOwn(action, 'gesture') ? { gesture: action.gesture } : {}) });
+      return [actorId, { id: action.id, actorId, kind: parsed.kind, ...(parsed.target ? { target: parsed.target } : {}), ...(parsed.gesture ? { gesture: parsed.gesture } : {}) }];
     }));
   }
   if (Object.hasOwn(value, 'assets')) {

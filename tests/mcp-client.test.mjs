@@ -7,7 +7,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { createBridge } from '../server/index.mjs';
 import { TEAM_IDS, STATES } from '../server/protocol.mjs';
-import { ACTION_KINDS, DECOR_SLOTS, ROOM_LIGHT_MODES } from '../server/office-protocol.mjs';
+import { ACTION_KINDS, ACTION_GESTURES, PLACES, DECOR_SLOTS, ROOM_LIGHT_MODES } from '../server/office-protocol.mjs';
 
 const exec = promisify(execFile);
 const FAILURE = 'PLaTOP MCP activity is unconfirmed. Check the local bridge and public team/state arguments.';
@@ -98,7 +98,7 @@ test('fixed sibling server receives ordered handshake and only exact public argu
 
 test('original four-tool MCP servers keep status and matte recipes compatible without receiving newer fields', async t => {
   const legacyTools = [
-    { name: 'platop_action', inputSchema: { additionalProperties: false, properties: { kind: { enum: ACTION_KINDS } } } },
+    { name: 'platop_action', inputSchema: { additionalProperties: false, properties: { kind: { enum: ACTION_KINDS.filter(kind => kind !== 'interact') } } } },
     { name: 'platop_decorate', inputSchema: { additionalProperties: false, properties: { slot: { enum: DECOR_SLOTS } } } },
   ];
   const { root, cli } = await fixture(t, server(`
@@ -113,10 +113,27 @@ test('original four-tool MCP servers keep status and matte recipes compatible wi
   assert.match((await cli(['decorate', 'hr', 'desk', '[{"shape":"sphere"}]'])).stdout, /decoration saved/);
   await assert.rejects(cli(['decorate', 'hr', 'desk', '[{"shape":"sphere","finish":"ceramic"}]']), sanitized);
   await assert.rejects(cli(['decorate', 'hr', 'desk', '[{"shape":"leaf"}]']), sanitized);
+  await assert.rejects(cli(['action', 'hr', 'interact', '{"target":{"officeId":"hr","place":"lounge"},"gesture":"think"}']), sanitized);
+  await assert.rejects(cli(['action', 'hr', 'walk_to', '{"target":{"officeId":"hr","place":"whiteboard"}}']), sanitized);
   const messages = (await readFile(path.join(root, 'methods.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
   const call = messages.find(message => message.method === 'tools/call' && message.params.name === 'platop_decorate');
   assert.ok(call);
   assert.equal(call.params.arguments.parts[0].finish, undefined);
+  assert.ok(!messages.some(message => message.method === 'tools/call' && message.params.name === 'platop_action'), 'unsupported new intents fail before a write');
+});
+
+test('interaction client requires a matching public gesture in the acknowledged current action', async t => {
+  const actionTool = { name: 'platop_action', inputSchema: { additionalProperties: false, properties: {
+    kind: { enum: ACTION_KINDS }, gesture: { enum: ACTION_GESTURES }, target: { properties: { place: { enum: PLACES } } },
+  } } };
+  for (const gesture of [undefined, 'work', 'PRIVATE_THOUGHT']) {
+    const action = { id: '00000000-0000-4000-8000-000000000001', actorId: 'hr-compass', kind: 'interact', target: { officeId: 'hr', place: 'whiteboard' }, ...(gesture ? { gesture } : {}) };
+    const { cli } = await fixture(t, server(`
+      if(message.method==='tools/list')tools.push(${JSON.stringify(actionTool)});
+      if(message.method==='tools/call'&&message.params.name==='platop_action')snapshot.actions={'hr-compass':${JSON.stringify(action)}};
+    `));
+    await assert.rejects(cli(['action', 'hr', 'interact', '{"target":{"officeId":"hr","place":"whiteboard"},"gesture":"think"}']), sanitized);
+  }
 });
 
 test('room style client validates acknowledged choices and never treats a missing style as success', async t => {
@@ -137,6 +154,9 @@ test('invalid private, path, command and source arguments are rejected before sp
     ['set', 'private-thread', 'active'], ['set', 'email', 'working'],
     ['set', 'email', 'active', '--source', 'codex'], ['status', '--server', '/private/path'],
     ['run', 'email', '--', 'echo', 'PRIVATE_COMMAND'], ['snapshot', '/private/file'],
+    ['action', 'email', 'interact', '{"gesture":"think"}'],
+    ['action', 'email', 'interact', '{"target":{"officeId":"email","place":"whiteboard"},"gesture":"PRIVATE_THOUGHT"}'],
+    ['action', 'email', 'work', '{"gesture":"work"}'],
   ]) await assert.rejects(cli(args), sanitized);
   const clientUrl = new URL(`file://${path.join(root, 'scripts/platop-mcp-client.mjs')}`).href;
   for (const args of [

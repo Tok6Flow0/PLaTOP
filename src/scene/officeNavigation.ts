@@ -1,4 +1,4 @@
-import type { Activity, Decoration, OfficeAction } from '../types';
+import type { Activity, Decoration, OfficeAction, OfficeGesture } from '../types';
 
 export type FloorPoint = readonly [number, number];
 export type NavigationBounds = readonly [number, number, number, number];
@@ -11,7 +11,7 @@ export interface NavigationBlocker {
 export interface WalkZone { bounds: NavigationBounds; floorY: number; officeId?: string }
 export interface OfficeAnchor {
   officeId: string;
-  place: 'desk' | 'door' | 'lounge' | 'task';
+  place: 'desk' | 'door' | 'lounge' | 'task' | 'whiteboard' | 'cabinet';
   position: FloorPoint;
   floorY: number;
   facing?: number;
@@ -36,6 +36,7 @@ interface LocalLayout {
   door: FloorPoint;
   lounge: FloorPoint;
   task: FloorPoint;
+  interactions?: Partial<Record<'whiteboard' | 'cabinet', { position: FloorPoint; facing: number }>>;
   desks: Array<{ position: FloorPoint; egress: FloorPoint; facing: number; seatHeight?: number }>;
 }
 
@@ -57,6 +58,11 @@ export function makeOfficeMap(rooms: ReadonlyMap<string, { center: { x: number; 
     map.blockers.push(...layout.blockers.map(blocker => ({ ...blocker, bounds: bounds(blocker.bounds), officeId })));
     map.waypoints.push(...layout.waypoints.map(point));
     for (const place of ['door', 'lounge', 'task'] as const) map.anchors.push({ officeId, place, position: point(layout[place]), floorY: layout.floorY });
+    for (const place of ['whiteboard', 'cabinet'] as const) {
+      const interaction = layout.interactions?.[place];
+      if (interaction) map.anchors.push({ officeId, place, position: point(interaction.position),
+        facing: interaction.facing, floorY: layout.floorY });
+    }
     layout.desks.forEach((desk, index) => {
       const actorId = teams.find(team => team.id === officeId)?.members[index]?.id;
       if (actorId) map.anchors.push({ officeId, place: 'desk', actorId, deskIndex: index,
@@ -67,7 +73,7 @@ export function makeOfficeMap(rooms: ReadonlyMap<string, { center: { x: number; 
   return map;
 }
 interface RoutePoint { x: number; z: number; y: number }
-type MotorMode = 'idle' | 'work' | 'rest' | 'celebrate' | 'walk' | 'away';
+type MotorMode = 'idle' | 'work' | 'rest' | 'celebrate' | 'walk' | 'away' | 'interact';
 const EPSILON = 0.00001;
 const CLEARANCE = 0.035;
 export const WALK_SPEED = 0.85;
@@ -218,14 +224,15 @@ export class OfficeMotor {
   blocked = false;
   manual = false;
   celebration = 0;
+  gesture: OfficeGesture | undefined;
   private elapsedCelebration = 0;
   private handledId: string | undefined;
-  private previousActivity: Activity = 'unknown';
   private path: RoutePoint[] = [];
   private pathIndex = 0;
   private segmentStart: RoutePoint;
   private finalMode: MotorMode = 'idle';
   private finalFacing: number | undefined;
+  private finalGesture: OfficeGesture | undefined;
   private destination: OfficeAnchor | undefined;
 
   constructor(readonly actorId: string, readonly ownerOfficeId: string, readonly radius: number,
@@ -241,6 +248,52 @@ export class OfficeMotor {
   get floorY(): number { return this.navigator.floorAt([this.x, this.z]); }
   get officeId(): string | undefined { return this.navigator.officeAt([this.x, this.z]); }
 
+  /** Restore a chosen public intent in a new view, not proof of a past arrival. */
+  restore(action: OfficeAction): boolean {
+    if (action.actorId !== this.actorId || (action.id === this.handledId && !this.pending)) return false;
+    let target: OfficeAnchor | undefined;
+    let mode: MotorMode = 'idle';
+    let gesture: OfficeGesture | undefined;
+    if (action.kind === 'leave') {
+      target = { officeId: '', place: 'door', position: this.navigator.map.exit, floorY: this.navigator.map.floorY };
+      mode = 'away';
+    } else if (action.kind === 'work' || action.kind === 'rest') {
+      target = this.home; mode = action.kind;
+    } else if (action.kind === 'arrive') {
+      const destination = action.target ?? { officeId: this.ownerOfficeId, place: 'desk' as const };
+      target = this.resolve(destination);
+      mode = destination.place === 'desk' && destination.officeId === this.ownerOfficeId ? 'work' : 'idle';
+    } else if (action.kind === 'walk_to' || action.kind === 'interact') {
+      target = action.target ? this.resolve(action.target) : undefined;
+      if (action.kind === 'interact') {
+        if (!action.gesture) return false;
+        mode = 'interact'; gesture = action.gesture;
+      }
+    } else if (action.kind !== 'celebrate') return false;
+    // Validate before changing any pose or consumed ID. Assigned chairs retain
+    // their certified short egress exception; other stops use ordinary clearance.
+    if (action.kind !== 'celebrate') {
+      if (!target) return false;
+      const start = this.home.egress ?? this.home.position, goal = target.egress ?? target.position;
+      if (!this.navigator.pointClear(goal, this.radius)
+        || (target.egress && !this.navigator.segmentClear(target.egress, target.position, this.radius, target))
+        || !this.navigator.route(start, goal, this.radius)) return false;
+    }
+    this.handledId = action.id; this.manual = true;
+    this.path = []; this.pathIndex = 0; this.speed = 0; this.distance = 0;
+    this.destination = target; this.finalMode = mode; this.finalGesture = gesture;
+    this.finalFacing = target?.facing; this.blocked = false;
+    this.elapsedCelebration = 0; this.celebration = 0;
+    if (target) {
+      this.x = target.position[0]; this.z = target.position[1];
+      this.y = target.seatHeight ?? target.floorY;
+      this.heading = target.facing ?? this.heading;
+    }
+    this.segmentStart = { x: this.x, z: this.z, y: this.y };
+    this.present = mode !== 'away'; this.mode = mode; this.gesture = gesture;
+    return true;
+  }
+
   apply(action: OfficeAction): boolean {
     if (action.actorId !== this.actorId || action.id === this.handledId) return false;
     this.handledId = action.id;
@@ -255,9 +308,11 @@ export class OfficeMotor {
     }
     if (!this.present) return false;
     if (action.kind === 'walk_to') return this.goTo(action.target ? this.resolve(action.target) : undefined, 'idle');
+    if (action.kind === 'interact') return action.gesture !== undefined && this.goTo(action.target ? this.resolve(action.target) : undefined, 'interact', action.gesture);
     if (action.kind === 'leave') return this.goTo({ officeId: '', place: 'door', position: this.navigator.map.exit, floorY: this.navigator.map.floorY }, 'away');
     if (action.kind === 'work' || action.kind === 'rest') return this.goTo(this.home, action.kind);
     this.path = []; this.pathIndex = 0; this.speed = 0;
+    this.gesture = undefined; this.finalGesture = undefined; this.destination = undefined;
     this.mode = 'celebrate'; this.finalMode = 'idle'; this.finalFacing = undefined; this.elapsedCelebration = 0;
     return true;
   }
@@ -267,31 +322,20 @@ export class OfficeMotor {
     return this.navigator.anchor(target.officeId, target.place === 'desk' ? 'lounge' : target.place);
   }
 
-  fallback(status: Activity): void {
-    const changed = status !== this.previousActivity;
-    this.previousActivity = status;
-    // Observe activity while a command runs, but do not replace its route. A
-    // completed gesture releases on the next real activity transition only.
-    // Departed avatars always require an explicit arrive command.
-    if (!changed || !this.present || (this.manual && this.pending)) return;
-    this.manual = false;
-    if (status === 'active') {
-      const task = this.navigator.anchor(this.ownerOfficeId, 'task');
-      this.goTo(this.home, 'work', task ? [task] : []);
-    } else this.goTo(this.home, status === 'sleeping' ? 'rest' : 'idle');
-  }
+  /** Compatibility hook: activity is reporting, never an avatar movement intent. */
+  fallback(_status: Activity): void {}
 
   replan(): void {
-    if (this.destination && this.present && (this.pathIndex < this.path.length || this.blocked) && !this.goTo(this.destination, this.finalMode)) {
-      this.path = []; this.pathIndex = 0; this.speed = 0; this.mode = 'idle'; this.finalFacing = undefined;
+    if (this.destination && this.present && (this.pathIndex < this.path.length || this.blocked) && !this.goTo(this.destination, this.finalMode, this.finalGesture)) {
+      this.path = []; this.pathIndex = 0; this.speed = 0; this.mode = 'idle'; this.finalFacing = undefined; this.gesture = undefined;
     }
   }
 
-  private goTo(target: OfficeAnchor | undefined, mode: MotorMode, via: OfficeAnchor[] = []): boolean {
+  private goTo(target: OfficeAnchor | undefined, mode: MotorMode, gesture?: OfficeGesture): boolean {
     if (!target) { this.blocked = true; return false; }
-    if (!via.length && distance([this.x, this.z], target.position) < EPSILON) {
+    if (distance([this.x, this.z], target.position) < EPSILON) {
       this.path = []; this.pathIndex = 0; this.destination = target;
-      this.finalMode = mode; this.finalFacing = target.facing;
+      this.finalMode = mode; this.finalFacing = target.facing; this.finalGesture = gesture; this.gesture = undefined;
       this.blocked = false; this.finish(); return true;
     }
     const path: RoutePoint[] = [];
@@ -303,7 +347,7 @@ export class OfficeMotor {
       path.push({ x: this.home.egress[0], z: this.home.egress[1], y: this.home.floorY });
       from = this.home.egress;
     }
-    for (const anchor of [...via, target]) {
+    for (const anchor of [target]) {
       const goal = anchor.egress ?? anchor.position;
       const planned = this.navigator.route(from, goal, this.radius);
       if (!planned) { this.blocked = true; return false; }
@@ -317,6 +361,7 @@ export class OfficeMotor {
     this.path = path; this.pathIndex = 0;
     this.segmentStart = { x: this.x, z: this.z, y: this.y };
     this.destination = target; this.finalMode = mode; this.finalFacing = target.facing;
+    this.finalGesture = gesture; this.gesture = undefined;
     this.blocked = false; this.elapsedCelebration = 0; this.celebration = 0;
     if (path.length) this.mode = 'walk'; else this.finish();
     return true;
@@ -325,6 +370,8 @@ export class OfficeMotor {
   private finish(): void {
     this.speed = 0; this.mode = this.finalMode;
     if (this.finalFacing !== undefined && Math.abs(angleDifference(this.finalFacing, this.heading)) <= EPSILON) this.heading = this.finalFacing;
+    this.gesture = this.mode === 'interact' && (this.finalFacing === undefined || Math.abs(angleDifference(this.finalFacing, this.heading)) <= EPSILON)
+      ? this.finalGesture : undefined;
     if (this.mode === 'away') this.present = false;
   }
 
@@ -358,6 +405,7 @@ export class OfficeMotor {
       const turn = angleDifference(this.finalFacing, this.heading);
       this.heading += Math.max(-TURN_SPEED * delta, Math.min(TURN_SPEED * delta, turn));
       if (Math.abs(turn) <= TURN_SPEED * delta) this.heading = this.finalFacing;
+      if (this.mode === 'interact' && this.heading === this.finalFacing) this.gesture = this.finalGesture;
     }
     if (this.mode === 'celebrate') {
       this.elapsedCelebration += delta;

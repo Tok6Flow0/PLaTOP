@@ -2,15 +2,18 @@
 
 PLaTOP's Node bridge binds to `127.0.0.1:4317`. Build with `npm run build`, then run `npm start`. It serves only `dist/` and sanitized public activity and office choices; it never opens Codex private databases, session files, or transcripts. Native chat monitoring is a skill workflow using tools available to the current Codex chat, not a background service included in this release.
 
-The default state for every team is **unknown**. Observation is opt-in. Demo animations are separate from real bridge telemetry.
+The default state for every team is **unknown**. Observation is opt-in. Activity
+reports do not choose avatar actions, routes or sleep/work poses.
 
 ## Public data contract
 
 Stable team IDs: `merchant`, `hr`, `intake`, `support`, `reflection`, `email`.
 
-States: `active` (freshly observed working), `sleeping` (observed idle), `waiting` (needs input or attention), `unknown` (not observed, unavailable, or stale).
+States: `active` (freshly observed working), `sleeping` (observed idle), `waiting`
+(needs required input or attention, including a real dependency when independent
+work cannot proceed), `unknown` (not observed, unavailable, or stale).
 
-Sources: `codex`, `skill`, `demo`, `manual`. Source is an enum, never a chat title, user name, thread ID, or free text. Missing source defaults to `skill` for writes. Default unknown entries use source `manual` with `updatedAt: null`; this does not represent an observation.
+Sources: `codex`, `skill`, `manual`. Source is an enum, never a chat title, user name, thread ID, or free text. Missing source defaults to `skill` for writes. Default unknown entries use source `manual` with `updatedAt: null`; this does not represent an observation. Legacy `demo` writes are rejected; a saved activity snapshot containing that source is invalid and starts with unknown activity.
 
 `GET /api/state` returns:
 
@@ -105,7 +108,7 @@ This is actual local MCP protocol use, but it does not mean the chat host has
 loaded native MCP tools. Existing automation runs can use the client without
 restarting the host or changing their schedules and authority.
 
-For user-authorized existing scheduled team tasks, add the skill to their current prompt: publish active at the beginning, renew it about every 30 seconds while working, sleeping after completion, waiting for required input, and unknown for unavailable observations. Preserve their cadence, target chat, notification policy, and underlying business authorization. A missing avatar bridge must never trigger extra business actions or prevent the authorized workflow from continuing. This integration supplies task-owned observations; it does not independently prove that all scheduled runs have executed successfully.
+For user-authorized existing scheduled team tasks, add the skill to their current prompt: publish active at the beginning, renew it about every 30 seconds while working, sleeping after completion, waiting for required input or a dependency when independent work cannot proceed, and unknown for unavailable observations. Preserve their cadence, target chat, notification policy, and underlying business authorization. Heartbeats do not choose or repeat avatar actions. A missing avatar bridge must never trigger extra business actions or prevent the authorized workflow from continuing. This integration supplies task-owned observations; it does not independently prove that all scheduled runs have executed successfully.
 
 
 ## Agent-owned office intents
@@ -120,12 +123,15 @@ Current office state is atomically saved to ignored `.local/office.json` with
 the limit leaves the previous state intact. There is no history, transcript or arbitrary
 metadata field. Public character IDs must belong to the supplied team.
 
-- `platop_action`: `{teamId, actorId?, kind, target?}`. Kinds are `walk_to`,
-  `work`, `rest`, `celebrate`, `arrive`, `leave`. `walk_to` requires
-  `{officeId, place}` with a public team ID and `desk`, `door` or `lounge`.
-  `arrive` defaults to the owner's door. Other kinds reject targets. Each accepted
-  intent has a fresh server UUID; the motor consumes an ID once, owns routing
-  and turn easing, and keeps departed characters absent until arrival.
+- `platop_action`: `{teamId, actorId?, kind, target?, gesture?}`. Kinds are
+  `walk_to`, `work`, `rest`, `celebrate`, `arrive`, `leave`, `interact`. Named
+  targets are `{officeId, place}` with a public team ID and `desk`, `door`,
+  `lounge`, `whiteboard` or `cabinet`. `walk_to` and `interact` require a target;
+  `interact` also requires `gesture: work|think|file|talk|wait`. Other kinds
+  reject gesture. `arrive` accepts a target and defaults to the owner's door;
+  other kinds reject targets. Each accepted intent has a fresh server UUID;
+  the motor consumes an ID once, owns routing and turn easing, and keeps
+  departed characters absent until arrival.
 - `platop_decorate`: `{teamId, slot, parts}` replaces one of `desk`, `shelf`,
   `wall`, `floor`, `festive`. Empty parts clears the slot. Up to 12 normalized
   primitive parts (`box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`) have bounded
@@ -161,6 +167,7 @@ Both local transports support the same short commands:
 ```sh
 node scripts/platop-mcp-client.mjs action support walk_to '{"target":{"officeId":"reflection","place":"lounge"}}'
 node scripts/platop-mcp-client.mjs action support work
+node scripts/platop-mcp-client.mjs action support interact '{"target":{"officeId":"support","place":"cabinet"},"gesture":"file"}'
 node scripts/platop-mcp-client.mjs action support leave
 node scripts/platop-mcp-client.mjs action support arrive
 node scripts/platop-mcp-client.mjs decorate support desk '[{"shape":"capsule","finish":"ceramic","color":"#e7ddc5"},{"shape":"leaf","position":[0,0.3,0],"color":"#91a98d"}]'
@@ -174,6 +181,15 @@ arguments as a last-resort fallback. Neither transport accepts a file or program
 for these intents. Failed or unconfirmed writes are never retried automatically.
 Office appearance and presence are the agents' visual choices; the viewer has
 no decorating or avatar-action buttons. They do not execute, pause or authorize
-business work. The development `?preview=1` view uses separate, explicitly
-simulated motors and has no normal-view activity toggle. Disconnect
-preserves the live position and presence until a valid connection returns.
+business work. The mapped agent retains its adopted identity from its own chat
+and chooses optional expressions during real work. The renderer receives only
+the bounded intent, not task contents, a classifier result or hidden reasoning.
+The skill's [expression guide](../skills/platop/references/agent-expression.md)
+offers examples without prescribed transitions.
+
+Activity alone never chooses a route, work pose or sleep pose. Explicit `rest`
+chooses sleeping. A confirmed current action can move even when activity is
+`unknown`; unknown, stale or idle reports quiet ongoing interaction gestures.
+Disconnect preserves position and presence until a valid connection returns.
+Initial scene load restores the last chosen place and presence without
+replaying a journey. That restored placement is not historical arrival proof.

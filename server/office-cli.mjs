@@ -10,7 +10,7 @@ export function parseOfficeCommand(command, args) {
       if (typeof json !== 'string' || Buffer.byteLength(json) > MAX_BODY_BYTES) throw new Error('Invalid public office data.');
       options = JSON.parse(json);
       if (!options || typeof options !== 'object' || Array.isArray(options)
-        || Object.keys(options).some(key => !['actorId', 'target'].includes(key))) throw new Error('Invalid public office data.');
+        || Object.keys(options).some(key => !['actorId', 'target', 'gesture'].includes(key))) throw new Error('Invalid public office data.');
     }
     return { name: 'platop_action', arguments: parseAction({ teamId, kind, ...options }) };
   }

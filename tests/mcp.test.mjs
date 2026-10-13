@@ -107,13 +107,21 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
   const action = tools.find(tool => tool.name === 'platop_action');
   const decorate = tools.find(tool => tool.name === 'platop_decorate');
   assert.equal(action.inputSchema.additionalProperties, false);
-  assert.deepEqual(action.inputSchema.properties.kind.enum, ['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave']);
+  assert.deepEqual(action.inputSchema.properties.kind.enum, ['walk_to', 'work', 'rest', 'celebrate', 'arrive', 'leave', 'interact']);
+  assert.deepEqual(action.inputSchema.properties.gesture.enum, ['work', 'think', 'file', 'talk', 'wait']);
+  assert.deepEqual(action.inputSchema.properties.target.properties.place.enum, ['desk', 'door', 'lounge', 'whiteboard', 'cabinet']);
   assert.equal(decorate.inputSchema.properties.parts.maxItems, 12);
   assert.equal(decorate.inputSchema.properties.parts.items.additionalProperties, false);
   const arrived = (await request('tools/call', { name: 'platop_action', arguments: { teamId: 'email', kind: 'arrive' } })).result;
   assert.equal(arrived.isError, false);
   assert.equal(arrived.structuredContent.actions['email-owl'].kind, 'arrive');
   assert.deepEqual(arrived.structuredContent.actions['email-owl'].target, { officeId: 'email', place: 'door' });
+  for (const [place, gesture] of [['whiteboard', 'think'], ['cabinet', 'file'], ['lounge', 'talk'], ['desk', 'work'], ['door', 'wait']]) {
+    const interacted = (await request('tools/call', { name: 'platop_action', arguments: { teamId: 'email', kind: 'interact', target: { officeId: 'email', place }, gesture } })).result;
+    assert.equal(interacted.isError, false);
+    assert.equal(interacted.structuredContent.actions['email-owl'].gesture, gesture);
+    assert.equal(interacted.structuredContent.actions['email-owl'].target.place, place);
+  }
   const decorated = (await request('tools/call', { name: 'platop_decorate', arguments: {
     teamId: 'email', slot: 'wall', parts: [{ shape: 'sphere', color: '#abcdef', glow: true }],
   } })).result;
@@ -123,6 +131,10 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
     ['platop_action', { teamId: 'email', actorId: 'bridge-jarvis', kind: 'work' }],
     ['platop_action', { teamId: 'email', kind: 'work', target: { officeId: 'email', place: 'desk' } }],
     ['platop_action', { teamId: 'email', kind: 'leave', text: 'PRIVATE_CHAT' }],
+    ['platop_action', { teamId: 'email', kind: 'interact', target: { officeId: 'email', place: 'whiteboard' } }],
+    ['platop_action', { teamId: 'email', kind: 'interact', gesture: 'think' }],
+    ['platop_action', { teamId: 'email', kind: 'interact', target: { officeId: 'email', place: 'cabinet' }, gesture: 'PRIVATE_THOUGHT' }],
+    ['platop_action', { teamId: 'email', kind: 'work', gesture: 'work' }],
     ['platop_decorate', { teamId: 'email', slot: 'wall', parts: [{ shape: 'box', file: '/PRIVATE/file' }] }],
     ['platop_decorate', { teamId: 'email', slot: 'wall', parts: [{ shape: 'sphere', segments: 1000000 }] }],
     ['platop_decorate', { teamId: 'email', slot: 'wall', parts: Array.from({ length: 13 }, () => ({ shape: 'box' })) }],
