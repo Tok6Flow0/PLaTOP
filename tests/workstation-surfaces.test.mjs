@@ -118,6 +118,21 @@ test('rounded timber furniture preserves certified desk height and chair clearan
   disposeObject(resources); kit.dispose();
 });
 
+test('curved shared tables preserve the existing footprint, surface height and bounded geometry', t => {
+  canvasDocument(t);
+  const kit=new SceneKit(),all=new THREE.Group();
+  for(const style of ['rect','soft','capsule']){
+    const desk=new THREE.Group();all.add(desk);table(desk,kit,0,0,2.75,1.4,style);desk.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(desk);
+    assert.ok(bounds.min.x>=-1.3751&&bounds.max.x<=1.3751&&bounds.min.z>=-.7001&&bounds.max.z<=.7001,style);
+    assert.ok(Math.abs(bounds.max.y-.82)<1e-6,`${style} supports the existing desk objects`);
+    let triangles=0;desk.traverse(o=>{if(o.isMesh)triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;});
+    assert.ok(triangles<4000,`${style}: ${triangles} triangles`);
+    assert.equal(desk.userData.floorContacts.length,4);
+  }
+  disposeObject(all);kit.dispose();
+});
+
 test('diverse connected plants keep actual vertices inside their certified floor envelopes and release owned meshes once', () => {
   const kit = new SceneKit(), resources = new THREE.Group(), owned = new Set();
   for (const [kind, bound] of [['leaf', 0.5], ['broad', 0.57], ['spear', 0.28], ['herb', 0.48], ['ivy', 0.5]]) {

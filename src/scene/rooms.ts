@@ -266,7 +266,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const tableZ = isFoyer ? 0.7 : index < 3 ? -0.95 : 0.1;
   const tableWidth = isFoyer ? 3.15 : index === 5 ? 2.35 : 2.75;
   const sideSeating = index < 2;
-  table(interior, kit, tableX, tableZ, tableWidth, 1.4);
+  table(interior, kit, tableX, tableZ, tableWidth, 1.4,index===3?'capsule':index===1||isFoyer?'soft':'rect');
   if(index<2||isFoyer||index===5){
     // A visible empty seat is furniture, not simulated work. Its actual
     // footprint participates in navigation just like every occupied chair.

@@ -166,10 +166,22 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   kit.mesh(parent, 'box', '#d9c9ac', [x, y - 0.85, z + 0.08], [2.65, 0.065, 0.16]);
   kit.mesh(parent, 'cylinder', '#748575', [x + 0.68, y - 0.81, z + 0.09], [0.045, 0.39, 0.045], [0, 0, Math.PI / 2]);
 }
-export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number): void {
-  const slab = surface(beveledBlock(parent, kit, '#9e754d', [x, 0.7, z], [width, 0.2, depth], 0.09), 'furniture');
+export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number, style: 'rect'|'soft'|'capsule'='rect'): void {
+  const corner=style==='capsule'?depth/2-.025:style==='soft'?.34:.09;
+  const shapedSlab=(color:string,y:number,w:number,h:number,d:number,r:number)=>{
+    if(style==='rect')return beveledBlock(parent,kit,color,[x,y,z],[w,h,d],Math.min(r,.09));
+    const bevel=Math.min(.014,h*.3),a=w/2-bevel,b=d/2-bevel,radius=Math.min(r,a,b),shape=new THREE.Shape();
+    shape.moveTo(-a+radius,-b);shape.lineTo(a-radius,-b);shape.quadraticCurveTo(a,-b,a,-b+radius);
+    shape.lineTo(a,b-radius);shape.quadraticCurveTo(a,b,a-radius,b);
+    shape.lineTo(-a+radius,b);shape.quadraticCurveTo(-a,b,-a,b-radius);
+    shape.lineTo(-a,-b+radius);shape.quadraticCurveTo(-a,-b,-a+radius,-b);
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:h-2*bevel,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2,curveSegments:8,steps:1});
+    geometry.rotateX(-Math.PI/2);geometry.translate(0,-h/2+bevel,0);
+    const mesh=new THREE.Mesh(geometry,kit.material(color,'wood'));mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;parent.add(mesh);return mesh;
+  };
+  const slab = surface(shapedSlab('#9e754d',.7,width,.2,depth,corner), 'furniture');
   slab.material = kit.material('#9e754d', 'wood');
-  const crown = surface(beveledBlock(parent, kit, '#b38a5c', [x, 0.804, z], [width - 0.07, 0.025, depth - 0.07], 0.011), 'furniture');
+  const crown = surface(shapedSlab('#b38a5c',.804,width-.07,.025,depth-.07,Math.max(.02,corner-.035)), 'furniture');
   crown.material = kit.material('#b38a5c', 'wood');
   const legGeometry = new THREE.LatheGeometry([[0, -0.5], [0.052, -0.5], [0.068, -0.46], [0.077, -0.25],
     [0.091, 0.4], [0.089, 0.47], [0.072, 0.5], [0, 0.5]].map(([r, y]) => new THREE.Vector2(r, y)), 16);
@@ -181,7 +193,7 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   }
   for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) floorContact(parent, x + dx, 0.137, z + dz, 0.44, 0.38);
   const grain = canvasTexture(768, 384, (context) => {
-    context.beginPath(); context.roundRect(0, 0, 768, 384, 54); context.clip();
+    context.beginPath(); context.roundRect(0, 0, 768, 384,style==='rect'?54:Math.max(.02,corner-.08)/(depth-.14)*384); context.clip();
     context.fillStyle = '#998065'; context.fillRect(0, 0, 768, 384);
     let seed=7341;
     const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
@@ -313,7 +325,7 @@ export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THR
     const length = herb ? 0.5 : broad ? 0.78 : spear ? 0.93 : 0.87;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
     return [width * across + Math.sin(Math.PI * t) * Math.sin(t * 2.1) * 0.012,
-      t * length + 0.012 * cup, bend - 0.035 * cup];
+      t * length + 0.012 * cup - (spear ? 0 : .075 * t ** 3), bend - 0.021 * cup];
   };
   // Spend the same 56 triangles along the silhouette: fifteen longitudinal
   // sections remove the polygonal paddle edge, while three ribs keep a cup.
@@ -355,7 +367,9 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   const soil = kit.mesh(group, 'cylinder', '#514630', [0, 0.385, 0], [0.354, 0.008, 0.354]); soil.name = 'Plant soil';
   const shades = ['#647c4b', '#526e40', '#819658'];
   const materials = shades.map(color => {
-    const material = kit.material(color).clone(); material.side = THREE.DoubleSide; material.vertexColors = true; return material;
+    const material = kit.material(color).clone(); material.side = THREE.DoubleSide; material.vertexColors = true;
+    material.roughness=.68;material.emissive.set('#627546');material.emissiveIntensity=.045;
+    return material;
   });
   const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
   const geometry = leafGeometry(kind === 'spear', kind === 'herb' || kind === 'ivy', kind === 'broad');
@@ -394,14 +408,14 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     }
     for (let i = 0; i < count; i++) {
       const angle = i * 2.399;
-      const origin = kind === 'spear' ? 0.405 : kind === 'herb' ? 0.405 + i % 3 * 0.045 : 0.43 + i % (kind === 'leaf' ? 7 : 5) * (kind === 'broad' ? 0.17 : 0.125);
+      const origin = kind === 'spear' ? 0.405 : kind === 'herb' ? 0.405 + i % 3 * 0.045 : 0.43 + i % (kind === 'leaf' ? 7 : 5) * (kind === 'broad' ? 0.17 : 0.125)+.025*Math.sin(i*3.7);
       const reach = kind === 'spear' ? 0.045 : kind === 'herb' ? 0.07 : kind === 'leaf' ? 0.17 : 0.09;
       const point: Point = [Math.sin(angle) * reach, origin, Math.cos(angle) * reach];
       const branchRoot = kind === 'spear' || kind === 'herb' ? new THREE.Vector3(0, 0.385, 0)
         : curve.getPoint(THREE.MathUtils.clamp((origin - 0.385) / (trunkHeight - 0.385), 0, 1));
       stem(branchRoot, new THREE.Vector3(...point));
       const scale = kind === 'herb' ? 0.62 + i % 4 * 0.105 : kind === 'spear' ? 0.68 + i % 4 * 0.15 : kind === 'leaf' ? 0.58 + i % 4 * 0.10 : 0.7 + i % 4 * 0.13;
-      addLeaf(i, point, [kind === 'herb' ? -0.18 : kind === 'leaf' ? 0.62 + i % 3 * 0.17 : kind==='broad'?.28+i%3*.14:i % 2 * 0.08, angle, (i % 3 - 1) * 0.12], scale);
+      addLeaf(i, point, [kind === 'herb' ? -0.18 : kind === 'leaf' ? 0.72 + i % 3 * 0.24 : kind==='broad'?.80+i%3*.18:i % 2 * 0.08, angle+.10*Math.sin(i*1.9), (i % 3 - 1) * 0.16], scale);
     }
   }
   // Keep every actual leaf vertex within its existing navigation envelope;

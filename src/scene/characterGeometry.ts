@@ -74,7 +74,7 @@ function helmet(owl = false,boxed=false): THREE.BufferGeometry {
     // Move only the middle latitudes outward. The poles remain smooth and the
     // face has generous cheeks rather than a faceted cube or detached spheres.
     const cheek = 1 + (owl ? .07 : .025) * Math.max(0, 1 - (y * 2) ** 2);
-    const back = !owl && z < 0 ? z * (1 - .15 * (z * 2) ** 2) : z;
+    const back = z < 0 ? owl ? z*(1+.36*THREE.MathUtils.smoothstep(-z,0,.30)) : z * (1 - .15 * (z * 2) ** 2) : z;
     // Fill only the side/back lower cheeks. The front remains the same fitted
     // ellipsoid, while the silhouette has a soft rounded-square jaw instead
     // of tapering to the bottom of a ball.
@@ -366,7 +366,7 @@ function swiftHead(): THREE.BufferGeometry {
 /** Closed elliptical paper sections give the bird a breast and round crown
  * from every viewpoint. Broad quads keep the folds intentional, not noisy. */
 function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=false):THREE.BufferGeometry {
-  const vertices:Tuple[]=[],faces:number[][]=[],columns=softCrown?16:10;
+  const vertices:Tuple[]=[],faces:number[][]=[],columns=softCrown?24:10;
   for(const[y,rx,rz,z]of rings)for(let i=0;i<columns;i++){
     const a=i/columns*Math.PI*2;
     const fold=softCrown&&y<.23?.055*Math.sin(a+.7)*Math.sin(Math.max(0,(y+.20)/.43)*Math.PI):0;
@@ -379,7 +379,7 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
     const foldedNormals=geometry.attributes.normal.clone();smoothDeformedSurface(geometry);
     const p=geometry.attributes.position,n=geometry.attributes.normal,normal=new THREE.Vector3(),flat=new THREE.Vector3();
     for(let i=0;i<p.count;i++){
-      const blend=THREE.MathUtils.smoothstep(p.getY(i),.08,.23);
+      const blend=THREE.MathUtils.smoothstep(p.getY(i),.04,.18);
       normal.fromBufferAttribute(n,i);flat.fromBufferAttribute(foldedNormals,i).lerp(normal,blend).normalize();n.setXYZ(i,flat.x,flat.y,flat.z);
     }
   }
@@ -547,7 +547,7 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
   const sculpt = flightFeather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
   sculpt.dispose();
-  const count = breast ? 84 : 6, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
+  const count = breast ? 84 : 12, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
     if(breast){
@@ -583,9 +583,9 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       }
       continue;
     }
-    const [row,column]=([[0,0],[0,1],[0,2],[1,0],[1,1],[2,0]] as const)[featherIndex],x=sign*(column*.049-.030+row*.018);
-    quaternion.setFromEuler(new THREE.Euler(0,0,sign*(.24+column*.23)));
-    matrix.compose(new THREE.Vector3(x,.045-row*.105,.112+column*.008-row*.013),quaternion,new THREE.Vector3(.135,.30+row*.045,.16));normalMatrix.getNormalMatrix(matrix);
+    const [row,column]=([[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],[3,0],[3,1],[4,0]] as const)[featherIndex],x=sign*(column*.041-.020+row*.004);
+    quaternion.setFromEuler(new THREE.Euler(0,0,sign*(.18+column*.17-row*.025)));
+    matrix.compose(new THREE.Vector3(x,.070-row*.075,.115+column*.008-row*.013),quaternion,new THREE.Vector3(.110,.20+row*.019,.16));normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
       point.fromBufferAttribute(source.attributes.position, i);uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
       point.applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
@@ -663,7 +663,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperBody': return paperOwlBody();
     case 'paperChestL': return foldedSheet([[-.015,.46,.20],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.24]],[-.17,-.03,.27],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
     case 'paperChestR': return foldedSheet([[.02,.46,.20],[.37,.31,.10],[.28,-.50,.11],[.10,-.43,.24]],[.08,-.01,.29],['#ead3ad','#dac09a','#ccb089','#dfc49d']);
-    case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.28,-.50,.14],[.065,-.32,.29]],[-.21,.015,.36],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
+    case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.28,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
     case 'paperEarR': return foldedSheet([[.16,.32,.30],[.28,.41,.24],[.54,.51,.16],[.45,.29,.43]],[.30,.33,.46],['#d1b38b','#e3c79d','#c9a980','#dec299']);
@@ -688,7 +688,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
-    case 'swiftBody': return foldedBirdVolume([[-.12,.032,.06,-.025],[.025,.122,.115,.035],[.15,.113,.11,.115],[.25,.098,.097,.100],[.30,.025,.030,.075]],true);
+    case 'swiftBody': return foldedBirdVolume([[-.12,.032,.06,-.025],[.025,.122,.115,.035],[.12,.116,.117,.103],[.18,.116,.115,.113],[.23,.109,.107,.109],[.27,.082,.081,.095],[.297,.043,.044,.081],[.306,.006,.008,.078]],true);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[.025,.11,.04],[.025,.04,-.15],[.025,-.19,-.40],[.025,-.11,-.02],[.062,-.02,-.12],[-.006,.11,.04],[-.006,.04,-.15],[-.006,-.19,-.40],[-.006,-.11,-.02]],[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],['#dcb366','#d7ab5c','#c59c4c','#e3bd73','#386a65','#c99c4f','#386a65','#35615d','#a5813e']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -811,7 +811,7 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .16 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .38 : finish === 'brass' ? .32 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'brass' ? .52 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
     });

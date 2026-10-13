@@ -393,7 +393,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       // A complete folded volume must still read from a side-on office window.
       // Front-only silhouettes are not a substitute for an embodied model.
       head.scale.set(.93,.93,.95);
-      head.position.y=.69;data.headY=.69;
+      head.position.y=.675;data.headY=.675;
       data.wings.forEach(wing=>{wing.scale.z=.72;});
     }
   } else {

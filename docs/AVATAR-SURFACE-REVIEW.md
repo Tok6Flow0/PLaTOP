@@ -28,6 +28,7 @@ not asked for a desired score or instructed to approve.
 | 16 | Portraits 8.4/10 — B+; campus 7.6/10 — B | Notched breast vanes, stiff cape folds, edge-on residents, material variation |
 | 20 | Portraits 8.5/10 — B+; campus 7.8/10 — B | Broad feather plates, concealed seating, facial construction, paper joins, material distinction |
 | 23 | Portraits 8.4/10 — B+; campus 8.0/10 — B | Broken feather overlaps, lantern-to-paper warmth, paper neck joins, furniture/foliage variety |
+| 25 | Portraits 8.5/10 — B+; campus 8.0/10 — B | Regular feather plates, paper neck wedges, overly glossy Beacon glass, repeated furnishings and stiff foliage |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -107,7 +108,23 @@ movement and hints, retaining the 44-pixel touch targets.
   chest folds are shallower. This is real nearby illumination, not a new action.
 - The compiled application opens both Savor Bridge and The Lantern Desk windows
   without observed console errors. No live bridge data or chat was changed.
-- Pass 25 has been submitted for independent visual review; it is not an A.
+- Pass 25's independent review acknowledged stronger lantern-to-paper warmth and
+  cleaner feather overlaps. It remains below the requested A.
+
+## Verification through surface pass 27
+
+- 282 tests and the production build pass, including exact 100× surface counts,
+  all sixteen moving clearances, agent-neutrality and generated portrait freshness.
+- Shorter layered wing feathers, a fuller rear owl silhouette, a continuous
+  bird crown and thinner rear paper folds improve close and rear construction.
+  Frosted lantern roughness removes the sharp white highlights noted in pass 25.
+- The shared tables now include rounded and capsule outlines. Their original
+  footprint, 0.82-unit top height, contact patches and sub-4,000-triangle budget
+  are tested. No navigation blocker or desk-object position changes are needed.
+- More relaxed leaf bends remain inside the existing plant envelopes and triangle
+  budgets. All shades share one subtle emissive value, preserving static merging.
+- Six day/night portraits, quarter/rear views and matched 1536 × 1024 campus
+  captures are frozen for independent review. They contain no staged activity.
 
 ## Performance observations
 
@@ -142,12 +159,14 @@ and is not treated as close-up evidence.
 | Pass 23 campus | 49.11 | 2.53 / 4.20 ms | 101 / 341,251 | 0 |
 | Pass 24 campus | 50.70 | 2.50 / 4.30 ms | 101 / 341,251 | 0 |
 | Pass 25 campus | 51.20 | 2.19 / 4.00 ms | 101 / 341,251 | 0 |
+| Pass 27 campus | 55.11 | 1.68 / 2.90 ms | 107 / 342,315 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
 | Pass 23 full-face close | 49.50 | 2.33 / 4.10 ms | 132 / 2,381,349 | 3 |
 | Pass 24 full-face close | 49.49 | 2.55 / 4.30 ms | 132 / 2,381,349 | 3 |
 | Pass 25 full-face close | 54.20 | 2.07 / 4.00 ms | 132 / 2,381,349 | 3 |
+| Pass 27 full-face close | 56.10 | 1.74 / 2.70 ms | 133 / 2,347,917 | 3 |
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for
