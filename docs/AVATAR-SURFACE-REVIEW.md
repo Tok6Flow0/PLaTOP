@@ -29,6 +29,8 @@ not asked for a desired score or instructed to approve.
 | 20 | Portraits 8.5/10 — B+; campus 7.8/10 — B | Broad feather plates, concealed seating, facial construction, paper joins, material distinction |
 | 23 | Portraits 8.4/10 — B+; campus 8.0/10 — B | Broken feather overlaps, lantern-to-paper warmth, paper neck joins, furniture/foliage variety |
 | 25 | Portraits 8.5/10 — B+; campus 8.0/10 — B | Regular feather plates, paper neck wedges, overly glossy Beacon glass, repeated furnishings and stiff foliage |
+| 27 | Portraits 8.4/10 — B+; campus 8.1/10 — B | Regressed exposed wing supports/roots, tall shiny owl toes, broad feather plates, foliage and furnishing repetition |
+| 31 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Wing regression corrected; pointed vanes, smooth felt, thick paper folds, sparse seating and stiff foliage remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -126,6 +128,28 @@ movement and hints, retaining the 44-pixel touch targets.
 - Six day/night portraits, quarter/rear views and matched 1536 × 1024 campus
   captures are frozen for independent review. They contain no staged activity.
 
+The pass-27 review found softer Beacon illumination and more varied tabletops,
+but also a wing-construction regression. The score drop is retained here. The
+next corrective work tucks feather roots into the shoulders, tapers their hidden
+supports and shortens the owl's toes. No rejected pass is described as accepted.
+
+## Verification through surface pass 31
+
+- 286 tests and the production build pass. The independent reviewer confirms
+  that exposed wing supports and shoulder roots are corrected. A ray-tested
+  dense support regression and bounded, squat toe test cover those repairs.
+- A shared opaque vein texture preserves the leaves' UVs through static merging;
+  its ownership and single disposal are tested. Plant envelopes and triangle
+  budgets remain unchanged.
+- Closed linen notebooks and varied papers/mugs use the existing desks without
+  moving navigation anchors. Contact patches are stronger without new passes.
+- [Noon campus](images/surface-campus-noon.jpg) and
+  [night campus](images/surface-campus-night.jpg) show the actual app at matched
+  1536 × 1024 viewports. These clock-fixture captures contain no invented work.
+- The new review remains below A. The reviewer asks for broad soft wing fans,
+  fibrous surfaces, more integrated paper forms, and richer botanical/furniture
+  shapes. Passing the surface-density requirement does not close those gaps.
+
 ## Performance observations
 
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
@@ -160,6 +184,7 @@ and is not treated as close-up evidence.
 | Pass 24 campus | 50.70 | 2.50 / 4.30 ms | 101 / 341,251 | 0 |
 | Pass 25 campus | 51.20 | 2.19 / 4.00 ms | 101 / 341,251 | 0 |
 | Pass 27 campus | 55.11 | 1.68 / 2.90 ms | 107 / 342,315 | 0 |
+| Pass 31 campus | 55.71 | 2.02 / 2.90 ms | 108 / 341,711 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -167,6 +192,7 @@ and is not treated as close-up evidence.
 | Pass 24 full-face close | 49.49 | 2.55 / 4.30 ms | 132 / 2,381,349 | 3 |
 | Pass 25 full-face close | 54.20 | 2.07 / 4.00 ms | 132 / 2,381,349 | 3 |
 | Pass 27 full-face close | 56.10 | 1.74 / 2.70 ms | 133 / 2,347,917 | 3 |
+| Pass 31 full-face close | 52.30 | 1.82 / 3.20 ms | 133 / 2,346,793 | 3 |
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

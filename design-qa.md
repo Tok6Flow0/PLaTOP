@@ -6,7 +6,7 @@ Current result: the stricter character-level reference pass is implemented and f
 
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md): the latest
-independent result is **8.5/10 B+ for portraits and 8.0/10 B for the campus**, not
+independent result is **8.5/10 B+ for portraits and 8.1/10 B for the campus**, not
 the requested A. The original sections below describe the earlier checkpoint.
 
 All sixteen procedural characters now have exactly 100× authored triangles in
@@ -16,9 +16,9 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The current suite passes **282 tests** and the production build passes. The
+The current suite passes **286 tests** and the production build passes. The
 existing bundle-size warning remains. Matched full-face camera checks measured
-56.10 submitted scene fps with three dense avatars versus 45.29 baseline; these
+52.30 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
 claim. Mobile header mask icons were repaired without removing their labels.
 
@@ -26,8 +26,14 @@ Remaining work includes character primary-shape refinement, paper head/body
 transitions, softer feather layers and furnishing/foliage variety. The independent
 review acknowledged the clearer neutral orientations, heart-shaped owl face,
 bowed book covers, visible seating and localized lantern warmth. Pass 27 adds
-rounded tables, finer wing layering and softer lantern highlights; it is awaiting
-its own independent result.
+rounded tables and softer lantern highlights, but its review caught exposed wing
+supports and roots. Pass 31 corrects those, shortens the owl's toes, adds fine leaf
+veins and varies tabletop furnishings. Its independent review confirms the
+construction repair but still finds overly pointed feather layers, smooth felt,
+thick paper folds and insufficient furnishing/botanical richness. Its matched
+[noon](docs/images/surface-campus-noon.jpg) and
+[night](docs/images/surface-campus-night.jpg) captures supersede the older campus
+evidence below.
 Live agent actions remain the only source of work gestures and locomotion.
 
 ## Earlier checkpoint evidence

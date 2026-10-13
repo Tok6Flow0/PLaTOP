@@ -321,7 +321,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     warmth.name='Lantern surface warmth';warmth.position.set(0,0,.20);
     head.add(warmth);data.warmth=warmth;
   } else if (kind === 'owl') {
-    const navy = id === 'email-owl', feathers = navy ? '#293b51' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
+    const navy = id === 'email-owl', feathers = navy ? '#233149' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
     body.position.y = navy?.49:.41; data.bodyY = body.position.y; head.position.y = navy?.91:.81; data.headY = head.position.y;
     // The facial shield overlaps the breast, like the original owl. Keeping
     // both volumes on one vertical axis lets the chest cut its heart-shaped
@@ -353,16 +353,16 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.50,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
-      if(navy) sculpt(wing,'featherCore','#31485e',[sign*.015,-.145,0],[.205,.53,.30],[0,0,sign*.23],'feather');
+      if(navy) sculpt(wing,'featherCore','#283b54',[sign*.015,-.10,0],[.19,.54,.245],[0,0,sign*.23],'feather');
       else if(sign>0)sculpt(wing,'paperHoldingWing','#ffffff',[0,0,0],[1,1,id==='reflection-quill'?.52:1],undefined,'paper');
       else sculpt(wing,'paperOwlWingL','#ffffff',[0,0,0],[1,1,1],undefined,'paper');
       if (navy) {
-        sculpt(wing, sign < 0 ? 'featherFanL' : 'featherFanR', '#30465e', [0, -.035, 0], [1, 1, 1], undefined, 'plumage');
-        sculpt(wing, sign < 0 ? 'featherFanR' : 'featherFanL', '#30465e', [0, -.035, -.024], [1, 1, 1], [0,Math.PI,0], 'plumage');
+        sculpt(wing, sign < 0 ? 'featherFanL' : 'featherFanR', '#283b54', [0, -.035, 0], [1, 1, 1], undefined, 'plumage');
+        sculpt(wing, sign < 0 ? 'featherFanR' : 'featherFanL', '#283b54', [0, -.035, -.024], [1, 1, 1], [0,Math.PI,0], 'plumage');
       }
       data.wings.push(wing);
-      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .145, navy?.08:.04, .08]);
-      if (navy) [-1, 0, 1].forEach(toe => sculpt(foot, 'toe', gold, [toe * .053, 0, .012 - Math.abs(toe) * .012], [.075, .16, .20], [0, toe * -.12, 0], 'brass'));
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .145, navy?.045:.04, navy?.12:.08]);
+      if (navy) [-1, 0, 1].forEach(toe => sculpt(foot, 'toe', '#ad8342', [toe * .061, 0, .012 - Math.abs(toe) * .012], [.090, .09, .23], [0, toe * -.12, 0], 'clay'));
       else sculpt(foot, 'paperWing', '#b89868', [0, 0, 0], [.16, .08, .23], undefined, 'paper');
       data.feet.push(foot);
     });
@@ -381,7 +381,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(body, gold, [[.40, .005, .40], [.33, -.20, .40]], .017);
     }
     if (navy) {
-      sculpt(body, 'breastFeathers', '#293e54', [0, 0, 0], [1, 1, 1], undefined, 'plumage');
+      sculpt(body, 'breastFeathers', '#25364d', [0, 0, 0], [1, 1, 1], undefined, 'plumage');
       sculpt(body, 'envelope', '#dcb26a', [0, .08, .388], [.19, .135, .016], undefined, 'brass');
       stroke(body, '#835d31', [[-.083, .130, .403], [0, .065, .403], [.083, .130, .403]], .005, 'clay');
     }

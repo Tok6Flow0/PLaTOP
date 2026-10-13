@@ -34,7 +34,7 @@ export class StaticContacts {
     this.texture = new THREE.CanvasTexture(canvas);
     this.texture.generateMipmaps = false;
     this.texture.minFilter = THREE.LinearFilter;
-    this.material = new THREE.MeshBasicMaterial({ map: this.texture, color: '#76664f', opacity: 0.18,
+    this.material = new THREE.MeshBasicMaterial({ map: this.texture, color: '#76664f', opacity: 0.26,
       transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 });
     scene.updateMatrixWorld(true);
     for (const root of roots) root.traverse(object => {

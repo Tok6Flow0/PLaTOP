@@ -292,6 +292,17 @@ export function paper(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   for (let i = 0; i < 4; i++) kit.mesh(group, 'box', '#a6a798', [-0.015, 0.021, -0.15 + i * 0.07], [0.26 - i % 2 * 0.04, 0.003, 0.009]);
   kit.mesh(group, 'cylinder', '#8a9b76', [0.21, 0.029, 0.05], [0.025, 0.47, 0.025], [Math.PI / 2, 0, 0.12]);
 }
+/** A closed linen notebook is a furnishing, not a fabricated work event. */
+export function notebook(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle=0): THREE.Group {
+  const group=new THREE.Group();group.name='Linen notebook';group.position.set(x,.836,z);group.rotation.y=angle;parent.add(group);
+  for(const y of [.007,.066])kit.mesh(group,'roundedDetail',color,[0,y,0],[.44,.014,.56],undefined,'fabric');
+  kit.mesh(group,'roundedDetail','#e5d8b8',[.008,.036,0],[.412,.045,.526]);
+  kit.mesh(group,'roundedDetail',color,[-.216,.036,0],[.025,.066,.56],undefined,'fabric');
+  for(const y of [.026,.037,.048])kit.mesh(group,'box','#c5b99c',[.216,y,.005],[.001,.0015,.49]);
+  kit.mesh(group,'box','#a9aa89',[.136,.075,0],[.022,.003,.556]);
+  kit.mesh(group,'box','#dfcea4',[-.045,.075,-.08],[.18,.002,.15]);
+  return group;
+}
 export function mug(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string): void {
   kit.mesh(parent, 'pot', color, [x, 0.945, z], [0.24, 0.24, 0.24], undefined, 'ceramic'); kit.mesh(parent, 'cylinder', '#4b4433', [x, 1.067, z], [0.185, 0.006, 0.185]);
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.026, 8, 16), kit.material(color, 'ceramic')); handle.position.set(x + 0.15, 0.95, z); handle.castShadow = true; parent.add(handle);
@@ -351,6 +362,25 @@ export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THR
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
   geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
 }
+const botanicalGrains = new WeakMap<SceneKit, THREE.DataTexture>();
+/** One opaque vein map serves every real cupped leaf. The canopy geometry,
+ * navigation bounds and cutaway roots are unchanged. Root disposal owns it. */
+function botanicalGrain(kit: SceneKit): THREE.DataTexture {
+  const cached=botanicalGrains.get(kit);if(cached)return cached;
+  const width=128,height=256,data=new Uint8Array(width*height*4);
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++){
+    const u=(x+.5)/width-.5,v=(y+.5)/height;
+    const midrib=Math.exp(-((u/.020)**2));
+    const veins=Math.pow(Math.max(0,Math.cos(v*64-Math.abs(u)*22)),26)*(1-Math.abs(u)*1.4);
+    const grain=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%11;
+    const tone=222+18*midrib+10*veins-12*Math.abs(u)+grain;
+    data.set([tone,tone,tone,255],(y*width+x)*4);
+  }
+  const texture=new THREE.DataTexture(data,width,height);
+  texture.userData.botanicalGrain=true;texture.magFilter=THREE.LinearFilter;
+  texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;
+  botanicalGrains.set(kit,texture);return texture;
+}
 export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf'): void {
   const group = new THREE.Group(); group.position.set(x, base, z); group.scale.setScalar(size); parent.add(group);
   group.name = `Botanical plant ${kind}`;
@@ -369,6 +399,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   const materials = shades.map(color => {
     const material = kit.material(color).clone(); material.side = THREE.DoubleSide; material.vertexColors = true;
     material.roughness=.68;material.emissive.set('#627546');material.emissiveIntensity=.045;
+    material.map=material.bumpMap=botanicalGrain(kit);material.bumpScale=.007;
     return material;
   });
   const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
@@ -467,7 +498,7 @@ export function tidyStaticMeshes(root: THREE.Object3D): void {
     if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh || Array.isArray(object.material)
       || !(object.material instanceof THREE.MeshStandardMaterial) || object.material.transparent
       || object.material.opacity !== 1 || object.geometry.morphAttributes.position?.length
-      || Object.values(object.material).some((value) => value instanceof THREE.Texture)) return;
+      || Object.values(object.material).some((value) => value instanceof THREE.Texture && !value.userData.botanicalGrain)) return;
     const material = object.material;
     const key = JSON.stringify([
       material.roughness, material.metalness, material.side, material.flatShading,
@@ -477,7 +508,7 @@ export function tidyStaticMeshes(root: THREE.Object3D): void {
       material.premultipliedAlpha, material.dithering, material.toneMapped, material.fog,
       material.polygonOffset, material.polygonOffsetFactor, material.polygonOffsetUnits,
       material.wireframe, material.visible, object.castShadow, object.receiveShadow,
-      object.renderOrder, object.layers.mask
+      object.renderOrder, object.layers.mask, material.map?.uuid, material.bumpMap?.uuid, material.bumpScale
     ]);
     let group = groups.get(key);
     if (!group) {
@@ -486,7 +517,8 @@ export function tidyStaticMeshes(root: THREE.Object3D): void {
     }
     let geometry = object.geometry.index ? object.geometry.toNonIndexed() : object.geometry.clone();
     geometry.applyMatrix4(new THREE.Matrix4().multiplyMatrices(inverseRoot, object.matrixWorld));
-    // These untextured surfaces need position, normal and linear vertex colour only.
+    // Botanical maps share one immutable UV space. Other static matte surfaces
+    // need position, normal and linear vertex colour only.
     const positions = geometry.getAttribute('position');
     const previous = material.vertexColors ? geometry.getAttribute('color') : undefined;
     const colors = new Float32Array(positions.count * 3);
@@ -496,7 +528,7 @@ export function tidyStaticMeshes(root: THREE.Object3D): void {
       colors[vertex * 3 + 2] = material.color.b * (previous?.getZ(vertex) ?? 1);
     }
     for (const attribute of Object.keys(geometry.attributes)) {
-      if (attribute !== 'position' && attribute !== 'normal') geometry.deleteAttribute(attribute);
+      if (attribute !== 'position' && attribute !== 'normal' && !(attribute==='uv'&&material.map?.userData.botanicalGrain)) geometry.deleteAttribute(attribute);
     }
     if (!geometry.hasAttribute('normal')) geometry.computeVertexNormals();
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));

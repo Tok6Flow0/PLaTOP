@@ -13,7 +13,7 @@ async function moduleUrl(path, imports = {}) {
 }
 const primitives = await moduleUrl('../src/scene/primitives.ts');
 const { SceneKit, disposeObject } = await import(primitives);
-const { laptop, monitor, table, chair, plant, rug, lamp, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
+const { laptop, monitor, table, chair, plant, rug, lamp, notebook, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
 
 function canvasDocument(t) {
   const prior = globalThis.document;
@@ -154,7 +154,11 @@ test('diverse connected plants keep actual vertices inside their certified floor
     group.traverse(object => {
       if (!object.isMesh) return;
       triangles += (object.geometry.index?.count ?? object.geometry.getAttribute('position').count) / 3;
-      assert.equal(object.material.map, null, 'botanical detail is not a texture substitute');
+      if(object.name==='Cupped botanical leaf'){
+        assert.equal(object.material.map?.userData.botanicalGrain,true,'fine veins supplement a real curved leaf');
+        assert.equal(object.material.bumpMap,object.material.map);
+        assert.equal(object.material.transparent,false,'leaves do not use alpha-cutout cards');
+      }else assert.equal(object.material.map,null);
       if (['Rounded plant pot', 'Pot rolled lip', 'Cupped botanical leaf'].includes(object.name)) owned.add(object.geometry);
     });
     assert.ok(triangles < 2600, `${kind} stays within its bounded mesh budget`);
@@ -167,6 +171,45 @@ test('diverse connected plants keep actual vertices inside their certified floor
   owned.forEach(geometry => geometry.addEventListener('dispose', () => released.set(geometry, released.get(geometry) + 1)));
   disposeObject(resources); kit.dispose();
   assert.ok([...released.values()].every(count => count === 1));
+});
+
+test('fine botanical surfaces share one opaque map, preserve UVs when merged and dispose once', () => {
+  const kit=new SceneKit(),root=new THREE.Group(),resources=new THREE.Group();
+  plant(root,kit,-1,0,1);plant(root,kit,1,0,1,.1,'#bca581','broad');
+  const maps=new Set(),originalUV=[];
+  root.traverse(mesh=>{
+    if(mesh.name!=='Cupped botanical leaf')return;
+    maps.add(mesh.material.map);
+    const geometry=mesh.geometry.index?mesh.geometry.toNonIndexed():mesh.geometry.clone();
+    originalUV.push(...geometry.attributes.uv.array);geometry.dispose();
+  });
+  assert.equal(maps.size,1);const [texture]=maps;
+  assert.equal(texture.image.width,128);assert.equal(texture.image.height,256);
+  let released=0;texture.addEventListener('dispose',()=>released++);
+  tidyStaticMeshes(root);
+  const mapped=root.children.filter(mesh=>mesh.material?.map===texture);
+  assert.equal(mapped.length,1,'all leaf shades and plants share a single static root draw');
+  const mesh=mapped[0];
+  assert.deepEqual([...mesh.geometry.attributes.uv.array],originalUV);
+  assert.equal(mesh.geometry.attributes.color.count,mesh.geometry.attributes.position.count);
+  assert.equal(mesh.material.bumpMap,texture);assert.equal(mesh.material.transparent,false);
+  resources.add(root,root.userData.staticSources);disposeObject(resources);kit.dispose();
+  assert.equal(released,1);
+});
+
+test('small linen notebooks remain bounded tabletop furnishings without new lights or transparent cards',()=>{
+  const kit=new SceneKit(),root=new THREE.Group(),book=notebook(root,kit,0,0,'#536e65',-.13);
+  root.updateMatrixWorld(true);const box=new THREE.Box3().setFromObject(book);
+  assert.ok(box.min.x>-.27&&box.max.x<.27&&box.min.z>-.31&&box.max.z<.31);
+  assert.ok(box.min.y>=.8359&&box.max.y<.916);
+  let triangles=0;book.traverse(mesh=>{
+    assert.ok(!mesh.isLight);
+    if(!mesh.isMesh)return;
+    triangles+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3;
+    assert.equal(mesh.material.transparent,false);assert.equal(mesh.material.map,null);
+  });
+  assert.ok(triangles<1500);
+  disposeObject(root);kit.dispose();
 });
 
 test('woven rugs have real rounded corners and retain pile height and bounded footprint', t => {

@@ -74,7 +74,7 @@ function helmet(owl = false,boxed=false): THREE.BufferGeometry {
     // Move only the middle latitudes outward. The poles remain smooth and the
     // face has generous cheeks rather than a faceted cube or detached spheres.
     const cheek = 1 + (owl ? .07 : .025) * Math.max(0, 1 - (y * 2) ** 2);
-    const back = z < 0 ? owl ? z*(1+.36*THREE.MathUtils.smoothstep(-z,0,.30)) : z * (1 - .15 * (z * 2) ** 2) : z;
+    const back = !owl && z < 0 ? z * (1 - .15 * (z * 2) ** 2) : z;
     // Fill only the side/back lower cheeks. The front remains the same fitted
     // ellipsoid, while the silhouette has a soft rounded-square jaw instead
     // of tapering to the bottom of a ball.
@@ -585,10 +585,14 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
     }
     const [row,column]=([[0,0],[0,1],[0,2],[1,0],[1,1],[1,2],[2,0],[2,1],[2,2],[3,0],[3,1],[4,0]] as const)[featherIndex],x=sign*(column*.041-.020+row*.004);
     quaternion.setFromEuler(new THREE.Euler(0,0,sign*(.18+column*.17-row*.025)));
-    matrix.compose(new THREE.Vector3(x,.070-row*.075,.115+column*.008-row*.013),quaternion,new THREE.Vector3(.110,.20+row*.019,.16));normalMatrix.getNormalMatrix(matrix);
+    matrix.compose(new THREE.Vector3(x,(row===0?.110:.070)-row*.085,.115+column*.008-row*.013),quaternion,new THREE.Vector3(.130,.22+row*.039,.16));normalMatrix.getNormalMatrix(matrix);
     for (let i = 0; i < source.attributes.position.count; i++) {
       point.fromBufferAttribute(source.attributes.position, i);uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
       point.applyMatrix4(matrix); normal.fromBufferAttribute(source.attributes.normal, i).applyMatrix3(normalMatrix).normalize();
+      // Feather roots turn into the shoulder rather than pointing above it
+      // as a saw-toothed open edge. The complete thin sheet bends together.
+      const collar=THREE.MathUtils.smoothstep(point.y,.06,.23);
+      point.x=THREE.MathUtils.lerp(point.x,-sign*.10,collar);point.z*=1-.30*collar;
       vertices.push(point.x, point.y, point.z); normals.push(normal.x, normal.y, normal.z);
     }
   }
@@ -607,7 +611,7 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
     }
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
   }
-  return geometry;
+  return breast?geometry:smoothDeformedSurface(geometry);
 }
 
 function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
@@ -658,7 +662,16 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'cape': return cape();
     case 'capePanel': return folded([[-.5, .5], [.5, .20], [.45, -.5], [-.15, -.09]], .08, .018);
     case 'feather': return feather();
-    case 'featherCore': return new THREE.SphereGeometry(.5,8,5);
+    case 'featherCore': {
+      // A tucked support joins the shoulder, then tapers behind the primaries.
+      // A full ellipsoid projects past the thin layers as a rounded flipper.
+      const geometry=new THREE.SphereGeometry(.5,12,8),p=geometry.attributes.position;
+      for(let i=0;i<p.count;i++){
+        const taper=THREE.MathUtils.smoothstep(-p.getY(i),-.12,.5);
+        p.setXYZ(i,p.getX(i)*(1-.96*taper),p.getY(i),p.getZ(i)*(1-.85*taper));
+      }
+      return smoothDeformedSurface(geometry);
+    }
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return paperOwlBody();
     case 'paperChestL': return foldedSheet([[-.015,.46,.20],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.24]],[-.17,-.03,.27],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
@@ -751,7 +764,7 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
     const grain=finish==='paper'?237-29*fibre-13*pore-8*noise
       :finish==='brass'?249-4*Math.sin(y*1.17+x*.007)-3*noise
       :finish==='cloth'?238-13*(Math.sin(x*Math.PI/4)**2+Math.sin(y*Math.PI/4)**2)-15*pore-6*noise
-      :finish==='feather'?237-10*barbs-19*pore-9*noise
+      :finish==='feather'?239-10*barbs-19*pore-9*noise-16*noiseAt(x/19,y/17)
       :finish==='glaze'?247-13*pore-6*noise+2*broad:244-29*pore-10*noise+3*broad;
     data.set([grain,grain,grain,255],(y*size+x)*4);
   }

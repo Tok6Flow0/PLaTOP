@@ -227,7 +227,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       root.add(sleep);
       // Ownership stays with the team; physical presence can cross rooms.
       scene.add(root);
-      const contact = new THREE.Mesh(contactGeometry, new THREE.MeshBasicMaterial({ map: contactTexture, color: '#76664f', opacity: 0.34, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
+      const contact = new THREE.Mesh(contactGeometry, new THREE.MeshBasicMaterial({ map: contactTexture, color: '#76664f', opacity: 0.42, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
       contact.rotation.x = -Math.PI / 2;
       contact.scale.set(0.95, 0.65, 1);
       contact.position.set(home.x, desk.floorY + 0.008, home.z);

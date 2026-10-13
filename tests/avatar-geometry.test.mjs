@@ -72,6 +72,35 @@ test('cupped feather fans are closed sheets with matching front and rear ray cov
   material.dispose();kit.dispose();
 });
 
+test('owl toes stay squat and forward-facing rather than standing gold beans',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  model.updateMatrixWorld(true);
+  const toes=meshes(model).filter(mesh=>mesh.name==='toe');assert.equal(toes.length,6);
+  for(const toe of toes){
+    const size=new THREE.Box3().setFromObject(toe).getSize(new THREE.Vector3());
+    assert.ok(size.y/size.z<.45,'the toe silhouette is longer than it is tall');
+    assert.ok(toe.material.roughness>=.65,'soft ochre feet do not have polished metal highlights');
+  }
+  disposeObject(model);kit.dispose();
+});
+
+test('lower wing silhouettes do not expose their rounded inner supports',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit),ray=new THREE.Raycaster();
+  for(const mesh of meshes(model).filter(mesh=>mesh.name==='featherCore')){
+    mesh.geometry=surfaceGeometry(refineCharacterSurface(surfaceData(mesh.geometry),'feather'));
+  }
+  model.updateMatrixWorld(true);
+  for(const name of ['wing_l','wing_r']){
+    const wing=model.getObjectByName(name),box=new THREE.Box3().setFromObject(wing);
+    for(const direction of [-1,1])for(let x=box.min.x+.004;x<box.max.x;x+=.008)for(let y=box.min.y+.004;y<.36;y+=.008){
+      ray.set(new THREE.Vector3(x,y,direction*2),new THREE.Vector3(0,0,-direction));
+      const hit=ray.intersectObject(wing,true)[0];
+      assert.notEqual(hit?.object.name,'featherCore',`${name} inner support exposed at ${x},${y} from ${direction}`);
+    }
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('dense patches improve round curvature but preserve hard folds, UVs and source arrays', () => {
   const source = new THREE.SphereGeometry(.5, 8, 6), data = surfaceData(source);
   const unchanged = data.attributes.position.array.slice();

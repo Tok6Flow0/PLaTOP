@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Decoration, Team } from '../types';
 import { SceneKit } from './primitives';
-import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, paper, plant, rug, shelf, sign, stool, table, tidyStaticMeshes } from './environmentProps';
+import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paper, plant, rug, shelf, sign, stool, table, tidyStaticMeshes } from './environmentProps';
 
 export type NavigationPoint = [number, number];
 export type NavigationBounds = [number, number, number, number];
@@ -320,10 +320,13 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const actorFacing = desks.map((desk,i) => isFoyer && i===2 ? -.42
     : sideSeating && i!==1 ? (i===0?.32:-.38) : desk.facing);
   const paperX = Math.min(1, tableWidth / 2 - 0.32), mugX = Math.min(1.12, tableWidth / 2 - 0.27);
-  paper(interior, kit, tableX - paperX, tableZ + 0.06, 0.08);
-  paper(interior, kit, tableX + paperX, tableZ + 0.04, -0.2);
+  // Distinct default tabletop layouts leave the same physical work stops free.
+  // North laptops need their full keyboard footprint, with papers forward of it.
+  if(index!==5)paper(interior, kit, tableX - paperX, tableZ + (index===2?.34:.06),index===1?-.14:.08);
+  if(index===0||index===1||isFoyer)notebook(interior,kit,tableX+paperX,tableZ+.08,index===0?'#536e65':isFoyer?'#6a674e':'#9a7855',index===1?.10:-.13);
+  else paper(interior, kit, tableX + paperX, tableZ + (index===2||index===5?.34:.04), -0.2);
   mug(interior, kit, tableX + mugX, tableZ - 0.48, index === 4 ? '#647c50' : '#a0aa8d');
-  mug(interior, kit, tableX - mugX, tableZ - 0.48, '#b7c0a4');
+  if(index<3)mug(interior, kit, tableX - mugX, tableZ - 0.48,index===0?'#c4b28c':'#b7c0a4');
   if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - 1.0, 0.825 + i * 0.057, tableZ - 0.4], [0.44, 0.055, 0.32], [0, -0.12, 0]));
   plant(interior, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad');
   plant(interior, kit, 2.63, frontPlantZ, 1.18, 0.1, '#c5b998', 'spear');

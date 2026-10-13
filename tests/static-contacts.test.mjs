@@ -45,7 +45,7 @@ test('one furnishing contact draw packs world transforms only on room visibility
   t.after(() => contacts.dispose());
   assert.equal(contacts.mesh.count, 2);
   assert.equal(contacts.mesh.geometry.index.count / 3, 2);
-  assert.equal(contacts.mesh.material.opacity, 0.18);
+  assert.equal(contacts.mesh.material.opacity, 0.26);
   assert.equal(contacts.mesh.material.color.getHexString(), '76664f');
   assert.equal(contacts.mesh.material.depthWrite, false);
   assert.equal(contacts.mesh.castShadow, false);
