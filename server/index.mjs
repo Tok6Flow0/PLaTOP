@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 import { createStore, ensureToken } from './store.mjs';
 import { MAX_BODY_BYTES, parseUpdates } from './protocol.mjs';
 import { createOfficeStore } from './office-store.mjs';
-import { parseAction, parseDecoration } from './office-protocol.mjs';
+import { parseAction, parseDecoration, parseRoomStyle } from './office-protocol.mjs';
 import { handleWeatherRequest } from './weather.mjs';
 
 const ROOT = fileURLToPath(new URL('../', import.meta.url));
@@ -110,16 +110,16 @@ export async function createBridge({ root = ROOT, port = 4317, now = Date.now, t
         emit(current);
         return sendJSON(response, 200, current);
       }
-      if (['/api/actions', '/api/assets'].includes(pathname) && request.method === 'POST') {
+      if (['/api/actions', '/api/assets', '/api/rooms'].includes(pathname) && request.method === 'POST') {
         if (!authorized(request.headers.authorization, token)) return sendJSON(response, 401, { error: 'Local token required.' });
         let payload;
         try {
           const input = await readJSON(request);
-          payload = pathname === '/api/actions' ? parseAction(input) : parseDecoration(input);
+          payload = pathname === '/api/actions' ? parseAction(input) : pathname === '/api/assets' ? parseDecoration(input) : parseRoomStyle(input);
         } catch (error) {
           return sendJSON(response, error.status ?? 400, { error: 'Invalid public office data.' });
         }
-        const result = pathname === '/api/actions' ? await office.action(payload) : await office.decorate(payload);
+        const result = pathname === '/api/actions' ? await office.action(payload) : pathname === '/api/assets' ? await office.decorate(payload) : await office.style(payload);
         const current = snapshot();
         if (result.changed) emit(current);
         return sendJSON(response, 200, current);

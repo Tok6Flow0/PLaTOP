@@ -7,6 +7,7 @@ import path from 'node:path';
 import os from 'node:os';
 import { createBridge } from '../server/index.mjs';
 import { TEAM_IDS, STATES } from '../server/protocol.mjs';
+import { ACTION_KINDS, DECOR_SLOTS, ROOM_LIGHT_MODES } from '../server/office-protocol.mjs';
 
 const exec = promisify(execFile);
 const FAILURE = 'PLaTOP MCP activity is unconfirmed. Check the local bridge and public team/state arguments.';
@@ -93,6 +94,41 @@ test('fixed sibling server receives ordered handshake and only exact public argu
   assert.deepEqual(messages.map(message => message.method), ['initialize', 'notifications/initialized', 'tools/list', 'tools/call']);
   assert.deepEqual(messages[3].params, { name: 'platop_set_activity', arguments: { teamId: 'email', state: 'active' } });
   assert.equal(messages[0].params.clientInfo.name, 'platop-local-client');
+});
+
+test('original four-tool MCP servers keep status and matte recipes compatible without receiving newer fields', async t => {
+  const legacyTools = [
+    { name: 'platop_action', inputSchema: { additionalProperties: false, properties: { kind: { enum: ACTION_KINDS } } } },
+    { name: 'platop_decorate', inputSchema: { additionalProperties: false, properties: { slot: { enum: DECOR_SLOTS } } } },
+  ];
+  const { root, cli } = await fixture(t, server(`
+    if(message.method==='tools/list')tools.push(...${JSON.stringify(legacyTools)});
+    if(message.method==='tools/call'&&message.params.name==='platop_decorate'){
+      const args=message.params.arguments;
+      if(args.parts.some(part=>Object.hasOwn(part,'finish')))throw Error('New finish reached legacyserver');
+      snapshot.assets={[args.teamId]:{[args.slot]:{id:'00000000-0000-4000-8000-000000000001',parts:args.parts}}};
+    }
+  `));
+  assert.deepEqual(JSON.parse((await cli(['status'])).stdout), SNAPSHOT);
+  assert.match((await cli(['decorate', 'hr', 'desk', '[{"shape":"sphere"}]'])).stdout, /decoration saved/);
+  await assert.rejects(cli(['decorate', 'hr', 'desk', '[{"shape":"sphere","finish":"ceramic"}]']), sanitized);
+  await assert.rejects(cli(['decorate', 'hr', 'desk', '[{"shape":"leaf"}]']), sanitized);
+  const messages = (await readFile(path.join(root, 'methods.jsonl'), 'utf8')).trim().split('\n').map(JSON.parse);
+  const call = messages.find(message => message.method === 'tools/call' && message.params.name === 'platop_decorate');
+  assert.ok(call);
+  assert.equal(call.params.arguments.parts[0].finish, undefined);
+});
+
+test('room style client validates acknowledged choices and never treats a missing style as success', async t => {
+  const styleTool = { name: 'platop_style', inputSchema: { additionalProperties: false,
+    properties: { lighting: { properties: { mode: { enum: ROOM_LIGHT_MODES } } } } } };
+  for (const ack of [undefined, { id: '00000000-0000-4000-8000-000000000001', palette: {}, lighting: { mode: 'day' } }]) {
+    const { cli } = await fixture(t, server(`
+      if(message.method==='tools/list')tools.push(${JSON.stringify(styleTool)});
+      if(message.method==='tools/call'&&message.params.name==='platop_style')snapshot.rooms=${JSON.stringify(ack === undefined ? {} : { hr: ack })};
+    `));
+    await assert.rejects(cli(['style', 'hr', '{"lighting":{"mode":"night"}}']), sanitized);
+  }
 });
 
 test('invalid private, path, command and source arguments are rejected before spawning', async t => {

@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "generator": "scripts/render-avatars.mjs",
+  "sourceFingerprint": "d6a28fe44b3841547e8438c4fc422946e5b497cda43c0d9e4f6bfc6c3a24bd03",
+  "files": {
+    "bridge-jarvis": "68f5830a9e692c6452ca06527e102b6ddca4091882b4f85c730be2b0622aa764",
+    "bridge-scout": "6f47fd58faa16532201e3a1445a0af81ee34b1aee2e020b2c1cc4405147a7899",
+    "bridge-keeper": "9aa3fa939d628f9c7400ee77f619c6485aab2fa4a26b9d234a58a79dce4116fd",
+    "team-merchant": "ea4f3d1f8f311ee333e008ff07aabd3a71205741ef6eaca419940ef384b86086",
+    "hr-compass": "cae3b697db82c07ab65ed56202e513888343a77562a924039d40bc9df8ab140d",
+    "hr-lens": "fc188314d23b236ab8da9a7aa24632cd3de2625a4d54b2be6fb057c8e56ad608",
+    "hr-relay": "125ccaccc16c879cdd4a63d4fbb1c6abcaa7a03f8eae21a119e685e7aa1c31ca",
+    "team-hr": "8a16f63287dede79a777365f379a388c88f163c9738829a99bfe04ad16466be0",
+    "intake-jarvis": "a2af83a68ec5289bc21c32d5681be70d58dce3880f96e53b155c88ed2d7de8bc",
+    "intake-beacon": "a56c0bdc341ca31f038e66ada4979800e18c1863a775e0bb3dd5ccf6957a0627",
+    "intake-relay": "4881effd8a2c7f10030384958c3a3ebf93a7f13edff09523eaaedc949f8184a6",
+    "intake-compass": "43467a35c418584c7db839b8b73fcf4f8e9a9cc3c90b6784231639b349ce8434",
+    "team-intake": "e85c4fdd85deb9ed38bc5902887a8a6268088899433713c96daac8b39982d3fc",
+    "support-beacon": "98613414be2d0bbf9a789c643ecc7bd8765f9c3d82683b875d1006c3e3aa113f",
+    "team-support": "43fc6078a0c8b5d6ea7e0570a44b35858dfe424cb61dd75b300250878277dd7e",
+    "reflection-lumen": "983faee6b93ed45a7d9c4623fe39e984c27664a29ce1a84ba5511653795b50c4",
+    "reflection-echo": "343105d1299761d6705a777b47e4b20562f01285270d108d043e6bb89ad72d21",
+    "reflection-quill": "e69402d4dc3f320af0199efd2ceae76926f7b85126f6c9ce9e00ac8bde543f88",
+    "team-reflection": "a25ce31b8593447fe0c2c4cfe63f03fb3deb8653953934695fc9386790e37d6c",
+    "email-owl": "f5e909ef0973e95b0c6fba16bcc9e34eb6ebc920fb51494a7cf7652d6a471570",
+    "email-swift": "675a95822e044d9eb45f08c13d246a9c17e89676eeee55f953d0086a69187f72",
+    "team-email": "1e1b5dca9e2e571e9c430f2cb1e38dfc074348ed3e19d0d9de54be9793de6b4d"
+  }
+}

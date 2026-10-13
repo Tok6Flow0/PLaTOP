@@ -11,6 +11,8 @@ import { FrameOutput } from './scene/frameOutput';
 import { enableFlatMappedWallSinglePass } from './scene/flatMappedWalls';
 import { OfficeMotor, OfficeNavigator, makeOfficeMap, WALK_SPEED } from './scene/officeNavigation';
 import { OfficeAssetsRenderer } from './scene/officeAssets';
+import { StudioEnvironment, StudioRoomFinishes, roomLightingFactor } from './scene/studioEnvironment';
+import { StaticContacts, actorContactHeight } from './scene/staticContacts';
 
 // Keep cinematic 3D at one backing pixel per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -104,7 +106,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, SCENE_PIXEL_RATIO_CAP));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 1.04;
+  renderer.toneMappingExposure = 1.02;
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.VSMShadowMap;
   renderer.shadowMap.autoUpdate = false;
@@ -121,19 +123,20 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   host.append(canvas);
 
   const scene = new THREE.Scene();
+  const studio = new StudioEnvironment(renderer, scene);
   const output = new FrameOutput(renderer, scene, host);
   const camera = new THREE.PerspectiveCamera(23, 1, 0.1, 180);
   camera.position.set(0, 38, 27);
   camera.lookAt(0, 0.7, 0);
   camera.updateMatrixWorld();
-  scene.add(new THREE.HemisphereLight('#fff7e9', '#a3937d', 1.45));
-  const sunlight = new THREE.DirectionalLight('#fff0d5', 2.6);
+  scene.add(new THREE.HemisphereLight('#fffaf1', '#a39b8d', 1.15));
+  const sunlight = new THREE.DirectionalLight('#fff2df', 2.15);
   sunlight.position.set(-9, 19, 11);
   sunlight.castShadow = true;
   sunlight.shadow.mapSize.set(1024, 1024);
   sunlight.shadow.bias = -0.0004;
   sunlight.shadow.normalBias = 0.025;
-  sunlight.shadow.radius = 4;
+  sunlight.shadow.radius = 5;
   sunlight.shadow.blurSamples = 8;
   sunlight.shadow.camera.near = 1;
   sunlight.shadow.camera.far = 80;
@@ -168,6 +171,18 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     rooms.set(team.id, room);
     scene.add(room.root);
   });
+  const roomFillLights = new Map<string, THREE.PointLight>();
+  rooms.forEach((room, id) => {
+    // An explicit agent lighting style may use one soft, local, shadow-free
+    // ceiling bounce. Default rooms add no runtime lights to the shader.
+    const fill = new THREE.PointLight('#ffe8bf', 0.8, 6.3, 2);
+    fill.name = 'Agent room lighting';
+    fill.userData.roomStyleFill = true;
+    fill.position.set(0, 3.0, room.navigation.task[1]);
+    fill.visible = false;
+    room.root.add(fill);
+    roomFillLights.set(id, fill);
+  });
   const navigator = new OfficeNavigator(makeOfficeMap(rooms, teams, campusNavigation));
   const officeAssets = new OfficeAssetsRenderer(rooms);
   teams.slice(0, 6).forEach(team => {
@@ -194,7 +209,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       root.add(sleep);
       // Ownership stays with the team; physical presence can cross rooms.
       scene.add(root);
-      const contact = new THREE.Mesh(contactGeometry, new THREE.MeshBasicMaterial({ map: contactTexture, color: '#76664f', opacity: 0.3, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
+      const contact = new THREE.Mesh(contactGeometry, new THREE.MeshBasicMaterial({ map: contactTexture, color: '#76664f', opacity: 0.34, transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -1 }));
       contact.rotation.x = -Math.PI / 2;
       contact.scale.set(0.95, 0.65, 1);
       contact.position.set(home.x, desk.floorY + 0.008, home.z);
@@ -356,38 +371,79 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     });
     fadeWalls();
   }
+  const roomFinishes = new StudioRoomFinishes(rooms);
+  const staticContacts = new StaticContacts(scene, [campus, ...[...rooms.values()].map(room => room.root)]);
   const roomLamps = [...rooms].map(([id, room]) => {
-    const lights: Array<{ light: THREE.PointLight; intensity: number }> = [];
-    const glow: Array<{ material: THREE.Material & { opacity: number }; opacity: number }> = [];
-    const shades: Array<{ material: THREE.MeshStandardMaterial; intensity: number }> = [];
+    const lights: Array<{ light: THREE.PointLight; intensity: number; color: THREE.Color }> = [];
+    const glow: Array<{ material: THREE.Material & { opacity: number; color: THREE.Color }; opacity: number; color: THREE.Color }> = [];
+    const shades: Array<{ material: THREE.MeshStandardMaterial; intensity: number; color: THREE.Color }> = [];
+    const assets: Array<{ material: THREE.MeshStandardMaterial; intensity: number }> = [];
     room.root.traverse(object => {
-      if ((object as THREE.PointLight).isPointLight) {
+      if ((object as THREE.PointLight).isPointLight && !object.userData.roomStyleFill) {
         const light = object as THREE.PointLight;
-        lights.push({ light, intensity: light.intensity });
+        lights.push({ light, intensity: light.intensity, color: light.color.clone() });
       }
       const material = (object as THREE.Mesh | THREE.Sprite).material;
       if (!material || Array.isArray(material)) return;
-      if (material.blending === THREE.AdditiveBlending) glow.push({ material, opacity: material.opacity });
+      if (material.blending === THREE.AdditiveBlending) {
+        const glowing = material as THREE.Material & { opacity: number; color: THREE.Color };
+        glow.push({ material: glowing, opacity: glowing.opacity, color: glowing.color.clone() });
+      }
       if ((material as THREE.MeshStandardMaterial).isMeshStandardMaterial && (material as THREE.MeshStandardMaterial).emissive.getHexString() === 'efb450') {
         const shade = material as THREE.MeshStandardMaterial;
-        shades.push({ material: shade, intensity: shade.emissiveIntensity });
+        shades.push({ material: shade, intensity: shade.emissiveIntensity, color: shade.emissive.clone() });
       }
     });
-    return { id, lights, glow, shades, occupied: true, nextOccupied: false };
+    return { id, lights, glow, shades, assets, occupied: true, nextOccupied: false };
   });
   const lampOffices = new Map(roomLamps.map(entry => [entry.id, entry]));
-  function updateRoomLamps(): void {
+  const assetGlowIntensities = new WeakMap<THREE.MeshStandardMaterial, number>();
+  function refreshAssetLamps(): void {
+    rooms.forEach((room, id) => {
+      const office = lampOffices.get(id)!;
+      office.assets.length = 0;
+      room.root.children.filter(object => object.userData.decorSlot).forEach(root => root.traverse(object => {
+        const material = (object as THREE.Mesh).material as THREE.MeshStandardMaterial | undefined;
+        if (!material?.isMeshStandardMaterial) return;
+        const intensity = assetGlowIntensities.get(material) ?? material.emissiveIntensity;
+        if (intensity > 0) {
+          assetGlowIntensities.set(material, intensity);
+          office.assets.push({ material, intensity });
+        }
+      }));
+    });
+  }
+  function updateRoomLamps(force = false): void {
     for (const office of roomLamps) office.nextOccupied = false;
     for (const actor of actors) if (actor.motor.present && actor.physicalOffice) {
       const office = lampOffices.get(actor.physicalOffice);
       if (office) office.nextOccupied = true;
     }
     for (const office of roomLamps) {
-      if (office.occupied === office.nextOccupied) continue;
+      if (!force && office.occupied === office.nextOccupied) continue;
       office.occupied = office.nextOccupied;
-      for (const entry of office.lights) entry.light.intensity = office.occupied ? entry.intensity : 0;
-      for (const entry of office.glow) entry.material.opacity = office.occupied ? entry.opacity : 0;
-      for (const entry of office.shades) entry.material.emissiveIntensity = office.occupied ? entry.intensity : 0;
+      const lighting = state.rooms?.[office.id]?.lighting;
+      const factor = office.occupied ? roomLightingFactor(lighting) : 0;
+      const tint = new THREE.Color(lighting?.color ?? '#ffe8bf');
+      const baseline = new THREE.Color('#ffe8bf');
+      tint.setRGB(tint.r / baseline.r, tint.g / baseline.g, tint.b / baseline.b);
+      for (const entry of office.lights) {
+        entry.light.intensity = entry.intensity * factor;
+        entry.light.color.copy(entry.color).multiply(tint);
+      }
+      for (const entry of office.glow) {
+        entry.material.opacity = entry.opacity * Math.min(factor, 1.5);
+        entry.material.color.copy(entry.color).multiply(tint);
+      }
+      for (const entry of office.shades) {
+        entry.material.emissiveIntensity = entry.intensity * factor;
+        entry.material.emissive.copy(entry.color).multiply(tint);
+      }
+      for (const entry of office.assets) entry.material.emissiveIntensity = entry.intensity * factor;
+      const fill = roomFillLights.get(office.id)!;
+      fill.visible = !!lighting && Object.keys(lighting).length > 0 && factor > 0;
+      fill.intensity = 0.8 * factor;
+      fill.color.set(lighting?.color ?? '#ffe8bf');
     }
   }
   const gestures = new Map<number, { x: number; y: number; dragged: boolean }>();
@@ -438,6 +494,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     entry instanceof THREE.Object3D ? [entry] : [entry.root, entry.outline, ...Object.values(entry.decorations)]));
   function collectStaticPrunable(object: THREE.Object3D): void {
     if (animatedRoots.has(object)) return;
+    if (object.userData.roomStyleFill) return;
     if (!visibilityRoots.has(object)) prunableRoots.add(object);
     object.children.forEach(collectStaticPrunable);
   }
@@ -541,7 +598,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         actor.seatedFeet.apply(seatLift);
       } else if (frozen && !actor.mixer && actor.proxySeatLift !== undefined && actor.proxySeatLift !== seatLift) {
         const personality = actor.model.userData.personality as { feet: THREE.Object3D[] } | undefined;
-        personality?.feet.forEach(foot => { foot.position.y += actor.proxySeatLift! - seatLift; });
+        personality?.feet.forEach(foot => { foot.position.y += (actor.proxySeatLift! - seatLift) / actor.model.scale.y; });
         actor.proxySeatLift = seatLift;
       }
       if (!frozen) {
@@ -556,7 +613,9 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       }
       actor.sleep.visible = status === 'sleeping' && !actor.authoredSleepFx;
       if (!frozen) actor.sleep.position.y = actor.sleepHeight + (status === 'sleeping' ? Math.sin(motionTime * 1.4 + actor.index) * 0.055 : 0);
-      actor.contact.position.set(motor.x, motor.floorY + 0.008, motor.z);
+      const contactOffice = actor.physicalOffice ? rooms.get(actor.physicalOffice) : undefined;
+      const contactY = actorContactHeight(motor.floorY, motor.x - (contactOffice?.center.x ?? 0), motor.z - (contactOffice?.center.z ?? 0), contactOffice?.root.userData.rugSurface);
+      actor.contact.position.set(motor.x, contactY, motor.z);
       if (!frozen) {
         actor.seatedFeet?.restore();
         selectClip(actor, state.controlMode === 'offline' ? 'Idle' : status === 'sleeping' ? 'Sleep' : moving ? 'Move' : motor.mode === 'work' || motor.mode === 'celebrate' ? 'Work' : 'Idle');
@@ -945,6 +1004,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       : campusLabel);
     campus.visible = !teamId;
     rooms.forEach((room, id) => { room.root.visible = !teamId || id === teamId; });
+    staticContacts.syncVisibility();
     batches.invalidateVisibility();
     host.dataset.idleTeam = teamId ?? '';
     controls.minPolarAngle = teamId ? 0 : THREE.MathUtils.degToRad(25);
@@ -982,7 +1042,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     host.dataset.sceneFps = '0';
     onError?.('The 3D context was interrupted. Team status remains available.');
   }
-  function restored(): void { contextLost = false; bufferDpr = 0; renderer.shadowMap.needsUpdate = true; onError?.(''); wake(); }
+  function restored(): void { contextLost = false; bufferDpr = 0; studio.restore(); staticContacts.restore(); renderer.shadowMap.needsUpdate = true; onError?.(''); wake(); }
   controls.addEventListener('change', cameraChanged);
   canvas.addEventListener('pointerdown', pointerDown, { capture: true });
   canvas.addEventListener('pointerup', click);
@@ -1102,9 +1162,12 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       }
       if (officeAssets.sync(state.assets)) {
         refreshAssetWallFades();
+        refreshAssetLamps();
         batches.rebuild();
         renderer.shadowMap.needsUpdate = true;
       }
+      if (roomFinishes.sync(state.rooms)) batches.rebuild();
+      updateRoomLamps(true);
       applyMotorState();
       rooms.forEach((room, id) => {
         room.outline.visible = id === state.selectedTeam;
@@ -1140,12 +1203,19 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       canvas.removeEventListener('webglcontextrestored', restored);
       actors.forEach((actor) => { actor.mixer?.stopAllAction(); actor.mixer?.uncacheRoot(actor.model); });
       contacts.dispose();
+      staticContacts.dispose();
       batches.dispose();
       officeAssets.dispose();
       assetWallFades.length = 0;
       output.dispose();
+      studio.dispose();
       const resources = new THREE.Group();
+      const staticSources = new Set<THREE.Object3D>();
+      scene.traverse(object => {
+        if (object.userData.staticSources instanceof THREE.Object3D) staticSources.add(object.userData.staticSources);
+      });
       resources.add(scene, retiredProxies);
+      resources.add(...staticSources);
       disposeObject(resources);
       kit.dispose();
       sunlight.shadow.dispose();

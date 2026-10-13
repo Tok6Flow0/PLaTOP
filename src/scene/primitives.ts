@@ -2,18 +2,27 @@ import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 export type Primitive = 'box' | 'roundedBox' | 'sphere' | 'cylinder' | 'cone' | 'octahedron' | 'capsule'
-  | 'roundedDetail' | 'detailSphere' | 'detailCylinder';
+  | 'roundedDetail' | 'detailSphere' | 'detailCylinder' | 'pot';
+export type SurfaceFinish = 'matte' | 'ceramic' | 'wood' | 'fabric' | 'metal';
+const finishes = {
+  matte: { roughness: 0.77, metalness: 0, envMapIntensity: 0.7 },
+  ceramic: { roughness: 0.48, metalness: 0, envMapIntensity: 1 },
+  wood: { roughness: 0.68, metalness: 0, envMapIntensity: 0.65 },
+  fabric: { roughness: 0.94, metalness: 0, envMapIntensity: 0.25 },
+  metal: { roughness: 0.32, metalness: 0.65, envMapIntensity: 0.9 },
+} satisfies Record<SurfaceFinish, object>;
 
 /** Shared low-resolution surfaces keep the tiny office inexpensive to draw. */
 export class SceneKit {
   private materials = new Map<string, THREE.MeshStandardMaterial>();
   private shapes = new Map<string, THREE.BufferGeometry>();
 
-  material(color: string): THREE.MeshStandardMaterial {
-    let material = this.materials.get(color);
+  material(color: string, finish: SurfaceFinish = 'matte'): THREE.MeshStandardMaterial {
+    const key = `${finish}:${color}`;
+    let material = this.materials.get(key);
     if (!material) {
-      material = new THREE.MeshStandardMaterial({ color, roughness: 0.77, metalness: 0 });
-      this.materials.set(color, material);
+      material = new THREE.MeshStandardMaterial({ color, ...finishes[finish] });
+      this.materials.set(key, material);
     }
     return material;
   }
@@ -26,10 +35,11 @@ export class SceneKit {
         : kind === 'roundedDetail' ? new RoundedBoxGeometry(1, 1, 1, 1, 0.16)
         : kind === 'capsule' ? new THREE.CapsuleGeometry(0.32, 0.36, 4, 12)
         : kind === 'sphere' ? new THREE.SphereGeometry(0.5, 20, 14)
-        : kind === 'detailSphere' ? new THREE.SphereGeometry(0.5, 12, 8)
+        : kind === 'detailSphere' ? new THREE.SphereGeometry(0.5, 16, 10)
         : kind === 'cylinder' ? new THREE.CylinderGeometry(0.5, 0.5, 1, 20)
         : kind === 'detailCylinder' ? new THREE.CylinderGeometry(0.5, 0.5, 1, 8)
-        : kind === 'cone' ? new THREE.ConeGeometry(0.5, 1, 4)
+        : kind === 'pot' ? new THREE.CylinderGeometry(0.5, 0.39, 1, 24)
+        : kind === 'cone' ? new THREE.ConeGeometry(0.5, 1, 20)
         : new THREE.OctahedronGeometry(0.5);
       this.shapes.set(kind, geometry);
     }
@@ -37,8 +47,8 @@ export class SceneKit {
   }
 
   mesh(parent: THREE.Object3D, kind: Primitive, color: string,
-    position: [number, number, number], scale: [number, number, number], rotation?: [number, number, number]): THREE.Mesh {
-    const mesh = new THREE.Mesh(this.geometry(kind), this.material(color));
+    position: [number, number, number], scale: [number, number, number], rotation?: [number, number, number], finish: SurfaceFinish = 'matte'): THREE.Mesh {
+    const mesh = new THREE.Mesh(this.geometry(kind), this.material(color, finish));
     mesh.position.set(...position);
     mesh.scale.set(...scale);
     if (rotation) mesh.rotation.set(...rotation);

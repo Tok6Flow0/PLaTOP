@@ -5,20 +5,23 @@
 A little local office for your AI teams. PLaTOP turns selected activity states
 into a cozy, top-down 3D playground with six offices and sixteen characters.
 Active teams move and work; confirmed idle teams sleep with little Zs. Missing
-observations stay **unknown**, and active signals expire without a heartbeat. Preview mode is clearly simulated.
+observations stay **unknown**, and active signals expire without a heartbeat.
+The optional development preview is clearly labeled simulated.
 
 The six teams are **Savor Bridge**, **Clear Path**, **Savor Wayfinders**,
 **Beacon**, **The Lantern Desk**, and **Savor Dispatch**. Each office has a
-portrait of the team's chosen identity. Agents own their decorations through
-small local geometric recipes and can visit the connected offices, work, rest,
-celebrate or head home through the PLaTOP skill. The viewer has camera controls;
-the agents choose what makes their space their own.
+portrait rendered from the same characters that appear in the office. Agents own
+their decorations, room colours and lamp mood through small local recipes and
+can visit the connected offices, work, rest, celebrate or head home through the
+PLaTOP skill. Viewers select a view and control the camera or pause playback;
+the agents choose how their space looks and what their avatars do.
 
 **Current status:** the office is a real 3D scene modeled toward the supplied
-concept. Editable ceramic robot models and reviewed lantern/owl GLBs share the
-same environment. Claude has delivered all sixteen character files; only IDs
-in `public/assets/approved.json` are enabled after visual review. The rest remain
-available as source assets. The [asset contract](docs/ASSET-CONTRACT.md) and
+concept. All sixteen default characters use a cohesive procedural ceramic,
+paper and lantern design from `src/scene/proxies.ts` and
+`src/scene/characterGeometry.ts`. Claude's sixteen GLB deliveries remain source
+assets; the current `public/assets/approved.json` has no enabled GLB IDs. A later
+review can opt individual GLBs back in. The [asset contract](docs/ASSET-CONTRACT.md) and
 [coordination board](docs/COORDINATION.md) record integration and approvals.
 A visual resemblance score is a subjective critique, not a pixel-equivalence measurement.
 
@@ -109,7 +112,8 @@ Codex from this checkout:
 codex mcp add platop -- node "$PWD/scripts/platop-mcp.mjs"
 ```
 
-New MCP sessions expose `platop_status` and `platop_set_activity`. Add the skill
+New MCP sessions expose five tools: `platop_status`, `platop_set_activity`,
+`platop_action`, `platop_decorate` and `platop_style`. Add the skill
 to each authorized team automation so it reports active while working, sends
 heartbeats during long tasks, and reports its final state. Existing sessions can
 call the same stdio MCP server through the bounded local client, without waiting
@@ -118,9 +122,18 @@ for host tools to reload:
 ```sh
 node scripts/platop-mcp-client.mjs status
 node scripts/platop-mcp-client.mjs set support active
+node scripts/platop-mcp-client.mjs style support '{"lighting":{"mode":"cozy","brightness":0.8}}'
+node scripts/platop-mcp-client.mjs decorate support shelf '[{"shape":"capsule","finish":"ceramic","color":"#e7ddc5"},{"shape":"leaf","position":[0,0.3,0],"color":"#91a579"}]'
+node scripts/platop-mcp-client.mjs style support '{"reset":true}'
 ```
 
-The client accepts only public team IDs and states, verifies the MCP reply, and
+`platop_style` merges only the supplied wall, rug, furniture or lighting choices;
+omitted fields retain their current appearance. Reset restores the authored
+room palette and lamp settings without removing its decorations. Recipes offer
+seven smooth shapes and matte, ceramic, wood or metal finishes, with up to twelve
+parts per slot. The browser has no decorating or avatar-action controls.
+
+The client accepts only bounded public activity and office data, verifies the MCP reply, and
 cleans up its server process after each call. It does not retry an unconfirmed
 write. The original direct CLI remains available. Visualization gives an
 automation no permission to start work outside its original instructions.
@@ -142,7 +155,10 @@ compatible moving groups share one matrix upload per frame. Sleep labels reuse
 one immutable material and texture per scene. Unsupported surfaces retain their
 original rendering paths. One
 small static shadow map, contact textures and modest lamp glows create soft
-lighting. An opaque canvas avoids transparent compositing, and the cached warm
+lighting. A small prefiltered studio environment is baked once for ceramic and
+metal reflections. An explicit agent lighting override can enable one bounded,
+shadow-free fill per room; default rooms add no active fill lights. An opaque
+canvas avoids transparent compositing, and the cached warm
 background preserves the office palette. These are rendering budgets, not
 whole-device CPU/GPU measurements.
 
@@ -153,7 +169,7 @@ They measure JavaScript wall time, not process CPU or completed GPU work. See
 [measured optimization results](docs/VALIDATION.md) for native CPU comparisons.
 
 The bridge binds to loopback and accepts only public team IDs, activity states,
-and fixed source labels; it assigns timestamps locally. Chat contents, contacts, private thread IDs,
+fixed source labels and bounded data-only office choices; it assigns timestamps locally. Chat contents, contacts, private thread IDs,
 and credentials are not published. The local token and latest sanitized state
 stay in ignored `.local/`; the app does not read private Codex databases or
 transcripts. This playground visualizes work; it does not run the teams' workflows.
@@ -169,6 +185,28 @@ does not measure GPU execution or guarantee the screen's presented refresh rate.
 
 ## Art and ownership
 
-The supplied portraits and office concept are project references. No repository
+The supplied portraits and office concept remain project references. The team
+and roster portraits in `public/avatars/` are rendered from the current procedural
+models, so the interface and office use the same character designs.
+
+Developers can optionally regenerate the sixteen member and six team portraits
+with `scripts/render-avatars.mjs`, using an existing Playwright installation
+with its Chromium browser:
+
+```sh
+node scripts/render-avatars.mjs
+```
+
+If Playwright lives elsewhere, set `PLATOP_PLAYWRIGHT_MODULE` to its importable
+module path. The script starts its own temporary Vite server on an available
+loopback port, rooted in this checkout, and closes the server and browser when
+finished. It takes no URL argument and needs no prestarted development server,
+so an unrelated or stale server cannot supply the models. It writes portraits
+plus their source/file fingerprints. Playwright is optional
+developer tooling, not an application runtime dependency. Chromium and working
+WebGL are required for generation; fingerprints track source freshness, not
+identical pixels across every graphics driver.
+
+No repository
 license has been selected; public visibility does not grant additional reuse
 rights. Source attribution and character descriptions are in [ASSETS.md](docs/ASSETS.md).

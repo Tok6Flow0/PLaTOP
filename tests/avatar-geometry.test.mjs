@@ -1,0 +1,166 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import ts from 'typescript';
+import * as THREE from 'three';
+
+const modules = new Map();
+async function load(relative) {
+  const file = new URL(`../src/${relative}`, import.meta.url);
+  if (modules.has(file.href)) return import(modules.get(file.href));
+  let js = ts.transpileModule(await readFile(file, 'utf8'), {
+    compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 },
+  }).outputText;
+  for (const match of [...js.matchAll(/from ['"]([^'"]+)['"]/g)]) {
+    const specifier = match[1]; let target;
+    if (specifier.startsWith('.')) {
+      const dependency = new URL(`${specifier}.ts`, file), root = new URL('../src/', import.meta.url);
+      await load(dependency.pathname.slice(root.pathname.length)); target = modules.get(dependency.href);
+    } else target = import.meta.resolve(specifier);
+    js = js.replace(match[0], `from ${JSON.stringify(target)}`);
+  }
+  const url = `data:text/javascript;base64,${Buffer.from(js).toString('base64')}`;
+  modules.set(file.href, url); return import(url);
+}
+const { teams } = await load('teams.ts');
+const { SceneKit, disposeObject } = await load('scene/primitives.ts');
+const { makeProxy, animateCharacter } = await load('scene/proxies.ts');
+const { characterGeometry, characterMaterial } = await load('scene/characterGeometry.ts');
+const members = teams.flatMap(team => team.members);
+
+function meshes(root) {
+  const result = []; root.traverse(object => { if (object.isMesh) result.push(object); }); return result;
+}
+
+test('sixteen sculpted avatars retain motor clearance during every moving stride and turn pose', () => {
+  const kit = new SceneKit(), all = new THREE.Group(), vertex = new THREE.Vector3();
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    const radius = character.kind === 'swift' ? .6 : character.kind === 'owl' ? .7 : .61;
+    for (let step = 0; step < 36; step++) {
+      animateCharacter(model, 'active', step / 6, 0, true, false, {
+        phase: step / 36 * Math.PI * 2, speed: .85, seatLift: 0, celebration: 0, foldWings: true,
+      });
+      model.rotation.y = step / 36 * Math.PI * 2; model.updateMatrixWorld(true);
+      for (const mesh of meshes(model)) {
+        const positions = mesh.geometry.attributes.position;
+        for (let i = 0; i < positions.count; i++) {
+          vertex.fromBufferAttribute(positions, i).applyMatrix4(mesh.matrixWorld);
+          assert.ok(Number.isFinite(vertex.x + vertex.y + vertex.z), `${character.id} has finite geometry`);
+          assert.ok(Math.hypot(vertex.x, vertex.z) <= radius + 1e-7, `${character.id} moving geometry fits ${radius} motor disk`);
+        }
+      }
+    }
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('standing feet touch the floor and keep that height when the room lifts a seated body', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    const personality = model.userData.personality;
+    if (!personality.feet.length) continue;
+    for (const seatLift of [0, .15, .27]) {
+      model.position.y = seatLift;
+      animateCharacter(model, 'active', 1, 0, false, true, { phase: 0, speed: 0, seatLift, celebration: 0 });
+      model.updateMatrixWorld(true);
+      for (const foot of personality.feet) {
+        const floor = new THREE.Box3().setFromObject(foot).min.y;
+        assert.ok(Math.abs(floor) < 1e-7, `${character.id}/${foot.name} floor contact`);
+      }
+    }
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('sculpted forms share scene resources, preserve the environment finish, and allocate nothing during animation', () => {
+  const kit = new SceneKit(), otherKit = new SceneKit(), all = new THREE.Group();
+  const environmentInk = kit.material('#243c43'), priorRoughness = environmentInk.roughness;
+  const models = members.map(character => { const model = makeProxy(character, kit); all.add(model); return model; });
+  assert.equal(kit.material('#243c43').roughness, priorRoughness, 'face glaze does not change shared walls or props');
+  const originalGeometry = characterGeometry(kit, 'helmet');
+  assert.equal(characterGeometry(kit, 'helmet'), originalGeometry);
+  assert.notEqual(characterGeometry(otherKit, 'helmet'), originalGeometry, 'independent scenes own independent GPU resources');
+  const material = characterMaterial(kit, '#eee4d0', 'glaze');
+  assert.equal(characterMaterial(kit, '#eee4d0', 'glaze'), material);
+  const before = models.map(model => meshes(model).map(mesh => [mesh.geometry.uuid, mesh.material.uuid]));
+  for (let frame = 0; frame < 90; frame++) models.forEach((model, index) => {
+    animateCharacter(model, frame < 30 ? 'sleeping' : 'active', frame / 30, index, frame >= 60, false,
+      { phase: frame / 6, speed: .85, seatLift: 0, celebration: 0, foldWings: true });
+  });
+  assert.deepEqual(models.map(model => meshes(model).map(mesh => [mesh.geometry.uuid, mesh.material.uuid])), before);
+  let disposed = 0; originalGeometry.addEventListener('dispose', () => disposed++);
+  disposeObject(all); assert.equal(disposed, 1, 'shared fitted form is released exactly once by the scene disposer');
+  kit.dispose();
+  characterGeometry(otherKit, 'helmet').dispose(); otherKit.dispose();
+});
+
+test('hero geometry is smooth and bounded, with fewer than six thousand triangles per character', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model);
+    let triangles = 0;
+    for (const mesh of meshes(model)) {
+      const geometry = mesh.geometry;
+      triangles += (geometry.index?.count ?? geometry.attributes.position.count) / 3;
+      assert.ok(geometry.attributes.normal, `${character.id} has surface normals`);
+      assert.equal(mesh.material.flatShading, false, `${character.id} avoids faceted lighting`);
+    }
+    assert.ok(triangles < 6000, `${character.id}: ${triangles} triangle geometry budget`);
+    model.updateMatrixWorld(true);
+    const bounds = new THREE.Box3().setFromObject(model), size = bounds.getSize(new THREE.Vector3());
+    assert.ok(size.y < 2, `${character.id} stays inside existing character standing heights`);
+  }
+  disposeObject(all); kit.dispose();
+});
+
+test('continuous clay surfaces keep matching normals across duplicated UV seams without adding triangles', () => {
+  const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
+  const expectedTriangles = { torso: 336, owlBody: 288, lanternGlass: 336, lanternCap: 384,
+    lanternBase: 384, limb: 224, beak: 192, helmet: 720, owlHead: 720, wing: 352, tuft: 168 };
+  for (const [form, count] of Object.entries(expectedTriangles)) {
+    const geometry = characterGeometry(kit, form), position = geometry.attributes.position;
+    const uv = geometry.attributes.uv, normal = geometry.attributes.normal;
+    assert.equal(geometry.index.count / 3, count, `${form} preserves its existing topology`);
+    const seam = new Map();
+    for (let i = 0; i < position.count; i++) {
+      if (Math.abs(uv.getX(i)) > 1e-6 && Math.abs(uv.getX(i) - 1) > 1e-6) continue;
+      const key = `${Math.round(position.getX(i) * 1e6)}:${Math.round(position.getY(i) * 1e6)}:${Math.round(position.getZ(i) * 1e6)}`;
+      const opposite = seam.get(key);
+      if (opposite === undefined) { seam.set(key, i); continue; }
+      left.fromBufferAttribute(normal, opposite).normalize(); right.fromBufferAttribute(normal, i).normalize();
+      assert.ok(left.distanceTo(right) < 1e-6, `${form} has no lighting discontinuity at its UV seam`);
+    }
+    geometry.dispose();
+  }
+  kit.dispose();
+});
+
+test('robot cuffs join feet to their torso and lantern warmth adds no real lights', () => {
+  const kit = new SceneKit(), all = new THREE.Group();
+  for (const character of members) {
+    const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
+    assert.equal(model.getObjectsByProperty('isLight', true).length, 0, `${character.id} adds no shadow or light passes`);
+    if (character.kind === 'robot') {
+      const torso = meshes(model).find(mesh => mesh.geometry === characterGeometry(kit, 'torso'));
+      const torsoBounds = new THREE.Box3().setFromObject(torso);
+      for (const name of ['ankle_l', 'ankle_r']) {
+        const cuff = model.getObjectByName(name), foot = cuff.parent.children.find(mesh => mesh.geometry === characterGeometry(kit, 'bean'));
+        const cuffBounds = new THREE.Box3().setFromObject(cuff);
+        assert.ok(cuffBounds.intersectsBox(torsoBounds), `${character.id}/${name} joins the torso`);
+        assert.ok(cuffBounds.intersectsBox(new THREE.Box3().setFromObject(foot)), `${character.id}/${name} joins the foot`);
+      }
+    } else if (character.kind === 'lantern') {
+      const glow = model.userData.personality.glow;
+      assert.ok(glow.emissive.r > glow.emissive.g && glow.emissive.g > glow.emissive.b, 'lantern emission stays warm');
+      animateCharacter(model, 'sleeping', 0, 0, false, true);
+      const asleep = glow.emissiveIntensity;
+      animateCharacter(model, 'active', 0, 0, false, true);
+      assert.ok(glow.emissiveIntensity > asleep && glow.emissiveIntensity < 1, 'glazed amber brightens gently when awake');
+    }
+  }
+  const helmet = characterGeometry(kit, 'helmet'); helmet.computeBoundingBox();
+  assert.ok(helmet.boundingBox.min.z > -.45 && helmet.boundingBox.max.z === .5, 'helmet back is subtly flattened while the fitted face stays intact');
+  disposeObject(all); kit.dispose();
+});

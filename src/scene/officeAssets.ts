@@ -1,10 +1,14 @@
 import * as THREE from 'three';
 import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
-import type { DecorShape, DecorSlot, OfficeAsset, OfficeAssets } from '../types';
+import type { DecorFinish, DecorShape, DecorSlot, OfficeAsset, OfficeAssets } from '../types';
 import type { Room } from './rooms';
 import { parseOfficeSnapshot } from '../../server/office-protocol.mjs';
 
 const SLOT_SCALE: Record<DecorSlot, number> = { desk: 0.25, shelf: 0.25, wall: 0.35, floor: 0.45, festive: 0.5 };
+const FINISH: Record<DecorFinish, { roughness: number; metalness: number }> = {
+  matte: { roughness: 0.82, metalness: 0 }, ceramic: { roughness: 0.34, metalness: 0 },
+  wood: { roughness: 0.78, metalness: 0 }, metal: { roughness: 0.3, metalness: 0.65 },
+};
 interface RenderedAsset { root: THREE.Group; signature: string; materials: THREE.MeshStandardMaterial[]; }
 
 /** Bounded local primitive recipes update only when an office snapshot changes. */
@@ -18,11 +22,24 @@ export class OfficeAssetsRenderer {
   private geometry(shape: DecorShape): THREE.BufferGeometry {
     let geometry = this.geometries.get(shape);
     if (!geometry) {
-      geometry = shape === 'box' ? new RoundedBoxGeometry(1, 1, 1, 1, 0.08)
-        : shape === 'sphere' ? new THREE.SphereGeometry(0.5, 12, 8)
-        : shape === 'cylinder' ? new THREE.CylinderGeometry(0.5, 0.5, 1, 12, 1)
-        : shape === 'cone' ? new THREE.ConeGeometry(0.5, 1, 12, 1)
-        : new THREE.TorusGeometry(0.35, 0.15, 6, 16);
+      geometry = shape === 'box' ? new RoundedBoxGeometry(1, 1, 1, 2, 0.12)
+        : shape === 'sphere' || shape === 'leaf' ? new THREE.SphereGeometry(0.5, 16, 10)
+        : shape === 'cylinder' ? new THREE.LatheGeometry([[0, -0.5], [0.42, -0.5], [0.48, -0.48], [0.5, -0.42],
+          [0.5, 0.42], [0.48, 0.48], [0.42, 0.5], [0, 0.5]].map(([x, y]) => new THREE.Vector2(x, y)), 20)
+        : shape === 'cone' ? new THREE.LatheGeometry([[0, -0.5], [0.41, -0.5], [0.48, -0.48], [0.5, -0.43],
+          [0.15, 0.34], [0.07, 0.46], [0, 0.5]].map(([x, y]) => new THREE.Vector2(x, y)), 20)
+        : shape === 'capsule' ? new THREE.CapsuleGeometry(0.3, 0.4, 4, 16)
+        : new THREE.TorusGeometry(0.35, 0.15, 8, 24);
+      if (shape === 'leaf') {
+        const positions = geometry.getAttribute('position');
+        for (let index = 0; index < positions.count; index++) {
+          const y = positions.getY(index);
+          const taper = 1 - 0.65 * Math.abs(y * 2);
+          positions.setXYZ(index, positions.getX(index) * taper, y,
+            positions.getZ(index) * (0.35 + 0.65 * taper));
+        }
+        geometry.computeVertexNormals();
+      }
       // Every recipe size means full width/height/depth, including a torus's
       // shallow original tube. This preserves the validator's extent bound.
       geometry.computeBoundingBox();
@@ -46,7 +63,7 @@ export class OfficeAssetsRenderer {
     root.scale.setScalar(SLOT_SCALE[slot]);
     if (anchor.rotation) root.rotation.set(...anchor.rotation);
     const materials = asset.parts.map(part => {
-      const material = new THREE.MeshStandardMaterial({ color: part.color, roughness: 0.82, metalness: 0,
+      const material = new THREE.MeshStandardMaterial({ color: part.color, ...FINISH[part.finish],
         emissive: part.glow ? part.color : '#000000', emissiveIntensity: part.glow ? 0.65 : 0 });
       const mesh = new THREE.Mesh(this.geometry(part.shape), material);
       mesh.position.set(...part.position);

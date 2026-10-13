@@ -4,6 +4,12 @@ import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.j
 import { SceneKit } from './primitives';
 
 type Point = [number, number, number];
+export type RoomSurface = 'wall' | 'rug' | 'furniture';
+const surfaceCodes: Record<RoomSurface, number> = { wall: 1, rug: 2, furniture: 3 };
+function surface(mesh: THREE.Mesh, role: RoomSurface): THREE.Mesh { mesh.userData.roomSurface = role; return mesh; }
+function floorContact(parent: THREE.Object3D, x: number, y: number, z: number, width: number, depth: number): void {
+  (parent.userData.floorContacts ??= []).push([x, y, z, width, depth]);
+}
 /** Keep masonry bevels at a physical scale rather than stretching a unit cube's corners. */
 export function beveledBlock(parent: THREE.Object3D, kit: SceneKit, color: string, position: Point, size: Point, radius = 0.035): THREE.Mesh {
   const mesh = new THREE.Mesh(new RoundedBoxGeometry(size[0], size[1], size[2], 2, Math.min(radius, ...size.map((dimension) => dimension * 0.46))), kit.material(color));
@@ -63,7 +69,7 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
   texturedPlane(parent, texture, position, size[0], size[1], true);
 }
 export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: number, z: number, width: number, depth: number, words?: string[]): void {
-  kit.mesh(parent, 'roundedBox', color, [x, 0.111, z], [width, 0.035, depth]);
+  surface(kit.mesh(parent, 'roundedBox', color, [x, 0.111, z], [width, 0.035, depth], undefined, 'fabric'), 'rug');
   const texture = canvasTexture(512, 512, (context) => {
     context.fillStyle = color; context.fillRect(0, 0, 512, 512);
     context.strokeStyle = 'rgba(255,245,214,.12)'; context.lineWidth = 1;
@@ -81,7 +87,9 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
     context.fillStyle = edgeShade; context.fillRect(0, 0, 512, 512);
     if (words) { context.fillStyle = '#4e4c37'; context.font = '38px Georgia, serif'; context.textAlign = 'center'; words.forEach((word, i) => context.fillText(word, 256, 136 + i * 69)); }
   });
-  texturedPlane(parent, texture, [x, 0.13, z], width - 0.11, depth - 0.11, true);
+  const weave = surface(texturedPlane(parent, texture, [x, 0.13, z], width - 0.11, depth - 0.11, true), 'rug');
+  (weave.material as THREE.MeshStandardMaterial).roughness = 0.98;
+  (weave.material as THREE.MeshStandardMaterial).envMapIntensity = 0.2;
 }
 export function sign(parent: THREE.Object3D, kit: SceneKit, text: string, x: number, y: number, z: number, width: number, horizontal = false, background = '#34423b', foreground = '#faf4e8'): void {
   if (!horizontal) kit.mesh(parent, 'roundedBox', '#26362f', [x, y, z], [width + 0.07, 0.73, 0.15]);
@@ -114,9 +122,10 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   kit.mesh(parent, 'cylinder', '#748575', [x + 0.68, y - 0.81, z + 0.09], [0.045, 0.39, 0.045], [0, 0, Math.PI / 2]);
 }
 export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number): void {
-  kit.mesh(parent, 'roundedBox', '#a77e53', [x, 0.7, z], [width, 0.2, depth]);
-  kit.mesh(parent, 'roundedBox', '#b18b60', [x, 0.804, z], [width - 0.07, 0.025, depth - 0.07]);
-  for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) kit.mesh(parent, 'roundedDetail', '#9e7d52', [x + dx, 0.38, z + dz], [0.15, 0.64, 0.15], [0, 0, dx < 0 ? 0.045 : -0.045]);
+  surface(kit.mesh(parent, 'roundedBox', '#a77e53', [x, 0.7, z], [width, 0.2, depth], undefined, 'wood'), 'furniture');
+  surface(kit.mesh(parent, 'roundedBox', '#b18b60', [x, 0.804, z], [width - 0.07, 0.025, depth - 0.07], undefined, 'wood'), 'furniture');
+  for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) surface(kit.mesh(parent, 'roundedDetail', '#9e7d52', [x + dx, 0.38, z + dz], [0.15, 0.64, 0.15], [0, 0, dx < 0 ? 0.045 : -0.045], 'wood'), 'furniture');
+  for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) floorContact(parent, x + dx, 0.137, z + dz, 0.44, 0.38);
   const grain = canvasTexture(768, 384, (context) => {
     context.beginPath(); context.roundRect(0, 0, 768, 384, 54); context.clip();
     context.fillStyle = '#ad8055'; context.fillRect(0, 0, 768, 384);
@@ -128,17 +137,21 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   });
   const top = texturedPlane(parent, grain, [x, 0.82, z], width - 0.16, depth - 0.14, true);
   (top.material as THREE.MeshStandardMaterial).alphaTest = 0.3;
+  (top.material as THREE.MeshStandardMaterial).roughness = 0.68;
+  (top.material as THREE.MeshStandardMaterial).envMapIntensity = 0.65;
+  surface(top, 'furniture');
 }
 export function stool(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string): void {
-  kit.mesh(parent, 'cylinder', '#a08055', [x, 0.51, z], [0.68, 0.12, 0.68]); kit.mesh(parent, 'sphere', color, [x, 0.575, z], [0.68, 0.16, 0.68]);
-  for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) kit.mesh(parent, 'roundedDetail', '#9d7c52', [x + Math.sin(angle) * 0.2, 0.29, z + Math.cos(angle) * 0.2], [0.085, 0.45, 0.085]);
+  surface(kit.mesh(parent, 'cylinder', '#a08055', [x, 0.51, z], [0.68, 0.12, 0.68], undefined, 'wood'), 'furniture');
+  kit.mesh(parent, 'sphere', color, [x, 0.575, z], [0.68, 0.16, 0.68], undefined, 'fabric');
+  for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) surface(kit.mesh(parent, 'roundedDetail', '#9d7c52', [x + Math.sin(angle) * 0.2, 0.29, z + Math.cos(angle) * 0.2], [0.085, 0.45, 0.085], undefined, 'wood'), 'furniture');
 }
 export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0, z); group.rotation.y = angle; parent.add(group);
   group.name = 'Desk chair';
   stool(group, kit, 0, 0, color);
-  [-0.27, 0.27].forEach((dx) => kit.mesh(group, 'roundedDetail', '#96714c', [dx, 0.79, -0.23], [0.075, 0.55, 0.075]));
-  kit.mesh(group, 'roundedBox', color, [0, 1.02, -0.25], [0.65, 0.53, 0.13], [0.1, 0, 0]);
+  [-0.27, 0.27].forEach((dx) => surface(kit.mesh(group, 'roundedDetail', '#96714c', [dx, 0.79, -0.23], [0.075, 0.55, 0.075], undefined, 'wood'), 'furniture'));
+  kit.mesh(group, 'roundedBox', color, [0, 1.02, -0.25], [0.65, 0.53, 0.13], [0.1, 0, 0], 'fabric');
   return group;
 }
 export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
@@ -168,18 +181,19 @@ export function paper(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   kit.mesh(group, 'cylinder', '#8a9b76', [0.21, 0.029, 0.05], [0.025, 0.47, 0.025], [Math.PI / 2, 0, 0.12]);
 }
 export function mug(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string): void {
-  kit.mesh(parent, 'cylinder', color, [x, 0.945, z], [0.24, 0.24, 0.24]); kit.mesh(parent, 'cylinder', '#4b4433', [x, 1.067, z], [0.185, 0.006, 0.185]);
-  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.026, 6, 12), kit.material(color)); handle.position.set(x + 0.15, 0.95, z); handle.castShadow = true; parent.add(handle);
+  kit.mesh(parent, 'pot', color, [x, 0.945, z], [0.24, 0.24, 0.24], undefined, 'ceramic'); kit.mesh(parent, 'cylinder', '#4b4433', [x, 1.067, z], [0.185, 0.006, 0.185]);
+  const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.026, 8, 16), kit.material(color, 'ceramic')); handle.position.set(x + 0.15, 0.95, z); handle.castShadow = true; parent.add(handle);
 }
 export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, variant: number, cupboard: boolean, scale = 1): void {
   if (scale !== 1) { const group = new THREE.Group(); group.position.set(x, 0, z); group.scale.setScalar(scale); parent.add(group); parent = group; x = z = 0; }
+  floorContact(parent, x, 0.105 / scale, z + 0.04, 1.15, 0.82);
   const height = 1.43;
   // A real open carcass, with the dark backing behind the books rather than across their spines.
-  for (const dx of [-0.48, 0.48]) beveledBlock(parent, kit, '#98744f', [x + dx, height / 2 + 0.1, z], [0.09, height, 0.67], 0.02);
-  kit.mesh(parent, 'box', '#473a28', [x, height / 2 + 0.1, z - 0.3], [0.91, height - 0.1, 0.055]);
-  for (const y of [0.2, 0.62, 1.04, 1.5]) kit.mesh(parent, 'roundedBox', '#b18a5e', [x, y, z + 0.04], [1.09, 0.08, 0.75]);
+  for (const dx of [-0.48, 0.48]) surface(beveledBlock(parent, kit, '#98744f', [x + dx, height / 2 + 0.1, z], [0.09, height, 0.67], 0.02), 'furniture');
+  surface(kit.mesh(parent, 'box', '#473a28', [x, height / 2 + 0.1, z - 0.3], [0.91, height - 0.1, 0.055], undefined, 'wood'), 'furniture');
+  for (const y of [0.2, 0.62, 1.04, 1.5]) surface(kit.mesh(parent, 'roundedBox', '#b18a5e', [x, y, z + 0.04], [1.09, 0.08, 0.75], undefined, 'wood'), 'furniture');
   if (cupboard) {
-    kit.mesh(parent, 'roundedBox', '#9f8861', [x, 0.86, z + 0.396], [0.91, 1.18, 0.055]); kit.mesh(parent, 'box', '#967f5a', [x, 0.86, z + 0.43], [0.02, 1.1, 0.013]);
+    surface(kit.mesh(parent, 'roundedBox', '#9f8861', [x, 0.86, z + 0.396], [0.91, 1.18, 0.055], undefined, 'wood'), 'furniture'); surface(kit.mesh(parent, 'box', '#967f5a', [x, 0.86, z + 0.43], [0.02, 1.1, 0.013], undefined, 'wood'), 'furniture');
     [-0.085, 0.085].forEach((dx) => kit.mesh(parent, 'detailSphere', '#ccba8c', [x + dx, 0.88, z + 0.46], [0.045, 0.045, 0.045]));
   } else {
     const colors = ['#526847', '#dfcfa3', '#516a69', '#9c6242', '#c1ba9e'];
@@ -191,22 +205,31 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     for (let level = 0; level < 2; level++) for (let book = 0; book < 3; book++) kit.mesh(parent, 'roundedDetail', book % 2 ? '#e4d7b4' : '#73816b', [x + 0.31, 0.27 + level * 0.42 + book * 0.05, z + 0.19], [0.23, 0.045, 0.31], [0, book * 0.07, 0]);
   }
 }
-function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
-  const positions: number[] = [], uvs: number[] = [];
+export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
+  const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   const vertices = (t: number): Point[] => {
     const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.65 : broad ? 0.65 : 0.85) * (spear ? 0.06 : herb ? 0.13 : broad ? 0.22 : 0.12), bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.24 : broad ? 0.29 : 0.36);
     const length = herb ? 0.53 : broad ? 0.68 : 1.05;
-    return [[-width, t * length, bend], [0, t * length + 0.018, bend - 0.035], [width, t * length, bend]];
+    const rib = Math.sin(Math.PI * t);
+    return [[-width, t * length, bend], [0, t * length + 0.018 * rib, bend - 0.035 * rib], [width, t * length, bend]];
   };
+  // Adjacent triangles share their three longitudinal ribs. Averaging these
+  // normals gives a continuous botanical surface without adding any triangles.
+  for (let row = 0; row <= 8; row++) vertices(row / 8).forEach((point, column) => {
+    positions.push(...point); uvs.push(column / 2, row / 8);
+  });
   for (let i = 0; i < 8; i++) {
-    const first = vertices(i / 8), next = vertices((i + 1) / 8);
-    for (let side = 0; side < 2; side++) for (const [point, uv] of [[first[side], [side / 2, i / 8]], [next[side], [side / 2, (i + 1) / 8]], [next[side + 1], [(side + 1) / 2, (i + 1) / 8]], [first[side], [side / 2, i / 8]], [next[side + 1], [(side + 1) / 2, (i + 1) / 8]], [first[side + 1], [(side + 1) / 2, i / 8]]] as [Point, [number, number]][]) { positions.push(...point); uvs.push(...uv); }
+    for (let side = 0; side < 2; side++) {
+      const first = i * 3 + side, next = first + 3;
+      indices.push(first, next, next + 1, first, next + 1, first + 1);
+    }
   }
-  const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.computeVertexNormals(); return geometry;
+  const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3)); geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
 }
 export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf'): void {
   const group = new THREE.Group(); group.position.set(x, base, z); group.scale.setScalar(size); parent.add(group);
-  kit.mesh(group, 'cylinder', potColor, [0, 0.19, 0], [0.44, 0.38, 0.44]); kit.mesh(group, 'cylinder', '#b9a37e', [0, 0.378, 0], [0.47, 0.06, 0.47]); kit.mesh(group, 'cylinder', '#655941', [0, 0.414, 0], [0.37, 0.008, 0.37]);
+  if (base <= 0.12) floorContact(group, 0, 0.006 / size, 0, 0.57, 0.57);
+  kit.mesh(group, 'pot', potColor, [0, 0.19, 0], [0.44, 0.38, 0.44], undefined, 'ceramic'); kit.mesh(group, 'cylinder', potColor, [0, 0.378, 0], [0.47, 0.06, 0.47], undefined, 'ceramic'); kit.mesh(group, 'cylinder', '#655941', [0, 0.414, 0], [0.37, 0.008, 0.37]);
   const shades = ['#69834b', '#507140', '#7b9254'];
   if (kind === 'ivy') {
     for (const vine of [-1, 1]) for (let step = 0; step < 7; step++) {
@@ -246,7 +269,7 @@ export function lamp(parent: THREE.Object3D, kit: SceneKit, x: number, z: number
 export function tidyStaticMeshes(root: THREE.Object3D): void {
   root.updateMatrixWorld(true);
   const inverseRoot = root.matrixWorld.clone().invert();
-  const groups = new Map<string, { material: THREE.MeshStandardMaterial; geometries: THREE.BufferGeometry[]; meshes: THREE.Mesh[]; castShadow: boolean; receiveShadow: boolean }>();
+  const groups = new Map<string, { material: THREE.MeshStandardMaterial; geometries: THREE.BufferGeometry[]; meshes: THREE.Mesh[]; roles: number[]; castShadow: boolean; receiveShadow: boolean }>();
   root.traverse((object) => {
     if (!(object instanceof THREE.Mesh) || object instanceof THREE.SkinnedMesh || Array.isArray(object.material)
       || !(object.material instanceof THREE.MeshStandardMaterial) || object.material.transparent
@@ -265,7 +288,7 @@ export function tidyStaticMeshes(root: THREE.Object3D): void {
     ]);
     let group = groups.get(key);
     if (!group) {
-      group = { material, geometries: [], meshes: [], castShadow: object.castShadow, receiveShadow: object.receiveShadow };
+      group = { material, geometries: [], meshes: [], roles: [], castShadow: object.castShadow, receiveShadow: object.receiveShadow };
       groups.set(key, group);
     }
     let geometry = object.geometry.index ? object.geometry.toNonIndexed() : object.geometry.clone();
@@ -284,20 +307,29 @@ export function tidyStaticMeshes(root: THREE.Object3D): void {
     }
     if (!geometry.hasAttribute('normal')) geometry.computeVertexNormals();
     geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    const role = surfaceCodes[object.userData.roomSurface as RoomSurface] ?? 0;
+    for (let vertex = 0; vertex < positions.count; vertex++) group.roles.push(role);
     geometry.clearGroups();
     group.geometries.push(geometry); group.meshes.push(object);
   });
-  groups.forEach(({ material, geometries, meshes, castShadow, receiveShadow }) => {
+  let retired = root.userData.staticSources as THREE.Group | undefined;
+  groups.forEach(({ material, geometries, meshes, roles, castShadow, receiveShadow }) => {
     if (meshes.length < 2) { geometries.forEach((geometry) => geometry.dispose()); return; }
     const geometry = mergeGeometries(geometries, false); geometries.forEach((piece) => piece.dispose()); if (!geometry) return;
     const batchMaterial = material.clone();
     batchMaterial.color.setRGB(1, 1, 1);
     batchMaterial.vertexColors = true;
     const mesh = new THREE.Mesh(geometry, batchMaterial);
+    // Semantic finish masks stay on the CPU. The normal render attributes and
+    // shader layout are unchanged; a style event recolours and rebatches once.
+    geometry.userData.roomSurfaceRoles = new Uint8Array(roles);
     mesh.name = 'Static matte colour batch';
     mesh.castShadow = castShadow; mesh.receiveShadow = receiveShadow;
     mesh.renderOrder = meshes[0].renderOrder; mesh.layers.mask = meshes[0].layers.mask;
     geometry.computeBoundingBox(); geometry.computeBoundingSphere();
-    root.add(mesh); meshes.forEach((original) => original.removeFromParent());
+    root.add(mesh);
+    retired ??= new THREE.Group();
+    meshes.forEach((original) => retired!.add(original));
   });
+  if (retired) root.userData.staticSources = retired;
 }

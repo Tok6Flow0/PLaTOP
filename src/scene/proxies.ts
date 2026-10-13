@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { Activity, Character } from '../types';
 import { SceneKit } from './primitives';
+import { characterMesh, characterMaterial, characterSmile, curvedFace, type CharacterForm, type CharacterFinish } from './characterGeometry';
 
 interface Personality {
   kind: Character['kind'];
@@ -19,146 +20,142 @@ interface Personality {
 function joint(parent: THREE.Object3D, name: string, at: [number, number, number]): THREE.Group {
   const group = new THREE.Group(); group.name = name; group.position.set(...at); parent.add(group); return group;
 }
-function ring(parent: THREE.Object3D, kit: SceneKit, color: string, radius: number, thickness: number,
-  at: [number, number, number], rotation?: [number, number, number]): void {
-  const mesh = new THREE.Mesh(new THREE.TorusGeometry(radius, thickness, 6, 20), kit.material(color));
-  mesh.position.set(...at); if (rotation) mesh.rotation.set(...rotation); mesh.castShadow = true; parent.add(mesh);
-}
-
-function faceplate(parent: THREE.Object3D, kit: SceneKit, color: string, width: number, height: number, offset: number): void {
-  // A sampled curved surface is essential: sparse box faces cut chords through the helmet.
-  const columns = 24, rows = 16, radius = Math.min(width, height) * 0.25;
-  const vertices: number[] = [], indices: number[] = [];
-  for (let row = 0; row <= rows; row++) {
-    const y = -height / 2 + row / rows * height;
-    const cornerY = Math.max(0, Math.abs(y) - (height / 2 - radius));
-    const limit = width / 2 - radius + Math.sqrt(Math.max(0, radius * radius - cornerY * cornerY));
-    for (let column = 0; column <= columns; column++) {
-      const x = -limit + column / columns * limit * 2, py = y + 0.005;
-      const surface = 0.345 * Math.sqrt(Math.max(0.05, 1 - (x / 0.435) ** 2 - (py / 0.38) ** 2));
-      vertices.push(x, py, surface + offset);
-      if (row < rows && column < columns) {
-        const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
-        indices.push(a, b, d, a, d, c);
-      }
-    }
-  }
-  const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setIndex(indices); geometry.computeVertexNormals();
-  const mesh = new THREE.Mesh(geometry, kit.material(color)); mesh.receiveShadow = true; parent.add(mesh);
-}
-
-/** Editable ceramic character models, built to the approved starting-office reference. */
+/** Editable clay characters. All surfaces, finishes and joints belong to this scene. */
 export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const group = new THREE.Group(); group.name = `${character.id}:reference-character`;
   group.userData.assetStatus = 'reference-model';
   const { id, kind } = character;
-  const cream = '#ede3cf', ink = '#233b43', gold = '#bd8b45';
-  const isWayfinder = id.startsWith('intake-');
-  const bodyColor = isWayfinder ? '#e3dac7' : id === 'bridge-keeper' ? '#56856a' : id === 'hr-compass' ? '#8f9b7c' : character.color;
-  const headColor = kind === 'robot' ? id === 'hr-lens' ? '#dfc797' : id === 'hr-relay' ? '#ddcaa3' : cream : character.color;
-  const body = joint(group, 'body', [0, 0.57, 0]);
-  const head = joint(group, 'head', [0, 1.08, 0]);
-  const data: Personality = { kind, body, head, bodyY: 0.57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
-  const faceMaterial = kit.material(ink); faceMaterial.roughness = 0.31;
+  const cream = '#eee4d0', ink = '#243c43', gold = '#bd9155';
+  const wayfinder = id.startsWith('intake-'), leader = id === 'bridge-jarvis';
+  const bodyColor = wayfinder ? '#e5ddca' : id === 'bridge-keeper' ? '#71917c' : id === 'hr-compass' ? '#a6ae91' : character.color;
+  const headColor = kind === 'robot' ? id === 'hr-lens' ? '#a5b69b' : id === 'hr-relay' ? '#d6d6b7' : cream : character.color;
+  const body = joint(group, 'body', [0, .57, 0]), head = joint(group, 'head', [0, 1.08, 0]);
+  const data: Personality = { kind, body, head, bodyY: .57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
+  const sculpt = (parent: THREE.Object3D, form: CharacterForm, color: string, at: [number, number, number],
+    scale: [number, number, number], rotation?: [number, number, number], finish?: CharacterFinish) =>
+    characterMesh(kit, parent, form, color, at, scale, rotation, finish);
+  const ring = (parent: THREE.Object3D, color: string, diameter: number, at: [number, number, number], rotation?: [number, number, number]) =>
+    sculpt(parent, 'ring', color, at, [diameter, diameter, diameter], rotation, 'brass');
 
   if (kind === 'robot') {
-    const leader = id === 'bridge-jarvis';
-    kit.mesh(body, 'roundedBox', bodyColor, [0, 0, 0], [0.57, 0.65, 0.46]);
-    kit.mesh(body, 'sphere', bodyColor, [0, -0.21, 0], [0.53, 0.34, 0.44]);
-    kit.mesh(body, 'roundedBox', leader ? '#55806b' : character.accent, [0, -0.015, 0.24], [0.18, 0.23, 0.035]);
-    kit.mesh(body, 'cylinder', '#687f6e', [0, 0.38, 0], [0.17, 0.11, 0.17]);
-    kit.mesh(head, 'sphere', headColor, [0, 0, 0], [0.87, 0.76, 0.69]);
-    faceplate(head, kit, '#9cac9e', 0.60, 0.42, 0.007);
-    faceplate(head, kit, ink, 0.55, 0.37, 0.018);
-    // Soft reflections and inset eyes make the small faces readable from above.
-    kit.mesh(head, 'sphere', '#819d99', [-0.15, 0.11, 0.337], [0.12, 0.037, 0.008]);
-    const smileCurve = new THREE.EllipseCurve(0, 0, 0.047, 0.025, Math.PI, Math.PI * 2, false, 0);
-    const smilePath = new THREE.CatmullRomCurve3(smileCurve.getPoints(12).map(point => new THREE.Vector3(point.x, point.y - 0.09, 0.36)));
-    const smile = new THREE.Mesh(new THREE.TubeGeometry(smilePath, 12, 0.008, 4, false), kit.material('#152b32'));
-    head.add(smile);
+    // A single continuous pear-shaped torso joins the shoulders and belly.
+    // Small inset panels sit on that shell, instead of separate stacked blocks.
+    sculpt(body, 'torso', bodyColor, [0, -.005, 0], [.57, .66, .46]);
+    sculpt(body, 'detail', leader ? '#5e836c' : character.accent, [0, -.025, .225], [.17, .21, .035], undefined, 'glaze');
+    sculpt(body, 'limb', '#647e70', [0, .35, 0], [.17, .15, .17]);
+    sculpt(head, 'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, 'glaze');
+    curvedFace(kit, head, '#8da59a', .614, .427, .011, [0, .005, 0], 'glaze');
+    curvedFace(kit, head, ink, .566, .379, .020, [0, .005, 0]);
+    sculpt(head, 'detail', '#78948f', [-.135, .116, .341], [.15, .024, .008], [0, 0, -.12], 'glaze');
+    characterSmile(kit, head, '#14292e', .048, .026, [0, -.073, .365]);
     [-1, 1].forEach(sign => {
-      kit.mesh(head, 'cylinder', character.accent, [sign * 0.425, 0, 0], [0.20, 0.11, 0.20], [0, 0, Math.PI / 2]);
-      kit.mesh(head, 'cylinder', bodyColor, [sign * 0.48, 0, 0], [0.13, 0.035, 0.13], [0, 0, Math.PI / 2]);
-      const eye = kit.mesh(head, 'sphere', '#111f23', [sign * 0.12, 0.015, 0.357], [0.078, 0.112, 0.021]);
+      sculpt(head, 'limb', character.accent, [sign * .425, -.01, 0], [.20, .11, .20], [0, 0, Math.PI / 2], 'glaze');
+      sculpt(head, 'detail', bodyColor, [sign * .473, -.01, 0], [.055, .14, .14], undefined, 'glaze');
+      const eye = sculpt(head, 'detail', '#10242a', [sign * .119, .020, .359], [.075, .106, .018], undefined, 'ink');
       data.eyes.push(eye);
-      data.highlights.push(kit.mesh(head, 'sphere', '#d8e6dc', [sign * 0.12 - 0.012, 0.043, 0.37], [0.022, 0.027, 0.008]));
-      const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * 0.36, 0.19, 0]);
-      kit.mesh(arm, 'capsule', bodyColor, [0, -0.14, 0], [0.28, 0.43, 0.28], [0, 0, sign * -0.12]);
-      const extremity = isWayfinder ? '#2d4250' : id.startsWith('hr-') ? '#52694d' : id === 'bridge-jarvis' ? '#3b6355' : '#3f6c5a';
-      kit.mesh(arm, 'sphere', extremity, [0, -0.33, 0.035], [0.23, 0.22, 0.22]);
-      data.arms.push(arm);
-      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * 0.17, 0.10, 0.025]);
-      kit.mesh(foot, 'sphere', extremity, [0, 0, 0], [0.25, 0.20, 0.38]);
-      data.feet.push(foot);
+      data.highlights.push(sculpt(head, 'detail', '#e1ece0', [sign * .119 - .012, .047, .371], [.020, .023, .006], undefined, 'glaze'));
+      const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * .34, .18, 0]);
+      sculpt(arm, 'limb', bodyColor, [sign * .005, -.145, 0], [.235, .42, .25], [0, 0, sign * -.11]);
+      const extremity = wayfinder ? '#344d5a' : id.startsWith('hr-') ? '#60775b' : '#426a58';
+      sculpt(arm, 'bean', extremity, [0, -.32, .025], [.205, .20, .21]); data.arms.push(arm);
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .155, .10, .025]);
+      sculpt(foot, 'bean', extremity, [0, 0, 0], [.25, .20, .35]);
+      const cuff = sculpt(foot, 'ankle', bodyColor, [0, .13, -.025], [.16, .22, .15]);
+      cuff.name = sign < 0 ? 'ankle_l' : 'ankle_r'; data.feet.push(foot);
     });
-    kit.mesh(head, 'cylinder', '#6f8d7c', [0, 0.39, 0], [0.045, 0.17, 0.045]);
-    kit.mesh(head, 'sphere', leader ? '#cb873d' : character.accent, [0, 0.5, 0], [0.15, 0.16, 0.15]);
-    if (id === 'bridge-scout' || id === 'hr-lens') ring(head, kit, '#98afa2', 0.115, 0.024, [0.12, 0.01, 0.373]);
+    sculpt(head, 'limb', '#76927e', [0, .394, 0], [.044, .15, .044], undefined, 'brass');
+    sculpt(head, 'detail', leader ? '#c98a45' : character.accent, [0, .498, 0], [.133, .148, .133], undefined, 'glaze');
+    if (id === 'bridge-scout' || id === 'hr-lens') ring(head, '#a3b5a4', .195, [.119, .018, .374]);
     if (id === 'bridge-keeper') {
-      kit.mesh(body, 'roundedBox', '#e9d9b9', [0.19, -0.08, 0.30], [0.24, 0.31, 0.06], [0, 0, -0.12]);
-      kit.mesh(body, 'box', '#648879', [0.19, -0.08, 0.335], [0.20, 0.27, 0.015], [0, 0, -0.12]);
+      kit.mesh(body, 'roundedDetail', '#ecdfbf', [.18, -.08, .25], [.22, .28, .055], [0, 0, -.10]);
+      kit.mesh(body, 'roundedDetail', '#668977', [.18, -.08, .28], [.187, .24, .012], [0, 0, -.10]);
     }
-    if (isWayfinder) {
-      kit.mesh(body, 'roundedBox', '#314958', [0, 0.03, 0.245], [0.21, 0.20, 0.022]);
-      if (id === 'intake-beacon') {
-        kit.mesh(head, 'cylinder', '#c19a61', [0, 0.47, 0], [0.15, 0.24, 0.15]);
-        kit.mesh(head, 'sphere', '#efd39a', [0, 0.59, 0], [0.12, 0.11, 0.12]);
+    if (wayfinder) {
+      kit.mesh(body, 'roundedDetail', '#385362', [0, .025, .226], [.185, .19, .026]);
+      // Each navigator keeps its own tiny, readable symbol without widening the
+      // walking silhouette or hiding its hands under unrelated props.
+      if (id === 'intake-jarvis') {
+        sculpt(body, 'detail', '#d4b576', [0, .036, .246], [.055, .075, .012], [0, 0, -.55], 'brass');
+      } else if (id === 'intake-beacon') {
+        sculpt(head, 'limb', '#c19a61', [0, .475, 0], [.125, .22, .125], undefined, 'brass');
+        sculpt(head, 'detail', '#efd39a', [0, .595, 0], [.105, .105, .105], undefined, 'glaze');
+      } else if (id === 'intake-relay') {
+        [-.045, 0, .045].forEach(y => kit.mesh(body, 'roundedDetail', '#d4d9c5', [0, y + .035, .244], [.105, .013, .011]));
+      } else {
+        sculpt(head, 'tuft', '#75977c', [-.035, .455, 0], [.08, .15, .045], [0, 0, .42]);
+        sculpt(head, 'tuft', '#8ba789', [.038, .472, 0], [.08, .13, .045], [0, 0, -.48]);
       }
     }
     group.scale.setScalar(leader ? 1.18 : id === 'bridge-scout' ? 1.03 : 1.10);
   } else if (kind === 'lantern') {
-    const green = id === 'support-beacon' ? '#37664b' : '#ae7d38';
-    head.position.y = 0.64; data.headY = 0.64;
-    body.position.y = 0.12; data.bodyY = 0.12;
-    kit.mesh(body, 'cylinder', green, [0, 0.03, 0], [0.60, 0.15, 0.55]);
-    kit.mesh(body, 'cylinder', gold, [0, 0.12, 0], [0.49, 0.06, 0.45]);
-    const glow = new THREE.MeshStandardMaterial({ color: '#ffd27c', emissive: '#ffae3e', emissiveIntensity: 0.6, roughness: 0.35 });
-    const light = new THREE.Mesh(kit.geometry('roundedBox'), glow); light.scale.set(0.41, 0.56, 0.38); head.add(light); data.glow = glow;
+    const green = id === 'support-beacon' ? '#3f6e50' : '#ad8246';
+    head.position.y = .64; data.headY = .64; body.position.y = .14; data.bodyY = .14;
+    sculpt(body, 'lanternBase', green, [0, 0, 0], [.60, .28, .55], undefined, 'glaze');
+    sculpt(body, 'limb', gold, [0, .13, 0], [.48, .065, .44], undefined, 'brass');
+    const light = sculpt(head, 'lanternGlass', id === 'support-beacon' ? '#e9b15d' : '#efc075', [0, 0, 0], [.435, .59, .405], undefined, 'amber');
+    // Distinct amber finishes let the two lanterns breathe independently.
+    data.glow = light.material;
+    sculpt(head, 'detail', '#ffe4a0', [-.055, .17, .17], [.045, .12, .012], [0, 0, -.13], 'amber');
     [-1, 1].forEach(sign => {
-      kit.mesh(head, 'capsule', green, [sign * 0.24, 0, 0], [0.09, 0.64, 0.09]);
-      const eye = kit.mesh(head, 'sphere', ink, [sign * 0.09, 0.03, 0.21], [0.046, 0.066, 0.018]); data.eyes.push(eye);
+      // Bowed rails follow the glass rather than framing a luminous cube.
+      const points = [[sign * .19, -.31, 0], [sign * .265, -.16, 0], [sign * .271, .12, 0], [sign * .19, .31, 0]];
+      const railPath = new THREE.CatmullRomCurve3(points.map(point => new THREE.Vector3(...point as [number, number, number])));
+      const rail = new THREE.Mesh(new THREE.TubeGeometry(railPath, 12, .038, 8, false), characterMaterial(kit, green, 'glaze'));
+      rail.castShadow = true; rail.receiveShadow = true; head.add(rail);
+      const eye = sculpt(head, 'detail', ink, [sign * .088, .025, .211], [.046, .064, .015], undefined, 'ink'); data.eyes.push(eye);
+      data.highlights.push(sculpt(head, 'detail', '#ffedc2', [sign * .088 - .008, .041, .221], [.012, .014, .006], undefined, 'glaze'));
     });
-    kit.mesh(head, 'cylinder', green, [0, 0.33, 0], [0.62, 0.09, 0.57]);
-    kit.mesh(head, 'sphere', green, [0, 0.38, 0], [0.50, 0.26, 0.46]);
-    kit.mesh(head, 'sphere', gold, [0, 0.54, 0], [0.12, 0.08, 0.12]);
-    ring(head, kit, green, 0.14, 0.032, [0, 0.68, 0]);
-    kit.mesh(head, 'cylinder', green, [0, -0.31, 0], [0.57, 0.07, 0.52]);
+    characterSmile(kit, head, '#826331', .034, .019, [0, -.052, .218]);
+    sculpt(head, 'lanternCap', green, [0, .377, 0], [.64, .28, .585], undefined, 'glaze');
+    sculpt(head, 'limb', gold, [0, .535, 0], [.105, .055, .105], undefined, 'brass');
+    ring(head, green, .26, [0, .681, 0]);
+    sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'glaze');
     if (id === 'reflection-lumen') group.scale.setScalar(1.25);
   } else if (kind === 'owl') {
-    const navy = id === 'email-owl';
-    body.position.y = 0.49; data.bodyY = 0.49;
-    head.position.y = 0.91; data.headY = 0.91;
-    const feathers = navy ? '#273b50' : '#e8dfce';
-    kit.mesh(body, 'sphere', feathers, [0, 0, 0], [0.70, 0.83, 0.55]);
-    kit.mesh(body, 'sphere', navy ? '#405364' : '#f1e6cc', [0, -0.02, 0.20], [0.46, 0.58, 0.17]);
-    kit.mesh(head, 'sphere', feathers, [0, 0, 0], [0.78, 0.65, 0.54]);
+    const navy = id === 'email-owl', feathers = navy ? '#2d4256' : id === 'reflection-quill' ? '#d7cbb5' : '#e8dfcc';
+    body.position.y = .49; data.bodyY = .49; head.position.y = .91; data.headY = .91;
+    sculpt(body, 'owlBody', feathers, [0, 0, 0], [.70, .83, .55]);
+    sculpt(body, 'sphere', navy ? '#465c6c' : '#f1e7d1', [0, -.015, .234], [.46, .58, .15]);
+    sculpt(head, 'owlHead', feathers, [0, 0, 0], [.78, .65, .54], undefined, 'glaze');
     [-1, 1].forEach(sign => {
-      kit.mesh(head, 'sphere', '#f5edd7', [sign * 0.17, -0.015, 0.23], [0.35, 0.40, 0.16]);
-      kit.mesh(head, 'sphere', '#ab8a56', [sign * 0.17, 0, 0.307], [0.17, 0.22, 0.035]);
-      const eye = kit.mesh(head, 'sphere', '#172b32', [sign * 0.17, 0.007, 0.325], [0.108, 0.15, 0.028]); data.eyes.push(eye);
-      data.highlights.push(kit.mesh(head, 'sphere', '#ffffff', [sign * 0.17 - 0.02, 0.043, 0.342], [0.035, 0.045, 0.01]));
-      kit.mesh(head, 'cone', feathers, [sign * 0.25, 0.31, -0.045], [0.20, 0.25, 0.19], [0, 0, sign * -0.25]);
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * 0.34, 0.13, 0]);
-      kit.mesh(wing, 'sphere', feathers, [0, -0.14, 0], [0.18, 0.53, 0.32], [0, 0, sign * 0.25]); data.wings.push(wing);
-      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * 0.15, 0.08, 0.08]);
-      kit.mesh(foot, 'sphere', gold, [0, 0, 0], [0.20, 0.10, 0.24]); data.feet.push(foot);
+      // Facial discs are fitted patches on the same curved head surface. Their
+      // near-touching cream rims form one owl mask rather than two eyeballs.
+      curvedFace(kit, head, navy ? '#dbcdae' : '#f5ecd8', .355, .405, .013, [sign * .169, -.006, 0], 'clay', [.417, .325, .27]);
+      sculpt(head, 'detail', '#a58b5d', [sign * .162, -.006, .271], [.165, .224, .032], undefined, 'glaze');
+      const eye = sculpt(head, 'detail', '#1d3038', [sign * .162, .002, .293], [.104, .148, .025], undefined, 'ink'); data.eyes.push(eye);
+      data.highlights.push(sculpt(head, 'detail', '#faf7e9', [sign * .162 - .020, .039, .309], [.028, .038, .008], undefined, 'glaze'));
+      sculpt(head, 'tuft', feathers, [sign * .242, .283, -.038], [.19, .27, .16], [0, 0, sign * -.36]);
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
+      sculpt(wing, 'wing', navy ? '#334c61' : '#d9ceb9', [sign * .015, -.145, 0], [.205, .53, .30], [0, 0, sign * .23]); data.wings.push(wing);
+      const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .145, .08, .08]);
+      sculpt(foot, 'bean', gold, [0, 0, 0], [.19, .16, .235], undefined, 'clay'); data.feet.push(foot);
     });
-    kit.mesh(head, 'cone', gold, [0, -0.10, 0.345], [0.12, 0.16, 0.13], [Math.PI / 2, 0, Math.PI]);
-    if (id === 'reflection-quill') kit.mesh(body, 'cylinder', '#bb9456', [0.37, 0.02, 0.18], [0.045, 0.50, 0.045], [0, 0, -0.35]);
-    if (id === 'reflection-echo') { ring(body, kit, gold, 0.12, 0.025, [0.37, 0.04, 0.23]); kit.mesh(body, 'cylinder', gold, [0.37, -0.13, 0.23], [0.035, 0.20, 0.035]); }
-    if (navy) kit.mesh(body, 'roundedBox', cream, [0, -0.12, 0.285], [0.22, 0.14, 0.025]);
+    sculpt(head, 'beak', gold, [0, -.103, .301], [.108, .16, .12], [Math.PI / 2, 0, Math.PI], 'brass');
+    if (id === 'reflection-quill') {
+      kit.mesh(body, 'detailCylinder', '#c09b5f', [.37, .01, .165], [.036, .48, .036], [0, 0, -.35]);
+      sculpt(body, 'beak', '#5e5c54', [.29, -.216, .165], [.037, .072, .037], [0, 0, Math.PI - .35]);
+    }
+    if (id === 'reflection-echo') {
+      ring(body, gold, .21, [.365, .035, .215]);
+      kit.mesh(body, 'detailCylinder', gold, [.365, -.115, .215], [.027, .19, .027]);
+    }
+    if (navy) {
+      kit.mesh(body, 'roundedDetail', cream, [0, -.12, .322], [.215, .14, .025]);
+      const flap = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-.085, .043, 0), new THREE.Vector3(0, -.018, 0), new THREE.Vector3(.085, .043, 0)]), new THREE.LineBasicMaterial({ color: '#ac9e7d' }));
+      flap.position.set(0, -.12, .337); body.add(flap);
+    }
   } else {
-    body.position.y = 0.69; data.bodyY = 0.69; head.position.y = 0.89; data.headY = 0.89;
-    kit.mesh(body, 'sphere', '#c69b54', [0, 0, 0], [0.42, 0.40, 0.71]);
-    kit.mesh(head, 'sphere', '#c9a462', [0, 0, 0.17], [0.39, 0.35, 0.36]);
+    body.position.y = .69; data.bodyY = .69; head.position.y = .89; data.headY = .89;
+    sculpt(body, 'owlBody', '#cba56a', [0, 0, 0], [.42, .40, .69]);
+    sculpt(head, 'helmet', '#cfad76', [0, 0, .17], [.37, .33, .35]);
     [-1, 1].forEach(sign => {
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * 0.20, 0.06, 0]);
-      kit.mesh(wing, 'sphere', '#d2af70', [sign * 0.24, 0, -0.02], [0.64, 0.08, 0.36], [0, sign * 0.35, sign * 0.05]); data.wings.push(wing);
-      const eye = kit.mesh(head, 'sphere', ink, [sign * 0.12, 0.02, 0.32], [0.04, 0.055, 0.02]); data.eyes.push(eye);
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .20, .06, 0]);
+      sculpt(wing, 'wing', '#d8b67d', [sign * .24, 0, -.02], [.63, .085, .33], [0, sign * .35, sign * .05]); data.wings.push(wing);
+      const eye = sculpt(head, 'detail', ink, [sign * .114, .018, .321], [.038, .053, .018], undefined, 'ink'); data.eyes.push(eye);
+      data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign * .114 - .007, .031, .332], [.011, .014, .005], undefined, 'glaze'));
     });
-    kit.mesh(head, 'cone', '#bd8042', [0, -0.045, 0.36], [0.10, 0.18, 0.10], [Math.PI / 2, 0, 0]);
-    kit.mesh(body, 'octahedron', '#557e76', [0, -0.015, -0.38], [0.29, 0.06, 0.35]);
+    sculpt(head, 'beak', '#b78647', [0, -.037, .362], [.09, .15, .085], [Math.PI / 2, 0, 0]);
+    sculpt(body, 'wing', '#648b80', [0, -.014, -.36], [.28, .065, .33]);
   }
   data.eyes.forEach(eye => { eye.userData.restEyeY = eye.scale.y; });
   data.feet.forEach(foot => { foot.userData.restFootY = foot.position.y; foot.userData.restFootZ = foot.position.z; });
@@ -224,7 +221,7 @@ export function animateCharacter(model: THREE.Object3D, status: Activity, time: 
   p.feet.forEach((foot, i) => {
     const step = Math.sin(phase + i * Math.PI);
     foot.rotation.x = moving ? Math.max(0, step) * 0.34 * stride : 0;
-    foot.position.y = foot.userData.restFootY - Math.max(0, locomotion?.seatLift ?? 0) + (moving ? Math.max(0, step) * 0.055 * stride : 0);
+    foot.position.y = foot.userData.restFootY - Math.max(0, locomotion?.seatLift ?? 0) / model.scale.y + (moving ? Math.max(0, step) * 0.055 * stride : 0);
     foot.position.z = foot.userData.restFootZ + (moving ? step * 0.10 * stride : Math.max(0, locomotion?.seatLift ?? 0) * 0.55);
   });
   p.wings.forEach((wing, i) => {

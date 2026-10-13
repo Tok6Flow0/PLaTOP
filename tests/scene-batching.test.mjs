@@ -215,6 +215,43 @@ test('unchanged static transforms and colors are not rewritten on animation fram
   assert.equal(dynamicBatch.colorsTexture.version, dynamicColorVersion);
 });
 
+test('rebuild rehashes changed vertex colours instead of instancing an unchanged room with the edited geometry', t => {
+  const scene = new THREE.Scene();
+  const first = new THREE.BoxGeometry(), second = first.clone();
+  for (const geometry of [first, second]) {
+    const colors = new Float32Array(geometry.getAttribute('position').count * 3);
+    for (let vertex = 0; vertex < colors.length / 3; vertex++) colors[vertex * 3] = 1;
+    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+  }
+  const material = new THREE.MeshStandardMaterial({ vertexColors: true });
+  const sources = [first, second].map((geometry, index) => {
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.position.x = index * 2;
+    scene.add(mesh);
+    return mesh;
+  });
+  const batches = new SceneBatches(scene, new Set());
+  t.after(() => { batches.dispose(); first.dispose(); second.dispose(); material.dispose(); });
+  batches.rebuild();
+  const rendered = scene.getObjectByName('Shared character draws');
+  assert.equal(rendered.children.length, 1);
+  assert.equal(rendered.children[0].isInstancedMesh, true, 'initial byte-identical surfaces share one source geometry');
+  const changed = first.getAttribute('color');
+  for (let vertex = 0; vertex < changed.count; vertex++) changed.setXYZ(vertex, 0, 0, 1);
+  changed.needsUpdate = true;
+  batches.rebuild();
+  assert.equal(rendered.children.length, 1, 'distinct edited surfaces still combine into one palette draw');
+  assert.equal(rendered.children[0].isInstancedMesh, undefined, 'edited and unedited colours cannot share one instanced geometry');
+  const colors = rendered.children[0].geometry.getAttribute('color');
+  assert.equal(colors.count, first.getAttribute('position').count + second.getAttribute('position').count);
+  for (let vertex = 0; vertex < colors.count; vertex++) {
+    const blue = vertex < changed.count;
+    assert.deepEqual([colors.getX(vertex), colors.getY(vertex), colors.getZ(vertex)], blue ? [0, 0, 1] : [1, 0, 0]);
+  }
+  assert.equal(sources[0].geometry, first);
+  assert.equal(sources[1].geometry, second);
+});
+
 test('animated parent transforms, individual visibility, and changed colors reach instances', t => {
   const { actor, moving, batches, dynamicBatch } = fixture(t);
   actor.position.set(2, 1, 0);
@@ -488,17 +525,21 @@ test('authored mesh freezing leaves bound meshes live and abandons ambiguous bin
   assert.equal(fixed.matrixAutoUpdate, true);
 });
 
-test('approved authored models retain exact world poses through clips, crossfades and pause/resume', async () => {
-  const approved = JSON.parse(await readFile(new URL('../public/assets/approved.json', import.meta.url), 'utf8'));
+test('delivered authored models retain exact world poses through clips, crossfades and pause/resume independently of runtime approval', async () => {
   const manifest = JSON.parse(await readFile(new URL('../public/assets/characters/manifest.json', import.meta.url), 'utf8'));
+  // The active visual allowlist may intentionally prefer procedural characters.
+  // Keep exercising the delivered GLB compatibility contract in either mode.
+  const fixtures = Object.entries(manifest.characters).filter(([, entry]) => typeof entry.path === 'string');
+  assert.ok(fixtures.length > 0, 'the authored contract needs real delivered fixtures');
   let fixedMeshCount = 0;
-  for (const id of approved.characterIds) {
-    const bytes = await readFile(new URL(`../public${manifest.characters[id].path}`, import.meta.url));
+  for (const [id, entry] of fixtures) {
+    assert.match(entry.path, /^\/assets\/characters\/[A-Za-z0-9_-]+\.glb$/);
+    const bytes = await readFile(new URL(`../public${entry.path}`, import.meta.url));
     const gltf = await new GLTFLoader().parseAsync(bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength), '');
     const baseline = gltf.scene;
     const optimized = baseline.clone(true);
-    const clips = ['Idle', 'Move', 'Work', 'Sleep'].map(name => gltf.animations.find(clip => clip.name === name));
-    assert.ok(clips.every(Boolean));
+    const clips = ['Idle', 'Move', 'Work', 'Sleep'].map(name => gltf.animations.find(clip => clip.name === entry.clips[name]));
+    assert.ok(clips.every(Boolean), `${id} has every declared runtime activity clip`);
     freezeStaticAuthoredMeshes(optimized, clips);
     optimized.traverse(node => { if (node.isMesh && !node.matrixAutoUpdate) fixedMeshCount++; });
     const mixers = [baseline, optimized].map(root => new THREE.AnimationMixer(root));
@@ -535,7 +576,7 @@ test('approved authored models retain exact world poses through clips, crossfade
     }
     mixers.forEach(mixer => mixer.stopAllAction());
   }
-  assert.ok(fixedMeshCount > 0, 'approved models have fixed mesh surfaces to cache');
+  assert.ok(fixedMeshCount > 0, 'delivered models have fixed mesh surfaces to cache');
 });
 
 function multiFixture(t, enabled = true) {

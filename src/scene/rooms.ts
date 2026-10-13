@@ -70,6 +70,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const center = new THREE.Vector3((index % 3 - 1) * 6.15, 0, (Math.floor(index / 3) - 0.5) * OFFICE_ROW_SPACING);
   root.position.copy(center);
   const palette = finishes[index];
+  // Public finish references let local agent styles tint the authored room
+  // without guessing which green belongs to a plant or changing navigation.
+  root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
+  root.userData.rugSurface = { bounds: [index === 4 ? -2.05 : -2.275, -1.75, index === 4 ? 2.05 : 2.275, 2.45], height: 0.13 };
   const isFoyer = index === 4;
   const walls: Room['walls'] = [];
   const blockers: NavigationBlocker[] = [];
@@ -98,7 +102,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if (kind === 'back') {
       for (const [left, right] of slices) {
         const span = right - left;
-        beveledBlock(section, kit, palette.wall, [(left + right) / 2, 1.66, z + 0.105], [Math.max(0.05, span - 0.18), 3.05, 0.055], 0.02);
+        const finish = beveledBlock(section, kit, palette.wall, [(left + right) / 2, 1.66, z + 0.105], [Math.max(0.05, span - 0.18), 3.05, 0.055], 0.02);
+        finish.userData.roomSurface = 'wall';
         beveledBlock(section, kit, '#d4c4ab', [(left + right) / 2, 0.22, z + 0.14], [Math.max(0.05, span - 0.12), 0.2, 0.065], 0.02);
       }
       if (rearDoor) {
@@ -195,7 +200,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     }
     return { position: [x, z], screen: [x, screenZ], facing,
       egress: [x, z + (north ? -1.15 : 1.2)],
-      ...(character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : 0.5 }) };
+      ...(character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
   });
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
   const actorFacing = desks.map(desk => desk.facing);
@@ -278,6 +283,7 @@ export function makeCampus(kit: SceneKit): THREE.Group {
   for (const side of [-1, 1]) {
     const x = side * 6.2;
     const bench = new THREE.Group(); bench.position.set(x, 0, 6.62 + depthGain + entryShift); campus.add(bench);
+    bench.userData.floorContacts = [[0, 0.021, 0, 3.7, 0.95]];
     kit.mesh(bench, 'roundedBox', '#b59065', [0, 0.49, 0], [3.7, 0.2, 0.85]);
     for (const legX of [-1.45, 1.45]) kit.mesh(bench, 'roundedBox', '#9b7a52', [legX, 0.2, 0], [0.13, 0.48, 0.65]);
     sign(bench, kit, side < 0 ? 'A quieter, kinder internet.' : 'Built by good people (and AI).', 0, 0.602, 0, 3.24, true, '#b59065', '#493e2d');

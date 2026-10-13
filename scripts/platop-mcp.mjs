@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 import { once } from 'node:events';
-import { requestActivity, requestAction, requestDecoration } from '../server/client.mjs';
+import { requestActivity, requestAction, requestDecoration, requestRoomStyle } from '../server/client.mjs';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTOR_IDS, ACTION_KINDS, PLACES, DECOR_SLOTS, DECOR_SHAPES, parseAction, parseDecoration } from '../server/office-protocol.mjs';
+import { ACTOR_IDS, ACTION_KINDS, PLACES, DECOR_SLOTS, DECOR_SHAPES, DECOR_FINISHES, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 
 const PROTOCOL_VERSIONS = ['2025-11-25', '2025-06-18', '2025-03-26', '2024-11-05'];
 const MAX_MESSAGE_BYTES = 16_384;
@@ -32,7 +32,7 @@ const TOOLS = [
   },
   {
     name: 'platop_decorate', title: 'Create a bounded local office decoration',
-    description: 'Replace one office slot with at most 12 data-only primitive parts; [] clears it. No files, code, URLs, labels or external calls. Each position plus its bounding-sphere radius must fit within +/-1.5. Glow means material emissive, never another light.',
+    description: 'Make one office decoration from up to 12 smooth primitive parts; [] clears it. Choose shape, finish, colour and emissive glow. Each position plus bounding-sphere radius must fit +/-1.5. No files, code, URLs, labels or extra lights.',
     inputSchema: { type: 'object', properties: {
       teamId: { type: 'string', enum: TEAM_IDS }, slot: { type: 'string', enum: DECOR_SLOTS },
       parts: { type: 'array', maxItems: 12, items: { type: 'object', properties: {
@@ -40,9 +40,27 @@ const TOOLS = [
         position: { type: 'array', items: { type: 'number', minimum: -1.2, maximum: 1.2 }, minItems: 3, maxItems: 3 },
         size: { type: 'array', items: { type: 'number', minimum: 0.04, maximum: 1.2 }, minItems: 3, maxItems: 3 },
         rotation: { type: 'array', items: { type: 'number', minimum: -Math.PI, maximum: Math.PI }, minItems: 3, maxItems: 3 },
-        color: { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }, glow: { type: 'boolean' },
+        color: { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }, glow: { type: 'boolean' }, finish: { type: 'string', enum: DECOR_FINISHES },
       }, required: ['shape'], additionalProperties: false } },
     }, required: ['teamId', 'slot', 'parts'], additionalProperties: false },
+    annotations: { ...annotations, readOnlyHint: false, idempotentHint: true },
+  },
+  {
+    name: 'platop_style', title: 'Style your local office',
+    description: 'Choose office wall, rug and furniture colours or lamp colour, brightness and mood. Omitted fields preserve the current look; reset:true restores the default room. Choices affect only this local visual office.',
+    inputSchema: { type: 'object', properties: {
+      teamId: { type: 'string', enum: TEAM_IDS },
+      palette: { type: 'object', properties: Object.fromEntries(['wall', 'rug', 'furniture'].map(key => [key, { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' }])), minProperties: 1, additionalProperties: false },
+      lighting: { type: 'object', properties: {
+        color: { type: 'string', pattern: '^#[0-9a-fA-F]{6}$' },
+        brightness: { type: 'number', minimum: 0, maximum: 1.5 },
+        mode: { type: 'string', enum: ROOM_LIGHT_MODES },
+      }, minProperties: 1, additionalProperties: false },
+      reset: { const: true },
+    }, required: ['teamId'], additionalProperties: false, oneOf: [
+      { required: ['reset'], not: { anyOf: [{ required: ['palette'] }, { required: ['lighting'] }] } },
+      { anyOf: [{ required: ['palette'] }, { required: ['lighting'] }], not: { required: ['reset'] } },
+    ] },
     annotations: { ...annotations, readOnlyHint: false, idempotentHint: true },
   },
 ];
@@ -97,13 +115,15 @@ async function handle(message) {
       if (!exact(args, ['teamId', 'state'])) throw new Error();
       payload = parseUpdate({ ...args, source: 'skill' });
     } else if (params.name === 'platop_action') payload = parseAction(args);
-    else payload = parseDecoration(args);
+    else if (params.name === 'platop_decorate') payload = parseDecoration(args);
+    else payload = parseRoomStyle(args);
   } catch {
     return rpcError(id, -32602, 'Only bounded public PLaTOP arguments are accepted.');
   }
   try {
     const snapshot = params.name === 'platop_action' ? await requestAction(payload)
-      : params.name === 'platop_decorate' ? await requestDecoration(payload) : await requestActivity(payload);
+      : params.name === 'platop_decorate' ? await requestDecoration(payload)
+      : params.name === 'platop_style' ? await requestRoomStyle(payload) : await requestActivity(payload);
     return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: JSON.stringify(snapshot) }], structuredContent: snapshot, isError: false } };
   } catch {
     return { jsonrpc: '2.0', id, result: { content: [{ type: 'text', text: 'PLaTOP local bridge is unavailable or rejected the update. Continue the authorized task; activity is unconfirmed.' }], isError: true } };

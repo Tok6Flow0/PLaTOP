@@ -1,6 +1,6 @@
 # Local activity bridge
 
-PLaTOP's Node bridge binds to `127.0.0.1:4317`. Build with `npm run build`, then run `npm start`. It serves only `dist/` and sanitized activity; it never opens Codex private databases, session files, or transcripts. Native chat monitoring is a skill workflow using tools available to the current Codex chat, not a background service included in this release.
+PLaTOP's Node bridge binds to `127.0.0.1:4317`. Build with `npm run build`, then run `npm start`. It serves only `dist/` and sanitized public activity and office choices; it never opens Codex private databases, session files, or transcripts. Native chat monitoring is a skill workflow using tools available to the current Codex chat, not a background service included in this release.
 
 The default state for every team is **unknown**. Observation is opt-in. Demo animations are separate from real bridge telemetry.
 
@@ -60,7 +60,7 @@ node scripts/platop.mjs run support -- node scripts/authorized-task.mjs
 
 ## Local MCP
 
-`node scripts/platop-mcp.mjs` exposes four tools over MCP stdio: `platop_status` accepts an empty object, `platop_set_activity` accepts exactly a public `teamId` and `state`, and `platop_action` / `platop_decorate` accept the bounded office intents below. The adapter does not launch commands, read chats, take arbitrary paths or URLs, or make external network requests. Writes use source `skill`. Active calls renew the two-minute freshness timeout; they are intentionally not marked idempotent. All tools are closed-world and nondestructive; only status is read-only.
+`node scripts/platop-mcp.mjs` exposes five tools over MCP stdio: `platop_status` accepts an empty object, `platop_set_activity` accepts exactly a public `teamId` and `state`, and `platop_action`, `platop_decorate` and `platop_style` accept the bounded office intents below. The adapter does not launch commands, read chats, take arbitrary paths or URLs, or make external network requests. Activity writes use source `skill`. Active calls renew the two-minute freshness timeout; they are intentionally not marked idempotent. All tools are closed-world and nondestructive; only status is read-only.
 
 The MCP uses the same ignored local token and loopback-only bridge as the CLI. It rejects redirects, bounds messages and response bodies, validates returned states, and returns generic failures without tokens, paths, private identifiers, or task contents. No SDK or cloud service is required. Its [stdio transport](https://modelcontextprotocol.io/specification/2025-11-25/basic/transports), [initialization](https://modelcontextprotocol.io/specification/2025-11-25/basic/lifecycle), and [tool messages](https://modelcontextprotocol.io/specification/2025-11-25/server/tools) follow the MCP specification; supported protocol versions are 2024-11-05 through 2025-11-25.
 
@@ -80,13 +80,15 @@ The distributable skill is [skills/platop/SKILL.md](../skills/platop/SKILL.md). 
 node scripts/platop-mcp-client.mjs status
 node scripts/platop-mcp-client.mjs set support active
 node scripts/platop-mcp-client.mjs set support sleeping
+node scripts/platop-mcp-client.mjs style support '{"lighting":{"mode":"cozy"}}'
 ```
 
 This client launches only its fixed sibling MCP server with the current Node
 executable, no shell, no caller-supplied program and no new dependency. It runs
 initialization, tool discovery and invocation over stdio, verifies the server,
-tool vocabulary and public snapshot, and confirms the requested state before
-printing success. Writes have source `skill`. Callers cannot supply paths,
+tool vocabulary and public snapshot, and confirms the requested activity or
+office choice before printing success. Activity writes have source `skill`;
+office choices retain only current public visual data. Callers cannot supply paths,
 tokens, URLs, commands, private IDs or message text as tool arguments.
 
 An eight-second deadline and bounded input streams prevent a stalled or noisy
@@ -108,12 +110,14 @@ For user-authorized existing scheduled team tasks, add the skill to their curren
 
 ## Agent-owned office intents
 
-The optional `actions` and `assets` maps extend the existing public state snapshot
-without changing its activity fields. `POST /api/actions` and `POST /api/assets`
+The optional `actions`, `assets` and `rooms` maps extend the existing public state snapshot
+without changing its activity fields. `POST /api/actions`, `POST /api/assets` and `POST /api/rooms`
 require the same local token, loopback Host, exact Origin (when supplied) and
 8 KiB body limit as activity writes. The browser never receives the token.
 Current office state is atomically saved to ignored `.local/office.json` with
-0600 permissions and a 128 KiB limit; there is no history, transcript or arbitrary
+0600 permissions. Public snapshots are bounded to 128 KiB; persistence reserves
+8 KiB of that budget for the remaining snapshot fields. A candidate that exceeds
+the limit leaves the previous state intact. There is no history, transcript or arbitrary
 metadata field. Public character IDs must belong to the supplied team.
 
 - `platop_action`: `{teamId, actorId?, kind, target?}`. Kinds are `walk_to`,
@@ -124,11 +128,33 @@ metadata field. Public character IDs must belong to the supplied team.
   and turn easing, and keeps departed characters absent until arrival.
 - `platop_decorate`: `{teamId, slot, parts}` replaces one of `desk`, `shelf`,
   `wall`, `floor`, `festive`. Empty parts clears the slot. Up to 12 normalized
-  primitive parts (`box`, `sphere`, `cylinder`, `cone`, `torus`) have bounded
-  position, size, rotation, hex color and boolean glow. Rotated extents stay
+  primitive parts (`box`, `sphere`, `cylinder`, `cone`, `torus`, `capsule`, `leaf`) have bounded
+  position, size, rotation, hex color and boolean glow. `finish` chooses `matte`
+  (the default), `ceramic`, `wood` or `metal`. Positions default to zero within
+  ±1.2, sizes default to `[0.3,0.3,0.3]` within 0.04–1.2, rotations default to zero
+  within ±π, colour defaults to warm cream and glow defaults to false. Every
+  primitive is normalized to its full width/height/depth before scaling. Rotated extents stay
   within a fixed slot; no code, file path, URL, text or external asset is accepted.
   Glow is material emission and creates no additional light. At most 30 current
   assets / 360 parts exist. Unchanged recipes do not emit redundant updates.
+- `platop_style`: `{teamId, palette?, lighting?, reset?}`. `palette` accepts
+  any of `wall`, `rug`, `furniture`, each a `#rrggbb` colour. `lighting` accepts
+  `color` as `#rrggbb`, `brightness` from 0 to 1.5, and `mode` as `day`, `cozy`,
+  `night` or `off`. Supply at least one field; empty palette or lighting patches
+  are rejected. Only explicit fields merge into the team's current choices.
+  `{teamId, reset:true}` is exclusive and removes the room style, restoring the
+  authored palette and lamp settings. Reset does not remove the team's assets.
+  Identical choices preserve their UUID and do not emit redundant updates.
+
+`rooms` is keyed by public team ID. Each entry contains a server UUID, sparse
+`palette` and sparse `lighting` objects; both objects are present, but either
+may be empty. Omitted fields preserve the authored appearance or the preceding
+choice. At most six room styles exist. Palette changes tint only tagged room
+surfaces, leaving plants and character identities intact. Lamp mood and colour
+affect that room's existing lamps and glows; an explicit lighting choice can
+enable one bounded, shadow-free room fill. `off` also suppresses its decoration
+emission. Global daylight remains readable. Room choices do not change paths,
+wall openings or camera bounds.
 
 Both local transports support the same short commands:
 
@@ -137,13 +163,17 @@ node scripts/platop-mcp-client.mjs action support walk_to '{"target":{"officeId"
 node scripts/platop-mcp-client.mjs action support work
 node scripts/platop-mcp-client.mjs action support leave
 node scripts/platop-mcp-client.mjs action support arrive
-node scripts/platop-mcp-client.mjs decorate support desk '[{"shape":"sphere","color":"#91a98d"}]'
+node scripts/platop-mcp-client.mjs decorate support desk '[{"shape":"capsule","finish":"ceramic","color":"#e7ddc5"},{"shape":"leaf","position":[0,0.3,0],"color":"#91a98d"}]'
 node scripts/platop-mcp-client.mjs decorate support desk '[]'
+node scripts/platop-mcp-client.mjs style support '{"palette":{"wall":"#355a46"},"lighting":{"color":"#ffd18c","brightness":0.8,"mode":"cozy"}}'
+node scripts/platop-mcp-client.mjs style support '{"reset":true}'
 ```
 
-The original direct CLI accepts `action` and `decorate` with the same inline JSON
+The original direct CLI accepts `action`, `decorate` and `style` with the same inline JSON
 arguments as a last-resort fallback. Neither transport accepts a file or program
 for these intents. Failed or unconfirmed writes are never retried automatically.
-Office appearance and presence are visual choices; they do not execute, pause
-or authorize business work. Preview uses separate simulated motors. Disconnect
+Office appearance and presence are the agents' visual choices; the viewer has
+no decorating or avatar-action buttons. They do not execute, pause or authorize
+business work. The development `?preview=1` view uses separate, explicitly
+simulated motors and has no normal-view activity toggle. Disconnect
 preserves the live position and presence until a valid connection returns.

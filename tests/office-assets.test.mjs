@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import * as THREE from 'three';
 import ts from 'typescript';
-import { DECOR_SHAPES, DECOR_SLOTS, parseDecoration } from '../server/office-protocol.mjs';
+import { DECOR_SHAPES, DECOR_SLOTS, DECOR_FINISHES, parseDecoration } from '../server/office-protocol.mjs';
 
 const source = await readFile(new URL('../src/scene/officeAssets.ts', import.meta.url), 'utf8');
 const javascript = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } }).outputText
@@ -50,7 +50,7 @@ test('office asset sync is content-idempotent, room-parented and uses rough emis
     assert.equal(object.matrixAutoUpdate, false);
     assert.equal(object.matrixWorldAutoUpdate, false);
   });
-  assert.ok((first.geometry.index?.count ?? first.geometry.attributes.position.count) / 3 <= 240);
+  assert.ok((first.geometry.index?.count ?? first.geometry.attributes.position.count) / 3 <= 512);
   assert.ok(Array.from(first.geometry.attributes.normal.array).some(value => Math.abs(value) > 0.01 && Math.abs(value) < 0.99),
     'box corners retain rounded surface normals');
 });
@@ -96,7 +96,7 @@ test('unit primitive bounds stay within slot limits and grounded recipes rest on
       assert.ok(Math.abs(bounds.min[axis] + 0.5) < 1e-6);
       assert.ok(Math.abs(bounds.max[axis] - 0.5) < 1e-6);
     }
-    assert.ok((mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3 <= 240);
+    assert.ok((mesh.geometry.index?.count ?? mesh.geometry.attributes.position.count) / 3 <= 512);
   }
   const scales = { desk: 0.25, shelf: 0.25, wall: 0.35, floor: 0.45, festive: 0.5 };
   for (const root of rooms.get('merchant').root.children) {
@@ -109,6 +109,16 @@ test('unit primitive bounds stay within slot limits and grounded recipes rest on
     assert.ok(bounds.getSize(new THREE.Vector3()).y <= 3 * root.scale.y + 1e-6);
     assert.ok(bounds.getSize(new THREE.Vector3()).z <= 3 * root.scale.z + 1e-6);
   }
+});
+
+test('finish choices produce distinct stable material response without texture loaders or extra lights', t => {
+  const { renderer, meshes } = fixture(t);
+  renderer.sync({ merchant: { desk: asset(DECOR_FINISHES.map(finish => ({ shape: 'capsule', finish }))) } });
+  const materials = meshes().map(mesh => mesh.material);
+  assert.deepEqual(materials.map(material => material.roughness), [0.82, 0.34, 0.78, 0.3]);
+  assert.deepEqual(materials.map(material => material.metalness), [0, 0, 0, 0.65]);
+  assert.ok(materials.every(material => material.map === null && material.normalMap === null));
+  assert.equal(new Set(meshes().map(mesh => mesh.geometry)).size, 1);
 });
 
 test('invalid/private/unbounded display data cannot allocate resources or erase a current recipe', t => {

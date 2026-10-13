@@ -3,7 +3,7 @@ import { spawn } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { STATES, TEAM_IDS, parseUpdate } from '../server/protocol.mjs';
-import { ACTION_KINDS, DECOR_SLOTS, parseAction, parseDecoration } from '../server/office-protocol.mjs';
+import { ACTION_KINDS, DECOR_SLOTS, DECOR_FINISHES, ROOM_LIGHT_MODES, parseAction, parseDecoration, parseRoomStyle } from '../server/office-protocol.mjs';
 import { parseOfficeCommand } from '../server/office-cli.mjs';
 import { sanitizedSnapshot } from '../server/client.mjs';
 
@@ -33,6 +33,7 @@ export async function callPlatopMcp(name, args = {}) {
       parseUpdate(args);
     } else if (name === 'platop_action') args = parseAction(args);
     else if (name === 'platop_decorate') args = parseDecoration(args);
+    else if (name === 'platop_style') args = parseRoomStyle(args);
     else throw fail();
   } catch { throw fail(); }
 
@@ -84,7 +85,7 @@ export async function callPlatopMcp(name, args = {}) {
         send({ jsonrpc: '2.0', method: 'notifications/initialized' });
         send({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} });
       } else if (stage === 1) {
-        const known = ['platop_status', 'platop_set_activity', 'platop_action', 'platop_decorate'];
+        const known = ['platop_status', 'platop_set_activity', 'platop_action', 'platop_decorate', 'platop_style'];
         if (!Array.isArray(result.tools) || result.tools.length < 2 || result.tools.length > known.length
           || result.tools.some(tool => !record(tool) || !known.includes(tool.name) || tool.inputSchema?.additionalProperties !== false)) throw fail();
         const tools = new Map(result.tools.map(tool => [tool.name, tool]));
@@ -93,8 +94,20 @@ export async function callPlatopMcp(name, args = {}) {
           || JSON.stringify(tools.get('platop_set_activity').inputSchema?.properties?.state?.enum) !== JSON.stringify(STATES)) throw fail();
         if (tools.has('platop_action') && JSON.stringify(tools.get('platop_action').inputSchema?.properties?.kind?.enum) !== JSON.stringify(ACTION_KINDS)) throw fail();
         if (tools.has('platop_decorate') && JSON.stringify(tools.get('platop_decorate').inputSchema?.properties?.slot?.enum) !== JSON.stringify(DECOR_SLOTS)) throw fail();
+        if (tools.has('platop_style') && JSON.stringify(tools.get('platop_style').inputSchema?.properties?.lighting?.properties?.mode?.enum) !== JSON.stringify(ROOM_LIGHT_MODES)) throw fail();
+        let wireArgs = args;
+        if (name === 'platop_decorate') {
+          const finishSchema = tools.get(name).inputSchema?.properties?.parts?.items?.properties?.finish;
+          if (finishSchema && JSON.stringify(finishSchema.enum) !== JSON.stringify(DECOR_FINISHES)) throw fail();
+          // Original four-tool servers predate finishes and the two organic
+          // shapes. Keep their original recipes usable without widening them.
+          if (!finishSchema) {
+            if (args.parts.some(part => part.finish !== 'matte' || ['capsule', 'leaf'].includes(part.shape))) throw fail();
+            wireArgs = { ...args, parts: args.parts.map(({ finish, ...part }) => part) };
+          }
+        }
         stage = 2;
-        send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name, arguments: args } });
+        send({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name, arguments: wireArgs } });
       } else {
         if (result.isError !== false) throw fail();
         const snapshot = sanitizedSnapshot(result.structuredContent);
@@ -109,6 +122,11 @@ export async function callPlatopMcp(name, args = {}) {
         if (name === 'platop_decorate') {
           const asset = snapshot.assets?.[args.teamId]?.[args.slot];
           if (args.parts.length ? !asset || JSON.stringify(asset.parts) !== JSON.stringify(args.parts) : asset !== undefined) throw fail();
+        }
+        if (name === 'platop_style') {
+          const style = snapshot.rooms?.[args.teamId];
+          if (args.reset ? style !== undefined : !style || ['palette', 'lighting'].some(section =>
+            Object.entries(args[section] ?? {}).some(([key, value]) => style[section][key] !== value))) throw fail();
         }
         stage = 3;
         stop(snapshot);
@@ -155,7 +173,7 @@ export async function callPlatopMcp(name, args = {}) {
 export async function main(args = process.argv.slice(2)) {
   const [command = 'status', ...rest] = args;
   if (['--help', '-h', 'help'].includes(command) && rest.length === 0) {
-    console.log('PLaTOP local MCP\n\n  node scripts/platop-mcp-client.mjs status\n  node scripts/platop-mcp-client.mjs set <team> <state>\n  node scripts/platop-mcp-client.mjs action <team> <kind> [<actor-and-target-json>]\n  node scripts/platop-mcp-client.mjs decorate <team> <slot> <parts-json>\n\nOnly bounded public activity and office data are accepted; no files, URLs or commands.');
+    console.log('PLaTOP local MCP\n\n  node scripts/platop-mcp-client.mjs status\n  node scripts/platop-mcp-client.mjs set <team> <state>\n  node scripts/platop-mcp-client.mjs action <team> <kind> [<actor-and-target-json>]\n  node scripts/platop-mcp-client.mjs decorate <team> <slot> <parts-json>\n  node scripts/platop-mcp-client.mjs style <team> <palette-and-lighting-json>\n\nOnly bounded public activity and office data are accepted; no files, URLs or commands.');
     return 0;
   }
   if (command === 'status' && rest.length === 0) {
@@ -168,10 +186,10 @@ export async function main(args = process.argv.slice(2)) {
     console.log(`PLaTOP MCP: ${teamId} ${state}.`);
     return 0;
   }
-  if (command === 'action' || command === 'decorate') {
+  if (['action', 'decorate', 'style'].includes(command)) {
     const operation = parseOfficeCommand(command, rest);
     await callPlatopMcp(operation.name, operation.arguments);
-    console.log(`PLaTOP MCP: ${command === 'action' ? 'action queued' : 'decoration saved'}.`);
+    console.log(`PLaTOP MCP: ${command === 'action' ? 'action queued' : command === 'decorate' ? 'decoration saved' : 'room style saved'}.`);
     return 0;
   }
   throw fail();

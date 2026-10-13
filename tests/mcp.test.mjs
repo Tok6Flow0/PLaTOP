@@ -57,7 +57,7 @@ test('MCP initializes, lists closed tools, and performs authenticated local set/
   assert.equal(initialized.result.protocolVersion, '2025-11-25');
   assert.deepEqual(initialized.result.capabilities, { tools: { listChanged: false } });
   const tools = (await request('tools/list')).result.tools;
-  assert.deepEqual(tools.map(tool => tool.name), ['platop_status', 'platop_set_activity', 'platop_action', 'platop_decorate']);
+  assert.deepEqual(tools.map(tool => tool.name), ['platop_status', 'platop_set_activity', 'platop_action', 'platop_decorate', 'platop_style']);
   assert.ok(tools.every(tool => tool.inputSchema.additionalProperties === false && tool.annotations.openWorldHint === false && tool.annotations.destructiveHint === false));
   assert.equal(tools[1].annotations.idempotentHint, false); // Active writes renew freshness.
   const initial = (await request('tools/call', { name: 'platop_status', arguments: {} })).result;
@@ -134,6 +134,36 @@ test('MCP office tools enforce owned actors and bounded data-only primitive capa
   const cleared = (await request('tools/call', { name: 'platop_decorate', arguments: { teamId: 'email', slot: 'wall', parts: [] } })).result;
   assert.equal(cleared.isError, false);
   assert.equal(cleared.structuredContent.assets, undefined);
+});
+
+test('MCP room studio exposes compact closed style choices and rejects nonvisual authority', async t => {
+  const { request, initialize } = await fixture(t);
+  await initialize();
+  const tool = (await request('tools/list')).result.tools.find(tool => tool.name === 'platop_style');
+  assert.equal(tool.inputSchema.additionalProperties, false);
+  assert.equal(tool.inputSchema.properties.palette.additionalProperties, false);
+  assert.equal(tool.inputSchema.properties.lighting.additionalProperties, false);
+  assert.deepEqual(tool.inputSchema.properties.lighting.properties.mode.enum, ['day', 'cozy', 'night', 'off']);
+  const styled = (await request('tools/call', { name: 'platop_style', arguments: {
+    teamId: 'support', palette: { wall: '#284E39', furniture: '#7a5239' }, lighting: { color: '#FFCC88', brightness: 0.7, mode: 'cozy' },
+  } })).result;
+  assert.equal(styled.isError, false);
+  assert.deepEqual(styled.structuredContent.rooms.support.palette, { wall: '#284e39', furniture: '#7a5239' });
+  assert.deepEqual(styled.structuredContent.rooms.support.lighting, { color: '#ffcc88', brightness: 0.7, mode: 'cozy' });
+  for (const argumentsValue of [
+    { teamId: 'support', palette: { wall: '#123456', url: 'PRIVATE_URL' } },
+    { teamId: 'support', lighting: { mode: 'cozy', schedule: 'PRIVATE' } },
+    { teamId: 'support', lighting: { brightness: 1000000 } },
+    { teamId: 'support', lighting: { mode: 'off' }, command: 'PRIVATE' },
+    { teamId: 'support', reset: true, palette: { wall: '#123456' } },
+  ]) {
+    const rejected = await request('tools/call', { name: 'platop_style', arguments: argumentsValue });
+    assert.equal(rejected.error.code, -32602);
+    assert.ok(!JSON.stringify(rejected).includes('PRIVATE'));
+  }
+  const reset = (await request('tools/call', { name: 'platop_style', arguments: { teamId: 'support', reset: true } })).result;
+  assert.equal(reset.isError, false);
+  assert.equal(reset.structuredContent.rooms, undefined);
 });
 
 test('MCP reports visualization failure without exposing token or paths, then recovers', async t => {

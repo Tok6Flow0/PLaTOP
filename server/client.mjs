@@ -2,7 +2,7 @@ import { readFile, lstat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { MAX_SNAPSHOT_BYTES, TEAM_IDS, parseUpdate, parseUpdates } from './protocol.mjs';
-import { parseAction, parseDecoration, parseOfficeSnapshot } from './office-protocol.mjs';
+import { parseAction, parseDecoration, parseOfficeSnapshot, parseRoomStyle } from './office-protocol.mjs';
 
 // Configuration comes from the local process, never from a model's tool arguments.
 const defaultRoot = fileURLToPath(new URL('../', import.meta.url));
@@ -34,6 +34,7 @@ export async function requestActivity(payload, { root = process.env.PLATOP_ROOT 
 
 export async function requestAction(payload, options) { return localRequest('actions', parseAction(payload), options); }
 export async function requestDecoration(payload, options) { return localRequest('assets', parseDecoration(payload), options); }
+export async function requestRoomStyle(payload, options) { return localRequest('rooms', parseRoomStyle(payload), options); }
 
 async function localRequest(route, payload, { root = process.env.PLATOP_ROOT ?? defaultRoot, port = Number(process.env.PLATOP_PORT ?? 4317) } = {}) {
   if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('Invalid local port.');

@@ -330,7 +330,7 @@ export class SceneBatches {
   private dynamicMatrices?: MatrixAtlas;
   private readonly dynamicPaletteRoots = new Map<THREE.Object3D, DynamicPaletteRoot>();
   private readonly dynamicRootOrder = new Map<THREE.Object3D, number>();
-  private readonly geometryKeys = new WeakMap<THREE.BufferGeometry, string>();
+  private geometryKeys = new WeakMap<THREE.BufferGeometry, string>();
   private readonly visibility = new WeakMap<THREE.Object3D, { frame: number; visible: boolean }>();
   private readonly renderPrunedRoots = new Map<THREE.Object3D, boolean>();
   private visibilityFrame = 0;
@@ -565,6 +565,9 @@ export class SceneBatches {
 
   rebuild(): void {
     this.clear();
+    // Agent room finishes can edit source vertex colours between rebuilds.
+    // Reuse hashes only within this event, never across mutable source data.
+    this.geometryKeys = new WeakMap();
     this.mapArrays.beginRebuild();
     this.scene.updateMatrixWorld(true);
     const groups = new Map<string, { sources: Source[]; dynamic: boolean }>();

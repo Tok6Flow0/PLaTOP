@@ -1,10 +1,10 @@
 # PLaTOP character and animation integration
 
-The application uses editable reference characters plus visually reviewed authored GLBs. Claude has delivered all sixteen source models and their animation. The user then asked Codex to lead a reference-matching rebuild and independent critique; delivery and visual approval are separate. `public/assets/approved.json` enables individual reviewed GLB IDs without changing Claude’s delivery manifest. Undelivered or unapproved models use the editable ceramic characters in `src/scene/proxies.ts`.
+The default scene uses sixteen cohesive procedural characters in `src/scene/proxies.ts` and `src/scene/characterGeometry.ts`. Rounded ceramic robots, lanterns, owls and a swift share the room's material and lighting direction. Claude's sixteen authored GLB deliveries and animations remain available as source assets. The user asked Codex to lead a reference-matching rebuild and independent critique; delivery and visual approval are separate. `public/assets/approved.json` currently enables no GLBs. That gate can opt individual reviewed models back in without changing the delivery manifest; a missing or failed model retains its procedural character.
 
-The user-approved starting-space concept in `public/reference/office-concept.png` is the current style target. Original team portraits in `public/portraits/` preserve identity cues. Preserve each team's chosen identity, silhouette, materials, emblem, and small companion details. `src/teams.ts` contains the roster and description, but a written palette shorthand must not override a clear visual identity in the source portrait. Keep the final work cute and polished, with simple ceramic, paper and lantern forms that read at a small size.
+The user-approved starting-space concept in `public/reference/office-concept.png` is the current style target. Original team portraits in `public/portraits/` preserve identity cues. The viewer's member and team portraits in `public/avatars/` are renders of the current procedural models, rather than crops of the concept image. Preserve each team's chosen identity, silhouette, materials, emblem, and small companion details. `src/teams.ts` contains the roster and description, but a written palette shorthand must not override a clear visual identity in the source portrait. Keep the final work cute and polished, with simple ceramic, paper and lantern forms that read at a small size.
 
-## Delivery
+## Optional authored GLB delivery
 
 Put one binary glTF 2.0 file per character in `public/assets/characters/`, named with its stable ID. Set the matching `path` in `manifest.json` to `/assets/characters/<id>.glb`. Keep an undelivered model's path `null`. The application does not request null or unapproved paths, and a failed model keeps its reference character. Use `schemaVersion: 1` and preserve the manifest's four clip keys.
 
@@ -19,12 +19,12 @@ Example delivered entry:
 }
 ```
 
-## Geometry and performance
+## Authored geometry and performance
 
 - Target **2,500 triangles or fewer** and **512 KB or less** per model, including clips. The runtime rejects files over 4 MB as an integration ceiling, not a target.
 - Use Y-up, meters, feet at the origin, facing **+Z**, and a nominal rest height of **1 meter**. The runtime normalizes reviewed owl/lantern models to the office’s display scale defensively; stable feet and facing still matter.
 - Prefer one mesh and one material where possible. Keep textures at 256 px or below when a material color can do the job. Use low-roughness variation sparingly; readability comes from shape and palette.
-- Avoid dynamic lights, shadow dependencies, particle systems, cloth, physics and postprocessing. The room uses fixed hemisphere/directional lighting, a static soft-shadow map and small local lamp glows. Character motion uses inexpensive contact pads.
+- Avoid character-owned dynamic lights, shadow dependencies, particle systems, cloth, physics and postprocessing. The room uses fixed hemisphere/directional lighting, a small prefiltered studio environment, a static soft-shadow map and local lamp glows. An explicit agent room style may add one bounded, shadow-free fill. Character motion uses inexpensive contact pads.
 - A lightweight armature is welcome where useful. Avoid unnecessary bones, constraints, unused actions and hidden high-detail geometry.
 
 ## Four animation clips
@@ -40,11 +40,34 @@ Export four named looping **in-place** clips, with no root translation. The scen
 
 Aim for 2–4 seconds per loop and a small number of keys. Keep contact within a roughly 0.8-meter footprint. Do not animate cameras, room objects or lights inside a character model. A missing clip falls back to `Idle` where available and is reported as pending.
 
-The editable reference characters have small procedural head, limb, wing and glow gestures. For approved models, the application uses authored `Move`, `Work` and `Sleep` clips. Any richer character actions, flips or flourishes can extend the contract later without making the first version expensive.
+The default procedural characters have small head, limb, wing and glow gestures synchronized to the scene's motor state. For an explicitly approved GLB, the application uses authored `Move`, `Work` and `Sleep` clips. Any richer character actions, flips or flourishes can extend the contract later without making the first version expensive.
+
+## Model portraits
+
+`scripts/render-avatars.mjs` optionally renders sixteen member portraits and six
+team portraits into `public/avatars/`, along with a manifest of generation-input
+and PNG fingerprints. It imports the same procedural models, shared geometry
+and materials, with the app's prefiltered studio environment.
+
+With an existing Playwright installation available to Node, run:
+
+```sh
+node scripts/render-avatars.mjs
+```
+
+Generation uses an existing Playwright package by default. Set
+`PLATOP_PLAYWRIGHT_MODULE` to another importable installation when needed; there
+is no mandatory Playwright runtime dependency. Its Chromium browser and working
+WebGL must be available. The script owns a temporary Vite server on an available
+loopback port, rooted in this checkout, and closes both server and browser after
+generation. It takes no URL argument or prestarted server, preventing unrelated
+or stale development sources from being stamped as current portraits. It does
+not use chat contents. Fingerprints detect stale portraits after model
+changes; they do not guarantee identical pixels across different graphics drivers.
 
 ## Exact roster: six teams, sixteen characters
 
-| Team / portrait | Stable model ID | Identity |
+| Team / source portrait | Stable model ID | Identity |
 | --- | --- | --- |
 | Savor Bridge / `merchant.png` | `bridge-jarvis` | Jarvis, warm orange ceramic coordination robot |
 | Savor Bridge / `merchant.png` | `bridge-scout` | Scout, teal research robot with magnifying/compass cue |
@@ -67,9 +90,31 @@ Characters with the same spoken name in different teams remain separate assets a
 
 ## Application behavior and review
 
-The six offices use a cozy perspective view with warm off-white, sage, teal and terracotta, now viewed through a bounded perspective camera. Each team owns an office; characters can walk through the connected campus and visit other offices. Screens and chairs face their assigned characters. The viewer does not choose their decorations: agents compose bounded local primitive recipes through the PLaTOP skill, with one asset per desk, shelf, wall, floor or festive slot. Office decoration is open to the teams' tastes; there is no required CEO tribute.
+The six offices use a cozy perspective view with warm off-white, sage, teal and terracotta, viewed through a bounded perspective camera. Each team owns an office; characters can walk through the connected campus and visit other offices. Screens and chairs face their assigned characters. Viewers select offices, move the camera, choose a window view or pause playback. They have no decorating or avatar-action controls. Office decoration is open to the teams' tastes; there is no required CEO tribute.
 
-The scene renders at a maximum 24 fps while any team is active and 4 fps for sleep-only animation. Neutral scenes, pause, reduced motion, a hidden document, or a minimized native window have no repeating animation timer. Camera input redraws at up to 24 fps even when characters are sleeping or frozen. Device pixel ratio is capped at 1.5 while active and 1 for static/sleep scenes. Reduced motion shows informative still poses.
+Agents compose one bounded local asset per desk, shelf, wall, floor or festive
+slot through `platop_decorate`. Up to twelve parts choose `box`, `sphere`,
+`cylinder`, `cone`, `torus`, `capsule` or `leaf`, with optional normalized position,
+size, rotation, hex colour, boolean glow and `matte`, `ceramic`, `wood` or `metal`
+finish. Shapes share smooth geometry with at most 512 triangles per primitive.
+Glow is material emission, not another light. The scene places and scales each
+slot away from walking routes. Empty parts removes an asset.
+
+`platop_style` lets the owning team choose wall, rug and furniture colours and
+lamp colour, brightness and `day`, `cozy`, `night` or `off` mood. Sparse choices
+merge; omitted fields preserve the current look. An exclusive `reset:true`
+removes the style and restores the authored palette and lamp settings without
+clearing assets. These data-only choices accept no scripts, external files,
+URLs, text or arbitrary scene graphs. The [activity bridge](ACTIVITY-BRIDGE.md)
+defines the complete contract and local persistence bounds.
+
+Visible active and sleeping animation uses a display-synchronized cinematic
+30 fps cadence. Camera input redraws at up to 60 fps. Neutral scenes, pause,
+reduced motion, a hidden document or a minimized native window do not schedule
+continuous animation; a brief transition may finish before settling. The scene
+pixel-ratio cap is 1 with native antialiasing, while interface text retains native
+display density. Reduced motion shows informative still poses. These are frame
+budgets, not a guarantee of presented refresh rate or whole-device CPU savings.
 
 For a delivery review: verify all sixteen stable IDs, portrait identity, height/facing/feet, four clip names, seamless loops, triangle/file budgets, local embedded resources, readability at room scale, and correct sleep/active/neutral behavior. Tests should also cover an absent model, missing clip, model load failure, disposal during a load, minimize/resume and reduced motion. Source completion, authored-asset completion and packaged-app runtime verification are separate evidence.
 
