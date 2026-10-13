@@ -32,7 +32,7 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 13 | 8.1/10 | 8.2/10 | 8.1/10 — B+ |
 | Pass 14 | 8.2/10 | 8.3/10 | 8.2/10 — B+ |
 | Pass 15 | 8.3/10 | 8.3/10 | 8.3/10 — B+ |
-| Pass 16 | Pending | Pending | Independent review pending |
+| Pass 16 | 8.3/10 | 8.3/10 | 8.3/10 — B+ |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 Craft/fidelity columns average the six team scores when no aggregate was supplied.
@@ -149,6 +149,37 @@ regression checks that the iris edge cannot be clipped by the cream face.
 The covered wing core loses 72 triangles, keeping the existing 9,000-triangle
 character limit without adding a live effect or light. All 265 tests and the
 production build pass. Fresh desktop captures report no browser errors.
+
+### Latest independent verdict and remaining work
+
+Pass 16 remains **8.3/10, B+**, not the requested A-level match. The reviewer
+finds the ensemble coherent and recognizable, with no large construction
+failure in the supplied views, but the quality threshold is **not accepted**.
+
+| Team | Craft | Fidelity | All-angle integrity |
+| --- | ---: | ---: | ---: |
+| Savor Bridge | 8.5 | 8.5 | 8.5 |
+| Clear Path | 8.5 | 8.0 | 8.5 |
+| Savor Wayfinders | 8.0 | 8.5 | 8.0 |
+| Beacon | 8.5 | 9.0 | 8.5 |
+| The Lantern Desk | 8.0 | 7.5 | 8.0 |
+| Savor Dispatch | 8.0 | 8.0 | 8.0 |
+
+The paper characters still read as heavy faceted sculptures, with simpler
+facial planes than the originals. The navy owl's tapered side feathers are
+coherent, but its regular body plumage and smooth rear head meet abruptly;
+its shallow gold eye surrounds now read too flat. Swift's head/breast remains
+too squared. The navigator cape needs a more flowing shoulder construction,
+and its companions need broader pear-shaped proportions. Merchant's collar
+and book silhouette, HR's asymmetric drape, and Beacon's recessed face still
+need further craft work. Faint diagonal/dotted traces outside the owl's rear
+right shoulder also warrant inspection; the still does not establish a cause.
+
+The reviewer scores the campus 8.5/10 and local-daylight presentation 8/10.
+Dark character detail loses some separation at night. Rear scores assess
+construction completeness, not accuracy to unseen reference angles. These
+stills do not establish live clock synchronization, animation or performance;
+those have separate implementation/tests and measured evidence below.
 
 ## Local-clock atmosphere
 
