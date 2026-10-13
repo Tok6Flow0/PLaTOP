@@ -194,9 +194,11 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>):THREE.Buff
 }
 
 function swiftWing(): THREE.BufferGeometry {
-  const vertices: Tuple[]=[[0,.10,.10],[.07,.27,-.36],[.09,-.23,-.25],[.11,-.10,-.005],[.14,.005,-.06],[-.009,.10,.10],[.061,.27,-.36],[.081,-.23,-.25],[.101,-.10,-.005]];
-  return polyhedron(vertices,[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],
-    ['#e0b15e','#d5a24e','#bd893b','#e5bc74','#3c6d68','#b38948','#47736b','#3b6e65','#c59854']);
+  const boundary:Tuple[]=[[0,.10,.10],[.07,.27,-.38],[.065,-.018,-.18],[.09,-.23,-.29],[.11,-.10,-.005]];
+  const vertices:Tuple[]=[...boundary,[.14,.005,-.06],...boundary.map(([x,y,z])=>[x-.009,y,z] as Tuple)];
+  const faces:number[][]=[[0,5,1],[1,5,2],[2,5,3],[3,5,4],[4,5,0],[6,7,8,9,10]];
+  for(let i=0;i<5;i++){const j=(i+1)%5;faces.push([i,j,j+6,i+6]);}
+  return polyhedron(vertices,faces,['#e0b15e','#d5a24e','#47736b','#d7ab59','#e5bc74','#3c6d68','#b38948','#47736b','#3b6e65','#c59854','#b68b45']);
 }
 
 /** Folded volumes close into a tapered back, not an extruded cardboard slab. */
@@ -222,7 +224,7 @@ function paperOwlBody(): THREE.BufferGeometry {
   const faces:number[][]=[];
   for(let r=0;r<2;r++)for(let i=0;i<6;i++){
     const j=(i+1)%6;
-    if(i===0){const centre=20+r;faces.push([r*6,r*6+1,centre],[r*6+1,(r+1)*6+1,centre],[(r+1)*6+1,(r+1)*6,centre],[(r+1)*6,r*6,centre]);}
+    if(i===0){faces.push([r*6,r*6+1,(r+1)*6+1],[(r+1)*6+1,(r+1)*6,r*6]);}
     else faces.push([r*6+i,r*6+j,(r+1)*6+j],[(r+1)*6+j,(r+1)*6+i,r*6+i]);
   }
   for(let i=0;i<6;i++){const j=(i+1)%6;faces.push([12+i,12+j,18],[j,i,19]);}
@@ -253,6 +255,7 @@ function spiritHood(relay = false): THREE.BufferGeometry {
 
 function spiritFigure(variant:'compass'|'lens'|'relay'): THREE.BufferGeometry {
   const profile: Array<[number,number]>=[[0,-.617],[.42,-.617],[.49,-.51],[.48,-.30],[.40,-.08],[.29,.21],[.31,.32],[.36,.46],[.33,.62],[.22,.75]];
+  if(variant!=='compass'){profile[1]=[.25,-.603];profile[2]=[.44,-.52];}
   profile.push(...(variant==='compass'?[[.12,.84],[.055,.93],[0,1.03]]:[[.09,.80],[0,.81]]) as Array<[number,number]>);
   const geometry=softLathe(profile,32,32),p=geometry.attributes.position;
   for(let i=0;i<p.count;i++){
@@ -593,39 +596,18 @@ export function characterEyeArc(kit: SceneKit, parent: THREE.Object3D, color: st
 }
 
 /** Stamp a thin ornamental relief onto a curved shell once, never per frame. */
-export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012, conformPaper=false): void {
+export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012): void {
   shell.parent!.updateWorldMatrix(true,true);mark.updateWorldMatrix(true,true);
   const ray=new THREE.Raycaster(),point=new THREE.Vector3(),inverse=new THREE.Matrix4();
   const bounds=new THREE.Box3().setFromObject(mark);
   mark.traverse(object=>{
     const mesh=object as THREE.Mesh;if(!mesh.isMesh)return;
-    let geometry=mesh.geometry.clone();
-    if(conformPaper) {
-      if(geometry.index){const flat=geometry.toNonIndexed();geometry.dispose();geometry=flat;}
-      // Broad folded face panels cross several planes of the paper head.
-      // Subdivide before projection so an interpolated triangle cannot cut
-      // through a ridge between its otherwise correctly fitted endpoints.
-      for(let level=0;level<2;level++){
-        const next=new THREE.BufferGeometry();
-        for(const [name,attribute] of Object.entries(geometry.attributes)){
-          const values:number[]=[];
-          for(let i=0;i<attribute.count;i+=3){
-            const a=Array.from({length:attribute.itemSize},(_,j)=>attribute.array[i*attribute.itemSize+j]);
-            const b=Array.from({length:attribute.itemSize},(_,j)=>attribute.array[(i+1)*attribute.itemSize+j]);
-            const c=Array.from({length:attribute.itemSize},(_,j)=>attribute.array[(i+2)*attribute.itemSize+j]);
-            const ab=a.map((v,j)=>(v+b[j])/2),bc=b.map((v,j)=>(v+c[j])/2),ca=c.map((v,j)=>(v+a[j])/2);
-            for(const v of [a,ab,ca,ab,b,bc,ca,bc,c,ab,bc,ca])values.push(...v);
-          }
-          next.setAttribute(name,new THREE.Float32BufferAttribute(values,attribute.itemSize));
-        }
-        geometry.dispose();geometry=next;
-      }
-    }
+    const geometry=mesh.geometry.clone();
     const position=geometry.attributes.position;
     inverse.copy(mesh.matrixWorld).invert();
     for(let i=0;i<position.count;i++) {
       point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
-      const relief=conformPaper?0:Math.max(0,point.z-bounds.min.z);
+      const relief=Math.max(0,point.z-bounds.min.z);
       ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
       const hit=ray.intersectObject(shell,false)[0];
       if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}

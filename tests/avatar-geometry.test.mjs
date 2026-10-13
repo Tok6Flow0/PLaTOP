@@ -220,9 +220,9 @@ test('walking and explicit resting suppress stationary gestures until the charac
   disposeObject(all); kit.dispose();
 });
 
-test('continuous robed faces remain rigidly attached to their shell through agent gestures and walking',()=>{
+test('continuous robed and book faces remain rigidly attached to their shell through agent gestures and walking',()=>{
   const kit=new SceneKit(),all=new THREE.Group();
-  for(const member of members.filter(member=>member.id.startsWith('hr-'))){
+  for(const member of members.filter(member=>member.id.startsWith('hr-')||member.id==='bridge-keeper')){
     const model=makeProxy(member,kit);all.add(model);model.updateMatrixWorld(true);
     const p=model.userData.personality,face=model.getObjectByName('head');
     const relative=()=>new THREE.Matrix4().copy(p.body.matrixWorld).invert().multiply(face.matrixWorld).elements;

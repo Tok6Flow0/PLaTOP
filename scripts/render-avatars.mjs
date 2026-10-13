@@ -70,11 +70,11 @@ const portraits=await page.evaluate(async()=>{
  const contact=new GTAOPass(scene,camera,512,480,undefined,{radius:.16,thickness:1,distanceExponent:2});contact.blendIntensity=.65;
  composer.addPass(beauty);composer.addPass(contact);composer.addPass(bokeh);composer.addPass(output);
  function render(name, members, team=false,night=false) {
-  ambient.color.set(night?'#91a9c3':'#fff8ee');ambient.groundColor.set(night?'#292536':'#8c725a');ambient.intensity=night?.22:.42;
+  ambient.color.set(night?'#91a9c3':'#fff8ee');ambient.groundColor.set(night?'#292536':'#8c725a');ambient.intensity=night?.28:.42;
   key.color.set(night?'#ffc77e':'#fff2dd');key.intensity=night?1.65:2.5;
   key.position.set(...(night?[-2,3,3]:[-3,5,5]));
   fill.color.set(night?'#9eb8dd':'#dde8e1');fill.intensity=night?.48:.18;
-  scene.environmentIntensity=night?.12:.32;wall.material.color.set(night?'#243441':'#b3a18b');
+  scene.environmentIntensity=night?.18:.32;wall.material.color.set(night?'#243441':'#b3a18b');
   const group=new THREE.Group();
   members.forEach((member,index)=>{
    const model=makeProxy(member,kit);

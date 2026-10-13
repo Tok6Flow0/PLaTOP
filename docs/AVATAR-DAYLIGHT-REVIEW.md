@@ -22,6 +22,7 @@ The reviewer received no requested score and no instructions to approve.
 | Pass 3 | 7.4/10 | 7.9/10 | 7.7/10 — B |
 | Pass 4 | 7.6/10 | 7.9/10 | 7.8/10 — B |
 | Pass 5 | 7.8/10 | 7.9/10 | 7.9/10 — B |
+| Pass 6 | Pending | Pending | Independent review pending |
 
 These are subjective visual judgments, not a pixel-similarity measurement.
 The requested acceptance threshold has not yet been met. Pass 1 restored the
@@ -48,6 +49,10 @@ and facial grain, and simpler paper faces. The independent review recognizes
 the illuminated Beacon as the strongest asset, but still finds stiffness in
 the bird, broad geometric owl bellies, and insufficient individual posture.
 All 253 tests and the production build pass; these do not override that review.
+Pass 6 integrates Scout's raised magnifier arm and seated feet, Keeper's
+tilted book and face panel, and Beacon's clasped forearms. It adds distinct
+head posture, tucked paper feet and a notched bird wing, with a restrained
+night fill lift. All 253 tests and the production build pass.
 
 ## Local-clock atmosphere
 
@@ -80,6 +85,8 @@ test suites were stopped during the samples.
 | Pass 4 night | 60.00 | 1.6 ms | 86 | 324,476 |
 | Pass 5 noon | 60.00 | 3.0 ms | 87 | 327,218 |
 | Pass 5 night | 60.00 | 2.1 ms | 87 | 327,218 |
+| Pass 6 noon | 60.00 | 2.0 ms | 87 | 326,622 |
+| Pass 6 night | 60.00 | 2.2 ms | 87 | 326,622 |
 
 The static scene returns to zero scheduled rendering fps. Submission timing is
 JavaScript/renderer time, **not GPU time**. The measurements preserve displayed
