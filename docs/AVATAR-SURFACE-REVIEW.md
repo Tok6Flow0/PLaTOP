@@ -1442,3 +1442,27 @@ remains 7.5 craft / 8.0 fidelity and campus 7.0 / 7.5. This is a prototype
 checkpoint, not an accepted finished upgrade. Next: soften the physical joint
 transition and establish a clean highlight/shadow pair without adding panels.
 Production remains accepted pass 127.
+
+Pass 133 replaces the panel bevels with continuous shallow rolled shoulders
+and halves the recess depth, retaining all nine board positions and framing.
+Near-body-colour backing and analytical shoulder normals remove the cut-line
+effect. The full masonry wall still casts the architectural silhouette;
+millimetre joinery does not cast unstable sub-texel self-shadows. All 353
+tests/build pass. Campus submits 59.9994 fps (1.69/2.30 ms CPU; 118 draws,
+384,532 triangles); Merchant close submits 59.90 fps (1.72/2.70 ms;
+152 draws, 2,651,221 triangles, three detailed avatars). Complete matched
+views and timings are in surface-pass-133. Pass 132 remote CI succeeded.
+
+The independent reviewer retains 133 over both the dark seams of 132 and the
+flat wall of 131. Quiet daylight articulation survives campus scale, largely
+receding at night; no visible termination, occlusion or furniture regression
+is found. Merchant stays 7.5 craft / 8.0 fidelity; campus stays 7.0 / 7.5.
+The reviewer approves cautious extension, checking green/navy walls separately.
+The next scene-scale gap after that is broad floor/architectural material
+identity and spatial shading, not another tiny character detail. No A is claimed.
+
+Accepted 133 now serves the isolated production preview as index-D4cfFL7t.js.
+Window, close zoom to invitation, third/first-person mist, exit and reset all
+pass. The empty local bridge connects with all teams Awaiting update; console
+warnings/errors are absent. This verifies the isolated preview, not private
+live-chat adoption or native packaging.

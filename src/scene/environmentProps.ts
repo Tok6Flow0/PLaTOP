@@ -20,15 +20,38 @@ export function paneledWallFinish(parent:THREE.Object3D,kit:SceneKit,color:strin
   const group=new THREE.Group();group.name='Painted back-wall joinery';group.position.set(x,0,z);parent.add(group);
   const span=width-.18,base=new THREE.Color(color);
   const paint=(factor:number)=>`#${base.clone().multiplyScalar(factor).getHexString()}`;
-  const backing=surface(beveledBlock(group,kit,paint(.92),[0,1.99,.098],[span,3.58,.04],.006),'wall');
+  const backing=surface(beveledBlock(group,kit,paint(.995),[0,1.99,.104],[span,3.58,.04],.006),'wall');
   backing.name='Recessed wall joint backing';
   const weights=[1.02,.98,1.04,.96,1.01,1,.97,1.03,.99],total=weights.reduce((sum,n)=>sum+n,0);
   const tones=[.987,1.018,.998,.977,1.009,.994,1.022,.984,1.004];
   let left=-span/2;
   weights.forEach((weight,index)=>{
     const pitch=span*weight/total,shade=paint(tones[index]);
-    const board=surface(beveledBlock(group,kit,shade,[left+pitch/2,2.03,.11],[pitch-.010,3.46,.04],.006),'wall');
-    board.name='Painted wall board';board.material=kit.material(shade,'wood');
+    const half=(pitch-.010)/2,shoulder=.048;
+    const profile=(px:number)=>{
+      const distance=half-Math.abs(px),t=Math.min(1,Math.max(0,distance/shoulder));
+      const face=.124+.006*t*t*(3-2*t);
+      const slope=distance>=shoulder?0:-Math.sign(px)*.006*6*t*(1-t)/shoulder;
+      return {face,slope};
+    };
+    const xs=[-half,-half+.008,-half+.018,-half+.032,-half+shoulder,0,half-shoulder,half-.032,half-.018,half-.008,half];
+    const shape=new THREE.Shape();shape.moveTo(-half,-profile(-half).face);
+    for(const px of xs.slice(1))shape.lineTo(px,-profile(px).face);
+    shape.lineTo(half,-.09);shape.lineTo(-half,-.09);shape.closePath();
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:3.46,bevelEnabled:false});
+    geometry.rotateX(-Math.PI/2);geometry.translate(0,.30,0);
+    const positions=geometry.getAttribute('position'),normals=geometry.getAttribute('normal');
+    for(let vertex=0;vertex<positions.count;vertex++){
+      if(Math.abs(normals.getY(vertex))>.5||positions.getZ(vertex)<.1239||normals.getZ(vertex)<.5)continue;
+      const normal=new THREE.Vector3(-profile(positions.getX(vertex)).slope,0,1).normalize();
+      normals.setXYZ(vertex,normal.x,normal.y,normal.z);
+    }
+    const board=surface(new THREE.Mesh(geometry,kit.material(shade,'wood')),'wall');
+    board.position.x=left+pitch/2;board.name='Painted wall board';board.receiveShadow=true;
+    // The full masonry wall already casts the architectural silhouette.
+    // Millimetre joinery relief is shaded by its continuous normals and local
+    // depth, not unstable sub-texel self-shadows in the campus shadow atlas.
+    board.castShadow=false;group.add(board);
     left+=pitch;
   });
   // A stepped skirting return and a fine upper rail connect the boards to

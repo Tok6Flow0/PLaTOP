@@ -34,8 +34,13 @@ test('painted wall boards have real recessed joints, integrated trim and bounded
   assert.ok(backing.max.z>.11,'recessed painted backing clears the original masonry face without coplanar flicker');
   for(const [index,board] of boards.entries()){
     const box=new THREE.Box3().setFromObject(board);
-    assert.ok(box.max.z-backing.max.z>.010&&box.max.z-backing.max.z<.014,'seams are shallow physical recesses');
+    assert.ok(box.max.z-backing.max.z>.005&&box.max.z-backing.max.z<.007,'seams are shallow physical recesses');
     assert.equal(board.userData.roomSurface,'wall','agent-authored wall finishes keep semantic ownership');
+    assert.equal(board.castShadow,false,'the underlying masonry casts the wall silhouette, not sub-texel joinery edges');
+    assert.equal(board.receiveShadow,true,'boards retain real shadows from furniture and mounted objects');
+    const normals=board.geometry.getAttribute('normal');
+    assert.ok(Array.from({length:normals.count},(_,i)=>normals.getX(i)).some(x=>x>.1&&x<.25),
+      'a rolled shoulder carries a continuous shallow highlight, not only right-angle gap walls');
     if(index){const previous=new THREE.Box3().setFromObject(boards[index-1]);
       assert.ok(box.min.x-previous.max.x>.009&&box.min.x-previous.max.x<.011,'board joints have actual gaps');}
   }
