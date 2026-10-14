@@ -140,6 +140,38 @@ test('Beacon planting has real independent support without intersecting its stor
   assert.equal(floorPots.length,0,'the redundant pot no longer intersects the agent-replaceable reading cabinet');
 });
 
+test('architectural profiles use physical bevel radii without stretching or changing shared material identity',async t=>{
+  const {SceneKit,disposeObject}=await loadScene('scene/primitives.ts');
+  const {architecturalBlock}=await loadScene('scene/environmentProps.ts');
+  const kit=new SceneKit(),root=new THREE.Group();t.after(()=>{disposeObject(root);kit.dispose();});
+  for(const size of [[.32,3.84,7],[6.16,.16,.365],[18.7,.4,18.5],[6.2,.14,.44]]){
+    const mesh=architecturalBlock(root,kit,'#e6ddce',[0,0,0],size,.07);
+    mesh.geometry.computeBoundingBox();const bounds=mesh.geometry.boundingBox;
+    for(const [i,axis]of ['x','y','z'].entries())assert.ok(Math.abs(bounds.max[axis]-size[i]/2)<1e-6&&Math.abs(bounds.min[axis]+size[i]/2)<1e-6);
+    assert.deepEqual(mesh.scale.toArray(),[1,1,1]);
+    assert.ok(Math.abs(mesh.userData.architecture.radius-Math.min(.07,...size.map(n=>n*.46)))<1e-12);
+    assert.equal(mesh.material,kit.material('#e6ddce'),'new profiles retain the accepted batch/material response');
+    assert.equal(mesh.material.map,null);assert.equal(mesh.material.bumpMap,null);
+  }
+});
+
+test('thicker painted walls grow outwards and preserve each inhabited plane and actual navigation envelope',async t=>{
+  const {rooms,kit,disposeObject}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  let count=0;
+  for(const room of rooms.values())for(const wall of room.walls)wall.root.userData.staticSources?.traverse(mesh=>{
+    if(mesh.name!=='Rounded wall body')return;
+    count++;mesh.updateMatrix();mesh.geometry.computeBoundingBox();
+    // These bodies were authored directly under an untransformed wall root;
+    // inspect their retained local source transform, not a detached world path.
+    const bounds=mesh.geometry.boundingBox.clone().applyMatrix4(mesh.matrix),face=mesh.userData.inhabitedFace;
+    assert.ok(Math.abs(bounds[face.side>0?'max':'min'][face.axis]-face.value)<1e-6,'inhabited face is unchanged');
+    assert.ok(room.navigation.blockers.some(({bounds:b})=>Math.abs(bounds.min.x-b[0])<1e-6&&Math.abs(bounds.min.z-b[1])<1e-6&&Math.abs(bounds.max.x-b[2])<1e-6&&Math.abs(bounds.max.z-b[3])<1e-6),
+      'actual outward masonry is represented by its full blocker');
+  });
+  assert.ok(count>=15,'all five enclosed room shells are inspected');
+});
+
 test('all five enclosed offices share painted joinery while the open foyer remains open',async t=>{
   const {rooms,kit,disposeObject}=await realLayout();
   t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Decoration, Team } from '../types';
 import { SceneKit } from './primitives';
-import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paneledWallFinish, paper, parcelStack, plant, plantStand, rug, shelf, sign, stool, storageCabinet, table, tidyStaticMeshes } from './environmentProps';
+import { architecturalBlock, beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paneledWallFinish, paper, parcelStack, plant, plantStand, rug, shelf, sign, stool, storageCabinet, table, tidyStaticMeshes } from './environmentProps';
 
 export type NavigationPoint = [number, number];
 export type NavigationBounds = [number, number, number, number];
@@ -125,7 +125,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Include their real floor in its isolated window too, instead of leaving
   // the drafting cabinet and plants floating when the campus is hidden.
   const floorExtension=isFoyer?.6:rearExtension;
-  beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -floorExtension / 2], [6.12, 0.22, 5.9 + depthGain + floorExtension]);
+  architecturalBlock(interior, kit, '#d2bfa4', [0, -0.03, -floorExtension / 2], [6.12, 0.22, 5.9 + depthGain + floorExtension],.075);
   floorSurface(interior, '#b8aa95', [0, 0.087, -floorExtension / 2], [5.94, 5.7 + depthGain + floorExtension],false,kit);
   rug(interior, kit, palette.rug, rugX, rugZ, rugWidth, rugDepth);
 
@@ -133,6 +133,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     const section = new THREE.Group();
     root.add(section);
     const back = kind === 'back', doorway = kind === doorSide;
+    // Add substance outwards. Keep the inhabited face, doors and prop/asset
+    // supports at their existing coordinates instead of stealing aisle space.
+    const thickness=.32,outer=kind==='left'?-1:1;
+    const shellX=back?x:x+outer*(thickness-width)/2,shellZ=back?z-(thickness-depth)/2:z;
     const slices = back ? [[x - width / 2, x + width / 2]] : doorway
       ? [[z - depth / 2, sideDoorZ - doorWidth / 2], [sideDoorZ + doorWidth / 2, z + depth / 2]]
       : [[z - depth / 2, z + depth / 2]];
@@ -140,15 +144,17 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       const span = right - left;
       if (span < 0.01) continue;
       const center = (left + right) / 2;
-      beveledBlock(section, kit, '#e6ddce', [back ? center : x, 1.98, back ? z : center], [back ? span : width, 3.84, back ? depth : span]);
-      blockers.push({ bounds: back ? [left, z - depth / 2, right, z + depth / 2] : [x - width / 2, left, x + width / 2, right] });
+      const masonry=architecturalBlock(section, kit, '#e6ddce', [back ? center : shellX, 1.98, back ? shellZ : center], [back ? span : thickness, 3.84, back ? thickness : span],.07);
+      masonry.name='Rounded wall body';
+      masonry.userData.inhabitedFace={axis:back?'z':'x',value:back?z+depth/2:x-outer*width/2,side:back?1:-outer};
+      blockers.push({ bounds: back ? [left, shellZ - thickness / 2, right, shellZ + thickness / 2] : [shellX - thickness / 2, left, shellX + thickness / 2, right] });
     }
     if (back) {
       for (const [left, right] of slices) {
         const span = right - left;
         paneledWallFinish(section,kit,palette.wall,(left+right)/2,z,span);
       }
-      beveledBlock(section, kit, '#eee5d6', [x, 3.92, z], [width + 0.06, 0.12, depth + 0.045]);
+      architecturalBlock(section, kit, '#eee5d6', [x, 3.94, shellZ], [width + 0.06, 0.16, thickness + 0.045]);
     } else {
       const inside = kind === 'left' ? 1 : -1;
       for (const [left, right] of slices) {
@@ -161,10 +167,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
         }
         kit.mesh(section, 'roundedBox', '#eee5d6', [x + inside * 0.105, 0.22, center], [0.045, 0.2, Math.max(0.01, span - 0.02)]);
       }
-      beveledBlock(section, kit, '#f0e8db', [x, 3.92, z], [width + 0.045, 0.12, depth + 0.08]);
+      architecturalBlock(section, kit, '#f0e8db', [shellX, 3.94, z], [thickness + 0.045, 0.16, depth + 0.08]);
       if (doorway) {
-        beveledBlock(section, kit, palette.wall, [x, 3.25, sideDoorZ], [width, 1.3, doorWidth]);
-        beveledBlock(section, kit, '#eee5d6', [x + inside * 0.025, 2.59, sideDoorZ], [width + 0.035, 0.1, doorWidth + 0.06]);
+        architecturalBlock(section, kit, palette.wall, [shellX, 3.25, sideDoorZ], [thickness, 1.3, doorWidth]);
+        architecturalBlock(section, kit, '#eee5d6', [shellX + inside * 0.025, 2.59, sideDoorZ], [thickness + 0.035, 0.1, doorWidth + 0.06],.04);
         beveledBlock(interior, kit, '#cabb9f', [x, 0.079, sideDoorZ], [0.3, 0.008, doorWidth], 0.003);
       }
       if ((index % 3 === 0 && kind === 'left') || (index % 3 === 2 && kind === 'right')) {
@@ -254,9 +260,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
         const span = end - start;
         if (span < .1) continue;
         const z = (start + end) / 2;
-        kit.mesh(parapet, 'roundedBox', '#e7dfd1', [x, 0.48, z], [0.17, 0.8, span]);
-        kit.mesh(parapet, 'roundedBox', '#f3ece1', [x, 0.9, z], [0.22, 0.1, span]);
-        blockers.push({ bounds: [x - 0.11, start, x + 0.11, end] });
+        const outerX=x+Math.sign(x)*.035;
+        architecturalBlock(parapet, kit, '#e7dfd1', [outerX, 0.48, z], [0.24, 0.8, span]);
+        architecturalBlock(parapet, kit, '#f3ece1', [outerX, 0.91, z], [0.28, 0.12, span],.05);
+        blockers.push({ bounds: [outerX - .14, start, outerX + .14, end] });
       }
       walls.push({ root: parapet, normal: new THREE.Vector3(Math.sign(x), 0, 0), twoSided: true });
     });
@@ -450,9 +457,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     tidyStaticMeshes(nook);defaultSlotProps.floor=nook;
   }
   if (index >= 3 && !isFoyer) {
-    kit.mesh(interior, 'roundedBox', '#e8dfd0', [0, 0.3, 2.86 + halfGain], [5.95, 0.44, 0.2]);
-    kit.mesh(interior, 'roundedBox', '#f1e9dd', [0, 0.54, 2.86 + halfGain], [6.0, 0.085, 0.23]);
-    blockers.push({ bounds: [-3, 2.86 + halfGain - 0.12, 3, 2.86 + halfGain + 0.12] });
+    architecturalBlock(interior, kit, '#e8dfd0', [0, 0.3, 2.90 + halfGain], [5.95, 0.44, 0.28]);
+    architecturalBlock(interior, kit, '#f1e9dd', [0, 0.55, 2.90 + halfGain], [6.0, 0.11, 0.31],.045);
+    blockers.push({ bounds: [-3, 2.86 + halfGain - 0.12, 3, 2.90 + halfGain + .155] });
   }
   const outline = new THREE.LineLoop(new THREE.BufferGeometry().setFromPoints([
     new THREE.Vector3(-2.96, 0.11, -2.8 - halfGain - rearExtension), new THREE.Vector3(2.96, 0.11, -2.8 - halfGain - rearExtension),
@@ -512,8 +519,8 @@ export function makeCampus(kit: SceneKit): THREE.Group {
   const depthGain = 1.475;
   const entryShift = (OFFICE_ROW_SPACING - (6.3 + depthGain)) / 2;
   campus.name = 'One shared home';
-  beveledBlock(campus, kit, '#d7c7b0', [0, -0.25, -0.15], [18.7, 0.4, 14.4 + depthGain * 2 + entryShift * 2]);
-  beveledBlock(campus, kit, '#e8ddca', [0, -0.075, -0.15], [18.65, 0.18, 14.35 + depthGain * 2 + entryShift * 2]);
+  architecturalBlock(campus, kit, '#d7c7b0', [0, -0.25, -0.15], [18.7, 0.4, 14.4 + depthGain * 2 + entryShift * 2],.11);
+  architecturalBlock(campus, kit, '#e8ddca', [0, -0.075, -0.15], [18.65, 0.18, 14.35 + depthGain * 2 + entryShift * 2],.07);
   // Keep the textured shared floor clear of its own support and the overlapping
   // room floor layers. Millimetre gaps shimmer at the overview camera distance.
   beveledBlock(campus, kit, '#d2bfa4', [0, 0.024, 0.45], [18.3, 0.086, 3.8]);
@@ -523,14 +530,15 @@ export function makeCampus(kit: SceneKit): THREE.Group {
     // Meet the corridor texture at z=2.35 without coplanar overlap.
     floorSurface(campus, '#9f8570', [x, 0.075, 3.25], [0.85, 1.8], true,kit);
   }
-  kit.mesh(campus, 'roundedBox', '#d4c2a8', [0, -0.08, 6.9 + depthGain + entryShift], [6.15, 0.33, 1.8]);
+  architecturalBlock(campus, kit, '#d4c2a8', [0, -0.08, 6.9 + depthGain + entryShift], [6.15, 0.33, 1.8],.075);
   floorSurface(campus, '#cec7b9', [0, 0.087, 6.85 + depthGain + entryShift], [5.85, 1.85], true,kit);
   [-2.98, 2.98].forEach((x) => {
-    kit.mesh(campus, 'roundedBox', '#e7dfd0', [x, 0.32, 6.75 + depthGain + entryShift], [0.2, 0.65, 1.9]);
-    kit.mesh(campus, 'roundedBox', '#f0e8dc', [x, 0.67, 6.75 + depthGain + entryShift], [0.24, 0.1, 1.95]);
+    const outerX=x+Math.sign(x)*.035;
+    architecturalBlock(campus, kit, '#e7dfd0', [outerX, 0.32, 6.75 + depthGain + entryShift], [0.27, 0.65, 1.9]);
+    architecturalBlock(campus, kit, '#f0e8dc', [outerX, 0.68, 6.75 + depthGain + entryShift], [0.31, 0.12, 1.95],.05);
   });
-  kit.mesh(campus, 'roundedBox', '#d5c8b2', [0, -0.29, 7.91 + depthGain + entryShift], [6.2, 0.14, 0.44]);
-  kit.mesh(campus, 'roundedBox', '#e1d4bf', [0, -0.34, 8.15 + depthGain + entryShift], [6.3, 0.12, 0.35]);
+  architecturalBlock(campus, kit, '#d5c8b2', [0, -0.29, 7.91 + depthGain + entryShift], [6.2, 0.14, 0.44],.05);
+  architecturalBlock(campus, kit, '#e1d4bf', [0, -0.34, 8.15 + depthGain + entryShift], [6.3, 0.12, 0.35],.045);
   rug(campus, kit, '#b99c77', 0, 6.83 + depthGain + entryShift, 2.43, 1.43, ['Same', 'Curiosity', 'Further', 'Together']);
   for (const side of [-1, 1]) {
     const x = side * 6.2;

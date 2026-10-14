@@ -15,6 +15,13 @@ export function beveledBlock(parent: THREE.Object3D, kit: SceneKit, color: strin
   const mesh = new THREE.Mesh(new RoundedBoxGeometry(size[0], size[1], size[2], 2, Math.min(radius, ...size.map((dimension) => dimension * 0.46))), kit.material(color));
   mesh.position.set(...position); mesh.castShadow = mesh.receiveShadow = true; parent.add(mesh); return mesh;
 }
+/** Physical-scale painted edges: no stretched unit-cube radii or new texture maps. */
+export function architecturalBlock(parent:THREE.Object3D,kit:SceneKit,color:string,position:Point,size:Point,radius=.065):THREE.Mesh {
+  const bevel=Math.min(radius,...size.map(dimension=>dimension*.46));
+  const mesh=new THREE.Mesh(new RoundedBoxGeometry(...size,3,bevel),kit.material(color));
+  mesh.name='Painted architectural block';mesh.position.set(...position);mesh.castShadow=mesh.receiveShadow=true;
+  mesh.userData.architecture={size:[...size],radius:bevel};parent.add(mesh);return mesh;
+}
 /** Shallow painted joinery, within the existing wall/trim envelope. */
 export function paneledWallFinish(parent:THREE.Object3D,kit:SceneKit,color:string,x:number,z:number,width:number):THREE.Group {
   const group=new THREE.Group();group.name='Painted back-wall joinery';group.position.set(x,0,z);parent.add(group);

@@ -1747,3 +1747,41 @@ conspicuous new intersection, character occlusion, broken join or night
 regression is visible. The next highest-impact campus study is the architectural
 shell: softly rounded, more substantial partitions/caps/perimeter edges and
 paint response, initially holding furniture, identities and lighting fixed.
+
+Pass 143 remote CI succeeded. Its isolated production preview serves
+index-BAN9aZMR.js; window, close-zoom invitation, third/first-person mist,
+exit and reset passed with no console warnings/errors. All six teams remain
+Awaiting update on the empty connected QA bridge. Responsive production
+images are in surface-pass-143; no live-agent adoption is inferred.
+
+Pass 144 studies the architectural profiles as one system. Enclosed wall
+bodies are .32 thick, grown outwards with their inhabited planes unchanged.
+Caps, low parapets, room-floor edges, entrance rails, platform and steps use
+physical-scale rounded profiles (.045–.11 radius) rather than scaled unit
+corners. Furniture, real homes, chosen identities and lighting stay fixed.
+An experimental separate paint material produced obvious horizontal bands on
+two boards and nearby floors. Reverting only that material removed the bands;
+the final study retains the accepted matte material and introduces no new
+maps. The experiment is not represented as an accepted material improvement,
+and this observation does not establish the underlying renderer cause.
+
+All 366 tests/build pass. New checks certify unit mesh scale, physical bevel
+radii, unchanged material identity and map count, inhabited wall planes, and
+actual outward wall bounds in the navigation map. Campus submits 59.60 fps
+(CPU mean/p95 1.74/2.60 ms; 135 draws, 416,734 triangles); Merchant close
+submits 59.9964 fps (1.71/2.60 ms; 155 draws, 2,667,143 triangles).
+These are short CPU-side submission samples, not completed-GPU timing.
+Matched campus noon/night, a separate noon reload, current Merchant windows
+and timing files are in surface-pass-144. Merchant has no preceding143
+matched window pair. The two campus captures are not byte-identical; no
+deterministic screenshot claim is made from this pair.
+
+The independent reviewer retains 144 at campus 7.5 craft / 7.5 fidelity.
+The shell has more physical weight and broader edge highlights; no
+conspicuous board/floor bands, open joints, intersections or night crowding
+are visible. Small bright ticks along some back-wall skirting remain a
+minor visible reservation of undetermined cause. No further broad shell
+redesign is recommended. The next campus study is vegetation structure and
+height, first in Beacon: fuller varied leaf volumes around a tall crown and
+complementary mid-height planting, preserving circulation rather than adding
+pots indiscriminately.

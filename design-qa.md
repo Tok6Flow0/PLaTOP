@@ -19,7 +19,15 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-143 suite passes **364 tests** and the production build passes.
+The pass-144 suite passes **366 tests** and the production build passes.
+The reviewer retains the thicker, rounded shell at campus **7.5 craft /
+7.5 fidelity**. An experimental material that caused visible bands was
+removed; the accepted finish is unchanged. Campus/close samples submit
+59.60/60.00 fps. Minor skirting ticks remain; the next high-impact study is
+fuller, vertically varied planting in Beacon. Production serves accepted143,
+with window, zoom, both mist views, exit/reset and the empty bridge verified.
+
+The pass-143 suite passed **364 tests** and the production build passed.
 The independent reviewer retains the cabinet correction at Lantern Desk and
 campus **7.5 craft / 7.5 fidelity**, with visible shelves and credible framed
 sides. All three fixed samples submit about 60 fps; the 8,400 additional
