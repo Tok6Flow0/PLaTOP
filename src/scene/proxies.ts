@@ -308,7 +308,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(body, 'hexBase', '#a88449', [0, 0, 0], [.56, .13, .53], undefined, 'brass');
       const light = sculpt(head, 'hexGlass', '#fff1cc', [0, 0, 0], [.55, .61, .50], undefined, 'amber'); data.glow = light.material;
       // Every corner is framed, including the rear: the same tapered rails
-      // sit on the actual six glass edges, without character point lights.
+      // sit on the actual six glass edges around the single bounded light.
       for(let corner=0;corner<6;corner++){
         const angle=Math.PI/6+corner*Math.PI/3;
         stroke(head,green,[-.30,0,.30].map(y=>{
@@ -332,8 +332,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     // A lantern illuminates nearby real surfaces. Only these two luminous
     // embodiments add a short-range, shadow-free light; no per-avatar lights.
-    const warmth=new THREE.PointLight('#ffc46d',support?.32:.82,support?1.4:2.4,2);
-    warmth.name='Lantern surface warmth';warmth.position.set(0,0,.20);
+    const warmth=new THREE.PointLight('#ffc46d',support?.32:2.2,support?1.4:2.4,2);
+    warmth.name='Lantern surface warmth';warmth.position.set(0,support?0:.10,support?.20:.24);
     head.add(warmth);data.warmth=warmth;
   } else if (kind === 'owl') {
     const navy = id === 'email-owl', feathers = navy ? '#233149' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
@@ -563,5 +563,5 @@ export function animateCharacter(model: THREE.Object3D, status: Activity, time: 
   p.eyes.forEach(eye => { eye.scale.y = eye.userData.restEyeY * (asleep ? 0.13 : blink ? 0.09 : 1); });
   p.highlights.forEach(highlight => { highlight.visible = !asleep && !blink; });
   if (p.glow) p.glow.emissiveIntensity = asleep ? 0.24 + Math.sin(t * 1.4) * 0.04 : 0.65 + Math.sin(t * 2) * 0.08;
-  if(p.warmth)p.warmth.intensity=(model.name.startsWith('support-')?.32:.82)*(asleep?.38:1);
+  if(p.warmth)p.warmth.intensity=(model.name.startsWith('support-')?.32:2.2)*(asleep?.38:1);
 }

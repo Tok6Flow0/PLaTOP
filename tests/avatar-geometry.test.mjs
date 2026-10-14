@@ -880,7 +880,11 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
     const model = makeProxy(character, kit); all.add(model); model.updateMatrixWorld(true);
     const lights=model.getObjectsByProperty('isLight', true);
     assert.equal(lights.length,character.kind==='lantern'?1:0,`${character.id} light budget`);
-    for(const light of lights){assert.equal(light.castShadow,false);assert.ok(light.distance<=2.4&&light.intensity<=.82);}
+    for(const light of lights){
+      assert.equal(light.castShadow,false);assert.ok(light.distance<=2.4);
+      assert.equal(light.intensity,character.id==='support-beacon'?.32:2.2);
+      assert.ok(light.position.z<=.24,'the local emitter stays at the glass, not at the camera');
+    }
     if (character.kind === 'robot') {
       const torso = model.userData.personality.body.children.find(child => child.isMesh);
       const torsoBounds = new THREE.Box3().setFromObject(torso);
