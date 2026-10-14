@@ -45,6 +45,7 @@ not asked for a desired score or instructed to approve.
 | 53 | Portraits 8.5/10 — B+; campus 8.2/10 — B; lighting 8.3/10 | Branch attachment improves; repeated horizontal leaf tiers, sparse furnishings, solid-looking paper faces and regular feather overlaps remain |
 | 55 (Merchant only) | 8.6/10 — B+; craft 8.5 / fidelity 8.7 / all-angle 8.5 | Better Jarvis/Scout hierarchy; existing dark seam remnants, rigid Keeper silhouette, glossy shoulders and short simplified arms remain |
 | 56 (Merchant only) | 8.6/10 — B+; small construction improvement | Seam endpoints join cleanly and lower curve is smoother; thinner bowed cover is intact but Keeper remains comparatively rigid |
+| 57 (foliage/materials) | Merchant 8.6/10 — B+; campus approximately 8.2/10 — B | Horizontal leaf tiers substantially reduced; quieter ceramic highlights retained; sparse seating, rigid book/paper forms and simplified facial disks remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -269,6 +270,15 @@ than fifty seam positions, not just endpoints. All 298 tests and the production
 build pass. Independent front/night/quarter/rear review retains both changes;
 Keeper's primary silhouette and the ceramic highlights still need refinement.
 
+Pass 57 varies leaf pitch, branch height and spacing, and uses three shared
+blade curvatures with the same leaf count and submitted triangle budget.
+The plants retain their certified floor envelopes. Glazed character finishes
+use a softer eggshell response, keeping a bounded close-up clearcoat. All 298
+tests and the production build pass. Independent review retains the foliage and
+eggshell finish, with no conspicuous flattening in all six day/night fronts.
+This targeted assessment did not re-inspect every non-Merchant quarter/rear
+angle; no A-level acceptance is implied.
+
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
 Unchanged source was read from `271831b` into a temporary isolated checkout.
@@ -317,6 +327,7 @@ and is not treated as close-up evidence.
 | Pass 54 campus, after eye batching | 52.40 | 2.38 / 4.20 ms | 110 / 352,427 | 0 |
 | Pass 55 campus | 53.10 | 1.94 / 3.50 ms | 110 / 352,427 | 0 |
 | Pass 56 campus | 49.50 | 2.51 / 4.00 ms | 110 / 352,795 | 0 |
+| Pass 57 campus | 53.80 | 1.74 / 3.90 ms | 110 / 352,795 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -336,6 +347,7 @@ and is not treated as close-up evidence.
 | Pass 54 full-face close, before eye batching | 50.10 | 2.36 / 4.30 ms | 135 / 2,407,557 | 3 |
 | Pass 55 full-face close | 52.30 | 2.00 / 3.80 ms | 135 / 2,379,397 | 3 |
 | Pass 56 full-face close | 49.40 | 2.48 / 4.20 ms | 134 / 2,408,197 | 3 |
+| Pass 57 full-face close | 53.10 | 2.11 / 4.30 ms | 135 / 2,414,805 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material

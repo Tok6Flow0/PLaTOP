@@ -618,6 +618,7 @@ test('sculpted forms share scene resources, preserve the environment finish, and
   assert.equal(characterGeometry(kit, 'helmet'), originalGeometry);
   assert.notEqual(characterGeometry(otherKit, 'helmet'), originalGeometry, 'independent scenes own independent GPU resources');
   const material = characterMaterial(kit, '#eee4d0', 'glaze');
+  assert.ok(material.roughness>=.48&&material.roughness<.65,'eggshell ceramic retains a softened highlight, not polished plastic or matte paper');
   assert.equal(characterMaterial(kit, '#eee4d0', 'glaze'), material);
   const before = models.map(model => meshes(model).map(mesh => [mesh.geometry.uuid, mesh.material.uuid]));
   const objects = all.getObjectsByProperty('isObject3D', true).map(object => object.uuid);

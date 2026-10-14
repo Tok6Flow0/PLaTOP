@@ -354,15 +354,16 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     }
   }
 }
-export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
+export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   const vertex = (t: number, across: number): Point => {
     const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.72 : 0.78) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.21 : 0.16);
     const bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.2 : broad ? 0.26 : 0.34);
     const length = herb ? 0.5 : broad ? 0.78 : spear ? 0.93 : 0.87;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
-    return [width * across + Math.sin(Math.PI * t) * Math.sin(t * 2.1) * 0.012,
-      t * length + 0.020 * cup - (spear ? 0 : herb ? .10 : .16) * t ** 3, bend - (spear?.021:.038) * cup];
+    return [width * across + Math.sin(Math.PI * t) * (Math.sin(t * 2.1) * 0.012+variation*.022),
+      t * length + 0.020 * cup - (spear ? 0 : herb ? .10 : .16+variation*.035) * t ** 3,
+      bend*(1+variation*.21) - (spear?.021:.038) * cup + variation*.035*across*Math.sin(Math.PI*t)];
   };
   // Spend the same 56 triangles along the silhouette: fifteen longitudinal
   // sections remove the polygonal paddle edge, while three ribs keep a cup.
@@ -429,7 +430,9 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     return material;
   });
   const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
-  const geometry = leafGeometry(kind === 'spear', kind === 'herb' || kind === 'ivy', kind === 'broad');
+  // Three shared curved forms vary the leaf blade, not the triangle budget.
+  // This is immutable botany; no randomized per-frame motion is introduced.
+  const geometries=(kind==='leaf'||kind==='broad'?[-1,0,1]:[0]).map(variation=>leafGeometry(kind==='spear',kind==='herb'||kind==='ivy',kind==='broad',variation));
   // Spend the unchanged per-plant triangle budget on visible leaves. These
   // millimetre-wide stems need only five sides and share one local geometry.
   const stemGeometry=new THREE.CylinderGeometry(.5,.5,1,5);
@@ -441,7 +444,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), direction.normalize());
   };
   const addLeaf = (index: number, position: Point, rotation: Point, scale: number) => {
-    const leaf = new THREE.Mesh(geometry, materials[index % materials.length]); leaf.name = 'Cupped botanical leaf';
+    const leaf = new THREE.Mesh(geometries[index%geometries.length], materials[index % materials.length]); leaf.name = 'Cupped botanical leaf';
     // Pitch around the branch's local axis before applying its azimuth.
     // XYZ tilted every bough toward the same world direction, producing
     // flat, paddle-like crowns even when the stems branched radially.
@@ -470,21 +473,22 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       // Three continuous boughs carry offset leaf pairs and an apical leaf.
       // Reuse the same 21/17 stem and leaf budgets instead of arranging every
       // leaf as an identical spoke around a straight pole.
-      const sizes=kind==='leaf'?[7,7,7]:[6,6,5];let index=0;
+      const sizes=kind==='leaf'?[7,7,7]:[6,6,5],phase=x*1.7+z*2.3+size*5.1+base*.7;let index=0;
       for(let branch=0;branch<3;branch++){
-        const angle=branch*2.399+.31;
-        const from=new THREE.Vector3(.008,.48+branch*.095,0);
-        const to=new THREE.Vector3(Math.sin(angle)*.22,1.00+branch*.16,Math.cos(angle)*.22);
+        const angle=branch*2.399+.31+.20*Math.sin(phase+branch);
+        const from=new THREE.Vector3(.008,.46+branch*.06+.055*Math.sin(phase+branch*2),0);
+        const to=new THREE.Vector3(Math.sin(angle)*.22,1.03+branch*.13+.10*Math.sin(phase*2+branch),Math.cos(angle)*.22);
         stem(from,to,.012);
         for(let local=0;local<sizes[branch];local++,index++){
-          const apical=local===sizes[branch]-1,t=.22+.78*(local/(sizes[branch]-1));
+          const apical=local===sizes[branch]-1,t=.15+.85*Math.pow(local/(sizes[branch]-1),1+.20*Math.sin(branch+phase));
           const root=from.clone().lerp(to,t);
-          const bearing=angle+(apical?.10:(local%2?-1:1)*(1.0+.12*(local%3)));
-          const reach=apical?0:.055+.020*(local%3);
+          const bearing=angle+(apical?.10:(local%2?-1:1)*(1.0+.22*Math.sin(index*1.7+phase)));
+          const reach=apical?0:.055+.020*Math.sin(index*2.1+phase);
           const point=root.clone().add(new THREE.Vector3(Math.sin(bearing)*reach,.018,Math.cos(bearing)*reach));
           if(!apical)stem(root,point,.008);
-          const scale=(kind==='broad'?.89:.77)-.16*t+.025*Math.sin(index*2.3);
-          addLeaf(index,[point.x,point.y,point.z],[apical?.48:1.00+.18*(local%3),bearing,.12*Math.sin(index*2.1)],scale);
+          const scale=(kind==='broad'?.89:.77)-.16*t+.055*Math.sin(index*2.3+phase);
+          const pitch=apical?.36+.08*Math.sin(phase+branch):.55+.25*Math.sin(index*1.7+phase)+.12*(1-t);
+          addLeaf(index,[point.x,point.y,point.z],[pitch,bearing,.06*Math.sin(index*2.1+phase)],scale);
         }
       }
     }else for (let i = 0; i < count; i++) {

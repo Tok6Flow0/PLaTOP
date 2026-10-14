@@ -160,11 +160,11 @@ test('diverse connected plants keep actual vertices inside their certified floor
     const root = new THREE.Group(); plant(root, kit, 0, 0, 1, kind === 'ivy' ? 1.48 : 0.1, '#bca581', kind);
     const group = root.children[0], canopy = group.getObjectByName('Connected botanical canopy'); root.updateMatrixWorld(true);
     const inverse = group.matrixWorld.clone().invert(), point = new THREE.Vector3();
-    let leaves = 0, triangles = 0;
+    let leaves = 0, triangles = 0;const leafForms=new Set(),pitches=[];
     canopy.traverse(object => {
       assert.equal(Boolean(object.isSprite || object.isLight), false, 'canopies are actual mesh forms');
       if (!object.isMesh) return;
-      if (object.name === 'Cupped botanical leaf') leaves++;
+      if (object.name === 'Cupped botanical leaf') {leaves++;leafForms.add(object.geometry);pitches.push(object.rotation.x);}
       const positions = object.geometry.getAttribute('position');
       for (let i = 0; i < positions.count; i++) {
         point.fromBufferAttribute(positions, i).applyMatrix4(object.matrixWorld).applyMatrix4(inverse);
@@ -172,6 +172,10 @@ test('diverse connected plants keep actual vertices inside their certified floor
       }
     });
     assert.equal(leaves, { spear:11, herb:17, broad:17, leaf:21, ivy:14 }[kind], 'each authored canopy has a fixed leaf budget');
+    if(kind==='leaf'||kind==='broad'){
+      assert.equal(leafForms.size,3,'shared curved blades vary without more submitted leaves');
+      assert.ok(Math.max(...pitches)-Math.min(...pitches)>.4,'a canopy has several leaf pitches rather than repeated horizontal tiers');
+    }
     group.traverse(object => {
       if (!object.isMesh) return;
       triangles += (object.geometry.index?.count ?? object.geometry.getAttribute('position').count) / 3;
