@@ -475,31 +475,33 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   }
   return (height+.11)*scale;
 }
-export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0): THREE.BufferGeometry {
+export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0, layered=false): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   const vertex = (t: number, across: number): Point => {
-    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.72 : 0.78) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.21 : 0.16);
+    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.72 : 0.78) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.21 : 0.16)*(layered?1.23:1);
     const bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.2 : broad ? 0.26 : 0.34);
     const length = herb ? 0.5 : broad ? 0.78 : spear ? 0.93 : 0.87;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
     return [width * across + Math.sin(Math.PI * t) * (Math.sin(t * 2.1) * 0.012+variation*.022),
-      t * length + 0.020 * cup - (spear ? 0 : herb ? .10 : .16+variation*.035) * t ** 3,
-      bend*(1+variation*.21) - (spear?.021:.038) * cup + variation*.035*across*Math.sin(Math.PI*t)];
+      t * length + (layered?.047:.020) * cup - (spear ? 0 : herb ? .10 : (layered?.29:.16)+variation*.035) * t ** 3,
+      bend*(1+variation*.21) - (spear?.021:layered?.092:.038) * cup + variation*(layered?.065:.035)*across*Math.sin(Math.PI*t)];
   };
-  // Spend the same 56 triangles along the silhouette: fifteen longitudinal
-  // sections remove the polygonal paddle edge, while three ribs keep a cup.
+  // Fifteen longitudinal sections keep the blade silhouette smooth. The
+  // layered crown uses seven transverse ribs for a visibly rolled leaf;
+  // unchanged default foliage keeps its original three-rib / 56-triangle form.
   // Each pointed end is one vertex, avoiding zero-area triangles.
   positions.push(...vertex(0, 0)); uvs.push(0.5, 0);
-  for (let row = 1; row < 15; row++) for (let column = 0; column < 3; column++) {
-    positions.push(...vertex(row / 15, column - 1)); uvs.push(column / 2, row / 15);
+  const columns=layered?7:3;
+  for (let row = 1; row < 15; row++) for (let column = 0; column < columns; column++) {
+    positions.push(...vertex(row / 15, column/(columns-1)*2-1)); uvs.push(column / (columns-1), row / 15);
   }
   positions.push(...vertex(1, 0)); uvs.push(0.5, 1);
-  for (let side = 0; side < 2; side++) indices.push(0, 1 + side, 2 + side);
-  for (let row = 0; row < 13; row++) for (let side = 0; side < 2; side++) {
-    const first = 1 + row * 3 + side, next = first + 3;
+  for (let side = 0; side < columns-1; side++) indices.push(0, 1 + side, 2 + side);
+  for (let row = 0; row < 13; row++) for (let side = 0; side < columns-1; side++) {
+    const first = 1 + row * columns + side, next = first + columns;
     indices.push(first, next, next + 1, first, next + 1, first + 1);
   }
-  for (let side = 0; side < 2; side++) indices.push(40 + side, 43, 41 + side);
+  for (let side = 0; side < columns-1; side++) indices.push(1+13*columns+side,1+14*columns,2+13*columns+side);
   const colors: number[] = [];
   for (let index = 0; index < uvs.length; index += 2) {
     const across = Math.abs(uvs[index] * 2 - 1), t = uvs[index + 1];
@@ -529,7 +531,7 @@ function botanicalGrain(kit: SceneKit): THREE.DataTexture {
   texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;
   botanicalGrains.set(kit,texture);return texture;
 }
-export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf'): void {
+export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf', layered=false): void {
   const group = new THREE.Group(); group.position.set(x, base, z); group.scale.setScalar(size); parent.add(group);
   group.name = `Botanical plant ${kind}`;
   if (base <= 0.12) floorContact(group, 0, 0.006 / size, 0, 0.57, 0.57);
@@ -564,9 +566,9 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     return material;
   });
   const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
-  // Three shared curved forms vary the leaf blade, not the triangle budget.
+  // Three shared curved forms vary the leaf blade within a fixed crown budget.
   // This is immutable botany; no randomized per-frame motion is introduced.
-  const geometries=(kind==='leaf'||kind==='broad'?[-1,0,1]:[0]).map(variation=>leafGeometry(kind==='spear',kind==='herb'||kind==='ivy',kind==='broad',variation));
+  const geometries=(kind==='leaf'||kind==='broad'?[-1,0,1]:[0]).map(variation=>leafGeometry(kind==='spear',kind==='herb'||kind==='ivy',kind==='broad',variation,layered));
   // Spend the unchanged per-plant triangle budget on visible leaves. These
   // millimetre-wide stems need only five sides and share one local geometry.
   const stemGeometry=new THREE.CylinderGeometry(.5,.5,1,5);
@@ -604,14 +606,13 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       trunk.castShadow = trunk.receiveShadow = true; canopy.add(trunk);
     }
     if(kind==='leaf'||kind==='broad'){
-      // Three continuous boughs carry offset leaf pairs and an apical leaf.
-      // Reuse the same 21/17 stem and leaf budgets instead of arranging every
-      // leaf as an identical spoke around a straight pole.
-      const sizes=kind==='leaf'?[7,7,7]:[6,6,5],phase=x*1.7+z*2.3+size*5.1+base*.7;let index=0;
-      for(let branch=0;branch<3;branch++){
+      // Offset pairs and apical leaves follow connected boughs. The layered
+      // crown has four boughs and 28 leaves; default crowns retain 21/17.
+      const sizes=layered?[7,7,7,7]:kind==='leaf'?[7,7,7]:[6,6,5],phase=x*1.7+z*2.3+size*5.1+base*.7;let index=0;
+      for(let branch=0;branch<sizes.length;branch++){
         const angle=branch*2.399+.31+.20*Math.sin(phase+branch);
-        const from=new THREE.Vector3(.008,.46+branch*.06+.055*Math.sin(phase+branch*2),0);
-        const to=new THREE.Vector3(Math.sin(angle)*.22,1.03+branch*.13+.10*Math.sin(phase*2+branch),Math.cos(angle)*.22);
+        const from=layered?curve.getPoint(.08+branch*.16):new THREE.Vector3(.008,.46+branch*.06+.055*Math.sin(phase+branch*2),0);
+        const to=new THREE.Vector3(Math.sin(angle)*.22,(layered?.85:1.03)+branch*.13+.10*Math.sin(phase*2+branch),Math.cos(angle)*.22);
         stem(from,to,.012);
         for(let local=0;local<sizes[branch];local++,index++){
           const apical=local===sizes[branch]-1,t=.15+.85*Math.pow(local/(sizes[branch]-1),1+.20*Math.sin(branch+phase));
@@ -621,7 +622,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
           const point=root.clone().add(new THREE.Vector3(Math.sin(bearing)*reach,.018,Math.cos(bearing)*reach));
           if(!apical)stem(root,point,.008);
           const scale=(kind==='broad'?.89:.77)-.16*t+.055*Math.sin(index*2.3+phase);
-          const pitch=apical?.36+.08*Math.sin(phase+branch):.55+.25*Math.sin(index*1.7+phase)+.12*(1-t);
+          const pitch=apical?.36+.08*Math.sin(phase+branch):(layered?.72:.55)+.25*Math.sin(index*1.7+phase)+.12*(1-t);
           addLeaf(index,[point.x,point.y,point.z],[pitch,bearing,.06*Math.sin(index*2.1+phase)],scale);
         }
       }

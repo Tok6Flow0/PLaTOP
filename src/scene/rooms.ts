@@ -214,7 +214,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     } else if (!lowerRoom) {
       const rightShelf = new THREE.Group(); rightShelf.position.set(shelfX, 0, shelfZ + 0.01); rightShelf.scale.x = shelfWidth; interior.add(rightShelf);
       const rightTop=index===2?storageCabinet(rightShelf,kit,false):shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
-      plant(rightShelf, kit, -0.23, 0.07, 0.61, rightTop, '#b6a17c', 'leaf');
+      plant(rightShelf, kit, -0.23, 0.07, 0.61, rightTop, '#b6a17c', 'leaf',index===2);
       plant(rightShelf, kit, 0.01, -0.17, 0.42, rightTop, '#cbb488', 'herb');
       plant(rightShelf, kit, 0.21, 0.1, 0.63, rightTop, '#c7b794', index % 2 ? 'herb' : 'spear');
     }
@@ -228,7 +228,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     blockers.push({ bounds: index < 3 ? [-2.9, shelfZ - 0.38, -1.94, shelfZ + 0.48]
       : index === 5 ? [1.7, storageZ - 0.38 * storageDepth, 2.83, storageZ + 0.48 * storageDepth] : [-2.83, shelfZ - 0.38, -1.7, shelfZ + 0.48] });
     if (!lowerRoom) blockers.push({ bounds: [1.94, shelfZ - 0.38, 2.9, shelfZ + 0.48] });
-    plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a');
+    plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a','leaf',index===2);
     plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
     if(index===2)tidyStaticMeshes(leftShelf);
   }
@@ -399,7 +399,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - 1.0, 0.825 + i * 0.057, tableZ - 0.4], [0.44, 0.055, 0.32], [0, -0.12, 0]));
   const frontPlantParent=index===2?new THREE.Group():interior;
   if(index===2){frontPlantParent.name='Wayfinders starter floor plant';root.add(frontPlantParent);defaultSlotProps.floor=frontPlantParent;}
-  plant(frontPlantParent, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad');
+  plant(frontPlantParent, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad',index===2);
   if(index===2)tidyStaticMeshes(frontPlantParent);
   if(index===5)parcelStack(interior,kit,2.63,frontPlantZ);
   else plant(interior, kit, 2.63, frontPlantZ, 1.18, 0.1, '#c5b998', 'spear');

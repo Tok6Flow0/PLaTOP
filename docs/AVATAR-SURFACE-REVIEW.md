@@ -1328,3 +1328,27 @@ or shadow regressions. Wayfinders room rises to 8.0 craft / 8.0 fidelity;
 campus remains 7.0 / 7.5. The next priority is fuller curved foliage at existing
 pot locations, especially foreground and cabinet-top crowns. Production remains
 accepted pass 124. Pass 126 remote CI succeeded; no A is claimed.
+
+Accepted pass 127 is now served by the isolated production preview as
+index-CgcoCqQV.js. Window view, close zoom to the mist invitation, third/first
+person, exit and reset pass with no console warnings/errors. Its empty bridge
+connects with every team Awaiting update; no live-chat adoption is inferred.
+The exact branch commit and remote CI succeeded.
+
+Pass 128 studies three Wayfinder crowns in place: four connected boughs,
+28 leaves and seven transverse ribs produce real cupping, droop and twist.
+Actual vertices retain the original clearance envelopes. The opaque vein map
+and single foliage batch are unchanged. All 351 tests and the production
+build pass. Campus submits 59.9994 fps (1.57 ms mean / 2.40 ms p95 CPU;
+118 draws, 388,948 triangles); close submits 60.0048 fps (1.92 / 2.80 ms;
+146 draws, 2,306,681 triangles, three dense avatars).
+
+The independent verdict is mixed: retain the cabinet-top crowns, but revise
+the foreground broad crown. Its dense overlapping cupped leaves read as
+rubbery petals and become a dark compact mass at night. Cabinet crowns gain
+useful volume without hiding signs, faces or openings. The full-close image
+does not show these plants and is not evidence of their improvement. Room
+stays 8.0 / 8.0; campus stays 7.0 / 7.5. This is a prototype checkpoint,
+not a finished retained upgrade. Correct the broad crown's cupping and gaps,
+then address the uneven storage quality in Merchant and Clear Path.
+All images/timings remain in surface-pass-128. Production stays pass 127.

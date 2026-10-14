@@ -296,6 +296,39 @@ test('diverse connected plants keep actual vertices inside their certified floor
   assert.ok([...released.values()].every(count => count === 1));
 });
 
+test('layered crowns use curved transverse ribs and connected bounded leaves without extra texture draws',()=>{
+  const kit=new SceneKit(),root=new THREE.Group();
+  for(const kind of ['leaf','broad'])plant(root,kit,0,0,1,.1,'#bca581',kind,true);
+  root.updateMatrixWorld(true);
+  for(const [index,group] of root.children.entries()){
+    const canopy=group.getObjectByName('Connected botanical canopy'),leaves=[];
+    const inverse=new THREE.Matrix4().copy(group.matrixWorld).invert(),point=new THREE.Vector3();
+    canopy.traverse(object=>{
+      if(!object.isMesh)return;
+      const positions=object.geometry.attributes.position;
+      for(let i=0;i<positions.count;i++){
+        point.fromBufferAttribute(positions,i).applyMatrix4(object.matrixWorld).applyMatrix4(inverse);
+        assert.ok(Math.hypot(point.x,point.z)<=(index===0?.5:.57)+1e-6,'full leaf and stem geometry stays in the original envelope');
+      }
+      if(object.name==='Cupped botanical leaf')leaves.push(object);
+    });
+    assert.equal(leaves.length,28);
+    assert.equal(new Set(leaves.map(leaf=>leaf.geometry)).size,3);
+    for(const leaf of leaves){
+      const geometry=leaf.geometry,positions=geometry.attributes.position;
+      assert.equal(geometry.index.count/3,168);
+      assert.deepEqual([positions.getX(0),positions.getY(0),positions.getZ(0)],[0,0,0],'blade begins exactly at its stem endpoint');
+      const left=1+6*7,center=left+3,right=left+6;
+      assert.ok((positions.getZ(left)+positions.getZ(right))/2-positions.getZ(center)>.06,'leaf has real transverse cupping, not just a flat vein texture');
+      assert.ok(leaf.material.map===leaf.material.bumpMap&&leaf.material.map.userData.botanicalGrain);
+      assert.equal(leaf.material.transparent,false);
+    }
+  }
+  tidyStaticMeshes(root);
+  assert.equal(root.children.filter(o=>o.isMesh&&o.material.map?.userData.botanicalGrain).length,1);
+  const resources=new THREE.Group();resources.add(root,root.userData.staticSources);disposeObject(resources);kit.dispose();
+});
+
 test('fine botanical surfaces share one opaque map, preserve UVs when merged and dispose once', () => {
   const kit=new SceneKit(),root=new THREE.Group(),resources=new THREE.Group();
   plant(root,kit,-1,0,1);plant(root,kit,1,0,1,.1,'#bca581','broad');

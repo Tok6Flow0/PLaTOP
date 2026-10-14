@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-127 suite passes **350 tests** and the production build passes. Its
+The pass-128 suite passes **351 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -119,6 +119,13 @@ raising Wayfinders room craft to 8.0 with fidelity 8.0; campus remains 7.0 / 7.5
 All 33 navigation checks pass and fixed camera samples remain approximately
 60 submitted fps. The next priority is fuller curved foliage at the existing
 pots, not more guide details or tiny lighting changes.
+Accepted pass 127 now serves the isolated production preview, with window,
+zoom, both mist perspectives, exit and reset verified without console errors.
+Pass 128's fuller cabinet-top crowns are retained, but its broad foreground
+crown is rejected as overpacked and rubbery. This is a mixed prototype,
+not an accepted production upgrade. Room stays 8.0 / 8.0 and campus 7.0 / 7.5.
+Both fixed camera samples remain about 60 submitted fps. The next correction
+is gentler cupping, branching gaps and upward tips on the broad crown.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
