@@ -29,6 +29,16 @@ const { characterGeometry, characterMaterial, navigatorCapePoint } = await load(
 const { refineCharacterSurface } = await load('scene/characterSurface.ts');
 const { surfaceData, surfaceGeometry, refineCharacterModel, CharacterDetail, MAX_DETAILED_CHARACTERS } = await load('scene/characterDetail.ts');
 const members = teams.flatMap(team => team.members);
+// Authored triangle counts measured from immutable pre-surface commit 271831b.
+// Refining today's mesh is not enough if a later simplification drops below
+// the user's minimum relative to the original embodiments.
+const baselineTriangles={
+  'bridge-jarvis':7600,'bridge-scout':7676,'bridge-keeper':6143,
+  'hr-compass':5232,'hr-lens':5288,'hr-relay':4984,
+  'intake-jarvis':7776,'intake-beacon':8456,'intake-relay':6544,'intake-compass':7280,
+  'support-beacon':4993,'reflection-lumen':2084,'reflection-echo':1990,'reflection-quill':690,
+  'email-owl':8984,'email-swift':1604,
+};
 
 function meshes(root) {
   const result = []; root.traverse(object => { if (object.isMesh) result.push(object); }); return result;
@@ -42,6 +52,7 @@ test('all sixteen close-up characters contain exactly 100 times their authored t
     const restore = refineCharacterModel(model);
     const fine = meshes(model).reduce((sum, mesh) => sum + mesh.geometry.index.count / 3, 0);
     assert.equal(fine, coarse * 100, character.id);
+    assert.ok(fine>=baselineTriangles[character.id]*100,`${character.id} has at least 100 times its original triangle count`);
     for (const mesh of meshes(model)) {
       const { position, normal, uv } = mesh.geometry.attributes;
       assert.equal(normal.count, position.count);
@@ -140,6 +151,31 @@ test('dense patches improve round curvature but preserve hard folds, UVs and sou
   source.dispose(); plane.dispose();
 });
 
+test('close materials add bounded fibre or glaze response without mutating or disposing source textures',()=>{
+  const kit=new SceneKit(),model=new THREE.Group(),originals=[];
+  for(const finish of ['feather','plumage','facialFeather','cloth','glaze','paper']){
+    const material=characterMaterial(kit,'#345768',finish),geometry=new THREE.SphereGeometry(.1,8,6);
+    const mesh=new THREE.Mesh(geometry,material);model.add(mesh);originals.push({mesh,material,geometry,finish});
+  }
+  let sourceDisposals=0,textureDisposals=0;
+  for(const {material}of originals){material.addEventListener('dispose',()=>sourceDisposals++);material.map.addEventListener('dispose',()=>textureDisposals++);}
+  const restore=refineCharacterModel(model),clones=new Map();
+  for(const {mesh,material,finish}of originals){
+    if(finish==='paper'){assert.equal(mesh.material,material);continue;}
+    assert.ok(mesh.material.isMeshPhysicalMaterial);assert.notEqual(mesh.material,material);
+    assert.equal(mesh.material.map,material.map);assert.equal(mesh.material.bumpMap,material.bumpMap);
+    assert.equal(material.isMeshPhysicalMaterial,undefined);assert.equal(mesh.material.defines.PHYSICAL,'');
+    assert.equal(mesh.material.transmission,0);assert.equal(mesh.material.transparent,false);
+    if(finish==='glaze'){assert.equal(mesh.material.clearcoat,.18);assert.equal(mesh.material.sheen,0);}
+    else {assert.ok(mesh.material.sheen>0&&mesh.material.sheen<=.42);assert.equal(mesh.material.clearcoat,0);}
+    const owned=mesh.material;clones.set(owned,0);owned.addEventListener('dispose',()=>clones.set(owned,clones.get(owned)+1));
+  }
+  restore();restore();
+  assert.ok([...clones.values()].every(count=>count===1));assert.equal(sourceDisposals,0);assert.equal(textureDisposals,0);
+  for(const {mesh,material,geometry}of originals){assert.equal(mesh.material,material);assert.equal(mesh.geometry,geometry);}
+  disposeObject(model);kit.dispose();
+});
+
 test('close-up LOD is bounded, follows existing joints and releases its worker and meshes', async () => {
   const scene = new THREE.Scene(), kit = new SceneKit(), actors = members.slice(0, 4).map((character, i) => {
     const root = new THREE.Group(), model = makeProxy(character, kit); root.add(model); root.position.x = (i - 1.5) * .4; scene.add(root); return { root, model };
@@ -152,6 +188,11 @@ test('close-up LOD is bounded, follows existing joints and releases its worker a
   for (let i = 0; i < 500 && detail.pending; i++) await new Promise(resolve => setImmediate(resolve));
   assert.equal(detail.count, MAX_DETAILED_CHARACTERS); assert.equal(wake, MAX_DETAILED_CHARACTERS);
   detail.select(camera, 800); scene.updateMatrixWorld(true); detail.sync();
+  const ownedMaterials=new Map();
+  for(const mesh of meshes(scene))if(mesh.userData.characterDetailMesh&&mesh.material.isMeshPhysicalMaterial&&!ownedMaterials.has(mesh.material)){
+    const material=mesh.material;ownedMaterials.set(material,0);material.addEventListener('dispose',()=>ownedMaterials.set(material,ownedMaterials.get(material)+1));
+  }
+  assert.ok(ownedMaterials.size>0,'near meshes use their own bounded physical finishes');
   const source = meshes(actors[0].model)[0], duplicate = scene.getObjectByName(`${source.name}:close-surface`);
   assert.equal(source.userData.characterDetailHidden, true);
   actors[0].root.position.z = .5; scene.updateMatrixWorld(true); detail.sync();
@@ -160,6 +201,7 @@ test('close-up LOD is bounded, follows existing joints and releases its worker a
   assert.equal(source.userData.characterDetailHidden, undefined, 'hidden actor restores authored layers');
   camera.position.z = 70; camera.updateMatrixWorld(true); detail.select(camera, 800);
   assert.equal(detail.count, 0, 'campus view retains no dense buffers');
+  assert.ok([...ownedMaterials.values()].every(count=>count===1),'leaving close view releases material clones once');
   detail.dispose(); assert.equal(terminated, true);
   actors.forEach(actor => { assert.ok(meshes(actor.model).every(mesh => !mesh.userData.characterDetailHidden && mesh.layers.mask === 1)); });
   disposeObject(scene); kit.dispose();
@@ -174,6 +216,17 @@ test('worker failure leaves original characters visible and does not retry forev
   assert.equal(starts, 1); assert.equal(detail.count, 0); assert.equal(detail.pending, 0);
   assert.ok(meshes(model).every(mesh => mesh.visible && mesh.layers.mask === 1));
   detail.dispose(); disposeObject(scene); kit.dispose();
+});
+
+test('a synchronous worker transfer failure resolves pending detail without hiding the source',async()=>{
+  const scene=new THREE.Scene(),kit=new SceneKit(),root=new THREE.Group(),model=makeProxy(members[0],kit);root.add(model);scene.add(root);
+  const camera=new THREE.PerspectiveCamera(38,1,.1,100);camera.position.set(0,1,4);camera.lookAt(0,.7,0);camera.updateMatrixWorld(true);
+  let starts=0,posts=0,terminations=0;
+  const detail=new CharacterDetail(scene,[{root,model}],()=>{},()=>{starts++;return {postMessage(){posts++;throw Error('Transfer rejected');},terminate(){terminations++;}};});
+  detail.select(camera,800);await new Promise(resolve=>setImmediate(resolve));detail.select(camera,800);
+  assert.equal(detail.count,0);assert.equal(detail.pending,0);assert.equal(starts,1);assert.equal(posts,1);assert.equal(terminations,1);
+  assert.ok(meshes(model).every(mesh=>mesh.visible&&mesh.layers.mask===1&&!mesh.userData.characterDetailHidden));
+  detail.dispose();assert.equal(terminations,1);disposeObject(scene);kit.dispose();
 });
 
 test('sixteen sculpted avatars retain motor clearance during every moving stride and turn pose', () => {
@@ -234,6 +287,8 @@ test('Scout toe caps follow the cream foot surface rather than floating as flat 
   const caps=meshes(model).filter(mesh=>mesh.name==='scout-fitted-toe-cap');assert.equal(caps.length,2);
   for(const cap of caps){
     assert.equal(cap.geometry.userData.characterFitted,true);
+    assert.equal(cap.material.userData.characterFinish,'clay');
+    assert.ok(cap.material.roughness>=.7,'the shallow sole is matte rather than a glossy inset');
     const positions=cap.geometry.attributes.position,foot=cap.parent,point=new THREE.Vector3();
     const inverse=new THREE.Matrix4().copy(foot.matrixWorld).invert();let min=Infinity,max=-Infinity;
     for(let i=0;i<positions.count;i++){
@@ -243,6 +298,20 @@ test('Scout toe caps follow the cream foot surface rather than floating as flat 
     assert.ok(max-min>.05,'the cap bends over the toe instead of retaining the flat relief depth');
     assert.ok(max<.22&&min>.04,'the fitted cap stays on the front of the cream foot');
   }
+  const restore=refineCharacterModel(model),ray=new THREE.Raycaster();
+  for(const cap of caps){
+    const toe=cap.parent.children[0];let checked=0;
+    // Query the actual dense surfaces in foot space, so the curved cream toe
+    // cannot reappear as pale pinholes through its thin, matte cap.
+    for(let x=-.07;x<=.07;x+=.02)for(let y=-.08;y<=.08;y+=.02){
+      const origin=cap.parent.localToWorld(new THREE.Vector3(x,y,1));
+      const direction=new THREE.Vector3(0,0,-1).transformDirection(cap.parent.matrixWorld);
+      ray.set(origin,direction);const top=ray.intersectObject(cap,false)[0],base=ray.intersectObject(toe,false)[0];
+      if(top&&base){assert.ok(top.distance<base.distance-.0001,'the dense toe stays behind its cap');checked++;}
+    }
+    assert.ok(checked>25);
+  }
+  restore();
   disposeObject(model);kit.dispose();
 });
 

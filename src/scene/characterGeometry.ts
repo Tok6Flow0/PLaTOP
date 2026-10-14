@@ -3,7 +3,7 @@ import type { SceneKit } from './primitives';
 import { owlEyeRecess, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
-  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
+  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'bowedCover' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
@@ -561,18 +561,18 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       // rows. One cached mesh replaces the old front-only breast panel.
       const row=Math.floor(featherIndex/14),column=featherIndex%14;
       const variation=Math.sin(column*2.7+row*1.91),tilt=.055*Math.sin(column*1.7+row*2.2);
-      const angle=(column+.5+(row%2?.5:0)+.16*variation)/14*Math.PI*2,y=.22-row*.095+.008*Math.sin(column*2.1+row);
+      const angle=(column+.5+(row%2?.5:0)+.055*variation)/14*Math.PI*2,y=.22-row*.095+.004*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
       for(let i=0;i<source.attributes.position.count;i++){
         point.fromBufferAttribute(source.attributes.position,i);
         uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
-        const tone=.93+.075*(point.y+.62)/1.12+.035*Math.max(0,point.z)-.015*Math.abs(point.x)+.016*Math.sin(featherIndex*1.73);
+        const tone=.93+.075*(point.y+.62)/1.12+.035*Math.max(0,point.z)-.015*Math.abs(point.x)+.027*Math.sin(featherIndex*1.73);
         colours.push(tone,tone,tone);
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
-        const length=(row===5?.145:.23+.026*Math.sin(featherIndex*2.17));
+        const length=(row===5?.145:.23+.015*Math.sin(featherIndex*2.17));
         const py=y+point.y*length+point.x*tilt*.10,normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
@@ -661,6 +661,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'ankle': return new THREE.CylinderGeometry(.42, .5, 1, 9);
     case 'sphere': return new THREE.SphereGeometry(.5, 24, 16);
     case 'bean': return new THREE.SphereGeometry(.5, 16, 10);
+    case 'fittedSole': return new THREE.SphereGeometry(.5, 20, 12);
     case 'detail': return new THREE.SphereGeometry(.5, 12, 6);
     case 'beak': return lathe([[0, -.5], [.32, -.46], [.5, -.30], [.47, -.05], [.32, .20], [.12, .43], [0, .5]], 16);
     case 'ring': return new THREE.TorusGeometry(.5, .085, 8, 24);
@@ -713,7 +714,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
-    case 'swiftBody': return foldedBirdVolume([[-.12,.032,.06,-.025],[.025,.122,.115,.035],[.12,.116,.117,.103],[.18,.116,.115,.113],[.23,.109,.107,.109],[.27,.082,.081,.095],[.297,.043,.044,.081],[.306,.006,.008,.078]],true);
+    case 'swiftBody': return foldedBirdVolume([[-.12,.032,.05,-.025],[-.035,.075,.087,.005],[.04,.111,.11,.052],[.10,.125,.117,.082],[.16,.122,.115,.101],[.22,.108,.108,.105],[.27,.082,.080,.095],[.30,.041,.040,.082],[.307,.006,.008,.079]],true);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[.025,.11,.04],[.025,.04,-.15],[.025,-.19,-.40],[.025,-.11,-.02],[.062,-.02,-.12],[-.006,.11,.04],[-.006,.04,-.15],[-.006,-.19,-.40],[-.006,-.11,-.02]],[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],['#dcb366','#d7ab5c','#c59c4c','#e3bd73','#386a65','#c99c4f','#386a65','#35615d','#a5813e']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -807,9 +808,8 @@ function facialGrain(kit:SceneKit):THREE.DataTexture {
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const seed=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%101/100;
-    const barbs=Math.pow(Math.max(0,Math.sin(a*51+r*61+Math.sin(r*31+a*13)*4)),8);
-    const fibre=.5+.5*Math.sin(dx*53+Math.sin(dy*37)*2)*Math.sin(dy*61+dx*17);
-    const tone=246-34*barbs*Math.min(1,r*3)-14*seed-12*fibre;
+    const barbs=Math.pow(Math.max(0,Math.sin(a*97+r*113+Math.sin(r*43+a*13)*4)),8);
+    const tone=242-22*barbs*Math.min(1,r*3)-22*seed;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;

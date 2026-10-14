@@ -26,25 +26,51 @@ export function surfaceGeometry(data: SurfaceData): THREE.BufferGeometry {
   return geometry;
 }
 
+/** Grazing fibre response and a thin glaze belong only to nearby surfaces.
+ * This uses the stock physical shader, no extra pass, texture or light. The
+ * caller owns these material clones; source materials/textures stay untouched. */
+function closeMaterial(source:THREE.MeshStandardMaterial,cache:Map<THREE.Material,THREE.MeshStandardMaterial>):THREE.MeshStandardMaterial {
+  const finish=source.userData.characterFinish;
+  if(source.type!=='MeshStandardMaterial'||!['feather','plumage','facialFeather','cloth','glaze'].includes(finish)||source.transparent)return source;
+  let material=cache.get(source);if(material)return material;
+  const physical=new THREE.MeshPhysicalMaterial();
+  THREE.MeshStandardMaterial.prototype.copy.call(physical,source);
+  // Three's runtime exposes these stock defines, though its current material
+  // declarations omit the field. Standard.copy resets the physical define.
+  Object.assign(physical,{defines:{STANDARD:'',PHYSICAL:''}});
+  if(finish==='glaze'){
+    physical.clearcoat=.18;physical.clearcoatRoughness=.42;
+  }else{
+    physical.sheen=finish==='facialFeather'?.22:.42;
+    physical.sheenColor.copy(source.color).lerp(new THREE.Color('#eee8df'),.20);
+    physical.sheenRoughness=.83;
+  }
+  cache.set(source,physical);return physical;
+}
+
 /** Offline portrait generation uses the identical high-detail mesh, not a
- * separately enhanced illustration. The caller owns the returned geometries. */
+ * separately enhanced illustration. Release restores the original mesh and
+ * disposes only the dense geometry/materials, never shared scene textures. */
 export function refineCharacterModel(model: THREE.Object3D): () => void {
   const cache = new Map<string, THREE.BufferGeometry>();
-  const originals: Array<{ mesh: THREE.Mesh; geometry: THREE.BufferGeometry }> = [];
+  const materials=new Map<THREE.Material,THREE.MeshStandardMaterial>();
+  const originals: Array<{ mesh: THREE.Mesh; geometry: THREE.BufferGeometry; material:THREE.Material }> = [];
   model.traverse(object => {
     const mesh = object as THREE.Mesh<THREE.BufferGeometry, THREE.MeshStandardMaterial>;
     if (!mesh.isMesh || Array.isArray(mesh.material)) return;
     const finish = mesh.material.userData.characterFinish ?? 'clay', key = `${mesh.geometry.uuid}:${finish}`;
     let geometry = cache.get(key);
     if (!geometry) { geometry = surfaceGeometry(refineCharacterSurface(surfaceData(mesh.geometry), finish)); cache.set(key, geometry); }
-    originals.push({ mesh, geometry: mesh.geometry }); mesh.geometry = geometry;
+    originals.push({ mesh, geometry: mesh.geometry,material:mesh.material }); mesh.geometry = geometry;
+    mesh.material=closeMaterial(mesh.material,materials);
   });
-  return () => { originals.forEach(entry => { entry.mesh.geometry = entry.geometry; }); cache.forEach(geometry => geometry.dispose()); };
+  let released=false;
+  return () => { if(released)return;released=true;originals.forEach(entry => { entry.mesh.geometry = entry.geometry;entry.mesh.material=entry.material; }); cache.forEach(geometry => geometry.dispose());materials.forEach(material=>material.dispose()); };
 }
 
 interface DetailActor { root: THREE.Object3D; model: THREE.Object3D; }
 interface Part { source: THREE.Mesh; mesh: THREE.Mesh; layers: number; }
-interface Resident { model: THREE.Object3D; root: THREE.Group; parts: Part[]; geometries: Set<THREE.BufferGeometry>; ready: boolean; failed: boolean; }
+interface Resident { model: THREE.Object3D; root: THREE.Group; parts: Part[]; geometries: Set<THREE.BufferGeometry>; materials:Map<THREE.Material,THREE.MeshStandardMaterial>; ready: boolean; failed: boolean; }
 export const MAX_DETAILED_CHARACTERS = 3;
 
 /** At most three near characters receive dense geometry. Worker construction
@@ -81,7 +107,14 @@ export class CharacterDetail {
     return new Promise(resolve => {
       const id = ++this.requestId; this.requests.set(id, resolve);
       const transfer = [source.index.buffer, ...Object.values(source.attributes).map(attribute => attribute.array.buffer)];
-      this.worker!.postMessage({ id, source, finish }, transfer);
+      try { this.worker!.postMessage({ id, source, finish }, transfer); }
+      catch {
+        // A transfer/startup failure is just another unavailable detail tier.
+        // Resolve every waiter so coarse geometry remains visible and no
+        // resident is left pending forever or retried on each camera frame.
+        this.unavailable=true;this.worker?.terminate();this.worker=undefined;
+        this.requests.forEach(pending=>pending(undefined));this.requests.clear();
+      }
     });
   }
 
@@ -99,7 +132,7 @@ export class CharacterDetail {
         if (!data) { resident.failed = true; return; }
         geometry = surfaceGeometry(data); cache.set(key, geometry); resident.geometries.add(geometry);
       }
-      const mesh = new THREE.Mesh(geometry, source.material);
+      const mesh = new THREE.Mesh(geometry, closeMaterial(source.material,resident.materials));
       mesh.name = `${source.name}:close-surface`; mesh.matrixAutoUpdate = false; mesh.matrixWorldAutoUpdate = false;
       mesh.castShadow = source.castShadow; mesh.receiveShadow = source.receiveShadow;
       mesh.userData.characterDetailMesh = true;
@@ -129,7 +162,7 @@ export class CharacterDetail {
       let resident = this.residents.get(actor);
       if (!resident && !this.unavailable) {
         const root = new THREE.Group(); root.name = 'close-character-surfaces'; root.visible = false; root.matrixAutoUpdate = false;
-        resident = { model: actor.model, root, parts: [], geometries: new Set(), ready: false, failed: false };
+        resident = { model: actor.model, root, parts: [], geometries: new Set(), materials:new Map(),ready: false, failed: false };
         this.residents.set(actor, resident); this.scene.add(root); void this.prepare(actor, resident);
       }
       if (resident?.ready) {
@@ -166,7 +199,7 @@ export class CharacterDetail {
 
   private release(actor: DetailActor, resident: Resident): void {
     for (const part of resident.parts) { delete part.source.userData.characterDetailHidden; part.source.layers.mask = part.layers; }
-    resident.root.removeFromParent(); resident.geometries.forEach(geometry => geometry.dispose()); this.residents.delete(actor);
+    resident.root.removeFromParent(); resident.geometries.forEach(geometry => geometry.dispose());resident.materials.forEach(material=>material.dispose()); this.residents.delete(actor);
   }
   dispose(): void {
     this.disposed = true; this.worker?.terminate(); this.requests.forEach(resolve => resolve(undefined)); this.requests.clear();

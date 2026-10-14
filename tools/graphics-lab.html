@@ -1,12 +1,13 @@
 <!doctype html><meta charset="utf-8"><title>PLaTOP — isolated graphics lab</title>
 <style>body{margin:0;background:#e8e5de;color:#243a34;font:14px system-ui}header{padding:16px;display:flex;gap:16px;align-items:center}button{padding:10px}#host{width:1000px;height:800px;position:relative;background:#f5f3ed}pre{white-space:pre-wrap;max-width:1000px}iframe{border:0;width:1536px;height:1024px;display:block}.workspace{width:1000px;background:radial-gradient(ellipse at 50% 42%,#fbf9f1,#f5f3ed 68%)}</style>
-<header><strong>Isolated graphics lab · no bridge / no agent messages</strong><label>Fixture hour <select id="hour"><option value="12">Noon</option><option value="6">Dawn</option><option value="17.75">Sunset</option><option value="23">Night</option></select></label><button id="run">Run camera benchmark</button><button id="close">Inspect close surfaces</button><button id="near-run">Run close benchmark</button><button id="reset">Campus view</button></header>
+<header><strong>Isolated graphics lab · no bridge / no agent messages</strong><label>Fixture hour <select id="hour"><option value="12">Noon</option><option value="6">Dawn</option><option value="17.75">Sunset</option><option value="23">Night</option></select></label><label>Close room <select id="room"></select></label><button id="run">Run camera benchmark</button><button id="close">Inspect close surfaces</button><button id="near-run">Run close benchmark</button><button id="reset">Campus view</button></header>
 <div class="workspace"><div id="host"></div></div><pre id="result">Ready. Fixed 1000 × 800 scene, 1.5 DPR cap. Camera-only workload.</pre>
 <script type="module">
 if (!import.meta.env.DEV) throw Error('Development fixture only');
 import {createScene} from '/src/scene.ts';
 import {teams} from '/src/teams.ts';
 import {daylightAtHour} from '/src/localDaylight.ts';
+import {OFFICE_ROW_SPACING} from '/src/scene/rooms.ts';
 const host=document.querySelector('#host'),result=document.querySelector('#result'),button=document.querySelector('#run');
 host.dataset.motionDebug='1';
 const scene=createScene(host,teams,()=>{},message=>{result.textContent=message});
@@ -14,17 +15,22 @@ const state={selectedTeam:teams[0].id,activity:{},decorations:{},paused:false,re
 scene.update(state);
 document.querySelector('#hour').onchange=event=>{state.daylight=daylightAtHour(Number(event.target.value));scene.update(state)};
 const close=document.querySelector('#close'),nearButton=document.querySelector('#near-run'),reset=document.querySelector('#reset');
-close.onclick=()=>{scene.resetCamera();scene.pan(-6.4,-7);scene.zoom(5);result.textContent='Close surfaces build in a worker. No agent actions are dispatched.'};
+const room=document.querySelector('#room');
+teams.forEach((team,index)=>{const option=document.createElement('option');option.value=index;option.textContent=team.name;room.append(option)});
+// Translate the proven first-room camera by the actual room-grid offsets.
+// This changes only the observer in an offline fixture, never an agent pose.
+function closeCamera(){const index=Number(room.value);scene.pan(-6.4+(index%3)*6.15,-7+Math.floor(index/3)*OFFICE_ROW_SPACING);scene.zoom(5);}
+close.onclick=()=>{scene.resetCamera();closeCamera();result.textContent='Close surfaces build in a worker. No agent actions are dispatched.'};
 reset.onclick=()=>{scene.resetCamera();result.textContent='Campus view. Dense surfaces released.'};
 async function benchmark(near=false){
- button.disabled=nearButton.disabled=close.disabled=reset.disabled=true;scene.resetCamera();if(near){scene.pan(-6.4,-7);scene.zoom(5);}result.textContent='Warming the fixed camera workload…';
+ button.disabled=nearButton.disabled=close.disabled=reset.disabled=room.disabled=true;scene.resetCamera();if(near)closeCamera();result.textContent='Warming the fixed camera workload…';
  const intervals=[],cpu=[],render=[];let start=performance.now(),last=start,renderedStart,measuredStart;
  await new Promise(resolve=>{function frame(now){scene.rotate(near?.0001:.06);if(now-start>2000){if(renderedStart===undefined){renderedStart=Number(host.dataset.sceneFrames);measuredStart=now;}intervals.push(now-last);cpu.push(Number(host.dataset.sceneCpuMs));render.push(Number(host.dataset.sceneRenderMs))}last=now;if(now-start<12000)requestAnimationFrame(frame);else resolve()}requestAnimationFrame(frame)});
  const metrics={...host.dataset},sorted=intervals.toSorted((a,b)=>a-b);
  const stats=values=>({mean:values.reduce((a,b)=>a+b,0)/values.length,p95:values.toSorted((a,b)=>a-b)[Math.floor(values.length*.95)]});
  const renderedFrames=Number(host.dataset.sceneFrames)-renderedStart;
- const report={fixture:`${near?'close surfaces':'campus'} camera orbit, 2s warmup + 10s sample, offline agents`,hour:state.daylight?.hour??12,viewport:[1000,800],rafFps:1000*intervals.length/intervals.reduce((a,b)=>a+b,0),renderedFps:1000*renderedFrames/(last-measuredStart),renderedFrames,rafP95:sorted[Math.floor(sorted.length*.95)],frames:intervals.length,cpu:stats(cpu),render:stats(render),metrics};
- result.textContent=JSON.stringify(report,null,2);if(!near)scene.resetCamera();button.disabled=nearButton.disabled=close.disabled=reset.disabled=false;
+ const report={fixture:`${near?'close surfaces':'campus'} camera orbit, 2s warmup + 10s sample, offline agents`,room:near?teams[Number(room.value)].id:null,hour:state.daylight?.hour??12,viewport:[1000,800],rafFps:1000*intervals.length/intervals.reduce((a,b)=>a+b,0),renderedFps:1000*renderedFrames/(last-measuredStart),renderedFrames,rafP95:sorted[Math.floor(sorted.length*.95)],frames:intervals.length,cpu:stats(cpu),render:stats(render),metrics};
+ result.textContent=JSON.stringify(report,null,2);if(!near)scene.resetCamera();button.disabled=nearButton.disabled=close.disabled=reset.disabled=room.disabled=false;
 }
 button.onclick=()=>benchmark();nearButton.onclick=()=>benchmark(true);
 window.addEventListener('pagehide',()=>scene.dispose(),{once:true});

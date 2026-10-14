@@ -35,6 +35,8 @@ not asked for a desired score or instructed to approve.
 | 35 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Rug patches corrected and fuller owl wings; paper jaw/chest joins, regular feather rows, bird breast/crown transition and furnishing variety remain |
 | 39 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Shorter paper faces and broader chest planes help locally, but oversized raised wing/shoulder mass makes the owls too stocky |
 | 40 (targeted) | Email 8.5 craft / 8.5 fidelity / 8.5 all-angle; campus 8.1/10 — B | More legible shelves and consistent bird shading; coarse facial strokes and narrow rear feather notches need correction |
+| 41 (targeted) | Local form improvements; no new overall grade | Lower paper shoulders and fitted Scout caps help, but thick folds, glossy cap bulges and abrupt tuft/bird joins remain |
+| 43 (portraits only) | Modest material cleanup; no new overall grade | Crack-like facial marks removed; lower-right rear feather overlaps and carved-looking paper masses remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -179,6 +181,30 @@ restored. Bound shelf books have separate page blocks, boards and spines; archiv
 boxes vary shelf contents inside the original envelope and a 6,500-triangle
 per-shelf budget. The pass-40 reviewer reservations remain open at this point.
 
+Pass 46 has 292 passing tests and a passing production build (the existing
+bundle-size warning remains). Close-up feather/fabric materials use restrained
+physical sheen; glazed parts receive a thin clearcoat. These materials are
+owned by the dense tier and released once; shared maps and original materials
+are never disposed or mutated. Distant characters keep their batched materials.
+Synchronous worker-transfer failures now fall back to the original characters
+without leaving pending work or retrying every frame.
+
+The owl's coarse facial strokes and irregular feather overlap introduced in
+pass 40 were reverted. The gold bird has a continuous nine-ring breast/crown
+profile. Scout's fitted soles are shallower and matte. Internal pass 44 exposed
+pale pinholes where dense toe curvature crossed the cap; pass 46 fixes clearance
+and ray-tests both actual dense surfaces. Tests now compare against immutable
+`271831b` triangle counts as well as the current authored mesh: Scout's previous
+99.69× original-count result was corrected with a finer sole contour. All
+sixteen now satisfy the original-count minimum.
+
+The compiled pass-46 bundle loaded two dense characters with zero pending
+requests and 1,851,237 submitted triangles under the isolated server's CSP.
+No console warning/error was observed. Mist entry, both perspectives, exit and
+restored orbit controls were checked; no live bridge or chat was modified.
+Measurements taken with diagnostics closed are stale and were not treated as
+worker-failure evidence. The visual acceptance gate remains open.
+
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
 Unchanged source was read from `271831b` into a temporary isolated checkout.
@@ -216,6 +242,8 @@ and is not treated as close-up evidence.
 | Pass 39 campus | 56.50 | 2.03 / 3.00 ms | 108 / 341,739 | 0 |
 | Pass 40 campus | 54.70 | 1.96 / 2.80 ms | 108 / 351,883 | 0 |
 | Pass 41 campus | 50.40 | 1.96 / 2.90 ms | 108 / 351,883 | 0 |
+| Pass 43 campus | 54.90 | 1.95 / 2.90 ms | 108 / 351,883 | 0 |
+| Pass 46 campus | 53.19 | 1.89 / 2.80 ms | 108 / 352,219 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -228,6 +256,17 @@ and is not treated as close-up evidence.
 | Pass 39 full-face close | 54.40 | 2.26 / 3.70 ms | 133 / 2,346,821 | 3 |
 | Pass 40 full-face close | 55.80 | 1.79 / 3.20 ms | 133 / 2,356,965 | 3 |
 | Pass 41 full-face close | 52.81 | 1.91 / 3.40 ms | 133 / 2,356,965 | 3 |
+| Pass 43 full-face close | 54.80 | 1.73 / 2.90 ms | 133 / 2,356,965 | 3 |
+| Pass 46 full-face close | 53.60 | 2.09 / 3.60 ms | 133 / 2,387,397 | 3 |
+
+The development-only close-room selector translates this same camera by the
+actual room-grid offsets, without changing any avatar. Additional material
+coverage: pass 43 Dispatch submitted 52.80 fps / 2.03 ms mean / 3.60 ms p95
+(two dense avatars, 107 draws, 1,664,690 triangles); Wayfinders submitted 53.50
+fps / 1.81 ms / 3.20 ms (three dense avatars, 136 draws, 2,382,652 triangles).
+After the bird-profile change, pass 46 Dispatch submitted 57.90 fps / 1.74 ms /
+3.10 ms (two dense avatars, 107 draws, 1,668,194 triangles). These are extra
+workloads, not matched comparisons with the original baseline.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

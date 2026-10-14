@@ -410,13 +410,13 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     [-1, 1].forEach(sign => {
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .078, .12, .075]);
       sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.62,.59,.70]:[.74,.66,.80], [-.13,0,0], 'paper');data.wings.push(wing);
-      const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .117], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
-      data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.127], [.006,.013,.013], undefined, 'glaze'));
+      const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .092], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
+      data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.101], [.006,.013,.013], undefined, 'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);
       [-1,0,1].forEach(toe=>sculpt(foot,'toe','#967140',[toe*.02,0,.02],[.025,.036,.15],[0,toe*.24,0],'brass'));
       stroke(foot,'#957446',[[0,.16,-.04],[0,.075,-.07],[0,.008,0]],.009,'brass'); data.feet.push(foot);
     });
-    sculpt(head,'paperBeak','#a57d40',[0,.048,.177],[.41,.40,.34],[-.20,0,0],'paper');
+    sculpt(head,'paperBeak','#a57d40',[0,.048,.153],[.60,.45,.38],[-.20,0,0],'paper');
     sculpt(body,'swiftTail','#ffffff',[0,-.105,-.03],[.74,.78,.86],undefined,'paper');
     head.position.y-=body.position.y;body.add(head);
     const expression=joint(group,'paper-bird-expression',[0,.40,0]);body.position.y-=.40;expression.add(body);expression.rotation.x=.12;
@@ -432,8 +432,9 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     for(const [i,foot]of data.feet.entries()){
       foot.position.x=(i?1:-1)*.20;
       const toe=foot.children[0];toe.scale.set(.27,.30,.36);
-      const toeCap=sculpt(foot,'bean','#315d58',[0,0,.173],[.182,.214,.025],undefined,'glaze');
-      toeCap.name='scout-fitted-toe-cap';fitCharacterRelief(toeCap,toe as THREE.Mesh,.002);
+      const toeCap=sculpt(foot,'fittedSole','#315d58',[0,0,.173],[.182,.214,.025],undefined,'clay');
+      // Leave room for the toe's dense curved interpolation beneath the sole.
+      toeCap.name='scout-fitted-toe-cap';fitCharacterRelief(toeCap,toe as THREE.Mesh,.007,.003);
       foot.rotation.set(0,(i?1:-1)*.25,(i?1:-1)*-.13);
       foot.updateWorldMatrix(true,true);foot.position.y-=new THREE.Box3().setFromObject(foot).min.y/group.scale.y;
     }

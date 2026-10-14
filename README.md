@@ -61,6 +61,9 @@ becomes one hundred curved surface triangles, with material-specific relief.
 Ceramic curves stay smooth; folded-paper edges remain creased. The portrait
 generator uses these same meshes. At most three nearby characters receive the
 dense tier, built in a local worker and released when the camera moves away.
+Nearby felt and glaze also get restrained fibre sheen and clearcoat, without
+extra lights or rendering passes. Tests enforce at least 100× the original
+pre-refinement triangle count for every character, not just 100× today's mesh.
 The whole-office view keeps the lighter meshes. This is a rendering detail level,
 not new agent behavior, a promise of reference equivalence, or PS5 hardware quality.
 
