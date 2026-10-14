@@ -73,6 +73,7 @@ not asked for a desired score or instructed to approve.
 | 81 (fresh Dispatch and Keeper detail review) | Dispatch 7.5 craft / 7.5 fidelity; Merchant 8.0 / 8.0; retained | Envelope reads smaller and flatter, Keeper corner shares the cover's cream; no visible regression; Swift's rounded head/neck and solid breast remain inconsistent with its planar wings |
 | 83 (fresh Merchant optical review) | Craft 8.0 / fidelity 8.0; retained | Rounder lens fills its frame and preserves the wink/pupil; mild quarter-view gray veil remains; painted shells still read as smooth plastic rather than the reference's fine satin grain |
 | 84 (fresh Merchant satin review) | Craft 8.0 / fidelity 8.0; retained | Reduced plastic-like highlights preserve rounded forms and brass/glass separation; broad shells remain too uniform and slightly rubber-like; hold gloss and add restrained fine surface variation |
+| 85 (fresh Merchant grain and broader character review) | Merchant craft 8.0 / fidelity 8.0; broader set approximately 7.5 / 7.5; retained | Grain reduces rubber-like uniformity without visible regression; avoid stronger mottling. Across the cast, Reflection's rounded triangulated paper and Dispatch's broad flat-looking facial mask are the main construction gaps |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -645,3 +646,17 @@ mean / 3.50 ms p95 CPU, 111 draws, 371,724 triangles); Merchant close submits
 The distant material split costs two draws; close geometry is unchanged. No
 extra texture or render pass is added, and these measurements do not establish
 an unchanged worst-case GPU workload.
+
+Pass 85 passes 317 tests and the production build. The painted shells receive
+one shared 512-pixel grain map, distinct from glazed details, used for colour,
+bump and roughness. This adds approximately 1.33 MiB including mipmaps; it adds
+no light, material draw or rendering pass compared with 84. Campus submits
+52.80 fps (2.04 ms mean / 3.90 ms p95 CPU), Merchant close 52.70 fps (2.23 ms /
+4.30 ms), retaining 84's draws and triangles. These samples remain in the earlier
+range without proving unchanged worst-case timing. Actual 1536 × 1024 noon/night
+campus screenshots are preserved alongside the pass-85 portrait and performance
+evidence. No live agent events were sent to produce the images.
+The isolated server served `index-B5VlfhFI.js`; its responsive window, eleven-step
+close zoom invitation, third/first-person mist modes, exit and reset were checked
+in the browser without console warnings/errors. This is built-app evidence, not
+native-package installation or proof of genuine agent work.

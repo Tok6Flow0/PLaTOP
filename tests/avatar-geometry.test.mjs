@@ -345,8 +345,17 @@ test('Bridge silhouettes retain a tall Jarvis torso and the smaller Scout from t
   models.forEach(disposeObject);kit.dispose();
 });
 
-test('Merchant painted shells keep satin grain without the close-tier clearcoat or extra textures',()=>{
-  const kit=new SceneKit(),grain=characterMaterial(kit,'#ffffff','glaze').bumpMap;
+test('Merchant painted shells keep one shared satin grain without the close-tier clearcoat',()=>{
+  const kit=new SceneKit(),grain=characterMaterial(kit,'#ffffff','satinShell').bumpMap;
+  const glaze=characterMaterial(kit,'#ffffff','glaze').bumpMap;
+  assert.notEqual(grain,glaze,'painted shell grain does not alter glazed details');
+  assert.equal(grain.image.width,512);assert.equal(grain.image.height,512);
+  const spread=texture=>{
+    const p=texture.image.data;let sum=0,sum2=0;
+    for(let i=0;i<p.length;i+=4){assert.ok(p[i]>=195&&p[i]<=255,'restrained mineral tones');sum+=p[i];sum2+=p[i]**2;}
+    const count=p.length/4;return Math.sqrt(sum2/count-(sum/count)**2);
+  };
+  assert.ok(spread(grain)>spread(glaze)*1.6,'fine shell variation survives beside smoother glazed details');
   for(const id of ['bridge-jarvis','bridge-scout']){
     const model=makeProxy(members.find(c=>c.id===id),kit);
     const shell=model.getObjectByName('helmet'),material=shell.material;

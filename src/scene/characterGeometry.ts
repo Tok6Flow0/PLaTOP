@@ -924,6 +924,7 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
       :finish==='brass'?249-4*Math.sin(y*1.17+x*.007)-3*noise
       :finish==='cloth'?238-13*(Math.sin(x*Math.PI/4)**2+Math.sin(y*Math.PI/4)**2)-15*pore-6*noise
       :finish==='feather'?250-16*barbs-28*pore-7*noise-28*noiseAt(x/19,y/17)-22*fibre
+      :finish==='satinShell'?240-26*pore-10*noise+8*noiseAt(x/48,y/53)
       :finish==='glaze'?247-13*pore-6*noise+2*broad:244-29*pore-10*noise+3*broad;
     data.set([grain,grain,grain,255],(y*size+x)*4);
   }
@@ -1011,7 +1012,7 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       // Ceramic and brass need a broad reflected softbox to describe their
       // curvature. Keep dry clay, paper and fibres at their existing response.
       material.envMapIntensity=finish==='glaze'?1.15:finish==='satinShell'?.80:finish==='brass'?.85:.5;
-      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish==='satinShell'?'glaze':finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='satinShell'?.017:finish==='glaze'?.009:finish==='brass'?.0015:finish==='paper'?.014:.012;
+      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='satinShell'?.017:finish==='glaze'?.009:finish==='brass'?.0015:finish==='paper'?.014:.012;
       material.map=material.bumpMap;
       // The same cellulose field varies its grazing response without an
       // additional texture allocation, transparent layer or geometry draw.
