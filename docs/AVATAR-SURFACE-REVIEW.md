@@ -98,6 +98,7 @@ not asked for a desired score or instructed to approve.
 | 103 (fresh wood/textile review) | Campus craft 7.0 / fidelity 7.5; mixed, rug revision required | Quieter broken wood grain retained; fine fibres disappear at campus scale, leaving rugs too smooth and featureless |
 | 104 (fresh textile correction review) | Campus craft 7.0 / fidelity 7.5; retained | Irregular tuft groups recover textile variation without 102's checker pattern; wood stays quieter and no lighting regression is seen. Room staging and furniture-character integration are the larger remaining gap |
 | 105 (fresh Beacon staging review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Tighter rug and low reading shelf improve grouping at campus scale and night without crowding. Do not repeat this exact template everywhere; the monitor partially hiding Beacon's face is the next focal-point problem |
+| 106 (fresh Beacon focal-point review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Smaller angled screen exposes the full face and both eyes, including at campus scale and night. Its near-edge-on window angle is acceptable; stop adjusting it and address Clear Path's separated desk group and broad foreground rug |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -881,3 +882,19 @@ campus fps (1.79 ms mean / 2.50 ms p95 CPU) and 58.00 Beacon close fps (1.59 /
 lights. Both initial and final timing evidence remains saved; variation is not
 proof of a speedup or equal GPU-completion cost. The review accepts modest room
 grouping, not overall A-level quality or native-host adoption.
+
+Pass 106 passes 331 tests/build. Beacon's monitor moves left, turns toward its
+existing home and scales uniformly to 0.86. The neutral home and facing stay
+unchanged; only a genuine agent-chosen work interaction uses the corrected
+work-facing direction. No mesh, texture, light or render pass is added. Campus
+submits 56.70 fps (2.02 ms mean / 3.30 ms p95 CPU), Beacon close 56.70 fps
+(1.39 / 2.60 ms), with 105's draw and triangle counts. These are variable
+submission samples, not a guaranteed speedup or GPU-completion measurement.
+
+The isolated production checkpoint now serves `index-Cja8CWH_.js`. Beacon
+window view, eleven-step zoom invitation, third/first-person mist, exit and
+reset pass without console warnings/errors. It remains an isolated empty
+bridge: no live agent event or decoration was injected. Its responsive
+screenshots are smoke evidence, separate from the full 1536 × 1024 visual
+comparison. The reviewer retains the focal-point correction without increasing
+the score; overall A-level acceptance remains open.

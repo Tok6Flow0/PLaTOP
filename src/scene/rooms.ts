@@ -320,8 +320,12 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // work stop still belongs to every member, regardless of the prop there.
     const hasComputer = index === 3 || index === 5 && memberIndex === 0
       || index === 2 && memberIndex < 2 || index < 2 && memberIndex === 1;
-    const computer = !hasComputer ? undefined : index === 3 ? monitor(interior, kit, -0.65, screenZ, Math.PI - 0.2)
+    const computer = !hasComputer ? undefined : index === 3 ? monitor(interior, kit, -0.92, screenZ, Math.PI - 0.56)
       : laptop(interior, kit, x, screenZ, index === 5 ? '#334143' : '#5b6257', north ? Math.PI : 0);
+    // Keep Beacon's expression visible beside the screen from the campus and
+    // window viewpoints. The smaller workstation remains grounded at the
+    // same tabletop height; no character transform or pretend work is used.
+    if (computer && index === 3) computer.scale.setScalar(.86);
     if (computer) computer.userData.workstation = memberIndex;
     // Fixed side chairs would close the full-clearance path between the desk
     // and wall. These two standing places therefore have no pretend seat.
@@ -330,7 +334,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       seat.userData.workstation = memberIndex;
       blockers.push({ bounds: [x - 0.36, z - 0.36, x + 0.36, z + 0.36], deskIndex: memberIndex });
     }
-    return { position: [x, z], screen: [x, screenZ], facing,
+    const workFacing=index===3&&computer?Math.atan2(computer.position.x-x,screenZ-z):facing;
+    return { position: [x, z], screen: [computer?.position.x ?? x, screenZ], facing:workFacing,
       egress: isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
         : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? -1.15 : 1.2)],
       ...(isFoyer || standingSide || index === 5 ? { seatHeight: OFFICE_FLOOR_Y } : character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
@@ -338,7 +343,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
   // These are neutral arrival silhouettes, not work poses. Keep the real desk
   // facing on the navigation anchor so an agent's chosen work turns to its task.
-  const actorFacing = desks.map((desk,i) => isFoyer && i===2 ? -.42
+  const actorFacing = desks.map((desk,i) => index===3?0:isFoyer && i===2 ? -.42
     : sideSeating && i!==1 ? (i===0?.32:-.38) : desk.facing);
   const paperX = Math.min(1, tableWidth / 2 - 0.32), mugX = Math.min(1.12, tableWidth / 2 - 0.27);
   // Distinct default tabletop layouts leave the same physical work stops free.

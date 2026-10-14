@@ -78,6 +78,10 @@ test('Beacon starter reading nook fits the existing reserved floor slot and leav
   assert.ok(min.x>=-2.825&&max.x<=-1.475&&min.z>=.325&&max.z<=1.675);
   assert.ok(min.y>=.069&&max.y<1.8,'low shelf and supported plant stay below the character sightline');
   assert.deepEqual(room.actorHomes.map(p=>p.toArray()),[[0,.1,-1.4]]);
+  assert.deepEqual(room.navigation.desks[0].screen,[-.92,-.22]);
+  assert.deepEqual(room.actorFacing,[0],'neutral orientation is unchanged by the furniture revision');
+  assert.ok(Math.abs(room.navigation.desks[0].facing-Math.atan2(-.92,1.18))<1e-12,
+    'only an agent-chosen work interaction turns toward the actual monitor');
   assert.deepEqual(room.root.userData.rugSurface.bounds,[-2.05,-1.625,2.05,1.725]);
   assert.equal(Object.keys(room.defaultSlotProps).length,1);
   for(const [id,other] of rooms)if(id!=='support')assert.equal(Object.keys(other.defaultSlotProps).length,0);
