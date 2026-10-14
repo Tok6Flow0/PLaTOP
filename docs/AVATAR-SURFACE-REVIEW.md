@@ -106,6 +106,7 @@ not asked for a desired score or instructed to approve.
 | 111 (fresh Wayfinder satin-clay study) | Characters/room craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained, nearly tied with 109 | Soft matte/satin shells survive front, quarter, rear and night checks without plastic hotspots. The broad highlight difference is subtle. Dark face panels still read as uniform blue-gray plaques; curved optical depth and warm-eye contrast are the next character priority |
 | 112 (fresh Wayfinder glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Dark curved inserts and a shallow perimeter replace flat plaques; warm eyes stay legible. Actual-room highlights are restrained, but repeated white/gold portrait forehead blobs exceed the chosen reference. Soften peak reflections without losing dark depth or curvature |
 | 113 (fresh subdued-glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Paired bright portrait spots become a quieter broad reflection; dark curved faces and warm eyes remain legible without a visible regression. Further visor tweaks have diminishing value. The central guide's rigid broad shoulder/back cape is the next substantial character gap |
+| 114 (fresh wrapped-cape study) | Characters craft 8.0 / fidelity 7.5; campus 7.0 / 7.5; narrowly retained | Shoulders and side sweep soften without visible holes/clipping, but the exposed rear still reads as a broad navy trapezoid. Folds are too subtle. A clear overlapping neckline feeding two broad descending folds matters more than additional grain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1020,3 +1021,28 @@ and regenerated multi-angle portraits under surface-pass-113.
 The independent reviewer retains 113 without increasing the grade. No further
 visor adjustment is prioritized. The central guide's wrapped-garment shoulder,
 neck overlap and broad cape folds now matter more than optical fine-tuning.
+
+The isolated production checkpoint now serves pass 113, `index-DCRU-cKU.js`.
+Its Wayfinders window, eleven-step zoom invitation, third/first-person mist,
+exit and reset pass with no console warning/error. The empty QA bridge
+connects while every team remains awaiting update; no agent event was injected.
+Responsive production smoke captures are separate from the full-size visual
+comparison and do not establish live-chat adoption.
+
+Pass 114 passes 336 tests/build. The guide's cape now has continuous front/
+lining UVs for its existing cloth map, a closer neck release, asymmetric broad
+folds and bounded near-surface interpolation. Its topology, shader, texture
+allocation, lights and motion joints are unchanged. Closed winding, actual
+torso clearance, source density and all sixteen physical routes remain tested.
+A new asymmetric-fold check samples the rear contour rather than requiring
+one arbitrary mirrored point pair to differ.
+
+Campus submits 51.81 fps (2.43 ms mean / 4.30 ms p95 CPU, 114 sampled draws,
+384,318 triangles). Wayfinders close submits 52.31 fps (2.04 / 3.90 ms, 139
+draws, 2,240,491 triangles, three dense avatars). These variable same-machine
+samples do not establish locked fps or GPU completion. Full scene captures and
+regenerated portraits are retained under surface-pass-114. Production remains
+the separately smoke-tested pass 113 while this visual study is reviewed.
+The reviewer narrowly retains the non-regressive result at unchanged grades.
+It does not resolve the shell-like reading. Normal-view neckline overlap and
+two legible descending folds remain the required next construction correction.

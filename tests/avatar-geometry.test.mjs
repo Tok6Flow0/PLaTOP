@@ -1123,6 +1123,28 @@ test('the lined cape is closed and consistently wound at the collar, lapels, and
   geometry.dispose();kit.dispose();
 });
 
+test('the wrapped cape carries continuous cloth coordinates and broad asymmetric rear folds',()=>{
+  const kit=new SceneKit(),geometry=characterGeometry(kit,'cape'),uv=geometry.attributes.uv;
+  assert.equal(uv.count,geometry.attributes.position.count);
+  const outer=uv.count/2;
+  for(let i=0;i<outer;i++){
+    assert.ok(uv.getX(i)>=0&&uv.getX(i)<=1&&uv.getY(i)>=0&&uv.getY(i)<=1);
+    assert.equal(uv.getX(i),uv.getX(i+outer));assert.equal(uv.getY(i),uv.getY(i+outer));
+  }
+  assert.equal(geometry.userData.characterCurvature,.24);
+  const ring=Array.from({length:41},(_,i)=>{
+    const angle=2.0+i/40*2.3,[x,,z]=navigatorCapePoint(.75,angle);
+    return Math.hypot(x,z/.78);
+  });
+  assert.ok(Math.max(...ring)-Math.min(...ring)>.020,'the rear drape has broad relief, not a smooth tube');
+  const asymmetry=Array.from({length:31},(_,i)=>{
+    const angle=1.5+i/30*(Math.PI-1.5),a=navigatorCapePoint(.75,angle),b=navigatorCapePoint(.75,Math.PI*2-angle);
+    return Math.hypot(a[0]+b[0],a[2]-b[2]);
+  });
+  assert.ok(Math.max(...asymmetry)>.004,'the folds are not identically mirrored');
+  geometry.dispose();kit.dispose();
+});
+
 test('the cape lining clears the real torso around the shoulders, sides, and back',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
   const body=model.userData.personality.body,shell=body.getObjectByName('wayfinderBody');body.updateWorldMatrix(true,true);

@@ -276,13 +276,16 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t)-.045*Math.sin(angle)**2*(1-t)**2,normalized=(y+.005)/1.06;
   let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
   const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
-  // The cloth spreads from its neck fastening before hanging in broad folds.
-  // Sweeping the pleats diagonally avoids a row of stiff vertical tubes.
-  const fold=(.024*Math.sin(angle*3.0+t*.75)+.006*Math.sin(angle*6-t))*Math.sin(t*Math.PI*.85);
-  const drape=.265+.225*THREE.MathUtils.smoothstep(t,0,.6);
+  // A fitted neck releases into a few broad folds rather than a uniformly
+  // flared shell. Their unequal paths drift from shoulder to hem; valleys
+  // remain outside the actual torso instead of cutting into it.
+  const lobe=(centre:number,width:number)=>Math.exp(-(((angle-centre)/width)**2));
+  const fold=(.036*lobe(2.35+.55*t,.32)+.025*lobe(3.75-.35*t,.35)
+    +.020*lobe(1.50+.20*t,.28)+.016*lobe(5.10-.30*t,.33))*THREE.MathUtils.smoothstep(t,.04,.42);
+  const drape=.225+.245*THREE.MathUtils.smoothstep(t,0,.63);
   // The lining remains inset even at the silhouette limit. Clamping both
   // layers together would erase their thickness at the outermost pleats.
-  return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape+fold))-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78+fold))-inset)];
+  return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape)+fold)-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78)+fold*.80)-inset)];
 }
 
 /** Continuous forearm from shoulder into a rounded inward clasp, not a pad
@@ -305,12 +308,13 @@ function embracingArm():THREE.BufferGeometry {
 
 /** Open-front lined cape follows the shoulders and flares into a rounded hem. */
 function cape(): THREE.BufferGeometry {
-  const vertices: number[] = [], indices: number[] = [], columns = 28, rows = 13;
+  const vertices: number[] = [], indices: number[] = [], uv:number[]=[], columns = 28, rows = 13;
   for (let row = 0; row <= rows; row++) {
     const t = row / rows,bound=.035+1.23*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
       const angle = bound + column / columns * (Math.PI*2-bound*2);
       vertices.push(...navigatorCapePoint(t,angle));
+      uv.push(angle/(Math.PI*2),t);
       if (row < rows && column < columns) {
         const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
         indices.push(a, d, b, a, c, d);
@@ -323,13 +327,18 @@ function cape(): THREE.BufferGeometry {
   for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
     const t=row/rows,bound=.035+1.23*Math.sin(t*Math.PI/2),angle=bound+col/columns*(Math.PI*2-bound*2);
     vertices.push(...navigatorCapePoint(t,angle,.014));
+    uv.push(angle/(Math.PI*2),t);
   }
   for(let i=0;i<front.length;i+=3)indices.push(front[i]+outer,front[i+2]+outer,front[i+1]+outer);
   const join=(a:number,b:number)=>indices.push(a,b,b+outer,a,b+outer,a+outer);
   for(let col=0;col<columns;col++){join(col,col+1);join(rows*(columns+1)+col+1,rows*(columns+1)+col);}
   for(let row=0;row<rows;row++){join((row+1)*(columns+1),row*(columns+1));join(row*(columns+1)+columns,(row+1)*(columns+1)+columns);}
   const geometry = new THREE.BufferGeometry();
-  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3)); geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
+  geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+  geometry.setIndex(indices);geometry.computeVertexNormals();
+  geometry.userData.characterCurvature=.24;
+  return geometry;
 }
 
 function feather(): THREE.BufferGeometry {
