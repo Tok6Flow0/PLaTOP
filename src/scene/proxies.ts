@@ -371,12 +371,11 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     // A lantern illuminates nearby real surfaces. Only these two luminous
     // embodiments add a short-range, shadow-free light; no per-avatar lights.
-    const warmth=new THREE.PointLight('#ffc46d',support?.32:3.2,support?1.4:2.4,2);
+    const warmth=new THREE.PointLight('#ffc46d',support?.32:2.2,support?1.4:2.4,2);
     // Keep the emitter inside Lumen's glass. A light just outside the front
     // pane lit that same pane at near-zero distance, washing its amber face
-    // almost white. A lower, slightly forward source inside the chamber
-    // catches nearby descending folds, without adding a portrait-only light.
-    warmth.name='Lantern surface warmth';warmth.position.set(0,support?0:-.08,support?.20:.10);
+    // almost white. The shadow-free interior source still reaches neighbours.
+    warmth.name='Lantern surface warmth';warmth.position.set(0,support?0:.10,support?.20:.03);
     head.add(warmth);data.warmth=warmth;
   } else if (kind === 'owl') {
     const navy = id === 'email-owl', echo=id==='reflection-echo', feathers = navy ? '#233149' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
@@ -621,5 +620,5 @@ export function animateCharacter(model: THREE.Object3D, status: Activity, time: 
   p.eyes.forEach(eye => { eye.scale.y = eye.userData.restEyeY * (asleep ? 0.13 : blink ? 0.09 : 1); });
   p.highlights.forEach(highlight => { highlight.visible = !asleep && !blink; });
   if (p.glow) p.glow.emissiveIntensity = asleep ? 0.24 + Math.sin(t * 1.4) * 0.04 : 0.65 + Math.sin(t * 2) * 0.08;
-  if(p.warmth)p.warmth.intensity=(model.name.startsWith('support-')?.32:3.2)*(asleep?.38:1);
+  if(p.warmth)p.warmth.intensity=(model.name.startsWith('support-')?.32:2.2)*(asleep?.38:1);
 }

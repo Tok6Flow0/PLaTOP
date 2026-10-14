@@ -2109,3 +2109,31 @@ floor obscure more character detail than another fine surface change fixes.
 2.10/3.20ms. Draws137/133 and triangles431,832/879,809 match. These samples
 do not establish preserved speed for158; no slower sample is discarded.
 Saved portrait, room, campus and paired timing evidence is in surface-pass-158.
+
+Revision-requested158 was pushed as09358b34bcb27537b70b2e29c9b292a6dc44d07d;
+remote readback matches and CI38634632505 succeeded. It was not promoted.
+
+Pass159 restores157's light exactly and changes only Reflection's fixed
+window camera. The lower first attempt obscured faces with the tabletop/mug
+and is saved separately. The final front-left, elevated view reveals both
+Echo eyes, Quill's expression and Lumen's face without moving any character.
+The extracted camera fit preserves every other room's diagonal overview.
+376 tests/build pass, including non-mutating anchors and frustum margins
+at five aspect ratios. The saved fixed-size browser capture is not mobile
+runtime evidence; narrow fitting is established by the geometry tests only.
+
+Independent verdict: retain159 over157. Reflection room presentation7.0
+craft/6.5 fidelity; Echo7.0/6.5; Reflection ensemble6.5/6.5; campus7.5/7.5.
+Faces and the group read substantially better in day/night; the mullion
+misses all faces and the foreground cabinet crop is acceptable. The large
+table still conceals most of Echo's chest and Lumen's lower body, the mug
+crowds Echo's shoulder, and Quill sits apart. The next high-impact study is
+default table depth and work-anchor composition, not another tiny surface
+or camera adjustment. This is not A-level acceptance.
+
+Campus159 submits59.9994fps (CPU mean/p95 2.52/4.40ms;137 draws;431,832
+triangles); Reflection close60.00fps (2.53/4.30ms;133 draws;879,809 triangles).
+These unchanged camera-only workloads match retained157's resource counts;
+short CPU-side submission samples do not establish locked60 or completed
+GPU timing. Day/night room/campus, restored portraits and benchmark outputs
+are saved in surface-pass-159.

@@ -1463,7 +1463,7 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
     assert.equal(lights.length,character.kind==='lantern'?1:0,`${character.id} light budget`);
     for(const light of lights){
       assert.equal(light.castShadow,false);assert.ok(light.distance<=2.4);
-      assert.equal(light.intensity,character.id==='support-beacon'?.32:3.2);
+      assert.equal(light.intensity,character.id==='support-beacon'?.32:2.2);
       assert.ok(light.position.z<=.24,'the local emitter stays at the glass, not at the camera');
       if(character.id==='reflection-lumen'){
         const glass=model.getObjectByName('hexGlass'),point=light.getWorldPosition(new THREE.Vector3());
@@ -1498,7 +1498,7 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
       const asleep = glow.emissiveIntensity;
       animateCharacter(model, 'active', 0, 0, false, true);
       assert.ok(glow.emissiveIntensity > asleep && glow.emissiveIntensity < 1, 'glazed amber brightens gently when awake');
-      assert.equal(lights[0].intensity,character.id==='support-beacon'?.32:3.2,'animation preserves the authored light level');
+      assert.equal(lights[0].intensity,character.id==='support-beacon'?.32:2.2,'animation preserves the authored light level');
     }
   }
   const helmet = characterGeometry(kit, 'helmet'); helmet.computeBoundingBox();

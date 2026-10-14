@@ -37,6 +37,14 @@ campus7.5/7.5. Timing58.10/56.91fps versus a same-fixture frozen157
 60.00/59.29fps does not prove preserved speed. Restore157 light before the
 next bounded room-camera study; faces currently disappear side-on/edge-on.
 
+Pass159 restores retained157 light and is retained for its clearer Reflection
+window camera. No actor pose/home/activity changes.376 tests/build pass;
+camera-only campus/close samples submit60.00/60.00fps with unchanged counts.
+Room presentation7/6.5, Echo7/6.5, Reflection ensemble6.5/6.5 and campus7.5/7.5.
+All three expressions now read together; the broad tabletop still obscures
+two bodies and separates Quill. Default table/work-anchor composition is
+the next major gap. Neither this view nor its tests constitute A-level approval.
+
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
 pass-60 reviewer, without prior scores, gave **7.5/10 character craft, 8.0/10

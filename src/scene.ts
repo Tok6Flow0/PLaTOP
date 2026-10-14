@@ -17,6 +17,7 @@ import { agentExpression, type AgentExpression } from './scene/agentExpression';
 import { ObserverMist, observerViewportChanged, type ObserverViewport } from './scene/observerMist';
 import { daylightAtHour } from './localDaylight';
 import { CharacterDetail } from './scene/characterDetail';
+import { officeWindowFrame } from './scene/officeWindowCamera';
 
 // Keep cinematic 3D at a bounded 1.5 backing pixels per CSS pixel with edge smoothing. Interface
 // text and controls still use the display's full native pixel density.
@@ -1096,28 +1097,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   function applyIdleCamera(): void {
     const room = idleTeamId ? rooms.get(idleTeamId) : undefined;
     if (!room) return;
-    const desks = room.navigation.desks;
-    const deskZ = room.navigation.task[1];
-    const nearZ = Math.max(deskZ + 1.05, ...desks.map(desk => desk.position[1] + 0.85));
-    const farZ = Math.min(deskZ - 1.05, ...desks.map(desk => desk.position[1] - 0.85));
-    camera.fov = 38;
+    const frame = officeWindowFrame(idleTeamId!, room, camera.aspect);
+    camera.fov = frame.fov;
     camera.clearViewOffset();
-    // Look across both desk sides, above monitor tops. Fit the whole seated
-    // head-to-foot volume so a foreground back cannot fill the window.
-    controls.target.copy(room.center).add(new THREE.Vector3(0, 1.25, (nearZ + farZ) / 2));
-    const direction = new THREE.Vector3(0.65, 0.62, 0.48).normalize();
-    const forward = direction.clone().negate();
-    const right = new THREE.Vector3().crossVectors(forward, camera.up).normalize();
-    const up = new THREE.Vector3().crossVectors(right, forward).normalize();
-    const tanVertical = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-    const tanHorizontal = tanVertical * camera.aspect;
-    let distance = 6.8;
-    for (const x of [-2.3, 2.3]) for (const y of [room.navigation.floorY, 3.2]) for (const z of [farZ, nearZ]) {
-      const point = room.center.clone().add(new THREE.Vector3(x, y, z)).sub(controls.target);
-      distance = Math.max(distance, point.dot(direction) + Math.abs(point.dot(right)) / tanHorizontal,
-        point.dot(direction) + Math.abs(point.dot(up)) / tanVertical);
-    }
-    camera.position.copy(controls.target).addScaledVector(direction, distance * 1.2);
+    controls.target.copy(frame.target);
+    camera.position.copy(frame.position);
     camera.updateProjectionMatrix();
     controls.update();
     fadeWalls();
