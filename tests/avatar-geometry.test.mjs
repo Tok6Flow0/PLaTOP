@@ -175,6 +175,21 @@ test('dense paper normals follow displaced relief while preserving the authored 
   assert.equal(material.transparent,false);kit.dispose();
 });
 
+test('Wayfinder satin clay shares porous relief while leaving paper, glaze and dry clay unchanged',()=>{
+  const kit=new SceneKit(),dry=characterMaterial(kit,'#e7dfcd','clay'),satin=characterMaterial(kit,'#e7dfcd','satinClay');
+  assert.equal(satin.type,'MeshStandardMaterial');assert.equal(satin.transparent,false);assert.equal(satin.metalness,0);
+  assert.equal(satin.bumpMap,dry.bumpMap,'the material study adds no grain texture allocation');
+  assert.equal(satin.roughnessMap,satin.bumpMap);assert.equal(satin.bumpScale,dry.bumpScale);
+  assert.equal(satin.roughness,.62);assert.equal(satin.envMapIntensity,.75);
+  assert.equal(dry.roughness,.76);assert.equal(dry.envMapIntensity,.5);assert.equal(dry.roughnessMap,null);
+  const paper=characterMaterial(kit,'#e7dfcd','paper'),glaze=characterMaterial(kit,'#e7dfcd','glaze');
+  assert.equal(paper.roughness,.94);assert.equal(glaze.roughness,.40);
+  const root=new THREE.Group();root.add(new THREE.Mesh(new THREE.SphereGeometry(.1,8,6),satin));
+  const release=refineCharacterModel(root);
+  assert.equal(root.children[0].material,satin,'close-up clay does not silently become clearcoated plastic');
+  release();disposeObject(root);kit.dispose();
+});
+
 test('close materials add bounded fibre or glaze response without mutating or disposing source textures',()=>{
   const kit=new SceneKit(),model=new THREE.Group(),originals=[];
   for(const finish of ['feather','plumage','facialFeather','cloth','glaze','lanternGlass','paper']){
@@ -432,12 +447,13 @@ test('Jarvis chest seam remains continuous above its dense curved torso',()=>{
   assert.ok(checked>50);restore();disposeObject(model);kit.dispose();
 });
 
-test('Wayfinder ivory shells and dark faces keep their source matte finishes',()=>{
+test('Wayfinder ivory shells remain uncoated satin while dark faces retain their matte finish',()=>{
   const kit=new SceneKit();
   for(const member of members.filter(member=>member.id.startsWith('intake-'))){
     const model=makeProxy(member,kit);
     for(const name of ['wayfinderBody','helmet']){
-      const mesh=model.getObjectByName(name);assert.ok(mesh);assert.equal(mesh.material.userData.characterFinish,'clay');assert.ok(mesh.material.roughness>=.7);
+      const mesh=model.getObjectByName(name);assert.ok(mesh);assert.equal(mesh.material.userData.characterFinish,'satinClay');
+      assert.equal(mesh.material.roughness,.62);assert.equal(mesh.material.type,'MeshStandardMaterial');assert.equal(mesh.material.transparent,false);
     }
     assert.equal(model.getObjectByName('rounded-visor').material.userData.characterFinish,'cloth');
     for(const eye of model.userData.personality.eyes){

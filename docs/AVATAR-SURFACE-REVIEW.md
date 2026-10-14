@@ -102,6 +102,8 @@ not asked for a desired score or instructed to approve.
 | 107 (fresh Clear Path grouping review) | Clear Path craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Shorter rug, deeper rounded desk and closer side residents improve cohesion without hiding faces. The group remains symmetric and the front apron is visibly faceted close up; next priority is distinct staggered Wayfinders workstations, not more tiny Clear Path positioning changes |
 | 108 (fresh Wayfinders paired-desk prototype) | Wayfinders craft 7.0 / fidelity 7.0; campus 7.0 / 7.5; mixed, proportions not accepted | Stagger creates depth and keeps all four faces readable, but thick narrow desks resemble laptop trays. Broaden usable surfaces and slim their construction while preserving a real central walking aisle |
 | 109 (fresh Wayfinders proportion correction) | Wayfinders craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Broader surfaces, thinner aprons and smoother corners read as real workstations with clear circulation. The larger central gap loosens the grouping, so do not spread it farther. Next priority is directional room-scale lighting and tactile surface modelling, not more furniture placement |
+| 110 (fresh lateral-daylight study) | Campus craft 7.0 / fidelity 7.0; rejected, retain 109 lighting | Larger shadow bands divide Wayfinders and cross Reflection's wall, floor and desk without enough character-form improvement. Restore 109 and study local material response instead; night is unchanged |
+| 111 (fresh Wayfinder satin-clay study) | Characters/room craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained, nearly tied with 109 | Soft matte/satin shells survive front, quarter, rear and night checks without plastic hotspots. The broad highlight difference is subtle. Dark face panels still read as uniform blue-gray plaques; curved optical depth and warm-eye contrast are the next character priority |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -959,3 +961,23 @@ window view, eleven-step zoom invitation, third/first-person mist, exit and
 reset pass without console warnings/errors. All teams remain awaiting update;
 no genuine agent event was fabricated for the test. The connected empty QA
 bridge and responsive smoke captures do not establish live-chat adoption.
+
+Pass 110 passes 334 tests/build as a prototype but is rejected visually. The
+more lateral noon key preserves unshadowed front/top irradiance yet creates
+distracting broad room shadows. Campus submits 54.30 fps (2.22 ms mean /
+4.20 ms p95 CPU), Wayfinders close 53.30 fps (2.31 / 4.60 ms), with 109's
+resource counts. Those samples and images remain under surface-pass-110.
+The daylight change and its prototype-specific test were removed; no 110
+lighting was promoted to the isolated production checkpoint.
+
+Pass 111 passes 334 tests/build. Wayfinder shells use a restrained satin-clay
+response with the existing porous clay map; no new texture, light, geometry or
+frame pass is added. The close tier retains an opaque standard material, not
+an added clearcoat. Chosen identities and their accessories remain unchanged.
+Campus submits 57.20 fps (1.91 ms mean / 2.80 ms p95 CPU, 115 sampled draws,
+384,190 triangles). Wayfinders close submits 56.80 fps (1.83 / 2.90 ms, 140
+draws, 2,229,707 triangles, three dense avatars). These use the same two-second
+warm-up and ten-second fixed-viewport sample; CPU submission is not GPU
+completion. Actual campus, close, window and regenerated multi-angle portraits
+remain under surface-pass-111. The independent review retains the finish as
+a nearly tied variation, not an A-level result. Production remains pass 109.

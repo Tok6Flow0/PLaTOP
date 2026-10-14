@@ -29,7 +29,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const { id, kind } = character;
   const cream = '#eee4d0', ink = '#19333b', gold = '#bf9654';
   const wayfinder = id.startsWith('intake-'), hr = id.startsWith('hr-'), leader = id === 'bridge-jarvis';
-  const shellFinish:CharacterFinish=leader||id==='bridge-scout'?'satinShell':wayfinder?'clay':'glaze';
+  const shellFinish:CharacterFinish=leader||id==='bridge-scout'?'satinShell':wayfinder?'satinClay':'glaze';
   const bodyColor = wayfinder ? '#dfd1b6' : id === 'hr-compass' ? '#e7d8b9' : leader ? '#b85829' : id==='bridge-scout' ? '#315d58' : character.color;
   const body = joint(group, 'body', [0, .57, 0]), head = joint(group, 'head', [0, 1.08, 0]);
   const data: Personality = { kind, body, head, bodyY: .57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
@@ -59,8 +59,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     [-1, 1].forEach(sign => {
       if(!robed){
         const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (leader ? .375 : compact ? .30 : .32), leader ? .26 : .16, 0]);
-        sculpt(arm, 'limb', color, [sign * .003, -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * -.13], shellFinish==='satinShell'?shellFinish:'clay');
-        sculpt(arm, 'bean', id==='bridge-scout'?color:extremity, [0, -.29, .025], [.18, .18, .20],undefined,shellFinish==='satinShell'?shellFinish:'clay'); data.arms.push(arm);
+        sculpt(arm, 'limb', color, [sign * .003, -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * -.13], shellFinish==='satinShell'||wayfinder?shellFinish:'clay');
+        sculpt(arm, 'bean', id==='bridge-scout'?color:extremity, [0, -.29, .025], [.18, .18, .20],undefined,shellFinish==='satinShell'||wayfinder?shellFinish:'clay'); data.arms.push(arm);
       }
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * (leader ? .125 : .15), leader ? .08 : hr || wayfinder ? .055 : .10, .025]);
       sculpt(foot, 'bean', extremity, [0, 0, 0], [leader ? .36 : .24, leader ? .16 : hr || wayfinder ? .11 : .20, leader ? .43 : .32]);

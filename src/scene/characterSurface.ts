@@ -30,7 +30,7 @@ function relief(x: number, y: number, z: number, finish: string): number {
   if (finish === 'feather') return .0008 * wave;
   if (finish === 'cloth') return .0004 * Math.sin(x*237)*Math.sin(y*237);
   if (finish === 'brass' || finish === 'agedBrass') return .00018 * Math.sin(y * 307 + x * 13);
-  if (finish === 'clay') return .00055 * wave;
+  if (finish === 'clay'||finish==='satinClay') return .00055 * wave;
   if (finish === 'glaze') return .00018 * wave;
   if (finish === 'satinShell') return .00040 * wave;
   return 0;
