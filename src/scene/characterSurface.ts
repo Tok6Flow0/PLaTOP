@@ -6,7 +6,13 @@ export const CHARACTER_SURFACE_FREQUENCY = 10;
 export const OWL_SOCKET_RADIUS = [.108, .125] as const;
 /** One socket field is shared by the shell, fitted face and worker surface. */
 export function owlEyeRecess(x: number, y: number): number {
-  return .072 * Math.exp(-(((Math.abs(x) - .13) / OWL_SOCKET_RADIUS[0]) ** 2 + ((y - .002) / OWL_SOCKET_RADIUS[1]) ** 2) * 1.15);
+  return .086 * Math.exp(-(((Math.abs(x) - .13) / OWL_SOCKET_RADIUS[0]) ** 2 + ((y - .002) / OWL_SOCKET_RADIUS[1]) ** 2) * 1.15);
+}
+/** Warm recessed fibres, evaluated on the same field at both mesh tiers. */
+export function owlFaceTint(x:number,y:number):[number,number,number] {
+  const r=((Math.abs(x)-.13)/.108)**2+((y-.002)/.123)**2;
+  const warm=Math.exp(-r*1.05)*(.85+.15*Math.tanh((y-.002)/.07));
+  return [1-.39*warm,1-.58*warm,1-.75*warm];
 }
 export interface SurfaceData {
   attributes: Record<string, { size: number; array: Float32Array }>;
@@ -99,6 +105,8 @@ export function refineCharacterSurface(source: SurfaceData, finish = 'clay', fre
         // vertices watertight; displacing along each face normal opens cracks.
         outP[offset + axis] += (finish === 'paper' ? (axis === 2 ? 1 : 0) : outN[offset + axis]) * displacement;
       }
+      if(source.ellipsoid?.owlSocket&&!source.ellipsoid.shell&&attributes.color?.size===3)
+        attributes.color.array.set(owlFaceTint(outP[offset],outP[offset+1]),offset);
       vertex++;
     }
     for (let row = 0; row < frequency; row++) for (let col = 0; col < frequency - row; col++) {

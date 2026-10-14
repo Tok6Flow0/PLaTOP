@@ -370,7 +370,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
       else {
         const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?-.002:.011, navy?.290:.195], [navy ? .115 : .083, navy ? .130 : .098, navy?.030:.024], undefined, 'ink'); data.eyes.push(eye);
-        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - .012, navy?.031:.043, navy?.305:.208], [navy?.019:.020, navy?.023:.022, .006], undefined, 'glaze');
+        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - (navy?.016:.012), navy?.031:.043, navy?.305:.208], [navy?.026:.020, navy?.029:.022, .006], undefined, 'glaze');
         if(iris){fitCharacterRelief(eye,iris,.001);fitCharacterRelief(highlight,eye,.001);}
         data.highlights.push(highlight);
       }
@@ -392,7 +392,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       data.feet.push(foot);
     });
     if(navy) {
-      sculpt(head,'beak',gold,[0,-.084,.297],[.078,.178,.072],[.20,0,Math.PI],'brass');
+      sculpt(head,'owlBeak','#ffffff',[0,-.080,.290],[.126,.156,.090],undefined,'clay');
     }
     else sculpt(head,'paperBeak',gold,[0,-.077,.196],[.7,.9,.28],[.75,0,0],'paper');
     if (id === 'reflection-quill') {

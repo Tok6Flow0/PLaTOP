@@ -1,9 +1,9 @@
 import * as THREE from 'three';
 import type { SceneKit } from './primitives';
-import { owlEyeRecess, OWL_SOCKET_RADIUS } from './characterSurface';
+import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
-  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
+  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
@@ -745,6 +745,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'fittedSole': return new THREE.SphereGeometry(.5, 20, 12);
     case 'detail': return new THREE.SphereGeometry(.5, 12, 6);
     case 'beak': return lathe([[0, -.5], [.32, -.46], [.5, -.30], [.47, -.05], [.32, .20], [.12, .43], [0, .5]], 16);
+    case 'owlBeak': return polyhedron([[0,.5,.10],[-.5,.18,0],[0,-.5,.10],[.5,.18,0],[0,.14,.60],[0,.08,-.15]],
+      [[0,1,4],[1,2,4],[2,3,4],[3,0,4],[0,5,1],[1,5,2],[2,5,3],[3,5,0]],
+      ['#f3d09a','#e4b56c','#c99b50','#e7bc79','#d7ac68','#d7ac68','#d7ac68','#d7ac68']);
     case 'ring': return new THREE.TorusGeometry(.5, .085, 8, 24);
     case 'lanternHandle': return new THREE.TorusGeometry(.5,.14,12,32);
     case 'neckBand': return lathe([[.46,-.5],[.5,-.3],[.5,.3],[.46,.5],[.44,.3],[.44,-.3],[.46,-.5]],16);
@@ -1076,9 +1079,7 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
       if(owlSign){
         // Cream barbs darken into the recessed amber eye socket. The colour
         // belongs to the disc, not an extra flat ring placed over the eye.
-        const r=((Math.abs(px)-.13)/.108)**2+((py-.002)/.123)**2;
-        const warm=Math.exp(-r*.9);
-        colours.push(1-.32*warm,1-.52*warm,1-.70*warm);
+        colours.push(...owlFaceTint(px,py));
       }
     };
     add(0, 0);

@@ -26,7 +26,7 @@ const { teams } = await load('teams.ts');
 const { SceneKit, disposeObject } = await load('scene/primitives.ts');
 const { makeProxy, animateCharacter } = await load('scene/proxies.ts');
 const { characterGeometry, characterMaterial, navigatorCapePoint } = await load('scene/characterGeometry.ts');
-const { refineCharacterSurface } = await load('scene/characterSurface.ts');
+const { refineCharacterSurface, owlFaceTint } = await load('scene/characterSurface.ts');
 const { surfaceData, surfaceGeometry, refineCharacterModel, CharacterDetail, MAX_DETAILED_CHARACTERS } = await load('scene/characterDetail.ts');
 const members = teams.flatMap(team => team.members);
 // Authored triangle counts measured from immutable pre-surface commit 271831b.
@@ -644,6 +644,23 @@ test('shallow owl irises follow their curved facial discs without clipping throu
   disposeObject(model);kit.dispose();
 });
 
+test('owl close facial colour follows the actual recessed surface and its beak has a broad matte ridge',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  const disc=model.getObjectByName('owl-facial-disc:1'),dense=refineCharacterSurface(surfaceData(disc.geometry),'facialFeather');
+  const p=dense.attributes.position.array,c=dense.attributes.color.array;
+  for(let i=0;i<p.length;i+=57){
+    const expected=owlFaceTint(p[i],p[i+1]);
+    for(let axis=0;axis<3;axis++)assert.ok(Math.abs(c[i+axis]-expected[axis])<1e-5,'dense socket tint does not interpolate coarse triangular patches');
+  }
+  assert.ok(owlFaceTint(.13,.06)[0]<owlFaceTint(.13,-.056)[0],'the upper socket retains a warmer sheltered edge');
+  const beak=model.getObjectByName('owlBeak');
+  assert.equal(beak.material.metalness,0,'beak is matte horn, not a brass pendant');
+  assert.ok(beak.material.roughness>.7);
+  beak.geometry.computeBoundingBox();const size=beak.geometry.boundingBox.getSize(new THREE.Vector3()).multiply(beak.scale);
+  assert.ok(size.x/size.y>.75&&size.z>.06,'a broad two-sided ridge replaces the narrow turned bullet');
+  disposeObject(model);kit.dispose();
+});
+
 test('the owl facial shield keeps its lower heart silhouette in front of the breast',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   model.updateMatrixWorld(true);
@@ -1028,7 +1045,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
     'reflection-echo':['paperBody','paperEchoHead','paperOwlWingL','paperHoldingWing','paperCrownBackL','paperCrownBackR','ring'],
     'reflection-quill':['paperBody','paperWing','paperHoldingWing','quill-pencil'],
-    'email-owl':['owlHead','owlBody','featherFanL','featherFanR','breastFeathers'],
+    'email-owl':['owlHead','owlBody','owlBeak','featherFanL','featherFanR','breastFeathers'],
     'email-swift':['paper-bird-expression','swiftBody','swiftWingL','swiftWingR','swiftTail'],
   };
   for (const character of members) {
