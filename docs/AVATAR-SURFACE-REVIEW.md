@@ -2137,3 +2137,32 @@ These unchanged camera-only workloads match retained157's resource counts;
 short CPU-side submission samples do not establish locked60 or completed
 GPU timing. Day/night room/campus, restored portraits and benchmark outputs
 are saved in surface-pass-159.
+
+Retained159 was pushed as a46324183f03897941fe3a4438311acd015b46f5;
+remote readback matches and CI38636093148 succeeded. The isolated production
+preview serves its exact bundle and passes window, deep-zoom invitation,
+third/first-person mist and exit/reset checks with an empty connected bridge.
+
+Pass160 narrows and shallows Reflection's real table, moves the mug clear
+of Echo and brings Quill closer without changing any expression or activity.
+The first proposed home failed navigation clearance and was corrected before
+the submitted screenshots. All full-size homes and routes pass; corner rays
+verify the stack/notebook sit over actual timber, including its .014 bevel,
+not merely the alpha-cut texture plane. No avatar or lighting change.
+
+Independent verdict: retain160. Reflection room7/7 and campus7.5/7.5;
+character craft/fidelity: Merchant7.5/7, Clear Path6.5/6.5, Wayfinders7.5/7,
+Beacon7/6.5, Reflection6.5/6.5, Dispatch7/6.5, overall7/6.5. Echo's torso and
+magnifier read better, Quill joins the group, and the mug no longer crowds
+the face; Lumen remains partly concealed and Quill is dark at night.
+The reviewer explicitly recommends ending local room tuning and rebuilding
+Quill's torso/wing, then Swift and Clear Path's major silhouettes. These
+remain construction problems, not missing texture or polygon density.
+
+160 campus/close both submit60fps, CPU mean/p95 2.29/3.60ms and2.01/3.60ms.
+Campus137 draws/431,832 triangles; close136/903,009. The close framing/layout
+costs three draws and23,200 visible triangles versus159 despite unchanged
+authored character topology. Short CPU-side samples do not prove GPU timing
+or locked60. Full suite376/build pass; the expanded physical support check
+also passes. Saved day/night room/campus and timings are in surface-pass-160;
+its copied portraits are unchanged159 output, not new160 character evidence.

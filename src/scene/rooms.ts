@@ -301,8 +301,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const aisleX = index === 5 ? 1.9225 : isFoyer?1.4:2.15;
   const tableX = isFoyer ? -.65 : index===3 ? -.25 : index===5 ? -.22 : 0;
   const tableZ = isFoyer ? .2 : index < 3 ? -.95 : .1;
-  const tableWidth = isFoyer ? 2.55 : index===3 ? 3.05 : index<2?2.5:index === 5 ? 2.65 : 2.75;
-  const tableDepth = isFoyer?1.3:index===0?1.5:index===3||index===1 ? 1.6 : 1.4;
+  const tableWidth = isFoyer ? 2.35 : index===3 ? 3.05 : index<2?2.5:index === 5 ? 2.65 : 2.75;
+  const tableDepth = isFoyer?1.0:index===0?1.5:index===3||index===1 ? 1.6 : 1.4;
   const sideSeating = index < 2;
   // Paired Wayfinder desks are real independently oriented furniture groups.
   // Their screens, papers and asset anchor use the same transform as the wood;
@@ -358,7 +358,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     blockers.push({bounds:[spareX-spareRadius,spareZ-spareRadius,spareX+spareRadius,spareZ+spareRadius]});
   }
   if(index!==2)blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - tableDepth/2, tableX + tableWidth / 2, tableZ + tableDepth/2] });
-  const seats: NavigationPoint[] = isFoyer ? [[-.95,-1.13],[.30,-1.20],[1.40,.20]]
+  // The starter foyer groups its small residents around a shallow reading
+  // table. These are real, walkable arrival/work anchors, not camera-only
+  // offsets; agent-authored actions still choose their own destinations.
+  const seats: NavigationPoint[] = isFoyer ? [[-.95,-1.13],[.30,-1.20],[1.40,-.30]]
     : index===0 ? [[-1.95,.25],[0,-1.5],[1.95,.10]]
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
@@ -425,9 +428,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   if(index!==5&&index!==2)paper(interior, kit, tableX - paperX, tableZ + .06,index===1?-.14:.08);
   if(index===0||index===1||isFoyer)notebook(interior,kit,tableX+paperX,tableZ+.08,index===0?'#536e65':isFoyer?'#6a674e':'#9a7855',index===1?.10:-.13);
   else if(index!==2)paper(interior, kit, tableX + paperX, tableZ + (index===5?.34:.04), -0.2);
-  if(index!==2)mug(interior, kit, tableX + mugX, tableZ - 0.48, index === 4 ? '#647c50' : '#a0aa8d');
+  if(index!==2)mug(interior, kit, isFoyer?tableX-.16:tableX+mugX, tableZ+(isFoyer?.12:-.48), index === 4 ? '#647c50' : '#a0aa8d');
   if(index<2)mug(interior, kit, tableX - mugX, tableZ - 0.48,index===0?'#c4b28c':'#b7c0a4');
-  if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - 1.0, 0.825 + i * 0.057, tableZ - 0.4], [0.44, 0.055, 0.32], [0, -0.12, 0]));
+  if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - paperX, 0.825 + i * 0.057, tableZ - 0.25], [0.44, 0.055, 0.32], [0, -0.12, 0]));
   const frontPlantParent=index===2?new THREE.Group():interior;
   if(index===2){frontPlantParent.name='Wayfinders starter floor plant';root.add(frontPlantParent);defaultSlotProps.floor=frontPlantParent;}
   plant(frontPlantParent, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad',index===2||index===5);

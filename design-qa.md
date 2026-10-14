@@ -4,6 +4,14 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
+Pass160 is retained for the shallower Reflection table and closer Quill home.
+Room7/7, campus7.5/7.5, character cast7/6.5: not A/reference matched.376 tests
+and build pass; actual support and full-size navigation checks pass. Both
+short timing samples submit60fps, with three additional close-view draws.
+The next priority is a complete Quill torso/wing construction study, then
+Swift and Clear Path silhouettes; no further micro room/material polishing
+is presented as a substitute for those structural gaps.
+
 The independent reviewer retains pass154 over153 and148 as the new working
 baseline: Echo7.0 craft/6.5 fidelity, Reflection6.5/6.5, campus7.5/7.5.
 Its370 tests and build pass. The tapered rear/hip and closer wing fold reduce

@@ -224,18 +224,42 @@ test('Lantern Desk compact grouping keeps actual supported storage and full-size
   const room=rooms.get('reflection');room.root.updateMatrixWorld(true);
   const rug=room.root.userData.rugSurface.bounds;
   assert.ok(rug.every((value,i)=>Math.abs(value-[-2.05,-1.575,1.85,1.775][i])<1e-9));
-  assert.deepEqual(room.actorHomes.map(p=>p.toArray()),[[-.95,.1,-1.13],[.30,.1,-1.20],[1.40,.1,.20]]);
+  assert.deepEqual(room.actorHomes.map(p=>p.toArray()),[[-.95,.1,-1.13],[.30,.1,-1.20],[1.40,.1,-.30]]);
   assert.deepEqual(room.actorFacing,[Math.atan2(.6,1.4),Math.atan2(-.8,1.5),-.42],
     'furniture does not turn neutral residents into a staged work pose');
   for(const [i,desk]of room.navigation.desks.entries()){
     assert.equal(desk.seatHeight,.1,'paper residents and lantern remain on the real floor');
-    const expected=i===0?[-1.605,.26]:[.305,.28];
+    const expected=i===0?[-1.505,.26]:[.205,.28];
     assert.ok(desk.screen.every((value,j)=>Math.abs(value-expected[j])<1e-9),'work targets the actual paper or notebook');
     assert.ok(Math.abs(desk.facing-Math.atan2(expected[0]-desk.position[0],expected[1]-desk.position[1]))<1e-9);
     const actor=teams.find(team=>team.id==='reflection').members[i],radius=actor.kind==='owl'?.7:.61;
     const home=navigator.desk(actor.id);
-    assert.ok(navigator.pointClear(home.position,radius),'homes retain full-size body clearance');
+    assert.ok(navigator.pointClear(home.position,radius),`${actor.id} home retains full-size body clearance`);
     assert.ok(navigator.segmentClear(home.position,home.egress,radius,home));
+  }
+  const echo=room.actorHomes[1],quill=room.actorHomes[2];
+  assert.ok(echo.distanceTo(quill)>=1.4&&echo.distanceTo(quill)<1.5,'the closer pair retain their full navigation envelopes');
+  const tops=[];room.root.traverse(mesh=>{
+    if(mesh.isMesh&&mesh.material.map){const box=new THREE.Box3().setFromObject(mesh);
+      if(Math.abs(box.min.y-.82)<1e-6&&Math.abs(box.max.y-.82)<1e-6)tops.push(box);
+    }
+  });
+  assert.equal(tops.length,1);
+  const size=tops[0].getSize(new THREE.Vector3());
+  assert.ok(Math.abs(size.x-2.19)<1e-6&&Math.abs(size.z-.86)<1e-6,'the actual tabletop, not just its blocker, becomes shallower');
+  const solid=[];room.root.traverse(mesh=>{if(mesh.isMesh&&mesh.geometry.type!=='PlaneGeometry')solid.push(mesh);});
+  const ray=new THREE.Raycaster();
+  for(const [name,x,z,width,depth,angle]of [['stack',-1.505,-.05,.44,.32,-.12],['notebook',.205,.28,.44,.56,-.13]]){
+    for(const dx of [-width/2,width/2])for(const dz of [-depth/2,depth/2]){
+      const corner=new THREE.Vector3(dx,0,dz).applyAxisAngle(new THREE.Vector3(0,1,0),angle);
+      corner.add(new THREE.Vector3(x,.825,z)).add(room.center);
+      ray.set(corner,new THREE.Vector3(0,-1,0));
+      const hits=ray.intersectObjects(solid,false);
+      // The joined top is .818 high with a .014 bevel. A corner over
+      // that real bevel remains supported; the alpha-cut texture plane
+      // above it is deliberately not accepted as physical timber.
+      assert.ok(hits.some(hit=>hit.point.y>=.804-1e-6&&hit.point.y<=.818+1e-6),`${name} corner ${corner.toArray()} has real rounded timber beneath it: ${hits.slice(0,4).map(hit=>hit.point.y)}`);
+    }
   }
   for(const [name,envelope]of [
     ['Foyer left reading cabinet',[-2.8,1.55,-1.85,2.3]],
