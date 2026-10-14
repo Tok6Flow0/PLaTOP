@@ -259,7 +259,8 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   kit.mesh(parent, 'box', '#d9c9ac', [x, y - 0.85, z + 0.08], [2.65, 0.065, 0.16]);
   kit.mesh(parent, 'cylinder', '#748575', [x + 0.68, y - 0.81, z + 0.09], [0.045, 0.39, 0.045], [0, 0, Math.PI / 2]);
 }
-export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number, style: 'rect'|'soft'|'capsule'='rect', apronHeight=.2): void {
+export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number, style: 'rect'|'soft'|'capsule'='rect', apronHeight=.2, construction:'solid'|'joined'='solid'): void {
+  const joined=construction==='joined';
   const corner=style==='capsule'?depth/2-.025:style==='soft'?.34:.09;
   const shapedSlab=(color:string,y:number,w:number,h:number,d:number,r:number)=>{
     if(style==='rect')return beveledBlock(parent,kit,color,[x,y,z],[w,h,d],Math.min(r,.09));
@@ -272,16 +273,30 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     geometry.rotateX(-Math.PI/2);geometry.translate(0,-h/2+bevel,0);
     const mesh=new THREE.Mesh(geometry,kit.material(color,'wood'));mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;parent.add(mesh);return mesh;
   };
-  const slab = surface(shapedSlab('#9e754d',.8-apronHeight/2,width,apronHeight,depth,corner), 'furniture');
-  slab.material = kit.material('#9e754d', 'wood');
-  const crown = surface(shapedSlab('#b38a5c',.804,width-.07,.025,depth-.07,Math.max(.02,corner-.035)), 'furniture');
-  crown.material = kit.material('#b38a5c', 'wood');
-  const legGeometry = new THREE.LatheGeometry([[0, -0.5], [0.052, -0.5], [0.068, -0.46], [0.077, -0.25],
-    [0.091, 0.4], [0.089, 0.47], [0.072, 0.5], [0, 0.5]].map(([r, y]) => new THREE.Vector2(r, y)), 16);
+  const slabColor=joined?'#ad8356':'#9e754d';
+  const slab = surface(shapedSlab(slabColor,joined?.780:.8-apronHeight/2,width,joined?.076:apronHeight,depth,corner), 'furniture');
+  slab.material = kit.material(slabColor, 'wood');
+  if(joined){
+    slab.name='Joined timber top';
+    // Thin top over a recessed structural frame, not a thinner unsupported
+    // version of the old full-width molded apron. Rail ends meet leg shoulders.
+    for(const side of [-1,1]){
+      const long=surface(beveledBlock(parent,kit,'#94734f',[x,.6625,z+side*(depth/2-.31)],[width-.54,.17,.065],.008),'furniture');
+      const end=surface(beveledBlock(parent,kit,'#94734f',[x+side*(width/2-.31),.6625,z],[.065,.17,depth-.54],.008),'furniture');
+      for(const rail of [long,end]){rail.material=kit.material('#94734f','wood');rail.name='Recessed table rail';}
+    }
+  }else{
+    const crown = surface(shapedSlab('#b38a5c',.804,width-.07,.025,depth-.07,Math.max(.02,corner-.035)), 'furniture');
+    crown.material = kit.material('#b38a5c', 'wood');
+  }
+  const legProfile=joined?[[0,-.5],[.045,-.5],[.050,-.46],[.059,-.15],[.069,.28],[.071,.5],[0,.5]]
+    :[[0,-.5],[.052,-.5],[.068,-.46],[.077,-.25],[.091,.4],[.089,.47],[.072,.5],[0,.5]];
+  const legGeometry = new THREE.LatheGeometry(legProfile.map(([r, y]) => new THREE.Vector2(r, y)), 16);
   for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) {
     const leg = surface(new THREE.Mesh(legGeometry, kit.material('#987046', 'wood')), 'furniture');
-    leg.position.set(x + dx, 0.38, z + dz); leg.scale.y = 0.64;
+    leg.position.set(x + dx, joined?.425:.38, z + dz); leg.scale.y = joined?.65:.64;
     leg.rotation.set(dz < 0 ? -0.035 : 0.035, 0, dx < 0 ? 0.045 : -0.045);
+    if(joined)leg.name='Tapered joinery leg';
     leg.castShadow = leg.receiveShadow = true; parent.add(leg);
   }
   for (const dx of [-width / 2 + 0.27, width / 2 - 0.27]) for (const dz of [-depth / 2 + 0.25, depth / 2 - 0.25]) floorContact(parent, x + dx, 0.137, z + dz, 0.44, 0.38);

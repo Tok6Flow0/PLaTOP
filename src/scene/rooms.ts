@@ -319,7 +319,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if(i===0)tidyStaticMeshes(props);
     return {...layout,group,point};
   }) : [];
-  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer||index===0?'soft':'rect');
+  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer||index===0?'soft':'rect',.2,index===0?'joined':'solid');
   if(index===3||index===5){
     // Angled empty guest seats expose their cushion and legs instead of a
     // cabinet-like straight back. Their full rotated footprints are obstacles;

@@ -1637,3 +1637,29 @@ The corner is less leafy and the low cabinet's broad side is plain at campus
 scale; restoring tangled clutter is not recommended. Next is a bounded
 Merchant desk prototype with a distinct thin top, recessed supporting rails
 and articulated legs, judged at campus scale before wider application.
+
+Pass 140 prototypes that construction on Merchant's table only. A .076-thick
+timber top replaces the continuous .2 apron/crown. Four recessed supporting
+rails meet both the underside and tapered leg shoulders. Outer dimensions,
+the .82 tabletop height, desktop objects, homes, seating, materials' texture
+count and lighting are unchanged. All 361 tests/build pass; the new test checks
+actual support intersections, inset rails, footprint, height and bounded
+geometry. The original solid and paired-table APIs remain available.
+
+The initial campus sample submits 58.70 fps (CPU mean/p95 1.95/3.10 ms) and
+Merchant close 59.2881 fps (1.95/3.30 ms). Unchanged repeat samples submit
+59.9994 fps (2.03/3.40 ms) and 60.0114 fps (1.76/2.60 ms), respectively.
+Both initial and repeat evidence remain in surface-pass-140; the first samples
+are not discarded and their difference is not assigned an unproven cause.
+Draw counts stay 132 campus / 156 close, with 124 fewer triangles in both
+(394,358 / 2,658,223). These short CPU submission measurements do not prove
+completed GPU throughput or identical timing under every workload. Pass 139
+remote CI succeeded.
+
+The independent reviewer retains 140 at Merchant room 8.0 craft / 8.0 fidelity,
+campus 7.0 / 7.5. The lighter top and exposed legs visibly improve construction
+in the room and modestly at campus scale, without a conspicuous projecting
+rail, floating corner, avatar intersection or night regression. The tabletop
+material remains uniformly smooth, but restoring the broad band is not advised.
+Extending the construction is recommended, with separate support/overhang
+checks for rounded and near-square shapes before acceptance.

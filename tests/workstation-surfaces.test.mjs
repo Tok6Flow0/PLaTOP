@@ -336,6 +336,33 @@ test('slim paired desks keep the supported surface height with finer bounded cur
   disposeObject(root);kit.dispose();
 });
 
+test('joined Merchant desk separates its thin top from recessed rails and supported tapered legs',t=>{
+  canvasDocument(t);const kit=new SceneKit(),root=new THREE.Group();
+  table(root,kit,0,0,2.5,1.5,'soft',.2,'joined');root.updateMatrixWorld(true);
+  const top=new THREE.Box3().setFromObject(root.getObjectByName('Joined timber top'));
+  assert.ok(Math.abs(top.max.y-.818)<1e-6&&Math.abs(top.min.y-.742)<1e-6);
+  const rails=root.children.filter(o=>o.name==='Recessed table rail');assert.equal(rails.length,4);
+  const legs=root.children.filter(o=>o.name==='Tapered joinery leg');assert.equal(legs.length,4);
+  const railBoxes=rails.map(o=>new THREE.Box3().setFromObject(o));
+  for(const rail of railBoxes){
+    assert.ok(rail.min.x>top.min.x+.20&&rail.max.x<top.max.x-.20&&rail.min.z>top.min.z+.20&&rail.max.z<top.max.z-.20,
+      'supporting rails are visibly recessed from the continuous timber edge');
+    assert.ok(rail.max.y>=top.min.y&&rail.max.y<top.min.y+.01,'the supporting frame contacts the underside');
+  }
+  for(const leg of legs){const box=new THREE.Box3().setFromObject(leg);
+    assert.ok(box.min.y>.09&&box.min.y<.105&&box.max.y>=top.min.y,'each full leg reaches the floor and top');
+    assert.equal(railBoxes.filter(rail=>rail.intersectsBox(box)).length,2,'each shoulder joins two rails');
+  }
+  const all=new THREE.Box3().setFromObject(root);
+  assert.ok(all.min.x>=-1.2501&&all.max.x<=1.2501&&all.min.z>=-.7501&&all.max.z<=.7501);
+  assert.ok(Math.abs(all.max.y-.82)<1e-6,'existing tabletop objects retain their real support height');
+  let triangles=0,maps=0;root.traverse(o=>{if(o.isMesh){
+    triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;if(o.material.map)maps++;
+    assert.equal(o.material.transparent,false);
+  }});assert.ok(triangles<5000);assert.equal(maps,1);assert.equal(root.userData.floorContacts.length,4);
+  disposeObject(root);kit.dispose();
+});
+
 test('diverse connected plants keep actual vertices inside their certified floor envelopes and release owned meshes once', () => {
   const kit = new SceneKit(), resources = new THREE.Group(), owned = new Set();
   for (const [kind, bound] of [['leaf', 0.5], ['broad', 0.57], ['spear', 0.28], ['herb', 0.48], ['ivy', 0.5]]) {

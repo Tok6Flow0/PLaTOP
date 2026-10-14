@@ -19,7 +19,14 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-139 suite passes **360 tests** and the production build passes. The
+The pass-140 suite passes **361 tests** and the production build passes.
+Merchant's thin-top/recessed-rail desk is independently retained at **8.0 craft /
+8.0 fidelity**; campus stays **7.0 / 7.5**. Initial campus/close samples of
+58.70/59.29 submitted fps and unchanged repeats of 60.00/60.01 are all retained
+in the ledger. Draw counts are unchanged and triangle counts fall by 124.
+Separate shape/support checks are required before extending the construction.
+
+The pass-139 suite passed **360 tests** and its production build passed. The
 independent reviewer retains Beacon's separated cabinet/plant stand and joined
 reading nook at **7.5 craft / 7.5 fidelity**; campus remains **7.0 / 7.5**.
 Its unchanged neutral character and matched night views show no significant
