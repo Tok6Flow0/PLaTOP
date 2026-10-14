@@ -13,7 +13,7 @@ async function moduleUrl(path, imports = {}) {
 }
 const primitives = await moduleUrl('../src/scene/primitives.ts');
 const { SceneKit, disposeObject } = await import(primitives);
-const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
+const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, parcelStack, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
 
 function canvasDocument(t) {
   const prior = globalThis.document;
@@ -22,6 +22,27 @@ function canvasDocument(t) {
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => context }) };
   t.after(() => { globalThis.document = prior; });
 }
+
+test('paper-wrapped storage is bounded static furniture with a certified walking envelope',()=>{
+  const kit=new SceneKit(),root=new THREE.Group(),stack=parcelStack(root,kit,0,0);
+  root.updateMatrixWorld(true);
+  const bounds=new THREE.Box3().setFromObject(stack);
+  assert.ok(bounds.min.x>=-.53&&bounds.max.x<=.53&&bounds.min.z>=-.44&&bounds.max.z<=.44,
+    'every carton, tape edge and label fits the actual room blocker');
+  assert.ok(bounds.min.y>=.097&&bounds.max.y<.82);
+  let triangles=0;
+  stack.traverse(object=>{
+    assert.ok(!object.isLight);
+    if(!object.isMesh)return;
+    triangles+=(object.geometry.index?.count??object.geometry.attributes.position.count)/3;
+    assert.equal(object.material.transparent,false);assert.equal(object.material.map,null);
+  });
+  assert.ok(triangles<2000,'storage does not add dense scene-wide geometry');
+  tidyStaticMeshes(root);
+  assert.equal(root.children.filter(object=>object.isMesh).length,1,'all cartons share a static matte draw');
+  const resources=new THREE.Group();resources.add(root,root.userData.staticSources);
+  disposeObject(resources);kit.dispose();
+});
 
 test('bound shelf books and archive boxes keep the original furniture envelope and static batches',()=>{
   const kit=new SceneKit(),resources=new THREE.Group();

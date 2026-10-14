@@ -46,6 +46,7 @@ not asked for a desired score or instructed to approve.
 | 55 (Merchant only) | 8.6/10 — B+; craft 8.5 / fidelity 8.7 / all-angle 8.5 | Better Jarvis/Scout hierarchy; existing dark seam remnants, rigid Keeper silhouette, glossy shoulders and short simplified arms remain |
 | 56 (Merchant only) | 8.6/10 — B+; small construction improvement | Seam endpoints join cleanly and lower curve is smoother; thinner bowed cover is intact but Keeper remains comparatively rigid |
 | 57 (foliage/materials) | Merchant 8.6/10 — B+; campus approximately 8.2/10 — B | Horizontal leaf tiers substantially reduced; quieter ceramic highlights retained; sparse seating, rigid book/paper forms and simplified facial disks remain |
+| 58 (campus furniture) | Campus 8.2/10 — B; craft 8.3 / fidelity 8.1; lighting 8.3 | Wider tables improve room scale; guest chair reads too rectangular and right-hand storage is concealed; floor/material depth remains limited |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -56,6 +57,16 @@ tests do not substitute for this visual judgment. The earlier avatar/daylight
 ledger is a separate historical series.
 
 ## Verification through surface pass 17
+
+Latest checkpoint (58): 299 tests and the production build pass. Beacon and
+Dispatch have broader default tables, Beacon has an empty guest chair, and
+Dispatch has bounded paper-wrapped storage. These are static furnishings, not
+activity. A new guest-chair route initially failed for larger avatars; the real
+front aisle and lounge stop were repositioned, retaining certified body clearance.
+All sixteen residents can reach every interaction, lounge, door and exit with
+decorations on and off. Storage meshes stay inside their actual obstacle bounds.
+No character construction changed in this submission. The reviewer sees a small
+improvement, not a new grade or an A-level reference match.
 
 - 280 tests pass; production build passes, with the existing large-bundle warning.
 - All sixteen exact 100× counts, finite attributes, source preservation, curvature,
@@ -328,6 +339,7 @@ and is not treated as close-up evidence.
 | Pass 55 campus | 53.10 | 1.94 / 3.50 ms | 110 / 352,427 | 0 |
 | Pass 56 campus | 49.50 | 2.51 / 4.00 ms | 110 / 352,795 | 0 |
 | Pass 57 campus | 53.80 | 1.74 / 3.90 ms | 110 / 352,795 | 0 |
+| Pass 58 campus | 53.70 | 2.21 / 3.90 ms | 110 / 354,087 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -348,6 +360,7 @@ and is not treated as close-up evidence.
 | Pass 55 full-face close | 52.30 | 2.00 / 3.80 ms | 135 / 2,379,397 | 3 |
 | Pass 56 full-face close | 49.40 | 2.48 / 4.20 ms | 134 / 2,408,197 | 3 |
 | Pass 57 full-face close | 53.10 | 2.11 / 4.30 ms | 135 / 2,414,805 | 3 |
+| Pass 58 full-face close | 51.89 | 2.40 / 4.40 ms | 135 / 2,416,713 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material
@@ -370,6 +383,9 @@ three dense avatars, 122 draws and 810,080 triangles.
 Pass 54 Wayfinders submitted 51.49 fps / 2.35 ms mean / 4.20 ms p95 before eye
 batching (139 draws), and 53.21 fps / 2.18 ms / 4.00 ms afterward (138 draws).
 Both submitted 2,381,660 triangles with three dense avatars.
+Pass 58 Beacon submitted 55.71 fps / 1.40 ms mean / 3.10 ms p95, with one
+dense avatar, 76 draws and 970,912 triangles. It is an additional workload,
+not a matched baseline comparison.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

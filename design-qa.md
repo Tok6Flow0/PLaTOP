@@ -16,7 +16,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-55 suite passes **297 tests** and the production build passes. The
+The pass-58 suite passes **299 tests** and the production build passes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
@@ -34,7 +34,10 @@ confirm local improvements. The full pass-53 review gives portraits **8.5/10**,
 campus **8.2/10** and lighting **8.3/10**. Pass 55's targeted Merchant review
 gives **8.6/10**, retaining the taller torso and smaller Scout. Remaining gaps
 include thick-looking paper masses, rear feather overlaps and insufficient
-furnishing/botanical richness. Pass 55's matched
+furnishing/botanical richness. Pass 57 softens ceramic highlights and varies
+connected foliage; pass 58 adds wider tables, a guest chair and wrapped storage.
+The targeted campus review remains **8.2/10**, with chair readability and hidden
+storage limiting the improvement. Pass 58's matched
 [noon](docs/images/surface-campus-noon.jpg) and
 [night](docs/images/surface-campus-night.jpg) captures supersede the older campus
 evidence below.

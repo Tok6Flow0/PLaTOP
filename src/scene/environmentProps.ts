@@ -228,6 +228,24 @@ export function stool(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   kit.mesh(parent, 'sphere', color, [x, 0.575, z], [0.68, 0.16, 0.68], undefined, 'fabric');
   for (const angle of [0, Math.PI * 2 / 3, Math.PI * 4 / 3]) surface(kit.mesh(parent, 'detailCylinder', '#97714a', [x + Math.sin(angle) * 0.2, 0.29, z + Math.cos(angle) * 0.2], [0.09, 0.45, 0.09], [Math.cos(angle) * 0.05, 0, -Math.sin(angle) * 0.05], 'wood'), 'furniture');
 }
+/** Quiet storage furniture, not a claim that a parcel has been sent. */
+export function parcelStack(parent: THREE.Object3D, kit: SceneKit, x: number, z: number): THREE.Group {
+  const stack=new THREE.Group();stack.name='Paper-wrapped storage';stack.position.set(x,.104,z);parent.add(stack);
+  const cartons:[number,number,number,number,number,number,number][]=[
+    [-.15,.20,.05,.50,.40,.48,-.06],[-.12,.555,.04,.44,.31,.42,.04],[.28,.15,-.15,.36,.30,.35,.09],
+  ];
+  for(const [index,[px,py,pz,w,h,d,angle]]of cartons.entries()){
+    const carton=new THREE.Group();carton.position.set(px,py,pz);carton.rotation.y=angle;stack.add(carton);
+    surface(beveledBlock(carton,kit,index===1?'#c7ad87':'#b49369',[0,0,0],[w,h,d],.016),'furniture');
+    // Thin paper tape wraps real box surfaces. It remains opaque and joins
+    // ordinary static batches, with no label text or implied live status.
+    for(const sy of [-1,1])kit.mesh(carton,'box','#decaab',[0,sy*(h/2+.002),0],[.052,.003,d+.004]);
+    for(const sz of [-1,1])kit.mesh(carton,'box','#decaab',[0,0,sz*(d/2+.002)],[.052,h,.003]);
+    kit.mesh(carton,'box','#ecdfc6',[-w*.20,.015,d/2+.004],[w*.24,h*.22,.003]);
+  }
+  floorContact(stack,0,.003,0,1.05,.85);
+  return stack;
+}
 export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0, z); group.rotation.y = angle; parent.add(group);
   group.name = 'Desk chair';
