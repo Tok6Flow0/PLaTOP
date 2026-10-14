@@ -657,7 +657,8 @@ test('owl close facial colour follows the actual recessed surface and its beak h
   assert.equal(beak.material.metalness,0,'beak is matte horn, not a brass pendant');
   assert.ok(beak.material.roughness>.7);
   beak.geometry.computeBoundingBox();const size=beak.geometry.boundingBox.getSize(new THREE.Vector3()).multiply(beak.scale);
-  assert.ok(size.x/size.y>.75&&size.z>.06,'a broad two-sided ridge replaces the narrow turned bullet');
+  assert.ok(size.x/size.y>.5&&size.x/size.y<.68&&size.z>.045,'a compact softly tapered ridge replaces the wide pyramid');
+  assert.ok(beak.geometry.attributes.position.count>200,'rounded transitions are actual authored geometry');
   disposeObject(model);kit.dispose();
 });
 

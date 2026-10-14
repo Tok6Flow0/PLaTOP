@@ -392,7 +392,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       data.feet.push(foot);
     });
     if(navy) {
-      sculpt(head,'owlBeak','#ffffff',[0,-.080,.290],[.126,.156,.090],undefined,'clay');
+      sculpt(head,'owlBeak','#dcb578',[0,-.080,.290],[.100,.156,.090],undefined,'clay');
     }
     else sculpt(head,'paperBeak',gold,[0,-.077,.196],[.7,.9,.28],[.75,0,0],'paper');
     if (id === 'reflection-quill') {

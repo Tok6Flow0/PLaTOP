@@ -745,9 +745,17 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'fittedSole': return new THREE.SphereGeometry(.5, 20, 12);
     case 'detail': return new THREE.SphereGeometry(.5, 12, 6);
     case 'beak': return lathe([[0, -.5], [.32, -.46], [.5, -.30], [.47, -.05], [.32, .20], [.12, .43], [0, .5]], 16);
-    case 'owlBeak': return polyhedron([[0,.5,.10],[-.5,.18,0],[0,-.5,.10],[.5,.18,0],[0,.14,.60],[0,.08,-.15]],
-      [[0,1,4],[1,2,4],[2,3,4],[3,0,4],[0,5,1],[1,5,2],[2,5,3],[3,5,0]],
-      ['#f3d09a','#e4b56c','#c99b50','#e7bc79','#d7ac68','#d7ac68','#d7ac68','#d7ac68']);
+    case 'owlBeak': {
+      // A narrow horn with a rounded root and a tapered point. Its ridge is
+      // sculpted into the continuous skin, not a four-plane pyramid.
+      const geometry=softLathe([[0,-.5],[.06,-.40],[.16,-.15],[.32,.10],[.45,.25],[.32,.44],[0,.5]],16,16);
+      const p=geometry.attributes.position;
+      for(let i=0;i<p.count;i++){
+        const x=p.getX(i),y=p.getY(i),z=p.getZ(i),front=Math.max(0,z)/Math.max(.001,Math.hypot(x,z));
+        p.setZ(i,z<0?z*.25:z+.095*front**5*Math.sin((y+.5)*Math.PI));
+      }
+      return smoothDeformedSurface(geometry);
+    }
     case 'ring': return new THREE.TorusGeometry(.5, .085, 8, 24);
     case 'lanternHandle': return new THREE.TorusGeometry(.5,.14,12,32);
     case 'neckBand': return lathe([[.46,-.5],[.5,-.3],[.5,.3],[.46,.5],[.44,.3],[.44,-.3],[.46,-.5]],16);

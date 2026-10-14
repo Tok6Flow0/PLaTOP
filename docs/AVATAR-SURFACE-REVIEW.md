@@ -67,6 +67,7 @@ not asked for a desired score or instructed to approve.
 | 75 (fresh Keeper corner review) | Merchant craft 8.0 / fidelity 8.0; retained | Turned corner joins the cut-away bowed cover without a floating gap; the long sharp flap still needs a shorter, softer curl |
 | 76 (fresh Keeper curl review) | Merchant craft 8.0 / fidelity 8.0; retained | Compact curl removes the blade-like tip and keeps the expression clear; bright wedge-like shading remains, with Scout's optical depth the larger character gap |
 | 77 (fresh Dispatch face review) | Craft 7.0 / fidelity 7.5; mixed, beak revision required | Eye refinements and matte finish help; broad sharp pyramid-shaped beak is oversized relative to the source, and repeated feathers remain |
+| 78 (fresh Dispatch beak review) | Craft 7.0 / fidelity 7.5; retained over 77 | Narrow matte rounded root improves integration; bulb-to-point taper still feels pin-like, while small repeated feathers and lower-breast dark wedges are the larger gap |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -585,6 +586,12 @@ displaced surface at both mesh tiers. Campus submits 54.40 fps (1.91 ms mean /
 (2.05 ms / 3.80 ms, 107 draws, 1,670,823 triangles, two dense avatars). The
 reviewer requests a narrower, softer beak; this checkpoint is not accepted as an
 overall visual improvement and was not installed on the isolated production server.
+Pass 78 passes 312 tests and the production build. Campus submits 54.11 fps
+(1.97 ms mean / 3.70 ms p95 CPU, 108 draws, 373,172 triangles); Dispatch close
+submits 53.31 fps (1.83 ms / 3.40 ms, 107 draws, 1,721,223 triangles, two dense
+avatars). The smoother authored horn adds geometry, with no new material pass.
+Its reviewer retains the correction but still prioritizes broader, varied feather
+groups and continuous lower-breast coverage.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
 from the matched table; the uninterrupted rerun above does not hide that caveat.
