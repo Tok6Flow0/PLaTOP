@@ -369,8 +369,17 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
   const vertices:Tuple[]=[],faces:number[][]=[],columns=softCrown?16:10;
   for(const[y,rx,rz,z]of rings)for(let i=0;i<columns;i++){
     const a=i/columns*Math.PI*2;
-    const fold=softCrown&&y<.23?.055*Math.sin(a+.7)*Math.sin(Math.max(0,(y+.20)/.43)*Math.PI):0;
-    vertices.push([Math.sin(a)*rx,y+fold,Math.cos(a)*rz+z]);
+    const fold=softCrown&&y<.23?.025*Math.sin(a+.7)*Math.sin(Math.max(0,(y+.20)/.43)*Math.PI):0;
+    let px=Math.sin(a)*rx,py=y+fold,pz=Math.cos(a)*rz+z;
+    if(softCrown&&py<.26){
+      // Carry the same diagonal paper planes from cheek through throat.
+      // Horizontal elliptical sections alone left a round cap above the
+      // wing folds even though the underlying mesh was already connected.
+      pz=Math.min(pz,.140+.35*py);
+      const cheekWidth=.098+.24*py-.35*Math.max(0,pz);
+      px=Math.sign(px)*Math.min(Math.abs(px),Math.max(.018,cheekWidth));
+    }
+    vertices.push([px,py,pz]);
   }
   for(let row=0;row<rings.length-1;row++)for(let col=0;col<columns;col++){const j=(col+1)%columns;faces.push([row*columns+col,row*columns+j,(row+1)*columns+j,(row+1)*columns+col]);}
   faces.push(Array.from({length:columns},(_,i)=>i),Array.from({length:columns},(_,i)=>(rings.length-1)*columns+i));
@@ -381,7 +390,7 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
     for(let i=0;i<p.count;i++){
       // Keep the same paper language through the neck: a fully smooth crown
       // above a flat-shaded breast read as a ceramic ball glued to origami.
-      const blend=.18+.22*THREE.MathUtils.smoothstep(p.getY(i),-.03,.23);
+      const blend=.45+.20*THREE.MathUtils.smoothstep(p.getY(i),-.03,.23);
       normal.fromBufferAttribute(n,i);flat.fromBufferAttribute(foldedNormals,i).lerp(normal,blend).normalize();n.setXYZ(i,flat.x,flat.y,flat.z);
     }
   }
@@ -389,7 +398,7 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
 }
 
 function swiftWing(): THREE.BufferGeometry {
-  const boundary:Tuple[]=[[0,.12,.075],[.035,.25,-.46],[.045,-.045,-.21],[.055,-.35,-.39],[.06,-.24,.055]];
+  const boundary:Tuple[]=[[0,.045,.075],[.035,.25,-.46],[.045,-.045,-.21],[.055,-.35,-.39],[.06,-.24,.055]];
   const vertices:Tuple[]=[...boundary,[.09,.015,-.085],...boundary.map(([x,y,z])=>[x-.006,y,z] as Tuple)];
   const faces:number[][]=[[0,5,1],[1,5,2],[2,5,3],[3,5,4],[4,5,0],[6,7,8],[6,8,10],[8,9,10]];
   for(let i=0;i<5;i++){const j=(i+1)%5;faces.push([i,j,j+6,i+6]);}
@@ -398,7 +407,7 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return foldedSheet([[-.035,.09,.035],[.025,-.12,.09],[-.13,-.34,.20],[-.23,-.25,.25],[-.15,-.015,.19]],[-.095,-.16,.255],
+  return foldedSheet([[-.035,.09,.035],[.025,-.12,.09],[-.105,-.42,.20],[-.15,-.30,.22],[-.10,-.015,.14]],[-.075,-.20,.18],
     ['#dbc29a','#d8bf97','#cdb089','#dfc69f','#e5ceaa']);
 }
 
@@ -410,7 +419,9 @@ function foldedSheet(outline:Tuple[],ridge:Tuple,tones:string[]):THREE.BufferGeo
   if(area>0){outline=[...outline].reverse();tones=[...tones].reverse();}
   const count=outline.length,points=[...outline,ridge],positions:number[]=[],colours:number[]=[];
   const add=(ids:number[],rear:boolean,tone:string)=>{
-    const colour=new THREE.Color(tone);
+    // A folded sheet is one stock of paper. Its normals supply the fold
+    // contrast; strongly different painted facets made it look carved.
+    const colour=new THREE.Color(tone).lerp(new THREE.Color('#dfc7a2'),.65);
     for(const id of ids){const p=points[id];positions.push(p[0],p[1],p[2]-(rear?.010:0));colours.push(...colour.toArray());}
   };
   for(let i=0;i<count;i++){
@@ -444,7 +455,12 @@ function paperOwlHead(quill=false): THREE.BufferGeometry {
     const center=vertices.length;vertices.push([side?.18:-.18,-.015,.46]);
     for(let i=0;i<cheek.length;i++){const a=outline.length+side*cheek.length+i,b=outline.length+side*cheek.length+(i+1)%cheek.length;faces.push([a,b,center]);colors.push('#edd6b0');}
   }
-  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.92,y*.89,.07-Math.abs(x)*.10] as Tuple));
+  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[
+    x*.92,y*.89,
+    // A narrow folded return at the exposed jaw; the crown and rear keep
+    // their volume. A thick extrusion here made the face look carved.
+    THREE.MathUtils.lerp(.07-Math.abs(x)*.10,faceDepth(x,y,true)-.018,THREE.MathUtils.smoothstep(-y,.04,.28)),
+  ] as Tuple));
   const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.72,y*.76,-.23] as Tuple));
   const rearCenter=vertices.length;vertices.push([-.035,.03,-.30]);
   for(let i=0;i<outline.length;i++){
@@ -458,9 +474,11 @@ function paperOwlBody(): THREE.BufferGeometry {
   // Diagonal valley/mountain folds replace stacked hexagonal box sections.
   // A projecting breast ridge folds into the lower centre seam; the back
   // converges into the same shoulder and foot vertices, with no extruded wall.
-  const vertices:Tuple[]=[[0,.28,.035],[-.38,.15,.04],[.36,.15,.04],[-.49,-.03,.02],[.46,-.08,.03],[-.29,-.50,.06],[.28,-.50,.07],[-.035,-.08,.10],[.07,-.26,.23],[0,-.50,.08],[0,.22,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
+  // The visible chest is carried by the two overlapping paper sheets. Keep
+  // this closed inner volume behind them instead of piercing their folds.
+  const vertices:Tuple[]=[[0,.28,.035],[-.38,.15,.04],[.36,.15,.04],[-.49,-.03,.02],[.46,-.08,.03],[-.29,-.50,.06],[.28,-.50,.07],[-.035,-.08,.07],[.07,-.26,.12],[0,-.50,.08],[0,.22,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
   const faces=[[0,1,7],[0,7,2],[1,3,7],[7,3,8],[7,8,4],[7,4,2],[3,5,8],[8,5,9],[8,9,6],[8,6,4],[0,10,1],[0,2,10],[1,10,13],[1,13,3],[2,14,10],[2,4,14],[10,11,13],[10,14,11],[3,13,5],[4,6,14],[13,11,12],[13,12,5],[14,12,11],[14,6,12],[5,12,9],[9,12,6]];
-  return polyhedron(vertices,faces,['#dfc79e','#ead7b3','#d7bc91','#c4a477','#dbc198','#cbb085','#bfa078','#d0b189','#bfa077','#d7ba8f','#d5bc94','#ccb28a','#c2a67e','#d6ba91','#d8bf98','#c9ac83','#bda077','#ceb28b','#ccb18a','#d7bc94','#c4a680','#cbb18b','#b89b73','#c6aa82','#bda17a','#ccb28a']);
+  return polyhedron(vertices,faces,faces.map((_,index)=>index<10?'#dec49e':'#ceb38b'));
 }
 
 function reflect(geometry: THREE.BufferGeometry): THREE.BufferGeometry {

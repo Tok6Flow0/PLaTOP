@@ -155,16 +155,16 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       if (leader) { body.position.y = .70; data.bodyY = .70; head.position.y = 1.30; data.headY = 1.30; }
       if (id === 'bridge-scout') {body.position.y=.45;data.bodyY=.45;head.position.y=.89;data.headY=.89;head.scale.set(.86,.92,.92);}
       if (wayfinder) {body.position.y=id==='intake-jarvis'?.535:.49;data.bodyY=body.position.y;head.position.y=id==='intake-jarvis'?1.02:.95;data.headY=head.position.y;}
-      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.04 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, 'glaze');
+      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.04 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, wayfinder?'clay':'glaze');
       if(leader) sculpt(body,'merchantBase','#bb673a',[0,-.58,0],[.73,.24,.56],undefined,'glaze');
       if(leader)sculpt(body,'neckBand','#9d542f',[0,.29,0],[.52,.036,.43],undefined,'glaze');
       if(id==='bridge-scout')sculpt(body,'neckBand','#274b45',[0,.14,0],[.44,.036,.34],undefined,'glaze');
       if(wayfinder)sculpt(body,'neckBand','#b1a58e',[0,.22,0],[.55,.026,.40],undefined,'clay');
       sculpt(body, 'limb', wayfinder ? '#b6aa8c' : bodyColor, [0, .35, 0], [.18, .15, .18]);
       const headColor = wayfinder ? cream : bodyColor;
-      sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, 'glaze').name='helmet';
+      sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, wayfinder?'clay':'glaze').name='helmet';
       curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, .010, [0, .005, 0], 'clay').name='visor-rim';
-      curvedFace(kit, head, wayfinder ? '#273b4a' : '#f2e2bf', .583, .401, .019, [0, .005, 0], wayfinder ? 'ink' : 'clay').name='rounded-visor';
+      curvedFace(kit, head, wayfinder ? '#273b4a' : '#f2e2bf', .583, .401, .019, [0, .005, 0], wayfinder ? 'cloth' : 'clay').name='rounded-visor';
       if (id === 'bridge-scout') {
         // One generously sized magnifier is Scout's face, not a tiny monocle
         // pasted onto the same visor worn by every other character.
@@ -240,8 +240,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         }
       }
       [-1, 1].forEach(sign => {
-        sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], 'glaze');
-        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [leader?.070:.045, leader?.20:.117, leader?.20:.117], undefined, 'glaze');
+        sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], wayfinder?'clay':'glaze');
+        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [leader?.070:.045, leader?.20:.117, leader?.20:.117], undefined, wayfinder?'clay':'glaze');
       });
       limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7',false,wayfinder);
       if(wayfinder) [-1,1].forEach(sign=>{
@@ -249,7 +249,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         const arm=joint(body,sign<0?'arm_l':'arm_r',[sign*.375,navigator?.08:.10,navigator?-.03:.025]);
         // Jarvis's arms sit beneath the mantle, not as two exposed padded
         // tubes beside it. The existing joints still carry agent-chosen poses.
-        const shell=sculpt(arm,'bean',navigator?'#2d4250':bodyColor,[0,-.15,0],navigator?[.125,.40,.22]:[.19,.53,.31],undefined,navigator?'clay':'glaze');
+        const shell=sculpt(arm,'bean',navigator?'#2d4250':bodyColor,[0,-.15,0],navigator?[.125,.40,.22]:[.19,.53,.31],undefined,'clay');
         if(!navigator){
           const inset=sculpt(arm,'detail','#2d4250',[0,-.065,.15],[.095,.22,.016],undefined,'clay');
           fitCharacterRelief(inset,shell,.006);

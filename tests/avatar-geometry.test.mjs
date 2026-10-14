@@ -281,6 +281,60 @@ test('Scout keeps a magnifier and compass, rather than the generic cream belly p
   disposeObject(model);kit.dispose();
 });
 
+test('Wayfinder ivory shells and dark faces keep their source matte finishes',()=>{
+  const kit=new SceneKit();
+  for(const member of members.filter(member=>member.id.startsWith('intake-'))){
+    const model=makeProxy(member,kit);
+    for(const name of ['wayfinderBody','helmet']){
+      const mesh=model.getObjectByName(name);assert.ok(mesh);assert.equal(mesh.material.userData.characterFinish,'clay');assert.ok(mesh.material.roughness>=.7);
+    }
+    assert.equal(model.getObjectByName('rounded-visor').material.userData.characterFinish,'cloth');
+    disposeObject(model);
+  }
+  kit.dispose();
+});
+
+test('Swift carries diagonal cheek planes into the breast without hiding its eyes',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-swift'),kit);
+  const body=model.getObjectByName('swiftBody'),positions=body.geometry.attributes.position;
+  let cheekVertices=0,throatVertices=0;
+  for(let i=0;i<positions.count;i++){
+    const x=Math.abs(positions.getX(i)),y=positions.getY(i),z=positions.getZ(i);
+    if(y>=.26)continue;
+    assert.ok(z<=.140+.35*y+1e-6,'the front paper plane is continuous through the throat');
+    assert.ok(x<=Math.max(.018,.098+.24*y-.35*Math.max(0,z))+1e-6);
+    if(Math.abs(x-(.098+.24*y-.35*Math.max(0,z)))<1e-6){
+      if(y>.10)cheekVertices++;else throatVertices++;
+    }
+  }
+  assert.ok(cheekVertices>12&&throatVertices>12,'one diagonal cheek construction spans both regions');
+  const restore=refineCharacterModel(model);model.updateMatrixWorld(true);
+  for(const [index,eye] of model.userData.personality.eyes.entries()){
+    const sign=index===0?-1:1,center=eye.getWorldPosition(new THREE.Vector3());
+    const outward=new THREE.Vector3(sign,0,0).transformDirection(eye.parent.matrixWorld);
+    const ray=new THREE.Raycaster(center.clone().addScaledVector(outward,1),outward.negate());
+    const first=ray.intersectObjects([eye,body],false)[0];
+    assert.equal(first?.object,eye,'the continuous cheek must not cover the eye');
+  }
+  restore();disposeObject(model);kit.dispose();
+});
+
+test('folded paper chest sheets sit in front of their closed inner body',()=>{
+  const kit=new SceneKit(),ray=new THREE.Raycaster();
+  for(const member of members.filter(member=>['reflection-echo','reflection-quill'].includes(member.id))){
+    const model=makeProxy(member,kit),body=model.userData.personality.body;
+    const shell=model.getObjectByName('paperBody'),sheets=['paperChestL','paperChestR'].map(name=>model.getObjectByName(name));
+    const restore=refineCharacterModel(model);model.updateMatrixWorld(true);let checked=0;
+    for(let x=-.20;x<=.20;x+=.04)for(let y=-.29;y<=.06;y+=.05){
+      ray.set(body.localToWorld(new THREE.Vector3(x,y,1)),new THREE.Vector3(0,0,-1).transformDirection(body.matrixWorld));
+      const paper=ray.intersectObjects(sheets,false)[0],core=ray.intersectObject(shell,false)[0];
+      if(paper&&core){assert.ok(paper.distance<core.distance-.001,`${member.id} inner body does not pierce the chest at ${x},${y}`);checked++;}
+    }
+    assert.ok(checked>40);restore();disposeObject(model);
+  }
+  kit.dispose();
+});
+
 test('Scout toe caps follow the cream foot surface rather than floating as flat discs',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='bridge-scout'),kit);
   model.updateMatrixWorld(true);

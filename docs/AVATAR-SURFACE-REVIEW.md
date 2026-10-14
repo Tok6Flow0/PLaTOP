@@ -37,6 +37,11 @@ not asked for a desired score or instructed to approve.
 | 40 (targeted) | Email 8.5 craft / 8.5 fidelity / 8.5 all-angle; campus 8.1/10 — B | More legible shelves and consistent bird shading; coarse facial strokes and narrow rear feather notches need correction |
 | 41 (targeted) | Local form improvements; no new overall grade | Lower paper shoulders and fitted Scout caps help, but thick folds, glossy cap bulges and abrupt tuft/bird joins remain |
 | 43 (portraits only) | Modest material cleanup; no new overall grade | Crack-like facial marks removed; lower-right rear feather overlaps and carved-looking paper masses remain |
+| 46 | Portraits 8.5/10 — B+; campus 8.1/10 — B; lighting 8.3/10 | Scout soles clearly improve; bird cheek/breast transition, paper edges and lower-right rear feather boundary remain |
+| 47 (Intake only) | Net material-fidelity improvement; no new full-set grade | Matte shells and faces are closer; faces could retain more subtle depth and eye warmth |
+| 49 (Reflection and Email only) | Modest construction improvements; no new full-set grade | Cleaner broad chest folds and slightly improved bird neck; thick paper edges and lower-right rear feather overlaps remain |
+| 50 (Email only) | Clearer bird cheek/throat continuity; no new full-set grade | Eyes stay visible and no new clipping seen; rounded crown and stiff large wing plane still differ from source |
+| 52 (Reflection only) | Small edge-construction improvement; no new full-set grade | Thinner free wings and quieter lower jaw retained; broad solid-looking masses and a blade-like wing tip still differ from source |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -205,6 +210,33 @@ restored orbit controls were checked; no live bridge or chat was modified.
 Measurements taken with diagnostics closed are stale and were not treated as
 worker-failure evidence. The visual acceptance gate remains open.
 
+Pass 47 retains geometry and adds source-matched matte Ivory shells and fabric
+faces to the Wayfinders only. All 293 tests and the production build pass.
+Its independent four-view check found less plastic sheen and no new coverage
+defect, while noting that the faces now appear slightly too uniform. The full
+portrait/campus grades above belong to pass 46, not this targeted submission.
+
+Pass 50 has 295 passing tests and a passing production build. A continuous
+diagonal cheek/throat plane improves the bird's profile without adding a
+separate connector. Its dense eyes remain visible in a ray test. The paper
+owls' inner breast is recessed beneath the actual chest sheets; dense coverage
+tests prevent that support from piercing the folds. The independent reviewer
+confirmed the bird improvement, while retaining the remaining shape concerns.
+Internal pass 51 reduced feather spacing but introduced small dark marks in
+the rear render; that experiment was reverted and was not performance-tested
+or accepted. Passing geometry tests alone did not catch that visual regression.
+
+Pass 52 narrows the exposed paper-jaw return and resting wing fold. All 295
+tests and the production build pass, including the original-count density
+minimum, moving clearance, paper coverage and eye visibility. Fresh noon/night
+campus captures accompany this revision. The independent targeted review found
+improved edges without a definite new defect, but the overall construction still
+looks heavier than the source. The last full-set/campus grade remains pass 46's,
+not a claim for this revision. The compiled pass-52 bundle loads three dense
+Lantern Desk characters with zero pending requests, 123 draws and 829,340
+submitted triangles. No console warning/error was observed. This close-up
+runtime check uses the device clock and is not a matched performance sample.
+
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
 Unchanged source was read from `271831b` into a temporary isolated checkout.
@@ -244,6 +276,10 @@ and is not treated as close-up evidence.
 | Pass 41 campus | 50.40 | 1.96 / 2.90 ms | 108 / 351,883 | 0 |
 | Pass 43 campus | 54.90 | 1.95 / 2.90 ms | 108 / 351,883 | 0 |
 | Pass 46 campus | 53.19 | 1.89 / 2.80 ms | 108 / 352,219 | 0 |
+| Pass 47 campus | 49.80 | 2.12 / 3.40 ms | 109 / 352,219 | 0 |
+| Pass 49 campus | 49.40 | 2.05 / 3.30 ms | 109 / 352,219 | 0 |
+| Pass 50 campus | 58.40 | 1.86 / 2.70 ms | 109 / 352,219 | 0 |
+| Pass 52 campus | 57.10 | 2.01 / 3.50 ms | 109 / 352,219 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -258,6 +294,7 @@ and is not treated as close-up evidence.
 | Pass 41 full-face close | 52.81 | 1.91 / 3.40 ms | 133 / 2,356,965 | 3 |
 | Pass 43 full-face close | 54.80 | 1.73 / 2.90 ms | 133 / 2,356,965 | 3 |
 | Pass 46 full-face close | 53.60 | 2.09 / 3.60 ms | 133 / 2,387,397 | 3 |
+| Pass 49 full-face close | 56.00 | 1.81 / 3.20 ms | 134 / 2,387,397 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material
@@ -267,6 +304,16 @@ fps / 1.81 ms / 3.20 ms (three dense avatars, 136 draws, 2,382,652 triangles).
 After the bird-profile change, pass 46 Dispatch submitted 57.90 fps / 1.74 ms /
 3.10 ms (two dense avatars, 107 draws, 1,668,194 triangles). These are extra
 workloads, not matched comparisons with the original baseline.
+Pass 47's matte Wayfinders close workload submitted 50.60 fps / 1.91 ms mean /
+3.20 ms p95, with three dense avatars, 137 draws and 2,381,932 triangles.
+Pass 49's Lantern Desk close workload submitted 54.60 fps / 2.09 ms mean /
+3.50 ms p95 (three dense avatars, 122 draws, 810,080 triangles); Dispatch
+submitted 55.29 fps / 1.86 ms / 3.30 ms (two dense avatars, 108 draws,
+1,668,194 triangles). Pass 48 was an internal untimed geometry iteration.
+Pass 50 Dispatch submitted 56.10 fps / 1.94 ms mean / 3.20 ms p95, with two
+dense avatars, 108 draws and 1,668,194 triangles.
+Pass 52 Lantern Desk submitted 57.50 fps / 1.88 ms mean / 3.50 ms p95, with
+three dense avatars, 122 draws and 810,080 triangles.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for
