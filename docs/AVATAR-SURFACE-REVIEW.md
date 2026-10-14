@@ -93,6 +93,7 @@ not asked for a desired score or instructed to approve.
 | 98 (fresh Reflection glass correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 96 | Broad muted glow removes orange bands while preserving readable faces. Stop tuning the gradient; paper overlap depth and flat uniformly gold roof/frame are larger remaining material gaps |
 | 99 (fresh Reflection structural-metal review) | Craft 7.5 / fidelity 7.5; retained over 98 | Dark roof/frame/base separate from luminous panes and polished fittings without a paper-owl regression. The roof still partly reads as brown material; prioritize localized soft paper-overlap shadows, not more tiny metal adjustments |
 | 100 (fresh actual-scene contact review) | Campus craft 7.0 / fidelity 7.5; close craft approximately 7.5; retained | Short-range close AO replaces dirty pot-shadow clouds with compact contacts and improves books/mug grounding without losing owl folds. Campus lighting change is not confidently substantial; room-scale key-light shaping remains the priority |
+| 101 (fresh corrected-noon review) | Campus craft 7.0 / fidelity 7.5; retained | Slightly stronger depth beneath desks and around plants, readable faces and tabletop objects; night unchanged. Do not lower fill again: shape the key-light direction and soft cast-shadow transitions |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -822,3 +823,12 @@ applied, so the first exact-noon update was skipped. The pass-100 noon image
 therefore does not establish its intended new daylight balance. The reviewer
 retains the independently visible close-AO cleanup; the initialization fix and
 fresh daylight comparison must follow separately.
+
+Pass 101 passes 328 tests/build. The real scene light-setup statements now apply
+noon before receiving the first state update; a regression test executes that
+initialization and checks the sky, ground, key, position, reflection and backdrop.
+Campus submits 55.30 fps (1.95 ms mean / 3.10 ms p95 CPU), Reflection close
+56.30 fps (1.99 / 3.30 ms), retaining pass 100's resource counts and timing
+limitations. Independent actual-image review retains the corrected noon result
+without raising its score. Current repository noon/night screenshots are now
+the matched 1536 × 1024 pass-101 captures. Portrait models remain pass 99.

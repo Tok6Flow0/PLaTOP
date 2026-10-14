@@ -19,12 +19,12 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-100 suite passes **327 tests** and the production build passes. Its
+The pass-101 suite passes **328 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
-campus remains 7.0 craft / 7.5 fidelity. Exact-noon lighting initialization needs
-the separately documented correction. The user's
+campus remains 7.0 craft / 7.5 fidelity. Pass 101 fixes and tests exact-noon
+lighting initialization; its independent visual score remains unchanged. The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
@@ -50,7 +50,7 @@ The targeted campus review remains **8.2/10**, with chair readability and hidden
 storage limiting the improvement. Pass 58's matched
 [noon](docs/images/surface-campus-noon.jpg) and
 [night](docs/images/surface-campus-night.jpg) capture locations now contain pass
-92, superseding the older campus evidence below. These refreshed captures do
+101, superseding the older campus evidence below. These refreshed captures do
 not establish a new independent campus score.
 Live agent actions remain the only source of work gestures and locomotion.
 

@@ -163,6 +163,9 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     output.setBackdrop(...next.backdrop, next.dark ? next.backdrop[1] : '#c4c0aa');
     renderer.shadowMap.needsUpdate = true;
   }
+  // The first update can be exactly noon. Apply that profile now rather than
+  // marking noon current while the lights still contain constructor defaults.
+  updateDaylight();
   const kit = new SceneKit();
   const campus = makeCampus(kit);
   scene.add(campus);
