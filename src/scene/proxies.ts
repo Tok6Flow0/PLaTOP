@@ -370,12 +370,12 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     [-1, 1].forEach(sign => {
       const facialDisc=navy?curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'facialFeather', [.417, .325, .27],false,undefined,.43,sign):undefined;
-      const iris=navy?sculpt(head, 'bean', '#c49b54', [sign * .130, .002, .180], [.151, .170, .040], undefined, 'clay'):undefined;
+      const iris=navy?sculpt(head, 'bean', '#c49b54', [sign * .130, .002, .178], [.141, .155, .018], undefined, 'clay'):undefined;
       if(iris&&facialDisc){iris.name='owl-iris';facialDisc.name=`owl-facial-disc:${sign}`;}
       if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?.012:.011, navy?.207:.195], [navy ? .100 : .083, navy ? .114 : .098, navy?.036:.024], undefined, 'ink'); data.eyes.push(eye);
-        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - (navy?.016:.012), navy?.039:.043, navy?.223:.208], [navy?.023:.020, navy?.026:.022, .006], undefined, 'glaze');
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?.012:.011, navy?.190:.195], [navy ? .100 : .083, navy ? .114 : .098, navy?.030:.024], undefined, 'ink'); data.eyes.push(eye);
+        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - (navy?.016:.012), navy?.039:.043, navy?.204:.208], [navy?.023:.020, navy?.026:.022, .006], undefined, 'glaze');
         data.highlights.push(highlight);
       }
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');

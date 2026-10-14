@@ -1065,7 +1065,9 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
       disc.bezierCurveTo(.12,.24,.163,.15,.166,.045);
       disc.bezierCurveTo(.170,-.10,.08,-.155,-.169,-.245);
       disc.bezierCurveTo(-.169,-.15,-.169,-.03,-.169,.06);
-      boundary.length=0;disc.getSpacedPoints(31).forEach(p=>boundary.push([p.x*owlSign,p.y]));
+      // Preserve each cubic endpoint, especially the exact shared heart tip.
+      // Equal-distance sampling skipped that join and left two little notches.
+      boundary.length=0;disc.getPoints(8).slice(0,-1).forEach(p=>boundary.push([p.x*owlSign,p.y]));
     }
     if(bubble){boundary.length=0;boundary.push(...speechBoundary(width,height));}
     const area=boundary.reduce((sum,[x,y],i)=>{const next=boundary[(i+1)%boundary.length];return sum+x*next[1]-next[0]*y},0);if(area<0)boundary.reverse();

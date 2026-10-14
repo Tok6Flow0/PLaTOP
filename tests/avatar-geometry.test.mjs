@@ -745,11 +745,17 @@ test('owl eyes sit in sculpted sockets with the iris perimeter tucked beneath th
     }
     assert.ok(tucked>8&&visible>8,`iris has both an exposed centre and a tucked edge (${visible}/${tucked})`);
     assert.ok(iris.geometry.type==='SphereGeometry'&&!iris.geometry.userData.characterFitted,'iris retains convex curvature instead of conforming to the bowl');
+    assert.ok(iris.scale.z<.020,'thin iris no longer forms a protruding gold button');
   }
   for(const eye of model.userData.personality.eyes){
     point.copy(eye.position).applyMatrix4(eye.parent.matrixWorld);
     ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
     assert.equal(ray.intersectObject(model,true)[0]?.object,eye,'each dark pupil remains visible');
+    const sign=Math.sign(eye.position.x),disc=model.getObjectByName(`owl-facial-disc:${sign}`);
+    point.set(sign*.130,.165,0).applyMatrix4(eye.parent.matrixWorld);
+    ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+    const brow=ray.intersectObject(disc,false)[0],bounds=new THREE.Box3().setFromObject(eye);
+    assert.ok(brow&&brow.point.z>bounds.max.z+.005,'upper cream brow sits in front of the eye bulge');
   }
   disposeObject(model);kit.dispose();
 });
@@ -778,6 +784,9 @@ test('the owl facial shield keeps its lower heart silhouette in front of the bre
   const ray=new THREE.Raycaster(),point=new THREE.Vector3();
   for(const sign of [-1,1]){
     const disc=model.getObjectByName(`owl-facial-disc:${sign}`),p=disc.geometry.attributes.position;
+    let exactTip=false;
+    for(let i=0;i<p.count;i++)if(Math.abs(p.getX(i))<1e-7&&Math.abs(p.getY(i)+.251)<1e-7)exactTip=true;
+    assert.ok(exactTip,'both facial halves share the exact tapered heart endpoint');
     let tested=0;
     for(let i=0;i<p.count;i++){
       if(p.getY(i)>-.17||Math.abs(p.getX(i))>.07)continue;

@@ -75,6 +75,7 @@ not asked for a desired score or instructed to approve.
 | 84 (fresh Merchant satin review) | Craft 8.0 / fidelity 8.0; retained | Reduced plastic-like highlights preserve rounded forms and brass/glass separation; broad shells remain too uniform and slightly rubber-like; hold gloss and add restrained fine surface variation |
 | 85 (fresh Merchant grain and broader character review) | Merchant craft 8.0 / fidelity 8.0; broader set approximately 7.5 / 7.5; retained | Grain reduces rubber-like uniformity without visible regression; avoid stronger mottling. Across the cast, Reflection's rounded triangulated paper and Dispatch's broad flat-looking facial mask are the main construction gaps |
 | 86 (fresh Dispatch face prototype) | Craft 7.5 / fidelity 7.5; mixed, eye revision required | Deeper socket and narrower cheeks improve the mask; thick projecting gold surrounds regress into mounted buttons. Keep mask shaping, seat thinner eyes deeper, then join the notched heart tip |
+| 87 (fresh Dispatch eye correction) | Craft 7.5 / fidelity 7.5; retained over 85 and 86 | Thinner seated eyes and joined heart tip improve construction; the lower gold crescent still appears mounted. Refine cream socket overlap without adding general darkness |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -670,3 +671,11 @@ triangles); Dispatch close submits 52.40 fps (2.21 ms / 4.10 ms, 111 draws,
 1,552,423 triangles, two dense avatars). The visual reviewer rejects the
 projecting eye surrounds despite these tests: 86 is a corrective checkpoint,
 not the accepted replacement, and the isolated production server remains at 85.
+
+Pass 87 passes 317 tests and the production build. The cream halves preserve
+their exact shared heart tip; thinner eyes retain convex surfaces and visible
+pupils beneath the upper brow. Campus submits 54.80 fps (1.90 ms mean / 3.70 ms
+p95 CPU); Dispatch close submits 55.11 fps (1.88 ms / 3.60 ms), with 86's draw
+and triangle counts. These are fixed-workload submission samples, not equal
+worst-case GPU cost. The reviewer retains this correction but not an A-level
+match; the isolated production server remains at 85 pending further refinement.
