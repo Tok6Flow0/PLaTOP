@@ -1725,3 +1725,25 @@ reads as a block at campus scale; the left side is also broad. The next
 correction should show recessed shelves where practical or give exposed
 backs credible finished-panel construction without reopening the grouping.
 Production remains the fully accepted pass 141 while this reservation is open.
+
+Pass 143 turns the right Lantern Desk cabinet toward the principal views and
+uses a .64-width rack to preserve Quill's full clearance inside the wall.
+Both foyer cases receive modeled recessed end panels and back frames. Actual
+panel/frame intersections and the unchanged crown footprint are tested; the
+room test checks the rotated footprint, unflattened plants and all real homes.
+All 364 tests/build pass. Pass 142 remote CI succeeded.
+
+Campus submits 59.9994 fps (CPU mean/p95 2.00/3.20 ms; 135 draws, 399,742
+triangles); Merchant close 60.00 fps (2.05/3.50 ms; 156 draws, 2,665,399
+triangles); Lantern Desk close 59.9994 fps (1.58/2.40 ms; 136 draws, 874,559
+triangles). The modeled panels add 8,400 visible triangles and no draw calls
+in these samples. Matched noon/night images and CPU submission samples are
+in surface-pass-143; these are not completed-GPU measurements.
+
+The independent reviewer retains 143 at Lantern Desk and campus 7.5 craft /
+7.5 fidelity. Recessed books now read at campus scale; the narrower case is
+plausible, and the side frames resolve the plain-block presentation. No
+conspicuous new intersection, character occlusion, broken join or night
+regression is visible. The next highest-impact campus study is the architectural
+shell: softly rounded, more substantial partitions/caps/perimeter edges and
+paint response, initially holding furniture, identities and lighting fixed.

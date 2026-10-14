@@ -100,6 +100,26 @@ test('joined room cabinets have continuous sides and recessed supported contents
   }
 });
 
+test('freestanding reading cabinets have physically joined recessed ends and backs inside the original crown',async t=>{
+  const {SceneKit,disposeObject}=await loadScene('scene/primitives.ts');
+  const {storageCabinet}=await loadScene('scene/environmentProps.ts');
+  const kit=new SceneKit(),root=new THREE.Group();t.after(()=>{disposeObject(root);kit.dispose();});
+  assert.equal(storageCabinet(root,kit,false,'reading','paneled'),1.05);root.updateMatrixWorld(true);
+  const named=name=>{const found=[];root.traverse(o=>{if(o.name===name)found.push(o);});return found;};
+  const box=o=>new THREE.Box3().setFromObject(o),bounds=box(root);
+  assert.ok(bounds.min.x>=-.545001&&bounds.max.x<=.545001&&bounds.min.z>=-.335001&&bounds.max.z<=.415001);
+  const panels=named('Recessed cabinet end panel'),sides=named('Continuous cabinet side');
+  assert.equal(panels.length,2);
+  for(const panel of panels){
+    const panelBounds=box(panel),side=sides.find(o=>Math.sign(o.position.x)===Math.sign(panel.position.x));
+    assert.ok(panelBounds.intersectsBox(box(side)),'recessed panel is attached to the cabinet carcass');
+    for(const rail of [...named('Cabinet end rail'),...named('Cabinet end stile')].filter(o=>Math.sign(o.position.x)===Math.sign(panel.position.x)))
+      assert.ok(panelBounds.intersectsBox(box(rail)),'four frame members physically overlap each panel edge');
+  }
+  const back=box(named('Cabinet back')[0]),backFrame=[...named('Cabinet back rail'),...named('Cabinet back stile')];
+  assert.equal(backFrame.length,4);assert.ok(backFrame.every(o=>back.intersectsBox(box(o))),'back frame rests on the actual recessed backing');
+});
+
 test('Beacon planting has real independent support without intersecting its storage or lamp envelopes',async t=>{
   const {rooms,kit,disposeObject}=await realLayout();
   t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
@@ -187,7 +207,7 @@ test('Lantern Desk compact grouping keeps actual supported storage and full-size
   }
   for(const [name,envelope]of [
     ['Foyer left reading cabinet',[-2.8,1.55,-1.85,2.3]],
-    ['Foyer right reading cabinet',[2.19,-.20,2.83,.70]],
+    ['Foyer right reading cabinet',[2.19,-.03,2.89,.60]],
     ['Joined plant stand',[-2.66,-3.51,-2.14,-2.99]],
   ]){
     const object=room.root.getObjectByName(name);assert.ok(object);
@@ -203,6 +223,7 @@ test('Lantern Desk compact grouping keeps actual supported storage and full-size
     });
   }
   assert.deepEqual(room.assetSlots.shelf.position,[-2.32,1.06,1.9],'agent shelf assets follow the new real cabinet top');
+  assert.equal(room.root.getObjectByName('Foyer right reading cabinet').rotation.y,0,'right book spines face the campus and window rather than the wall');
   assert.equal(Object.keys(room.defaultSlotProps).length,0,'no decoration commandeers the agent-controlled floor slot');
 });
 

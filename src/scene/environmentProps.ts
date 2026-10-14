@@ -459,7 +459,7 @@ export function mug(parent: THREE.Object3D, kit: SceneKit, x: number, z: number,
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.026, 8, 16), kit.material(color, 'ceramic')); handle.position.set(x + 0.15, 0.95, z); handle.castShadow = true; parent.add(handle);
 }
 /** A joined cabinet: internal shelves end inside continuous sides, not tray rims. */
-export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: boolean, profile: 'wayfinder'|'merchant'|'reading'='wayfinder'): number {
+export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: boolean, profile: 'wayfinder'|'merchant'|'reading'='wayfinder',finish:'plain'|'paneled'='plain'): number {
   const cabinet=new THREE.Group();cabinet.name=drawers?'Framed filing cabinet':'Framed open cabinet';parent.add(cabinet);
   floorContact(cabinet,0,.105,.04,1.15,.82);
   const merchant=profile==='merchant',reading=profile==='reading',top=reading?1.05:merchant&&drawers?1.96:2.38;
@@ -468,10 +468,22 @@ export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: b
     mesh.material=kit.material(color,'wood');mesh.name=name;return mesh;
   };
   board('Recessed cabinet plinth','#806346',[0,.15,.02],[.94,.10,.62]);
-  board('Cabinet back','#806c53',[0,(top+.15)/2,-.302],[.91,top-.23,.035],.003);
+  board('Cabinet back',finish==='paneled'?'#987653':'#806c53',[0,(top+.15)/2,-.302],[.91,top-.23,.035],.003);
   for(const side of [-1,1]){
     board('Continuous cabinet side','#a17b52',[side*.4775,(top+.14)/2,.015],[.075,top-.22,.68]);
     board('Cabinet front stile','#b28a5e',[side*.4775,(top+.14)/2,.371],[.075,top-.22,.045],.008);
+  }
+  if(finish==='paneled'){
+    // A free-standing case has finished ends/back, not a decorative outline
+    // floating in front of a slab. Rails overlap the actual recessed panels
+    // and remain inside the crown's existing footprint.
+    for(const side of [-1,1]){
+      board('Recessed cabinet end panel','#987653',[side*.516,(top+.14)/2,.015],[.012,top-.36,.48],.003);
+      for(const z of [-.2425,.2725])board('Cabinet end stile','#b28a5e',[side*.521,(top+.14)/2,z],[.018,top-.26,.055],.004);
+      for(const y of [.22,top-.12])board('Cabinet end rail','#b28a5e',[side*.521,y,.015],[.018,.08,.57],.004);
+      board('Cabinet back stile','#b28a5e',[side*.40,(top+.14)/2,-.326],[.075,top-.26,.016],.004);
+    }
+    for(const y of [.22,top-.12])board('Cabinet back rail','#b28a5e',[0,y,-.326],[.875,.08,.016],.004);
   }
   board('Cabinet crown','#b68e60',[0,top-.04,.04],[1.09,.08,.75],.014);
   const levels=reading?[.23,.62]:merchant?(drawers?[.23,.96,1.48]:[.23,.93,1.62]):[.23,1.03,1.68];

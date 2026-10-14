@@ -262,18 +262,18 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     });
     // Low joined bookcases balance the workstation without closing the side
     // doors. The plants keep natural proportions outside each shallow rack.
-    for(const [name,x,z,rotation,kind] of [
-      ['Foyer left reading cabinet',-2.32,1.9,0,'ivy'],
-      ['Foyer right reading cabinet',2.54,.25,-Math.PI/2,'herb'],
+    for(const [name,x,z,widthScale,kind] of [
+      ['Foyer left reading cabinet',-2.32,1.9,.82,'ivy'],
+      ['Foyer right reading cabinet',2.54,.25,.64,'herb'],
     ] as const){
-      const cabinet=new THREE.Group();cabinet.name=name;cabinet.position.set(x,0,z);cabinet.rotation.y=rotation;root.add(cabinet);
-      const rack=new THREE.Group();rack.scale.set(.82,1,.82);cabinet.add(rack);
-      const top=storageCabinet(rack,kit,false,'reading');
+      const cabinet=new THREE.Group();cabinet.name=name;cabinet.position.set(x,0,z);root.add(cabinet);
+      const rack=new THREE.Group();rack.scale.set(widthScale,1,.82);cabinet.add(rack);
+      const top=storageCabinet(rack,kit,false,'reading','paneled');
       plant(cabinet,kit,0,0,kind==='ivy'?.40:.48,top,'#c0ae8e',kind);
       tidyStaticMeshes(cabinet);
     }
     shelfAsset=[-2.32,1.06,1.9];
-    blockers.push({bounds:[-2.8,1.55,-1.85,2.3]},{bounds:[2.19,-.20,2.83,.70]});
+    blockers.push({bounds:[-2.8,1.55,-1.85,2.3]},{bounds:[2.19,-.03,2.89,.60]});
     const rearStand=plantStand(root,kit,-2.4,-3.25);
     plant(rearStand,kit,0,0,.50,rearStand.userData.supportHeight,'#c7b896','leaf');tidyStaticMeshes(rearStand);
     plant(interior,kit,-1.65,-3.25,.65,.1,'#b4a483','herb');

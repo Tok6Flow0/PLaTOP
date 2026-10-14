@@ -19,7 +19,14 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-142 suite passes **363 tests** and the production build passes.
+The pass-143 suite passes **364 tests** and the production build passes.
+The independent reviewer retains the cabinet correction at Lantern Desk and
+campus **7.5 craft / 7.5 fidelity**, with visible shelves and credible framed
+sides. All three fixed samples submit about 60 fps; the 8,400 additional
+triangles add no draw calls in those samples. The architectural shell's thin,
+uniform profiles are the next campus-wide study. This is not A-level approval.
+
+The pass-142 suite passed **363 tests** and the production build passed.
 The tighter Lantern Desk group is independently retained at **7.5 craft /
 7.5 fidelity**, as are Dispatch's softened tabletop corners. The right
 bookcase's plain exposed back needs revision; this is a mixed-positive
