@@ -273,7 +273,7 @@ function smallHeart(): THREE.BufferGeometry {
 
 /** Both the cloth and its piping follow the real elliptical torso, including its back. */
 export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
-  const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t)-.045*Math.sin(angle)**2*(1-t)**2,normalized=(y+.005)/1.06;
+  const y=.25-t*.70+.018*Math.sin(angle)*Math.sin(Math.PI*t)-.045*Math.sin(angle)**2*(1-t)**2+.08*Math.sin(angle)**2*t**3,normalized=(y+.005)/1.06;
   let row=0;while(row<wayfinderContour.length-2&&wayfinderContour[row+1].y<normalized)row++;
   const a=wayfinderContour[row],b=wayfinderContour[row+1],r=a.x+(b.x-a.x)*(normalized-a.y)/(b.y-a.y);
   // A fitted neck releases into a few broad folds rather than a uniformly
@@ -281,7 +281,7 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   // remain outside the actual torso instead of cutting into it.
   const lobe=(centre:number,width:number)=>Math.exp(-(((angle-centre)/width)**2));
   const fold=(.068*lobe(1.65+.90*t,.52)+.060*lobe(4.75-.75*t,.57))*THREE.MathUtils.smoothstep(t,.04,.36);
-  const drape=.225+.210*THREE.MathUtils.smoothstep(t,0,.63);
+  const drape=.225+.170*THREE.MathUtils.smoothstep(t,0,.63);
   // The lining remains inset even at the silhouette limit. Clamping both
   // layers together would erase their thickness at the outermost pleats.
   return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape)+fold)-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78)+fold*.80)-inset)];
@@ -311,9 +311,11 @@ function cape(collar=false): THREE.BufferGeometry {
   // The worker still refines every patch 100x at close range.
   const vertices: number[] = [], indices: number[] = [], uv:number[]=[], columns = collar?20:24, rows = collar?3:11;
   const sample=(row:number,column:number,inset:number)=>{
-    const u=row/rows,base=collar?.075+.235*u:u,bound=.035+1.23*Math.sin(base*Math.PI/2);
-    const angle=bound+column/columns*(Math.PI*2-bound*2),t=base+(collar?.025*Math.sin(angle)*u:0);
-    return {point:navigatorCapePoint(t,angle,inset-(collar?.014:0)),uv:[angle/(Math.PI*2),t]};
+    // A short turned neckline sits at the neck. Extending it down the
+    // shoulders made a second capelet and a rigid horizontal rear ledge.
+    const u=row/rows,base=collar?.018+.070*u:u,bound=.035+1.23*Math.sin(base*Math.PI/2);
+    const angle=bound+column/columns*(Math.PI*2-bound*2),t=base+(collar?.008*Math.sin(angle)*u:0);
+    return {point:navigatorCapePoint(t,angle,inset-(collar?.022:0)),uv:[angle/(Math.PI*2),t]};
   };
   for (let row = 0; row <= rows; row++) {
     for (let column = 0; column <= columns; column++) {

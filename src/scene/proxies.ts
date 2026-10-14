@@ -218,8 +218,12 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
           }
           if(id==='intake-jarvis')sculpt(body, 'detail', gold, [0, .20, .290], [.044, .044, .022], undefined, 'brass');
           if (id === 'intake-jarvis') {
-            sculpt(head, 'hoodTip', '#273b4a', [0, .399, -.025], [.29, .31, .23]);
-            compass(head, [0, .44, .095], .115);
+            const hood=sculpt(head, 'hoodTip', '#273b4a', [0, .399, -.025], [.29, .31, .23],undefined,'cloth');
+            // The chosen portrait has a star on the hood, not a second
+            // free-standing medallion in front of it. Fit its shallow relief
+            // onto the real cone so side views retain an attached emblem.
+            const crest=sculpt(head,'compassStar',gold,[0,.444,.095],[.078,.125,.10],undefined,'brass');
+            crest.name='navigator-hood-star';fitCharacterRelief(crest,hood,.002,.003);
             compass(body, [0, -.02, .307], .225);
             stroke(body, '#bea06b', [[.06,-.43,.185],[.03,-.35,.24],[-.09,-.29,.285],[-.07,-.22,.31],[.08,-.19,.315],[.12,-.16,.312]], .009, 'clay').name='navigator-route-inlay';
           } else if (id === 'intake-beacon') {

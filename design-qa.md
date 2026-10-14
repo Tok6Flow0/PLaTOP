@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-115 suite passes **339 tests** and the production build passes. Its
+The pass-116 suite passes **340 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -48,7 +48,10 @@ individual inspection exposes the full guide without ensemble occlusion. The
 reviewer retains its shallow belly inlay but rejects the shoulder-wide capelet
 at 7.0 / 7.0 guide craft/fidelity; that rejected garment is a checkpoint, not
 an accepted production upgrade. The newly visible floating hat emblem is an
-existing construction gap. Production remains the separately tested pass 113.
+existing construction gap. Pass 116 attaches a shallow hood star and narrows
+the collar; the reviewer retains both at guide/ensemble/room 7.5 / 7.5. The
+cape still needs hanging folds rather than a jacket-like fit. Production
+remains the separately tested pass 113.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

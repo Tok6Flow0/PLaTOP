@@ -1166,6 +1166,8 @@ test('the separate neckline overlaps the cape without changing its body joint or
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
   const body=model.userData.personality.body,cape=model.getObjectByName('cape'),collar=model.getObjectByName('cape-collar');
   assert.equal(collar.parent,body);assert.equal(collar.material,cape.material);
+  collar.geometry.computeBoundingBox();
+  assert.ok(collar.geometry.boundingBox.max.y-collar.geometry.boundingBox.min.y<.10,'neck overlap does not extend into a shoulder-wide capelet');
   model.updateMatrixWorld(true);
   const p=collar.geometry.attributes.position,probes=[];
   for(let col=2;col<=18;col+=2){
@@ -1186,6 +1188,28 @@ test('the separate neckline overlaps the cape without changing its body joint or
   };
   check();const release=refineCharacterModel(model);check();release();
   disposeObject(model);kit.dispose();
+});
+
+test('the guide hood star is fitted to the actual cone in both surface tiers',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const star=model.getObjectByName('navigator-hood-star'),hood=model.getObjectByName('hoodTip');
+  assert.equal(star.parent,hood.parent);assert.equal(star.geometry.userData.characterFitted,true);
+  model.updateMatrixWorld(true);
+  // Use actual front-triangle interiors: a nominal untransformed XY point
+  // can land exactly on a narrow star arm after the head's resting tilt.
+  const position=star.geometry.attributes.position,probes=[];
+  for(let i=0;i<position.count;i+=12){
+    const point=new THREE.Vector3();for(let corner=0;corner<3;corner++)point.add(new THREE.Vector3().fromBufferAttribute(position,i+corner));
+    probes.push(star.localToWorld(point.multiplyScalar(1/3)));
+  }
+  const check=()=>{
+    for(const point of probes){
+      const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
+      const emblem=ray.intersectObject(star,false)[0],cloth=ray.intersectObject(hood,false)[0];
+      assert.ok(emblem&&cloth&&cloth.distance-emblem.distance>0&&cloth.distance-emblem.distance<.012,`star is visible and attached to the hood surface at ${point.x},${point.y}: star ${emblem?.distance}, hood ${cloth?.distance}`);
+    }
+  };
+  check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
 });
 
 test('the guide route stays visibly inlaid on the dense belly rather than floating as a rope',()=>{

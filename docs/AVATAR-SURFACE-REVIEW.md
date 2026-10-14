@@ -107,6 +107,8 @@ not asked for a desired score or instructed to approve.
 | 112 (fresh Wayfinder glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Dark curved inserts and a shallow perimeter replace flat plaques; warm eyes stay legible. Actual-room highlights are restrained, but repeated white/gold portrait forehead blobs exceed the chosen reference. Soften peak reflections without losing dark depth or curvature |
 | 113 (fresh subdued-glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Paired bright portrait spots become a quieter broad reflection; dark curved faces and warm eyes remain legible without a visible regression. Further visor tweaks have diminishing value. The central guide's rigid broad shoulder/back cape is the next substantial character gap |
 | 114 (fresh wrapped-cape study) | Characters craft 8.0 / fidelity 7.5; campus 7.0 / 7.5; narrowly retained | Shoulders and side sweep soften without visible holes/clipping, but the exposed rear still reads as a broad navy trapezoid. Folds are too subtle. A clear overlapping neckline feeding two broad descending folds matters more than additional grain |
+| 115 (isolated guide construction review) | Guide craft 7.0 / fidelity 7.0; ensemble 7.5 / 7.5; campus 7.0 / 7.5; mixed | Retain shallow belly inlay; reject the shoulder-wide armored capelet. Isolated views reveal an existing floating hood emblem, previously hidden by the group composition |
+| 116 (guide attachment correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 115 | Attached hood star and narrow neck turn remove the largest regressions. Small pointed neckline ends remain; the rear now reads as a fitted jacket. Hanging shoulder-to-hem folds, not further shortening or grain, are the next construction priority |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1067,3 +1069,22 @@ draws, 2,240,399 triangles, three dense avatars). These are the same fixed-size
 two-second warm-up and ten-second orbit samples, not GPU-completion measures
 or a locked-rate claim. Actual scene, regenerated group portraits and isolated
 guide views remain under surface-pass-115. Production remains pass 113.
+
+Pass 116 passes 340 tests/build. The shoulder overlay is reduced to a narrow
+neck turn; the lower cape releases closer to the body and its side hems rise.
+The floating hat medallion becomes a shallow star fitted to the actual hood,
+matching the chosen identity's crest. Coarse and dense attachment tests probe
+real front-triangle interiors, avoiding edge-on rays at narrow star points.
+The original per-character triangle minimum and route envelopes still pass;
+the guide has 818,400 near triangles, above its immutable 777,600 minimum.
+
+Campus submits 55.71 fps (2.03 ms mean / 3.60 ms p95 CPU, 114 sampled draws,
+383,602 triangles). Wayfinders close submits 54.60 fps (2.26 / 4.00 ms, 139
+draws, 2,239,775 triangles, three dense avatars). No new texture, light or
+render pass is added. Timing uses the same fixed workload and is not a GPU
+completion or locked-speed claim. The actual campus, room, close scene, group
+portraits and isolated guide angles are retained under surface-pass-116.
+The reviewer retains the correction at guide/ensemble/room craft and fidelity
+7.5 / 7.5. The hat star is visibly attached and the broad neckline ledge is
+gone; small stepped neckline ends remain. The cape still hugs the body like a
+jacket. Hanging fold structure remains unfinished, and no A is granted.
