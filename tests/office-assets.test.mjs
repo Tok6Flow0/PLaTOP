@@ -86,6 +86,22 @@ test('geometry is shared across offices; replacement/removal releases only old m
   assert.equal(renderer.sync({ merchant: { desk: asset([{ shape: 'sphere' }]) } }), false);
 });
 
+test('agent floor recipes replace starter furniture without erasing it or changing other rooms', t => {
+  const { renderer,rooms }=fixture(t);
+  const starter=new THREE.Group(),other=new THREE.Group();
+  rooms.get('merchant').root.add(starter);rooms.get('hr').root.add(other);
+  rooms.get('merchant').defaultSlotProps={floor:starter};rooms.get('hr').defaultSlotProps={floor:other};
+  const recipe={merchant:{floor:asset([{shape:'vase'}])}};
+  assert.equal(renderer.sync(recipe),true);assert.equal(starter.visible,false);assert.equal(other.visible,true);
+  assert.equal(renderer.sync(structuredClone(recipe)),false);assert.equal(starter.visible,false);
+  assert.equal(renderer.sync({merchant:{floor:{...recipe.merchant.floor,url:'PRIVATE'}}}),false);
+  assert.equal(starter.visible,false,'rejected input does not reveal overlapping fallback furniture');
+  assert.equal(renderer.sync({merchant:{floor:asset([{shape:'box'}])}}),true);assert.equal(starter.visible,false);
+  assert.equal(renderer.sync(undefined),true);assert.equal(starter.visible,true);
+  assert.equal(starter.parent,rooms.get('merchant').root,'the room retains ownership');
+  renderer.sync(recipe);renderer.dispose();assert.equal(starter.visible,true);assert.equal(other.visible,true);
+});
+
 test('unit primitive bounds stay within slot limits and grounded recipes rest on their support surfaces', t => {
   const { renderer, rooms, meshes } = fixture(t);
   const parts = DECOR_SHAPES.map((shape, index) => ({ shape, size: [0.4, 0.6, 0.8], position: [0, index * 0.06, 0], rotation: [0.3, -0.2, 0.5] }));

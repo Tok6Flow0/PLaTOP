@@ -11,7 +11,7 @@ const FINISH: Record<DecorFinish, { roughness: number; metalness: number }> = {
   fabric: { roughness: 0.97, metalness: 0 }, stone: { roughness: 0.9, metalness: 0 },
   lacquer: { roughness: 0.17, metalness: 0.08 },
 };
-interface RenderedAsset { root: THREE.Group; signature: string; materials: THREE.MeshStandardMaterial[]; }
+interface RenderedAsset { root: THREE.Group; signature: string; materials: THREE.MeshStandardMaterial[]; fallback?: THREE.Group; }
 
 function archGeometry(): THREE.BufferGeometry {
   // One continuous outline leaves the opening clear; bevels catch soft light.
@@ -121,7 +121,7 @@ export class OfficeAssetsRenderer {
     room.root.add(root);
     root.updateWorldMatrix(true, true);
     root.traverse(object => { object.matrixWorldAutoUpdate = false; });
-    return { root, signature, materials };
+    return { root, signature, materials, fallback: room.defaultSlotProps?.[slot] };
   }
 
   private remove(key: string): void {
@@ -130,6 +130,7 @@ export class OfficeAssetsRenderer {
     previous.root.removeFromParent();
     previous.materials.forEach(material => material.dispose());
     previous.root.clear();
+    if (previous.fallback) previous.fallback.visible = true;
     this.current.delete(key);
   }
 
@@ -156,6 +157,7 @@ export class OfficeAssetsRenderer {
         const replacement = this.create(room, slot, asset, signature);
         this.remove(key);
         this.current.set(key, replacement);
+        if (replacement.fallback) replacement.fallback.visible = false;
         changed = true;
       }
     }

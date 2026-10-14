@@ -50,7 +50,14 @@ export interface Room {
   actorFacing: number[];
   navigation: RoomNavigation;
   assetSlots: Record<'desk' | 'shelf' | 'wall' | 'floor' | 'festive', { position: [number, number, number]; rotation?: [number, number, number] }>;
+  /** Starter furnishings yield to an agent-authored recipe in the same slot. */
+  defaultSlotProps?: Partial<Record<'desk' | 'shelf' | 'wall' | 'floor' | 'festive', THREE.Group>>;
   walls: Array<{ root: THREE.Object3D; normal: THREE.Vector3; twoSided?: boolean }>;
+}
+
+/** These roots have independently controlled visibility and must not be pruned. */
+export function roomVisibilityRoots(room: Room): THREE.Object3D[] {
+  return [room.root,room.outline,...Object.values(room.decorations),...Object.values(room.defaultSlotProps??{})];
 }
 
 const finishes = [
@@ -77,7 +84,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
-  root.userData.rugSurface = { bounds: [index === 4 ? -2.05 : -2.275, -1.75, index === 4 ? 2.05 : 2.275, 2.45], height: 0.13 };
+  const rugWidth=index===4||index===3?4.1:4.55, rugDepth=index===3?3.35:4.2, rugZ=index===3?.05:.35;
+  root.userData.rugSurface = { bounds: [-rugWidth/2,rugZ-rugDepth/2,rugWidth/2,rugZ+rugDepth/2], height: 0.13 };
   const isFoyer = index === 4;
   const walls: Room['walls'] = [];
   const blockers: NavigationBlocker[] = [];
@@ -90,6 +98,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const frontPlantZ = index < 3 ? 3.0 : isFoyer ? 3.4 : 3.21;
   const interior = new THREE.Group();
   root.add(interior);
+  const defaultSlotProps: NonNullable<Room['defaultSlotProps']> = {};
   function filingCabinet(x: number, z: number, rotation = 0, inset = true): THREE.Group {
     const cabinet = new THREE.Group(); cabinet.name = `${team.id}:cabinet`;
     cabinet.position.set(x, 0, z); cabinet.rotation.y = rotation; root.add(cabinet);
@@ -116,7 +125,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const floorExtension=isFoyer?.6:rearExtension;
   beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -floorExtension / 2], [6.12, 0.22, 5.9 + depthGain + floorExtension]);
   floorSurface(interior, '#b8aa95', [0, 0.087, -floorExtension / 2], [5.94, 5.7 + depthGain + floorExtension]);
-  rug(interior, kit, palette.rug, 0, 0.35, isFoyer ? 4.1 : 4.55, 4.2);
+  rug(interior, kit, palette.rug, 0, rugZ, rugWidth, rugDepth);
 
   function wall(kind: 'back' | 'left' | 'right', x: number, z: number, width: number, depth: number): THREE.Group {
     const section = new THREE.Group();
@@ -354,7 +363,16 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     lamp(interior, kit, -2.12, -0.38, index);
     blockers.push({ bounds: [-2.52, -0.78, -1.72, 0.02] });
   }
-  if (index === 3) plant(interior, kit, -1.8, -0.4, 0.55, 0.75, '#c3b9a2', 'herb');
+  if (index === 3) {
+    // A low reference shelf connects the desk to its reading corner. It fits
+    // the already reserved floor-recipe envelope and disappears when Beacon
+    // authors that slot; the default never crowds an agent's own furnishing.
+    const nook=new THREE.Group();nook.name='Beacon starter reading nook';
+    nook.position.set(-2.15,0,1.0);nook.rotation.y=Math.PI/2;root.add(nook);
+    const top=shelf(nook,kit,0,0,3,false,.70);
+    plant(nook,kit,-.15,0,.48,top,'#c3b9a2','herb');
+    tidyStaticMeshes(nook);defaultSlotProps.floor=nook;
+  }
   if (index >= 3 && !isFoyer) {
     kit.mesh(interior, 'roundedBox', '#e8dfd0', [0, 0.3, 2.86 + halfGain], [5.95, 0.44, 0.2]);
     kit.mesh(interior, 'roundedBox', '#f1e9dd', [0, 0.54, 2.86 + halfGain], [6.0, 0.085, 0.23]);
@@ -406,7 +424,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     floor: { position: isFoyer ? [0, OFFICE_FLOOR_Y, -3.55] : [-2.15, OFFICE_FLOOR_Y, 1.0] },
     festive: { position: [0, 3.5, backZ + 0.4] },
   };
-  return { root, center, outline, decorations, actorHomes, actorFacing, navigation, assetSlots, walls };
+  return { root, center, outline, decorations, actorHomes, actorFacing, navigation, assetSlots, defaultSlotProps, walls };
 }
 
 export function makeCampus(kit: SceneKit): THREE.Group {

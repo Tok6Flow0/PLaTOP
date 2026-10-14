@@ -97,6 +97,7 @@ not asked for a desired score or instructed to approve.
 | 102 (fresh key-light review) | Campus craft 7.0 / fidelity 7.5; narrowly retained | Slightly warmer/better-lit furniture and rugs, compact contacts retained, no clipping. Do not widen the featureless wall shadow further. Hold lighting and address the dense parallel tabletop grain and checker-like textile pattern |
 | 103 (fresh wood/textile review) | Campus craft 7.0 / fidelity 7.5; mixed, rug revision required | Quieter broken wood grain retained; fine fibres disappear at campus scale, leaving rugs too smooth and featureless |
 | 104 (fresh textile correction review) | Campus craft 7.0 / fidelity 7.5; retained | Irregular tuft groups recover textile variation without 102's checker pattern; wood stays quieter and no lighting regression is seen. Room staging and furniture-character integration are the larger remaining gap |
+| 105 (fresh Beacon staging review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Tighter rug and low reading shelf improve grouping at campus scale and night without crowding. Do not repeat this exact template everywhere; the monitor partially hiding Beacon's face is the next focal-point problem |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -862,3 +863,21 @@ close-room evidence is saved under surface-pass-104. The reviewer retains the
 revision at campus craft 7.0 / fidelity 7.5; this is not a fresh full-character
 grade or A-level acceptance. The next priority is one room's coherent furniture
 grouping, preserving neutral agents and genuine-action-only behavior.
+
+Pass 105 passes 331 tests/build. Only Beacon's starter layout changes: the rug
+fits the desk group more closely and a low book shelf with a supported plant
+uses the existing reserved floor-recipe footprint. An agent-authored floor
+recipe hides this fallback; replacement, invalid data, removal and disposal
+are tested. Mutable fallback roots are excluded from static traversal pruning,
+so a batch rebuild cannot silently restore hidden starter furniture. All
+sixteen routes, body clearances, chosen paces and neutral homes remain valid.
+
+Initial samples submit 51.10 campus, 51.40 Reflection close and 53.20 Beacon
+close fps. After the visibility-pruning correction, final samples submit 58.70
+campus fps (1.79 ms mean / 2.50 ms p95 CPU) and 58.00 Beacon close fps (1.59 /
+2.80 ms). Campus has 113 draws / 376,974 triangles; Beacon close has 78 draws /
+994,895 triangles with one dense avatar. The added static furniture costs
+5,006 overview triangles and one sampled campus draw, with no new textures or
+lights. Both initial and final timing evidence remains saved; variation is not
+proof of a speedup or equal GPU-completion cost. The review accepts modest room
+grouping, not overall A-level quality or native-host adoption.

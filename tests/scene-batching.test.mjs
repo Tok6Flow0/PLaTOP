@@ -510,7 +510,7 @@ test('scoped static pruning skips empty and represented subtrees while parent vi
   const batches = new SceneBatches(scene, new Set(), new Set([represented, empty, partial]));
   t.after(() => { batches.dispose(); geometry.dispose(); opaque.dispose(); transparent.dispose(); });
   batches.rebuild();
-  const batch = scene.getObjectByName('Shared character draws').children[0];
+  let batch = scene.getObjectByName('Shared character draws').children[0];
   assert.equal(represented.visible, false);
   assert.equal(empty.visible, false);
   assert.equal(partial.visible, true, 'unbatched renderables keep their original path');
@@ -521,6 +521,10 @@ test('scoped static pruning skips empty and represented subtrees while parent vi
   decoration.visible = false;
   batches.invalidateVisibility(); batches.sync();
   assert.equal(batch.count, 0);
+  batches.rebuild();
+  batch = scene.getObjectByName('Shared character draws').children[0];
+  assert.equal(decoration.visible,false,'a replacement rebuild cannot restore hidden starter furniture');
+  assert.equal(batch.count,0);
   decoration.visible = true;
   room.visible = false;
   batches.invalidateVisibility(); batches.sync();

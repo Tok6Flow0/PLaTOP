@@ -4,7 +4,7 @@ import type { Activity, Character, ObserverMode, ObserverMove, ObserverState, Sc
 import { CLIP_NAMES, fetchCharacter, fetchManifest, type ClipName } from './scene/assets';
 import { disposeObject, SceneKit } from './scene/primitives';
 import { animateCharacter, makeProxy, AuthoredFootPose } from './scene/proxies';
-import { makeCampus, makeRoom, campusNavigation, type Room } from './scene/rooms';
+import { makeCampus, makeRoom, campusNavigation, roomVisibilityRoots, type Room } from './scene/rooms';
 import { ActorContactBatch, freezeStaticAuthoredMeshes, SceneBatches } from './scene/performanceBatching';
 import { FramePacer } from './scene/framePacing';
 import { FrameOutput } from './scene/frameOutput';
@@ -534,8 +534,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   // Visibility of the campus, rooms and decoration containers is public state.
   // Their static descendants are owned here and never toggle independently.
   // Include only those descendants, so pruning cannot mask a later room toggle.
-  const visibilityRoots = new Set<THREE.Object3D>([campus, ...rooms.values()].flatMap((entry) =>
-    entry instanceof THREE.Object3D ? [entry] : [entry.root, entry.outline, ...Object.values(entry.decorations)]));
+  const visibilityRoots = new Set<THREE.Object3D>([campus,...[...rooms.values()].flatMap(roomVisibilityRoots)]);
   function collectStaticPrunable(object: THREE.Object3D): void {
     if (animatedRoots.has(object)) return;
     if (object.userData.roomStyleFill) return;

@@ -66,6 +66,26 @@ function fixture({ chair = false } = {}) {
   const navigator = new OfficeNavigator(map);
   return { navigator, home, motor: new OfficeMotor('actor', 'home', .4, navigator, home) };
 }
+
+test('Beacon starter reading nook fits the existing reserved floor slot and leaves neutral homes unchanged', async () => {
+  const {rooms,kit,disposeObject}=await realLayout();
+  const room=rooms.get('support'),nook=room.defaultSlotProps.floor;
+  const {roomVisibilityRoots}=await loadScene('scene/rooms.ts');
+  assert.ok(roomVisibilityRoots(room).includes(nook),'batch pruning must not override agent-controlled fallback visibility');
+  room.root.updateMatrixWorld(true);
+  const world=new THREE.Box3().setFromObject(nook),offset=room.root.position;
+  const min=world.min.clone().sub(offset),max=world.max.clone().sub(offset);
+  assert.ok(min.x>=-2.825&&max.x<=-1.475&&min.z>=.325&&max.z<=1.675);
+  assert.ok(min.y>=.069&&max.y<1.8,'low shelf and supported plant stay below the character sightline');
+  assert.deepEqual(room.actorHomes.map(p=>p.toArray()),[[0,.1,-1.4]]);
+  assert.deepEqual(room.root.userData.rugSurface.bounds,[-2.05,-1.625,2.05,1.725]);
+  assert.equal(Object.keys(room.defaultSlotProps).length,1);
+  for(const [id,other] of rooms)if(id!=='support')assert.equal(Object.keys(other.defaultSlotProps).length,0);
+  const resources=new THREE.Group();for(const other of rooms.values()){
+    other.root.traverse(object=>{if(object.userData.staticSources)resources.add(object.userData.staticSources);});resources.add(other.root);
+  }
+  disposeObject(resources);kit.dispose();
+});
 function run(motor, limit = 4000) { for (let index = 0; index < limit && motor.pending; index++) motor.update(1 / 30); assert.equal(motor.pending, false); }
 
 test('all sixteen public identities have stable individual pacing, turning, stride and path preferences', () => {
