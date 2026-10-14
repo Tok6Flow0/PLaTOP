@@ -88,6 +88,7 @@ not asked for a desired score or instructed to approve.
 | 93 (fresh Reflection temple prototype) | Craft 7.0 / fidelity 7.5; rejected | Longer temple planes improve the quarter view, but the rear converges into a distracting pinched cluster. Keep 92 until the back closes with broad tucked panels |
 | 94 (fresh Reflection rear-closure correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 92 | Broad rear closure removes the distracting star and keeps longer temple folds. Stop rearranging small rear panels; establish thin-edge and overlap-shadow hierarchy on visible cheeks, wings and chest |
 | 95 (fresh Reflection chest-overlap review) | Craft 7.5 / fidelity 7.5; retained as a visual tie | Shallow ordered overlap removes coincident centre faces without visible regression, but the change is not confidently distinguishable at supplied image size. Prioritize warm-to-shadow material transitions and recover amber lantern detail |
+| 96 (fresh Reflection interior-light review) | Craft 7.5 / fidelity 7.5; retained lighting improvement | Moving the emitter inside the glass restores amber colour and expression while keeping warm spill. The panel still looks uniformly luminous; improve controlled internal gradient and restrained glass reflection without restoring the white hotspot |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -760,3 +761,10 @@ submits 54.90 fps (1.96 ms mean / 3.20 ms p95 CPU), Reflection close 54.30 fps
 (1.88 ms / 3.30 ms), with 94's draw/triangle counts. No new geometry, material,
 texture or light is allocated. The reviewer treats the visual result as a tie;
 the numerical correction is not evidence of a higher appearance score.
+
+Pass 96 passes 323 tests/build. Lumen's existing shadow-free point light moves
+from outside its front pane to inside the actual glass bounds; intensity and
+range remain unchanged. The front no longer receives extreme near-field light
+from its own emitter. Campus submits 56.30 fps (1.75 ms mean / 3.00 ms p95 CPU),
+Reflection close 55.50 fps (1.33 ms / 2.40 ms), retaining 95's resource counts.
+These are submission samples, not proof of identical worst-case GPU timing.

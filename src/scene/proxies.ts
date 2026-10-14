@@ -347,7 +347,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     // A lantern illuminates nearby real surfaces. Only these two luminous
     // embodiments add a short-range, shadow-free light; no per-avatar lights.
     const warmth=new THREE.PointLight('#ffc46d',support?.32:2.2,support?1.4:2.4,2);
-    warmth.name='Lantern surface warmth';warmth.position.set(0,support?0:.10,support?.20:.24);
+    // Keep the emitter inside Lumen's glass. A light just outside the front
+    // pane lit that same pane at near-zero distance, washing its amber face
+    // almost white. The shadow-free interior source still reaches neighbours.
+    warmth.name='Lantern surface warmth';warmth.position.set(0,support?0:.10,support?.20:.03);
     head.add(warmth);data.warmth=warmth;
   } else if (kind === 'owl') {
     const navy = id === 'email-owl', feathers = navy ? '#233149' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';

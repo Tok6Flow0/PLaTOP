@@ -1125,6 +1125,11 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
       assert.equal(light.castShadow,false);assert.ok(light.distance<=2.4);
       assert.equal(light.intensity,character.id==='support-beacon'?.32:2.2);
       assert.ok(light.position.z<=.24,'the local emitter stays at the glass, not at the camera');
+      if(character.id==='reflection-lumen'){
+        const glass=model.getObjectByName('hexGlass'),point=light.getWorldPosition(new THREE.Vector3());
+        assert.ok(new THREE.Box3().setFromObject(glass).containsPoint(point),'Lumen emits from inside the amber chamber, not against the front pane');
+        assert.ok(light.position.z<.08,'the front glass is not exposed to a near-zero-distance outside light');
+      }
     }
     if (character.kind === 'robot') {
       const torso = model.userData.personality.body.children.find(child => child.isMesh);
