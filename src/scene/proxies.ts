@@ -35,7 +35,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const data: Personality = { kind, body, head, bodyY: .57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
   const sculpt = (parent: THREE.Object3D, form: CharacterForm, color: string, at: [number, number, number],
     scale: [number, number, number], rotation?: [number, number, number], finish?: CharacterFinish) =>
-    characterMesh(kit, parent, form, color, at, scale, rotation, id==='reflection-echo'&&finish==='paper'?'paperFiber':finish);
+    characterMesh(kit, parent, form, color, at, scale, rotation, (id==='reflection-echo'||id==='email-swift')&&finish==='paper'?'paperFiber':finish);
   const ring = (parent: THREE.Object3D, color: string, diameter: number, at: [number, number, number], rotation?: [number, number, number]) =>
     sculpt(parent, 'ring', color, at, [diameter, diameter, diameter], rotation, 'brass');
   const stroke = (parent: THREE.Object3D, color: string, points: Array<[number, number, number]>, radius = .007, finish: CharacterFinish = 'brass') =>
@@ -480,8 +480,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .092], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
       data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.101], [.006,.013,.013], undefined, 'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);
-      [-1,0,1].forEach(toe=>sculpt(foot,'toe','#967140',[toe*.02,0,.02],[.025,.036,.15],[0,toe*.24,0],'brass'));
-      const leg=stroke(foot,'#957446',[[-sign*.04,.13,-.02],[-sign*.02,.045,-.03],[0,.008,0]],.009,'brass');leg.name='swift-leg'; data.feet.push(foot);
+      [-1,0,1].forEach(toe=>sculpt(foot,'toe','#967140',[toe*.02,-.005,.02],[.022,.026,.13],[0,toe*.24,0],'clay'));
+      const leg=stroke(foot,'#957446',[[-sign*.070,.105,-.025],[-sign*.02,.035,-.03],[0,.008,0]],.008,'clay');leg.name='swift-leg'; data.feet.push(foot);
     });
     sculpt(head,'paperBeak','#a57d40',[0,.048,.153],[.60,.45,.38],[-.20,0,0],'paper');
     sculpt(body,'swiftTail','#ffffff',[0,-.105,-.03],[.74,.78,.86],undefined,'paper');

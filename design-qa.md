@@ -4,6 +4,13 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
+Pass163 is retained for Swift's complete folded breast/neck and returning
+wing: Swift7/6.5, Dispatch7/6.5, campus7.5/7.5.377 tests/build pass. Paired
+campus/Dispatch close samples submit approximately60fps in both builds;
+candidate close CPU cost is higher despite fewer visible triangles. The
+next correction is integrated shallow eyes and a compact pointed beak.
+Feet, residual directional fibre and the remaining cast gaps are unresolved.
+
 Pass162 is retained over160/161: Quill7/6.5, Reflection6.5/6.5 and campus7.5/7.5.
 Its compact bent writing wing and slimmer chest improve the ordinary portrait
 and room. The broad rear shield and thin head-to-body connection remain

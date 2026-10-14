@@ -538,6 +538,14 @@ test('Swift has a continuous low folded breast above small grounded feet',()=>{
     const leg=foot.getObjectByName('swift-leg');assert.ok(leg);
     const bounds=new THREE.Box3().setFromObject(leg);
     assert.ok(bounds.max.y>bodyBounds.min.y+.05&&bounds.max.y<.155,'upper legs overlap the descending breast vertically');
+    const sign=foot.position.x<0?-1:1,root=foot.localToWorld(new THREE.Vector3(-sign*.070,.105,-.025));
+    const shell=new THREE.Mesh(body.geometry,new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));
+    shell.matrixAutoUpdate=false;shell.matrixWorld.copy(body.matrixWorld);
+    for(const direction of [new THREE.Vector3(-1,0,0),new THREE.Vector3(1,0,0)]){
+      const ray=new THREE.Raycaster(root,direction);
+      assert.ok(ray.intersectObject(shell,false).length>0,'each support root is enclosed by actual breast surfaces on both sides, not just overlapping its bounding box');
+    }
+    shell.material.dispose();
   }
   disposeObject(model);kit.dispose();
 });
@@ -545,17 +553,16 @@ test('Swift has a continuous low folded breast above small grounded feet',()=>{
 test('Swift carries diagonal cheek planes into the breast without hiding its eyes',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-swift'),kit);
   const body=model.getObjectByName('swiftBody'),positions=body.geometry.attributes.position;
-  let cheekVertices=0,throatVertices=0;
-  for(let i=0;i<positions.count;i++){
-    const x=Math.abs(positions.getX(i)),y=positions.getY(i),z=positions.getZ(i);
-    if(y>=.26)continue;
-    assert.ok(z<=.140+.35*y+1e-6,'the front paper plane is continuous through the throat');
-    assert.ok(x<=Math.max(.018,.098+.24*y-.35*Math.max(0,z))+1e-6);
-    if(Math.abs(x-(.098+.24*y-.35*Math.max(0,z)))<1e-6){
-      if(y>.10)cheekVertices++;else throatVertices++;
-    }
+  assert.equal(body.geometry.userData.paperConstruction,'swift-keel-to-crown');
+  const normals=body.geometry.attributes.normal;let broadPlanes=0;
+  for(let i=0;i<positions.count;i+=3){
+    if([0,1,2].some(j=>positions.getY(i+j)>.23))continue;
+    const a=new THREE.Vector3().fromBufferAttribute(normals,i);
+    for(const j of [1,2])assert.ok(a.distanceTo(new THREE.Vector3().fromBufferAttribute(normals,i+j))<1e-5,
+      'breast and cheek retain deliberately folded planes instead of interpolated rounded-bird shading');
+    broadPlanes++;
   }
-  assert.ok(cheekVertices>12&&throatVertices>12,'one diagonal cheek construction spans both regions');
+  assert.ok(broadPlanes>70,'the enclosed breast carries those folds continuously below the crown');
   const restore=refineCharacterModel(model);model.updateMatrixWorld(true);
   for(const [index,eye] of model.userData.personality.eyes.entries()){
     const sign=index===0?-1:1,center=eye.getWorldPosition(new THREE.Vector3());
@@ -1808,7 +1815,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
   disposeObject(all);kit.dispose();
 });
 
-test('Echo paper material uses bounded crossing fibres without changing other identities or mesh refinement',()=>{
+test('Echo and Swift share bounded crossing fibres without changing Quill or mesh refinement',()=>{
   const kit=new SceneKit(),base=characterMaterial(kit,'#ffffff','paper'),study=characterMaterial(kit,'#ffffff','paperFiber');
   assert.equal(study.userData.characterFinish,'paper','dense surfaces keep the original paper refinement');
   assert.equal(study.userData.paperFiberStudy,true);
@@ -1828,7 +1835,7 @@ test('Echo paper material uses bounded crossing fibres without changing other id
   for(const id of ['reflection-echo','reflection-quill','email-swift']){
     const model=makeProxy(members.find(c=>c.id===id),kit);all.add(model);
     const paper=meshes(model).filter(mesh=>mesh.material.userData.characterFinish==='paper');assert.ok(paper.length>0);
-    for(const mesh of paper)assert.equal(!!mesh.material.userData.paperFiberStudy,id==='reflection-echo','the material study remains isolated to Echo');
+    for(const mesh of paper)assert.equal(!!mesh.material.userData.paperFiberStudy,id!=='reflection-quill','Echo and Swift use crossing fibres while Quill retains its chosen material');
   }
   disposeObject(all);kit.dispose();
 });

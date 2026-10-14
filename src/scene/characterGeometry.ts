@@ -404,6 +404,43 @@ function swiftHead(): THREE.BufferGeometry {
   return foldedBirdVolume([[-.21,.055,.07,-.015],[-.10,.125,.16,.01],[.04,.152,.17,.01],[.145,.112,.13,0],[.195,.025,.045,-.02]]);
 }
 
+function swiftOrigamiBody():THREE.BufferGeometry {
+  // Eight deliberate folds run from the narrow tucked keel through the
+  // shoulder and cheek. Only the small rolled crown softens its normals;
+  // the breast is not a smoothed elliptical bird underneath paper wings.
+  const sections=[
+    [-.235,.025,.030,-.070],[-.10,.075,.105,-.085],
+    [.08,.115,.168,-.025],[.22,.116,.217,.025],
+    [.29,.065,.132,.054],[.307,.006,.087,.071],
+  ];
+  const vertices:Tuple[]=[],faces:number[][]=[];
+  for(const [y,width,front,back]of sections)for(let col=0;col<8;col++){
+    const angle=col*Math.PI/4,z=(front+back)/2+(front-back)/2*Math.cos(angle);
+    let height=y;
+    // The rear heel turns upward into the tail instead of ending at the
+    // same low horizontal ring as the front breast.
+    if(y<-.20)height+=.12*(1-Math.cos(angle))/2;
+    vertices.push([Math.sin(angle)*width,height,z]);
+  }
+  for(let row=0;row<sections.length-1;row++)for(let col=0;col<8;col++){
+    const a=row*8+col,b=row*8+(col+1)%8,c=a+8,d=b+8;
+    // Keep a finer patch grid within each authored plane. Simplifying the
+    // visible folds must not drop the close tier below 100x the original
+    // character's measured surface budget.
+    const middle=vertices.length;vertices.push(new THREE.Vector3(...vertices[a]).lerp(new THREE.Vector3(...vertices[d]),.5).toArray() as Tuple);
+    faces.push([a,c,middle],[c,d,middle],[a,middle,b],[b,middle,d]);
+  }
+  faces.push([0,7,6,5,4,3,2,1],Array.from({length:8},(_,i)=>(sections.length-1)*8+i));
+  const geometry=polyhedron(vertices,faces),flat=geometry.attributes.normal.clone();
+  smoothDeformedSurface(geometry);
+  const p=geometry.attributes.position,n=geometry.attributes.normal,a=new THREE.Vector3(),b=new THREE.Vector3();
+  for(let i=0;i<p.count;i++){
+    a.fromBufferAttribute(flat,i);b.fromBufferAttribute(n,i);
+    a.lerp(b,.55*THREE.MathUtils.smoothstep(p.getY(i),.23,.29)).normalize();n.setXYZ(i,a.x,a.y,a.z);
+  }
+  geometry.userData.paperConstruction='swift-keel-to-crown';return geometry;
+}
+
 /** Closed elliptical paper sections give the bird a breast and round crown
  * from every viewpoint. Broad quads keep the folds intentional, not noisy. */
 function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=false):THREE.BufferGeometry {
@@ -450,8 +487,8 @@ function swiftWing(): THREE.BufferGeometry {
   // The long fold begins at the breast and narrows toward two swept tips.
   // A broad squared-off lower lobe read as an attached paddle, rather than
   // the slender overlapping paper folds in Swift's chosen portrait.
-  const boundary:Tuple[]=[[0,.045,.075],[.035,.27,-.48],[.045,.005,-.22],[.045,-.30,-.40],[.055,-.125,.005]];
-  const front:Tuple[]=[...boundary,[.075,-.025,-.12]];
+  const boundary:Tuple[]=[[0,.045,.075],[.035,.27,-.48],[.055,.005,-.20],[.040,-.37,-.17],[.030,-.145,.065]];
+  const front:Tuple[]=[...boundary,[.080,-.055,-.09]];
   const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x-.006,y,z] as Tuple)];
   // This concave sheet cannot use the convex-solid centroid winding guess.
   // Match the same ridge on both sides and join their boundary explicitly.
@@ -1154,7 +1191,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'merchantTorso': return merchantTorso();
     // The lower folded breast descends toward the small feet. Keeping only a
     // short round torso left Swift perched on long exposed wire-like legs.
-    case 'swiftBody': return foldedBirdVolume([[-.235,.040,.055,-.025],[-.12,.078,.085,-.006],[-.015,.111,.11,.045],[.10,.125,.117,.082],[.16,.122,.115,.101],[.22,.108,.108,.105],[.27,.082,.080,.095],[.30,.041,.040,.082],[.307,.006,.008,.079]],true);
+    case 'swiftBody': return swiftOrigamiBody();
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[.025,.11,.04],[.025,.04,-.15],[.025,-.19,-.40],[.025,-.11,-.02],[.062,-.02,-.12],[-.006,.11,.04],[-.006,.04,-.15],[-.006,-.19,-.40],[-.006,-.11,-.02]],[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],['#dcb366','#d7ab5c','#c59c4c','#e3bd73','#386a65','#c99c4f','#386a65','#35615d','#a5813e']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));

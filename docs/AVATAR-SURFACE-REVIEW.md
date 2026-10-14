@@ -2229,3 +2229,40 @@ draws137/134 and triangles431,846/904,409; retained160137/136 and
 431,832/903,009. Short samples show variability and no repeatable CPU-cost
 increase here, not locked60 or completed-GPU timing. Evidence is saved in
 surface-pass-162, including both candidate campus runs and the frozen pair.
+
+Retained162 was pushed as139762696bcbd7a8d3bb45bc6fac545466e12b11;
+remote readback matches and CI38640322231 succeeded. Its exact isolated
+production bundle passes window, deep-zoom invitation, both mist perspectives
+and exit/reset with all six teams Awaiting update and no console warnings or
+errors. This proves the empty-bridge preview, not live-agent adoption.
+
+Pass163 studies Swift's whole origami construction: an enclosed keel-to-crown
+body with deliberately flat lower planes and a small softened crown, a wing
+whose lower fold returns toward the breast rather than extending beside the
+tail, and shorter supports with matte low toes. Crossing paper fibres replace
+the strongly directional material only on Swift, sharing Echo's existing
+texture. Other identities and scene lighting are unchanged. The initial
+simplified mesh fell below the original 100x floor; a finer patch grid within
+the authored planes restores162,400 close triangles (original1,604 triangles).
+Shortening the supports initially exposed a gap; their upper roots now pass
+actual breast-surface coverage tests on both sides.377 tests/build pass,
+including density, eyes, navigation and wing-sweep clearance.
+
+Paired frozen162 campus/Dispatch close submit60.005/60.001fps, CPU mean/p95
+2.41/4.20ms and1.71/3.30ms.163 submits59.998/60.00fps, CPU1.99/4.10ms and
+2.14/3.90ms. Draws remain137/122. Candidate triangles431,734/1,561,409 versus
+baseline431,846/1,572,603. The candidate close CPU sample is higher despite
+fewer triangles; neither60fps submission nor this short pair proves GPU
+completion or zero regression. Saved ordinary/inspection, room/campus
+day/night and all paired timing evidence is in surface-pass-163.
+
+Independent verdict: retain163 over162. Swift7/6.5, Dispatch7/6.5 and
+campus7.5/7.5. The continuous faceted breast and returning lower wing produce
+a clear fidelity gain at ordinary portrait size. Off-axis eyes still look
+applied and the far eye peeks beneath the beak; the blunt wedge beak reads
+duck-like. Curved stalk legs/rounded toes still differ from the paper body,
+and some planes retain wood-like streaking. No unmistakable new body hole,
+wing/tail collision or campus regression is visible. Rear group occlusion
+and the lack of a matched162 actual-room capture limit those comparisons.
+Next: a coordinated smaller, shallower eye fit and compact pointed beak,
+preserving the accepted163 body/wing construction. No A is claimed.
