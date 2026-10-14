@@ -105,6 +105,7 @@ not asked for a desired score or instructed to approve.
 | 110 (fresh lateral-daylight study) | Campus craft 7.0 / fidelity 7.0; rejected, retain 109 lighting | Larger shadow bands divide Wayfinders and cross Reflection's wall, floor and desk without enough character-form improvement. Restore 109 and study local material response instead; night is unchanged |
 | 111 (fresh Wayfinder satin-clay study) | Characters/room craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained, nearly tied with 109 | Soft matte/satin shells survive front, quarter, rear and night checks without plastic hotspots. The broad highlight difference is subtle. Dark face panels still read as uniform blue-gray plaques; curved optical depth and warm-eye contrast are the next character priority |
 | 112 (fresh Wayfinder glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Dark curved inserts and a shallow perimeter replace flat plaques; warm eyes stay legible. Actual-room highlights are restrained, but repeated white/gold portrait forehead blobs exceed the chosen reference. Soften peak reflections without losing dark depth or curvature |
+| 113 (fresh subdued-glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Paired bright portrait spots become a quieter broad reflection; dark curved faces and warm eyes remain legible without a visible regression. Further visor tweaks have diminishing value. The central guide's rigid broad shoulder/back cape is the next substantial character gap |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1005,3 +1006,17 @@ group views do not establish hidden all-angle fit.
 The independent reviewer retains the change, raising character craft to 8.0
 while fidelity stays 7.5. Room and campus scores do not rise. Peak portrait
 reflections remain the next targeted correction; A-level acceptance is open.
+
+Pass 113 passes 335 tests/build. Only visor roughness, environment response and
+close clearcoat strength/roughness change; the open lip, dark base tone, warm
+eyes, shell finish, lights and geometry are unchanged. The actual captured
+campus submits 58.50 fps (1.62 ms mean / 2.40 ms p95 CPU, 114 sampled draws,
+384,318 triangles). Wayfinders close submits 50.50 fps (1.50 / 2.90 ms, 139
+draws, 2,240,491 triangles, three dense avatars). The lower close submission
+rate coexists with lower CPU time; these variable samples do not establish a
+fixed frame rate or GPU completion. Evidence uses the same fixed-viewport
+two-second warm-up and ten-second orbit, with actual full-size scene captures
+and regenerated multi-angle portraits under surface-pass-113.
+The independent reviewer retains 113 without increasing the grade. No further
+visor adjustment is prioritized. The central guide's wrapped-garment shoulder,
+neck overlap and broad cape folds now matter more than optical fine-tuning.

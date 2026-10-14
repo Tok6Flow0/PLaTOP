@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-112 suite passes **335 tests** and the production build passes. Its
+The pass-113 suite passes **335 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -40,7 +40,8 @@ shadow bands and reverted. Pass 111's restrained satin-clay shells are retained
 but nearly tied with 109: characters/room remain 7.5 / 7.5 and campus 7.0 / 7.5.
 Pass 112's curved glass and warm-eye contrast raise Wayfinder craft to 8.0;
 fidelity stays 7.5. Room/campus scores stay unchanged. The reviewer retains
-the glass but requests quieter portrait reflection peaks as the next priority.
+the glass. Pass 113 quiets the portrait reflection peaks and is retained at
+the same grades; the guide's rigid-looking cape is now the next substantial gap.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

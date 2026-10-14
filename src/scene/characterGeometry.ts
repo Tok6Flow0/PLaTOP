@@ -1078,7 +1078,7 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       ...(finish === 'agedBrass' ? {roughness:.55} : {}),
       // Dark-backed glass remains opaque: a curved specular response gives
       // depth without a transparent duplicate, refraction target or extra draw.
-      ...(finish === 'visorGlass' ? { roughness:.30, envMapIntensity:.80 } : {}),
+      ...(finish === 'visorGlass' ? { roughness:.42, envMapIntensity:.65 } : {}),
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
       ...(finish === 'lanternGlass' ? { emissive: '#ffd487', emissiveIntensity: .65, emissiveMap:glassGlow(kit,true), map:glassGlow(kit,true),envMapIntensity:.75 } : {}),
       // Source Wayfinder eyes are softly luminous strokes, not tiny lamps.

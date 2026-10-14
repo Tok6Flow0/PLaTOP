@@ -457,7 +457,7 @@ test('Wayfinder ivory shells stay uncoated satin while dark-backed visors remain
     }
     const visor=model.getObjectByName('rounded-visor');
     assert.equal(visor.material.userData.characterFinish,'visorGlass');
-    assert.equal(visor.material.roughness,.30);assert.equal(visor.material.transparent,false);
+    assert.equal(visor.material.roughness,.42);assert.equal(visor.material.envMapIntensity,.65);assert.equal(visor.material.transparent,false);
     assert.equal(visor.material.map,null);assert.equal(visor.material.bumpMap,null);
     for(const eye of model.userData.personality.eyes){
       assert.equal(eye.material.userData.characterFinish,'warmInk');
@@ -491,7 +491,7 @@ test('Wayfinder visor lips are genuinely open and preserve eye depth in both mes
       }
     };
     check();const release=refineCharacterModel(model);check();
-    assert.equal(visor.material.type,'MeshPhysicalMaterial');assert.equal(visor.material.clearcoat,.20);
+    assert.equal(visor.material.type,'MeshPhysicalMaterial');assert.equal(visor.material.clearcoat,.08);assert.equal(visor.material.clearcoatRoughness,.36);
     assert.equal(visor.material.transparent,false);assert.equal(visor.material.transmission,0);
     assert.equal(sourceMaterial.type,'MeshStandardMaterial');release();assert.equal(visor.material,sourceMaterial);
     disposeObject(model);
