@@ -2087,3 +2087,25 @@ that draws would be unchanged. Close draw count is unchanged. These are
 short CPU-side submission samples, not GPU completion or zero-regression
 proof. Full ordinary/inspection, day/night room/campus and timing evidence
 is saved in surface-pass-157.
+
+Retained157 was pushed as175e05fe8336ab8397c01b90baab2994c7807474;
+remote readback matches and CI38633196163 succeeded.
+
+Pass158 tests a lower, slightly forward emitter inside Lumen's chamber at
+intensity3.2 instead of2.2. Geometry/material/staging remain fixed.373 tests
+and build pass, including six-direction actual chamber clearance and the
+animated intensity readback. Independent verdict: revise158, retain157.
+Echo7.0 craft/6.5 fidelity, Reflection6.5/6.5, campus7.5/7.5. Inner folds and
+the tabletop receive useful warmth, but sharp near-white strips below the
+roof and above the base regress the glass. The actual room gains mainly a
+tabletop pool, not the portrait's facial warmth. This prototype is not a
+visual improvement accepted for production. Next: restore157 illumination
+and study the room camera; side-on/edge-on characters and dominant exposed
+floor obscure more character detail than another fine surface change fixes.
+
+158 campus/Reflection close submit58.10/56.91fps, CPU mean/p95
+2.59/4.50ms and2.54/4.60ms. Frozen157 measured afterward in the same
+1000×800,1.5DPR fixture submits60.00/59.29fps, CPU2.79/4.40ms and
+2.10/3.20ms. Draws137/133 and triangles431,832/879,809 match. These samples
+do not establish preserved speed for158; no slower sample is discarded.
+Saved portrait, room, campus and paired timing evidence is in surface-pass-158.

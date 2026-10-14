@@ -1463,12 +1463,23 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
     assert.equal(lights.length,character.kind==='lantern'?1:0,`${character.id} light budget`);
     for(const light of lights){
       assert.equal(light.castShadow,false);assert.ok(light.distance<=2.4);
-      assert.equal(light.intensity,character.id==='support-beacon'?.32:2.2);
+      assert.equal(light.intensity,character.id==='support-beacon'?.32:3.2);
       assert.ok(light.position.z<=.24,'the local emitter stays at the glass, not at the camera');
       if(character.id==='reflection-lumen'){
         const glass=model.getObjectByName('hexGlass'),point=light.getWorldPosition(new THREE.Vector3());
         assert.ok(new THREE.Box3().setFromObject(glass).containsPoint(point),'Lumen emits from inside the amber chamber, not against the front pane');
-        assert.ok(light.position.z<.08,'the front glass is not exposed to a near-zero-distance outside light');
+        // Check the actual tapered chamber, not just its bounding box or an
+        // arbitrary local z. Rays from the emitter must exit all six sides
+        // with usable clearance, including the nearest front pane.
+        const material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide});
+        const chamber=new THREE.Mesh(glass.geometry,material);chamber.matrixWorld.copy(glass.matrixWorld);
+        const ray=new THREE.Raycaster();
+        for(const axis of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]]){
+          const direction=new THREE.Vector3(...axis).transformDirection(glass.matrixWorld);
+          ray.set(point,direction);const hit=ray.intersectObject(chamber,false)[0];
+          assert.ok(hit&&hit.distance>.06,'the interior source has clearance from every chamber surface');
+        }
+        material.dispose();
       }
     }
     if (character.kind === 'robot') {
@@ -1487,6 +1498,7 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
       const asleep = glow.emissiveIntensity;
       animateCharacter(model, 'active', 0, 0, false, true);
       assert.ok(glow.emissiveIntensity > asleep && glow.emissiveIntensity < 1, 'glazed amber brightens gently when awake');
+      assert.equal(lights[0].intensity,character.id==='support-beacon'?.32:3.2,'animation preserves the authored light level');
     }
   }
   const helmet = characterGeometry(kit, 'helmet'); helmet.computeBoundingBox();

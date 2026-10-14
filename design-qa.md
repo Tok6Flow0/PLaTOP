@@ -30,6 +30,13 @@ and build pass. Campus/close samples submit59.994/60.00fps. The new isolated
 material adds two campus draw calls (137 total); close remains133. The next
 study is local illumination around Lumen with geometry/materials frozen.
 
+Pass158's light study is revision-requested, not retained: more useful fold
+warmth is offset by near-white glass-edge strips.373 tests/build pass but do
+not change the visual verdict. Grades remain Echo7/6.5, Reflection6.5/6.5,
+campus7.5/7.5. Timing58.10/56.91fps versus a same-fixture frozen157
+60.00/59.29fps does not prove preserved speed. Restore157 light before the
+next bounded room-camera study; faces currently disappear side-on/edge-on.
+
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
 pass-60 reviewer, without prior scores, gave **7.5/10 character craft, 8.0/10
