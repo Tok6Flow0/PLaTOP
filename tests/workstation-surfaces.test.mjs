@@ -13,7 +13,7 @@ async function moduleUrl(path, imports = {}) {
 }
 const primitives = await moduleUrl('../src/scene/primitives.ts');
 const { SceneKit, disposeObject } = await import(primitives);
-const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, parcelStack, paneledWallFinish, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
+const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, parcelStack, paneledWallFinish, floorSurface, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
 
 function canvasDocument(t) {
   const prior = globalThis.document;
@@ -22,6 +22,35 @@ function canvasDocument(t) {
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => context }) };
   t.after(() => { globalThis.document = prior; });
 }
+
+test('timber and limestone floors retain physical heights with bounded shared relief and independent passage UVs',t=>{
+  canvasDocument(t);const kit=new SceneKit(),root=new THREE.Group();
+  floorSurface(root,'#b8aa95',[0,.087,0],[5.94,8],false,kit);
+  floorSurface(root,'#b8aa95',[0,.087,10],[5.94,8],false,kit);
+  floorSurface(root,'#9f8570',[0,.075,20],[18.3,3.8],true,kit);
+  floorSurface(root,'#cec7b9',[0,.087,30],[5.85,1.85],true,kit);
+  const [a,b,c,d]=root.children;
+  assert.equal(a.material.bumpMap,b.material.bumpMap,'wood rooms share immutable relief');
+  assert.notEqual(c.material.bumpMap,d.material.bumpMap,'different passage scales have independent UV state');
+  assert.equal(c.material.bumpMap.image.data,d.material.bumpMap.image.data,'passages share the actual pixels');
+  for(const floor of root.children){
+    assert.equal(floor.geometry.index.count,6,'surface detail does not add floor geometry');
+    assert.equal(floor.material.bumpMap.image.data.length,512*512*4);
+    assert.equal(floor.material.bumpMap.colorSpace,THREE.NoColorSpace);
+    assert.ok(floor.material.bumpScale<=.008&&floor.material.bumpScale>0);
+    assert.equal(floor.material.transparent,false);assert.equal(floor.castShadow,false);
+    assert.equal(floor.material.map.image.width,512);assert.equal(floor.material.map.image.height,512);
+  }
+  assert.deepEqual(c.material.map.repeat.toArray(),c.material.bumpMap.repeat.toArray());
+  assert.deepEqual(d.material.map.repeat.toArray(),d.material.bumpMap.repeat.toArray());
+  assert.ok(a.material.roughness<c.material.roughness,'timber and limestone retain distinct surface response');
+  assert.deepEqual(root.children.map(floor=>floor.position.y),[.087,.087,.075,.087]);
+  const data=a.material.bumpMap.image.data;
+  assert.ok(data.some((value,i)=>i%4!==3&&value<123)&&data.some((value,i)=>i%4!==3&&value>129),'real pore/joint relief is present');
+  const studio=new THREE.Group();floorSurface(studio,'#76573e',[0,-.006,0],[10,10]);
+  assert.equal(studio.children[0].material.bumpMap.image.width,512,'existing studio callers keep the original API');disposeObject(studio);
+  disposeObject(root);kit.dispose();
+});
 
 test('painted wall boards have real recessed joints, integrated trim and bounded static geometry',()=>{
   const kit=new SceneKit(),root=new THREE.Group(),joinery=paneledWallFinish(root,kit,'#b77d59',0,0,6.1);

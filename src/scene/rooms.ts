@@ -125,7 +125,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // the drafting cabinet and plants floating when the campus is hidden.
   const floorExtension=isFoyer?.6:rearExtension;
   beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -floorExtension / 2], [6.12, 0.22, 5.9 + depthGain + floorExtension]);
-  floorSurface(interior, '#b8aa95', [0, 0.087, -floorExtension / 2], [5.94, 5.7 + depthGain + floorExtension]);
+  floorSurface(interior, '#b8aa95', [0, 0.087, -floorExtension / 2], [5.94, 5.7 + depthGain + floorExtension],false,kit);
   rug(interior, kit, palette.rug, 0, rugZ, rugWidth, rugDepth);
 
   function wall(kind: 'back' | 'left' | 'right', x: number, z: number, width: number, depth: number): THREE.Group {
@@ -494,14 +494,14 @@ export function makeCampus(kit: SceneKit): THREE.Group {
   // Keep the textured shared floor clear of its own support and the overlapping
   // room floor layers. Millimetre gaps shimmer at the overview camera distance.
   beveledBlock(campus, kit, '#d2bfa4', [0, 0.024, 0.45], [18.3, 0.086, 3.8]);
-  floorSurface(campus, '#9f8570', [0, 0.075, 0.45], [18.3, 3.8], true);
+  floorSurface(campus, '#9f8570', [0, 0.075, 0.45], [18.3, 3.8], true,kit);
   for (const x of [-3.075, 3.075]) {
     beveledBlock(campus, kit, '#d2bfa4', [x, 0.024, 3.15], [0.85, 0.086, 2]);
     // Meet the corridor texture at z=2.35 without coplanar overlap.
-    floorSurface(campus, '#9f8570', [x, 0.075, 3.25], [0.85, 1.8], true);
+    floorSurface(campus, '#9f8570', [x, 0.075, 3.25], [0.85, 1.8], true,kit);
   }
   kit.mesh(campus, 'roundedBox', '#d4c2a8', [0, -0.08, 6.9 + depthGain + entryShift], [6.15, 0.33, 1.8]);
-  floorSurface(campus, '#cec7b9', [0, 0.087, 6.85 + depthGain + entryShift], [5.85, 1.85], true);
+  floorSurface(campus, '#cec7b9', [0, 0.087, 6.85 + depthGain + entryShift], [5.85, 1.85], true,kit);
   [-2.98, 2.98].forEach((x) => {
     kit.mesh(campus, 'roundedBox', '#e7dfd0', [x, 0.32, 6.75 + depthGain + entryShift], [0.2, 0.65, 1.9]);
     kit.mesh(campus, 'roundedBox', '#f0e8dc', [x, 0.67, 6.75 + depthGain + entryShift], [0.24, 0.1, 1.95]);

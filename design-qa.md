@@ -19,7 +19,12 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-134 suite passes **354 tests** and the production build passes. Its
+The pass-135 suite passes **355 tests** and the production build passes. Its
+floor material study is retained: narrower timber modules and quiet relief
+improve the exposed margins without a significant night regression. Campus
+remains **7.0 craft / 7.5 fidelity**. Fixed campus and close workloads submit
+60.0006 and 59.40 fps respectively; CPU cost and additional draws are recorded
+in the ledger. Production remains accepted pass 133. The earlier
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;

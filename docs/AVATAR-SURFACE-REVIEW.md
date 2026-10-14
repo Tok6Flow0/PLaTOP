@@ -1485,3 +1485,29 @@ night separation persists, and no significant occlusion or lighting regression
 is visible. The next priority is the exposed flooring: narrower staggered
 modules, softly readable joints, restrained warm variation and coherent grain,
 with lighting and furniture frozen. Production remains accepted 133; no A is claimed.
+
+Pass 135 replaces broad checker-like flooring with narrower, staggered timber
+boards and restrained limestone modules. Small shared 512-square relief maps
+separate wood pores from stone; floor geometry and all physical heights remain
+unchanged. The initial preflight exposed a missing resource parameter. A first
+repair then broke the portrait studio's original call signature; the final
+optional trailing resource argument preserves that API, with a regression test.
+The unchanged portrait generator now succeeds and all 355 tests/build pass.
+Campus submits 60.0006 fps (2.05/3.60 ms CPU mean/p95; 127 draws, 388,660
+triangles); Merchant close submits 59.40 fps (1.79/3.40 ms; 154 draws,
+2,652,245 triangles, three dense avatars). These short CPU-side submission
+samples show five additional campus draws and one additional close draw; they
+are not GPU-completion guarantees or a claim that the added relief is free.
+Matched windows, campus views, close inspection and timings are saved in
+surface-pass-135. Pass 134 remote CI succeeded.
+
+The independent reviewer retains 135: pale wood is more credible, board scale
+and restrained stagger/grain improve exposed margins, and night retains quiet
+joints without stripes or significant regressions. Room grades are unchanged:
+Clear Path 7.0 / 7.5, Wayfinders 8.0 / 8.0, Beacon 7.5 / 7.5, Dispatch 7.0 /
+7.5; campus stays 7.0 / 7.5. The stone/wood distinction remains weak, but
+stronger grain is not the next priority. Layered furnishing richness in the
+front row is the largest remaining scene-scale gap. The reviewer recommends
+a bounded Dispatch work-corner study: a rug fitted to the actual workstation,
+coherent resident/desk grouping without invented poses, and better constructed
+storage and planting at varied heights. Production remains accepted 133.

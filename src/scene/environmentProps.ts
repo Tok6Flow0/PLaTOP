@@ -73,22 +73,49 @@ function texturedPlane(parent: THREE.Object3D, texture: THREE.Texture, position:
   if (horizontal) mesh.rotation.x = -Math.PI / 2;
   mesh.receiveShadow = true; parent.add(mesh); return mesh;
 }
-export function floorSurface(parent: THREE.Object3D, color: string, position: Point, size: [number, number], tile = false): void {
+const floorGrains=new WeakMap<SceneKit|THREE.Object3D,Map<boolean,THREE.DataTexture>>();
+function floorGrain(kit:SceneKit|THREE.Object3D,tile:boolean):THREE.DataTexture {
+  let variants=floorGrains.get(kit);if(!variants){variants=new Map();floorGrains.set(kit,variants);}
+  const cached=variants.get(tile);if(cached)return cached;
+  const data=new Uint8Array(512*512*4),stagger=[0,.36,.67,.18,.55];
+  for(let y=0;y<512;y++)for(let x=0;x<512;x++){
+    const rowHeight=tile?128:512/24,row=Math.floor(y/rowHeight),pitch=tile?256:128+(row%3-1)*10;
+    const offset=(tile?(row%2)*.5:stagger[row%stagger.length])*pitch;
+    const localX=((x-offset)%pitch+pitch)%pitch,localY=y-row*rowHeight;
+    const joint=Math.min(localX,pitch-localX,localY,rowHeight-localY);
+    const grain=tile?Math.sin(x*1.81+y*2.43)*2+Math.sin(x*.09)*Math.cos(y*.13)*3
+      :Math.sin(y*1.87+Math.sin(x*.027)*3+row*.8)*1.2+Math.sin(y*.73+x*.014)*.8;
+    const value=Math.round(128+grain-(joint<.7?(tile?13:9)*(1-joint/.7):0));
+    const at=(y*512+x)*4;data[at]=data[at+1]=data[at+2]=value;data[at+3]=255;
+  }
+  const texture=new THREE.DataTexture(data,512,512);texture.name=tile?'Fine limestone relief':'Longitudinal timber pores';
+  texture.colorSpace=THREE.NoColorSpace;texture.flipY=true;texture.generateMipmaps=true;
+  texture.minFilter=THREE.LinearMipmapLinearFilter;texture.magFilter=THREE.LinearFilter;texture.anisotropy=4;
+  texture.needsUpdate=true;variants.set(tile,texture);return texture;
+}
+export function floorSurface(parent: THREE.Object3D, color: string, position: Point, size: [number, number], tile = false, kit?:SceneKit): void {
   const texture = canvasTexture(512, 512, (context) => {
-    context.fillStyle = color; context.fillRect(0, 0, 512, 512);
+    const base=new THREE.Color(color).lerp(new THREE.Color(tile?'#c5b8a1':'#b49572'),tile?.33:.22);
+    context.fillStyle = base.getStyle(); context.fillRect(0, 0, 512, 512);
     let seed = 2121;
     const random = () => { seed = (seed * 1664525 + 1013904223) >>> 0; return seed / 4294967296; };
-    if (!tile) {
-      const timber = new THREE.Color(color);
-      for (let row = 0; row < 10; row++) for (let column = -1; column < 4; column++) {
-        const x = column * 171 + (row % 2) * 85, y = row * 51.2;
-        context.fillStyle = timber.clone().multiplyScalar(0.91 + random() * 0.18).getStyle();
-        context.fillRect(x, y, 171, 51.2);
-        for (let line = 0; line < 7; line++) {
-          const grainY = y + 4 + line * 6.2, curl = random() * 2.4;
-          context.strokeStyle = line % 3 ? 'rgba(116,80,43,.035)' : 'rgba(255,237,193,.07)'; context.lineWidth = 0.6;
-          context.beginPath(); context.moveTo(x, grainY); context.bezierCurveTo(x + 45, grainY + curl, x + 112, grainY - curl, x + 171, grainY); context.stroke();
+    const rowHeight=tile?128:512/24,rows=tile?4:24,stagger=[0,.36,.67,.18,.55];
+    for(let row=0;row<rows;row++){
+      const pitch=tile?256:128+(row%3-1)*10,offset=(tile?(row%2)*.5:stagger[row%stagger.length])*pitch;
+      for(let column=-1;column<Math.ceil(512/pitch);column++){
+        const x=column*pitch+offset,y=row*rowHeight;
+        context.fillStyle=base.clone().multiplyScalar(tile?.97+random()*.06:.94+random()*.12).getStyle();
+        context.fillRect(x,y,pitch,rowHeight);
+        if(!tile)for(let line=0;line<8;line++){
+          const grainY=y+1+random()*(rowHeight-2),curl=(random()-.5)*1.4;
+          const start=x+random()*.2*pitch,end=x+(.65+random()*.35)*pitch;
+          context.strokeStyle=line%3?'rgba(102,72,42,.045)':'rgba(255,230,189,.075)';context.lineWidth=.3;
+          context.beginPath();context.moveTo(start,grainY);context.bezierCurveTo(x+pitch*.30,grainY+curl,x+pitch*.72,grainY-curl,end,grainY);context.stroke();
         }
+        context.lineWidth=tile?.8:.55;context.strokeStyle=tile?'rgba(92,75,54,.12)':'rgba(91,65,39,.14)';
+        context.beginPath();context.moveTo(x,y+rowHeight);context.lineTo(x,y);context.lineTo(x+pitch,y);context.stroke();
+        context.strokeStyle=tile?'rgba(247,236,214,.17)':'rgba(255,236,205,.15)';context.lineWidth=.6;
+        context.beginPath();context.moveTo(x+.9,y+rowHeight);context.lineTo(x+.9,y+.9);context.lineTo(x+pitch,y+.9);context.stroke();
       }
     }
     for (let i = 0; i < 2300; i++) {
@@ -103,16 +130,6 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
       cloud.addColorStop(0, patch % 2 ? 'rgba(73,55,37,.045)' : 'rgba(255,239,204,.055)');
       cloud.addColorStop(1, 'rgba(120,100,75,0)');
       context.fillStyle = cloud; context.fillRect(x - radius, y - radius, radius * 2, radius * 2);
-    }
-    context.lineWidth = tile ? 0.7 : 0.8; context.strokeStyle = tile ? 'rgba(99,77,52,.07)' : 'rgba(99,77,52,.13)';
-    const rows = tile ? 4 : 10;
-    for (let row = 0; row <= rows; row++) {
-      const y = row * 512 / rows;
-      context.beginPath(); context.moveTo(0, y); context.lineTo(512, y); context.stroke();
-      for (let column = 0; column < (tile ? 5 : 4); column++) {
-        const x = tile ? column * 128 : column * 171 + (row % 2) * 85;
-        context.beginPath(); context.moveTo(x, y); context.lineTo(x, y + 512 / rows); context.stroke();
-      }
     }
     if (!tile) {
       // Baked ambient contact along the masonry keeps still rooms softly grounded.
@@ -130,11 +147,19 @@ export function floorSurface(parent: THREE.Object3D, color: string, position: Po
       }
     }
   });
+  const grain=floorGrain(kit??parent,tile);
   if (tile) {
     texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
     texture.repeat.set(size[0] / 2, size[1] / 2);
+    // Different passage dimensions share the immutable pixels, not UV state.
   }
-  texturedPlane(parent, texture, position, size[0], size[1], true);
+  const floor=texturedPlane(parent, texture, position, size[0], size[1], true);
+  floor.name=tile?'Limestone passage':'Timber plank floor';
+  const material=floor.material as THREE.MeshStandardMaterial;
+  const relief=tile?grain.clone():grain;
+  if(tile){relief.wrapS=relief.wrapT=THREE.RepeatWrapping;relief.repeat.copy(texture.repeat);relief.needsUpdate=true;}
+  material.bumpMap=relief;material.bumpScale=tile?.006:.008;
+  material.roughness=tile?.88:.76;material.envMapIntensity=tile?.45:.65;
 }
 export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: number, z: number, width: number, depth: number, words?: string[]): void {
   const outline = (w: number, d: number, radius: number) => {
