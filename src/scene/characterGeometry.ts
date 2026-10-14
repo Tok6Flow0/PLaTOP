@@ -4,7 +4,7 @@ import { owlEyeRecess, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'bowedCover' | 'keeperCover' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass';
@@ -191,13 +191,14 @@ function folded(points: Array<[number, number]>, depth = .16, ridge = .10): THRE
   const faceted = geometry.toNonIndexed(); geometry.dispose(); faceted.computeVertexNormals(); return faceted;
 }
 
-function roundedBook(): THREE.BufferGeometry {
+function roundedBook(softLower=false): THREE.BufferGeometry {
   const shape = new THREE.Shape(), radius = .13;
-  shape.moveTo(-.5 + radius, -.5); shape.lineTo(.5 - radius, -.5);
-  shape.quadraticCurveTo(.5, -.5, .5, -.5 + radius); shape.lineTo(.5, .5 - radius);
+  const lower=softLower?.22:radius, edge=softLower?.46:.5;
+  shape.moveTo(-edge + lower, -.5); shape.lineTo(edge - lower, -.5);
+  shape.quadraticCurveTo(edge, -.5, edge, -.5 + lower); shape.lineTo(.5, .5 - radius);
   shape.quadraticCurveTo(.5, .5, .5 - radius, .5); shape.lineTo(-.5 + radius, .5);
-  shape.quadraticCurveTo(-.5, .5, -.5, .5 - radius); shape.lineTo(-.5, -.5 + radius);
-  shape.quadraticCurveTo(-.5, -.5, -.5 + radius, -.5);
+  shape.quadraticCurveTo(-.5, .5, -.5, .5 - radius); shape.lineTo(-edge, -.5 + lower);
+  shape.quadraticCurveTo(-edge, -.5, -edge + lower, -.5);
   const geometry = new THREE.ExtrudeGeometry(shape, { depth: .80, steps: 1, bevelEnabled: true,
     bevelSegments: 3, bevelSize: .035, bevelThickness: .07, curveSegments: 5 });
   geometry.translate(0, 0, -.4); return geometry;
@@ -205,11 +206,12 @@ function roundedBook(): THREE.BufferGeometry {
 
 /** A flexible thin cover has a gently bowed face, not a padded cuboid. Both
  * skins share the bow and join at their edge; the page block stays separate. */
-function bowedCover(bow=.65):THREE.BufferGeometry {
+function bowedCover(bow=.65,softLower=false):THREE.BufferGeometry {
   const shape=new THREE.Shape(),r=.13;
-  shape.moveTo(-.5+r,-.5);shape.lineTo(.5-r,-.5);shape.quadraticCurveTo(.5,-.5,.5,-.5+r);
+  const lower=softLower?.23:r,edge=softLower?.46:.5;
+  shape.moveTo(-edge+lower,-.5);shape.lineTo(edge-lower,-.5);shape.quadraticCurveTo(edge,-.5,edge,-.5+lower);
   shape.lineTo(.5,.5-r);shape.quadraticCurveTo(.5,.5,.5-r,.5);shape.lineTo(-.5+r,.5);
-  shape.quadraticCurveTo(-.5,.5,-.5,.5-r);shape.lineTo(-.5,-.5+r);shape.quadraticCurveTo(-.5,-.5,-.5+r,-.5);
+  shape.quadraticCurveTo(-.5,.5,-.5,.5-r);shape.lineTo(-edge,-.5+lower);shape.quadraticCurveTo(-edge,-.5,-edge+lower,-.5);
   const boundary=shape.getSpacedPoints(32).slice(0,-1),rings=7,count=boundary.length;
   const positions:number[]=[],uv:number[]=[],indices:number[]=[];
   const add=(x:number,y:number,side:number)=>{
@@ -740,8 +742,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'neckBand': return lathe([[.46,-.5],[.5,-.3],[.5,.3],[.46,.5],[.44,.3],[.44,-.3],[.46,-.5]],16);
     case 'heart': return smallHeart();
     case 'book': return roundedBook();
+    case 'keeperPages': return roundedBook(true);
     case 'bowedCover': return bowedCover();
-    case 'keeperCover': return bowedCover(1.4);
+    case 'keeperCover': return bowedCover(1.4,true);
     case 'envelope': return folded([[-.46,-.5],[.46,-.5],[.5,-.44],[.5,.44],[.46,.5],[-.46,.5],[-.5,.44],[-.5,-.44]],.9,.02);
     case 'cloak': return softLathe([[0, -.5], [.36, -.49], [.5, -.39], [.48, -.20], [.34, .12], [.21, .36], [.09, .49], [0, .54]]);
     case 'cape': return cape();

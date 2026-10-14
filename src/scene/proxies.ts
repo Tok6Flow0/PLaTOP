@@ -71,15 +71,15 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     if (id === 'bridge-keeper') {
       // The source is a little standing book, including actual recessed pages,
       // rounded covers, folded corner and the seedling volume held in its arms.
-      sculpt(body, 'book', '#e7d8b8', [.015, .18, .012], [.615, 1.06, .30], undefined, 'paper').name='page-block';
+      sculpt(body, 'keeperPages', '#e7d8b8', [.015, .18, .012], [.615, 1.06, .30], undefined, 'paper').name='page-block';
       const cover=sculpt(body, 'keeperCover', '#efe3c7', [0, .18, .177], [.70, 1.12, .038], undefined, 'paper');cover.name='front-cover';
       sculpt(body, 'keeperCover', '#d5bd96', [0, .18, -.145], [.70, 1.12, .038], [0,Math.PI,0], 'paper').name='back-cover';
-      sculpt(body, 'book', '#d2b994', [-.326, .18, .012], [.33, 1.10, .061], [0, Math.PI/2, 0], 'paper').name='book-spine';
+      sculpt(body, 'book', '#d2b994', [-.314, .20, .012], [.33, 1.02, .061], [0, Math.PI/2, 0], 'paper').name='book-spine';
       // Separate leaf edges remain visible between the thin covers, including
       // along the top, instead of painting lines onto a padded solid block.
       for(let leaf=0;leaf<8;leaf++){
         const z=-.112+leaf*.035;
-        stroke(body, '#bda985', [[.340, -.30, z],[.346,.18,z],[.340,.64,z]], .0022, 'paper');
+        stroke(body, '#bda985', [[.260,-.33,z],[.307,-.25,z],[.333,.18,z],[.340,.64,z]], .0022, 'paper');
         stroke(body, '#c7b492', [[-.25,.749,z],[.26,.749,z],[.324,.685,z]], .0018, 'paper');
       }
       // The warm binding stays readable at roster size while the broad pages
@@ -102,6 +102,13 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       const corner=sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
       fitCharacterRelief(corner,cover,.003,.025);
       limbs(cream, cream, true);
+      data.feet.forEach(foot=>{
+        foot.position.y=.065;foot.position.z=.045;
+        foot.children[0].scale.set(.23,.13,.29);
+        // The short ankle remains inside the lower cover rather than showing
+        // a ball-foot and a second connector stacked below the book.
+        foot.children[1].position.y=.075;foot.children[1].scale.y=.13;
+      });
       const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
       sculpt(book, 'book', '#d8c69b', [0, 0, 0], [.31, .34, .07]);
       sculpt(book, 'book', '#36574f', [0, 0, .025], [.28, .32, .04], undefined, 'glaze');
@@ -117,9 +124,9 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         sculpt(arm,'limb',gold,[-sign*.085,-.175,.04],[.226,.027,.22],[0,0,-sign*1.03],'brass');
       });
       head.position.y-=body.position.y;body.add(head);
-      const expression=joint(group,'book-expression',[0,.70,0]);
+      const expression=joint(group,'book-expression',[0,.635,0]);
       body.position.y-=.70;expression.add(body);expression.rotation.z=-.055;
-      data.head=expression;data.headY=.70;data.bodyY=body.position.y;
+      data.head=expression;data.headY=.635;data.bodyY=body.position.y;
     } else if (hr) {
       // Clear Path are ceramic robed guardians rather than repainted robots.
       const robe=sculpt(body, id==='hr-lens'?'spiritLens':id==='hr-relay'?'spiritRelay':'spiritFigure', bodyColor, [0, -.015, 0], [.82, .90, .80], undefined, 'clay');

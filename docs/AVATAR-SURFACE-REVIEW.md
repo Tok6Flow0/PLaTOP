@@ -63,6 +63,7 @@ not asked for a desired score or instructed to approve.
 | 71 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained subtle material refinement | Stronger tabletop grain and mineral pot finish are safe but small; broad light/shadow shaping remains the larger material-depth gap |
 | 72 (fresh material review) | Merchant 7.5 craft / 8.0 fidelity; Support 8.0 / 8.5; Email 7.0 / 7.5; retained | Clearer ceramic curvature and brass separation, unchanged quality tier; avoid more gloss and improve Jarvis breast/shoulder construction |
 | 73 (fresh Merchant shape review) | Craft 7.5 / fidelity 8.0; retained | Clearer shoulder separation, forward breast volume and tapered waist; small lower seam kink and Keeper's slab/ball-foot silhouette remain |
+| 74 (fresh Keeper shape review) | Merchant craft 8.0 / fidelity 8.0; retained | Rounded lower cover, following pages and tucked feet improve proportions; upper cover/spine and turned corner remain rigid |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -554,7 +555,15 @@ badge visibility, shoulder intersections and all sixteen walking envelopes.
 Its campus sample submits 54.61 fps (1.79 ms mean / 3.50 ms p95 CPU), and
 Merchant close submits 53.51 fps (1.77 ms / 3.50 ms), retaining pass 72's draws
 and triangles. The reviewer accepts the silhouette change but not an A grade.
-The dense tier is deliberately not used for
+Pass 74 passes 310 tests and the production build. Its campus sample submits
+51.80 fps (1.72 ms mean / 3.70 ms p95 CPU, 109 draws, 372,431 triangles);
+Merchant close submits 52.30 fps (2.12 ms / 4.00 ms, 142 draws, 2,485,049
+triangles, three dense avatars). The shape adds work, despite retaining the
+earlier sampled cadence. The isolated production server serves build
+`index-CXn15XV3.js`; its actual 624 × 416 responsive window, campus transition,
+deep-zoom mist invitation, third/first-person modes and exit were checked in
+the browser without console warnings/errors. This is isolated build evidence,
+not installation or a live-agent action. The dense tier is deliberately not used for
 the distant campus. JavaScript submission time is not GPU completion time.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded

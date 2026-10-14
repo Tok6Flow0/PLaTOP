@@ -522,6 +522,26 @@ test('Keeper has separate thin covers around a recessed page block and a bound s
   disposeObject(model);kit.dispose();
 });
 
+test('Keeper lower cover tapers around low tucked feet rather than ending above ball feet',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);
+  model.updateMatrixWorld(true);
+  const cover=model.getObjectByName('front-cover'),p=cover.geometry.attributes.position;
+  let lower=0,middle=0;
+  for(let i=0;i<p.count;i++){
+    if(p.getY(i)<-.40)lower=Math.max(lower,Math.abs(p.getX(i)));
+    if(Math.abs(p.getY(i))<.20)middle=Math.max(middle,Math.abs(p.getX(i)));
+  }
+  assert.ok(lower<middle*.9,'lower corners are rounded and narrower than the broad page face');
+  const coverBounds=new THREE.Box3().setFromObject(cover);
+  for(const foot of model.userData.personality.feet){
+    const sole=new THREE.Box3().setFromObject(foot.children[0]),size=sole.getSize(new THREE.Vector3());
+    assert.ok(size.y<size.z*.5,'feet read as low slippers rather than balls');
+    assert.ok(Math.abs(sole.min.y)<.012,'feet retain their floor contact');
+    assert.ok(sole.max.y>coverBounds.min.y,'lower cover tucks over the upper foot');
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('Beacon has a real face opening with an outward-facing green shell',()=>{
   const kit=new SceneKit(),geometry=characterGeometry(kit,'lanternHousing'),material=new THREE.MeshBasicMaterial();
   const shell=new THREE.Mesh(geometry,material);shell.updateMatrixWorld(true);
