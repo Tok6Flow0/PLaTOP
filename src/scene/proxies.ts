@@ -297,7 +297,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     if(id==='bridge-keeper')group.scale.x*=.92;
     if(id==='hr-lens'||id==='hr-relay')group.scale.x*=1.07;
   } else if (kind === 'lantern') {
-    const support = id === 'support-beacon', green = support ? '#2c5b42' : '#ad8246';
+    const support = id === 'support-beacon', green = support ? '#2c5b42' : '#987343';
     if (support) {
       // Beacon's source is an embracing conversation lantern with a solid green
       // shell, not an exposed bulb held between metal rails.
@@ -319,7 +319,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       });
     } else {
       head.position.y = .49; data.headY = .49; body.position.y = .115; data.bodyY = .115;
-      sculpt(body, 'hexBase', '#a88449', [0, 0, 0], [.56, .13, .53], undefined, 'brass');
+      sculpt(body, 'hexBase', '#987343', [0, 0, 0], [.56, .13, .53], undefined, 'agedBrass');
       const light = sculpt(head, 'hexGlass', '#ffe7b1', [0, 0, 0], [.55, .61, .50], undefined, 'lanternGlass'); data.glow = light.material;
       // Every corner is framed, including the rear: the same tapered rails
       // sit on the actual six glass edges around the single bounded light.
@@ -328,14 +328,14 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         stroke(head,green,[-.30,0,.30].map(y=>{
           const r=.49+(.36-.49)*(y/.61+.5);
           return [Math.sin(angle)*(r*.55+.005),y,Math.cos(angle)*(r*.50+.005)] as [number,number,number];
-        }),.013);
+        }),.013,'agedBrass');
       }
       eyes(head, .078, .025, .191, true, '#75562e', .67);
       characterSmile(kit, head, '#826331', .034, .022, [0, -.052, .201]);
-      sculpt(head, 'hexCap', green, [0, .367, 0], [.57, .23, .54], undefined, 'brass');
+      sculpt(head, 'hexCap', '#88633b', [0, .367, 0], [.57, .23, .54], undefined, 'agedBrass');
       sculpt(head, 'limb', gold, [0, .496, 0], [.13, .075, .13], undefined, 'brass');
-      sculpt(head, 'fineRing', green, [0, .635, 0], [.26, .26, .26], undefined, 'brass');
-      sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'brass');
+      sculpt(head, 'fineRing', green, [0, .635, 0], [.26, .26, .26], undefined, 'agedBrass');
+      sculpt(head, 'limb', green, [0, -.299, 0], [.56, .095, .52], undefined, 'agedBrass');
       [-1,1].forEach(sign=>{
         const foot=joint(group,sign<0?'foot_l':'foot_r',[sign*.205,.058,.12]);
         sculpt(foot,'bean',gold,[0,0,0],[.17,.105,.13],[0,0,sign*-.35],'brass');

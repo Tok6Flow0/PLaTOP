@@ -19,9 +19,9 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-98 suite passes **325 tests** and the production build passes. Its
+The pass-99 suite passes **326 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
-the rear closure correction but not granting A-level acceptance. The user's
+the structural-metal separation but not granting A-level acceptance. The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check

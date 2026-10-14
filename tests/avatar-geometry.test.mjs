@@ -1188,6 +1188,21 @@ test('Lumen maps its interior gradient to every glass pane without changing Beac
   kit.dispose();
 });
 
+test('Lumen separates aged structural brass from polished details with one shared bounded finish',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='reflection-lumen'),kit);
+  const roof=model.getObjectByName('hexCap').material,base=model.getObjectByName('hexBase').material;
+  const polish=characterMaterial(kit,'#b99a61','brass');
+  assert.equal(roof.userData.characterFinish,'agedBrass');assert.equal(base.map,roof.map);
+  assert.notEqual(roof.map,polish.map);assert.equal(roof.map,roof.bumpMap);assert.equal(roof.map,roof.roughnessMap);
+  assert.ok(roof.roughness>polish.roughness&&roof.metalness>.65);
+  assert.equal(roof.transparent,false);assert.equal(roof.emissive.getHex(),0);
+  assert.equal(roof.map.image.width,512);assert.equal(roof.map.image.height,512);
+  const values=roof.map.image.data.filter((_,i)=>i%4===0);
+  assert.ok(Math.max(...values.subarray(0,64000))-Math.min(...values.subarray(0,64000))>35,'metal has varied response, not a flat uniform tint');
+  let disposed=0;roof.map.addEventListener('dispose',()=>disposed++);disposeObject(model);
+  assert.equal(disposed,1,'all structural metal shares one disposed texture');kit.dispose();
+});
+
 test('paper chest sheets have a shallow ordered overlap rather than coincident centre faces',()=>{
   const kit=new SceneKit(),ray=new THREE.Raycaster();
   for(const id of ['reflection-echo','reflection-quill']){

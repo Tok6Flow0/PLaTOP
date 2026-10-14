@@ -91,6 +91,7 @@ not asked for a desired score or instructed to approve.
 | 96 (fresh Reflection interior-light review) | Craft 7.5 / fidelity 7.5; retained lighting improvement | Moving the emitter inside the glass restores amber colour and expression while keeping warm spill. The panel still looks uniformly luminous; improve controlled internal gradient and restrained glass reflection without restoring the white hotspot |
 | 97 (fresh Reflection glass prototype) | Craft 7.0 / fidelity 7.5; revision required | Per-pane gradients create repetitive orange-edged bright bands. Preserve 96's interior emitter, soften the gradient, mute the edges and use broader glow; other sampled teams show no visible regression |
 | 98 (fresh Reflection glass correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 96 | Broad muted glow removes orange bands while preserving readable faces. Stop tuning the gradient; paper overlap depth and flat uniformly gold roof/frame are larger remaining material gaps |
+| 99 (fresh Reflection structural-metal review) | Craft 7.5 / fidelity 7.5; retained over 98 | Dark roof/frame/base separate from luminous panes and polished fittings without a paper-owl regression. The roof still partly reads as brown material; prioritize localized soft paper-overlap shadows, not more tiny metal adjustments |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -787,3 +788,22 @@ Campus submits 54.40 fps (2.14 ms mean / 3.30 ms p95 CPU), Reflection close
 56.30 fps (1.89 ms / 2.70 ms), with 97's resource counts and the same timing
 limitations. Its source/portrait checkpoint is independently retained, but
 neither the 9/A target nor an unchanged worst-case GPU workload is established.
+
+The isolated production checkpoint was also updated to pass 98's
+`index-By6AwSB_.js`. Reflection window view, eleven-step zoom invitation,
+third/first-person mist, exit and reset passed with no console warnings/errors.
+No live activity was injected; this does not prove adoption by a native host.
+
+Pass 99 passes 326 tests/build after regenerating portraits. An earlier suite
+raced the portrait fingerprint write; a subsequent run had one sanitized MCP
+fixture failure, which passed in isolation and in the next full suite without
+changing protocol code. The aged structural brass shares one 512-pixel map for
+colour, bump and roughness (about 1.33 MiB with mipmaps); it adds no model
+triangles or lights. Its separate material increases sampled overview draws
+from 110 to 112, with 371,968 submitted triangles. Campus submits 53.30 fps
+(1.89 ms mean / 2.60 ms p95 CPU). Reflection close first submits 48.00 fps
+(1.84 / 3.20 ms), then 56.90 fps (1.92 / 3.30 ms) on repeat, with three dense
+avatars, 125 draws and 861,909 submitted triangles. Both samples are retained;
+the repeat does not erase the lower sample or establish equal GPU workload.
+Pass 99 noon/night campus captures are actual 1536 × 1024 views, not a new
+campus grade. The independent character result remains 7.5 / 7.5.
