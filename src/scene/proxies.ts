@@ -230,7 +230,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
             const crest=sculpt(head,'compassStar',gold,[0,.444,.095],[.078,.125,.10],undefined,'brass');
             crest.name='navigator-hood-star';fitCharacterRelief(crest,hood,.007,.001);
             compass(body, [0, -.02, .307], .225);
-            stroke(body, '#bea06b', [[.06,-.43,.185],[.03,-.35,.24],[-.09,-.29,.285],[-.07,-.22,.31],[.08,-.19,.315],[.12,-.16,.312]], .009, 'clay').name='navigator-route-inlay';
+            sculpt(body,'routeInlay','#bea06b',[0,0,.32],[1,1,1],undefined,'clay').name='navigator-route-inlay';
           } else if (id === 'intake-beacon') {
             sculpt(head, 'limb', '#b8a07b', [0, .427, 0], [.205, .15, .205], undefined, 'brass');
             sculpt(head, 'limb', '#f0c57e', [0, .542, 0], [.14, .14, .14], undefined, 'amber');
@@ -305,7 +305,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         // This is a shallow decorative route, not a rope preserving the old
         // path's full depth above the newly fitted belly.
         const route=ornament.name==='navigator-route-inlay';
-        fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,route?.007:id==='intake-compass'?.036:.012,route?.006:Infinity);
+        fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,route?.010:id==='intake-compass'?.036:.012,route?.006:Infinity);
       }
     }
     group.scale.setScalar(leader ? 1.02 : id === 'bridge-scout' ? .93 : id === 'bridge-keeper' ? .97 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : id==='hr-lens'?.93:id==='hr-relay'?.92:hr ? .99 : 1.10);

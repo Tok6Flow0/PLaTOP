@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-122 suite passes **347 tests** and the production build passes. Its
+The pass-123 suite passes **347 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -83,6 +83,15 @@ regression check, but the reviewer sees little visual change and leaves the
 forehead/cheek concern open. Its next priority is the guide's broad flowing
 belly marking. Camera samples remain approximately 60 fps in both workloads;
 no visual grade increase is claimed from the numerical surface correction.
+Pass 123 replaces the guide's thin angular belly stroke with a fitted,
+variable-width flowing ribbon. Attachment checks sample across its full width
+in both geometry tiers. Fixed campus/close workloads submit 60.006 / 60.001
+fps; these are CPU-side submission samples, not GPU-completion guarantees.
+The reviewer retains the visible inlay improvement: guide craft stays 7.5,
+fidelity rises to 8.0. Ensemble/room remain 7.5 / 7.5 and campus 7.0 / 7.5.
+The next guide correction is the entire bulky compass assembly. A bounded,
+room-wide lighting/composition study is the larger overall priority.
+Production remains pass 120; no A-level acceptance is claimed.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

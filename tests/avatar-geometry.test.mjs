@@ -1294,16 +1294,17 @@ test('the guide route stays visibly inlaid on the dense belly rather than floati
   const route=model.getObjectByName('navigator-route-inlay'),body=model.getObjectByName('wayfinderBody');
   model.updateMatrixWorld(true);
   const p=route.geometry.attributes.position,probes=[];
-  for(let row=1;row<p.count/5-1;row++){
-    const center=new THREE.Vector3();for(let side=0;side<4;side++)center.add(new THREE.Vector3().fromBufferAttribute(p,row*5+side));
-    probes.push(center.multiplyScalar(.25).applyMatrix4(route.matrixWorld));
+  assert.equal(p.count,96,'a continuous 48-row ribbon, not a faceted tube');
+  for(let row=1;row<p.count/2-1;row++){
+    const a=new THREE.Vector3().fromBufferAttribute(p,row*2),b=new THREE.Vector3().fromBufferAttribute(p,row*2+1);
+    for(const across of [.25,.5,.75])probes.push(a.clone().lerp(b,across).applyMatrix4(route.matrixWorld));
   }
-  const release=refineCharacterModel(model);
-  for(const point of probes){
-    const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
-    const mark=ray.intersectObject(route,false)[0],shell=ray.intersectObject(body,false)[0];
-    assert.ok(mark&&shell&&shell.distance-mark.distance>.001&&shell.distance-mark.distance<.025,'route remains visible and close to the real belly');
-  }
+  const check=()=>{for(const point of probes){
+      const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
+      const mark=ray.intersectObject(route,false)[0],shell=ray.intersectObject(body,false)[0];
+      assert.ok(mark&&shell&&shell.distance-mark.distance>.001&&shell.distance-mark.distance<.025,`route remains visible and close to the real belly at ${point.x},${point.y}: mark ${mark?.distance}, shell ${shell?.distance}`);
+  }};
+  check();const release=refineCharacterModel(model);check();
   release();disposeObject(model);kit.dispose();
 });
 

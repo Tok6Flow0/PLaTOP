@@ -115,6 +115,7 @@ not asked for a desired score or instructed to approve.
 | 120 (modeled ceramic return) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 119 | The tan outline is gone, with a credible soft visor edge in quarter/night views and no visible new break. The broad cream band still merges into the helmet at normal portrait size; distinct raised profile separation remains missing |
 | 121 (readable raised hood frame) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 120 | The raised cream frame now reads at ordinary portrait and actual-room sizes. Its stronger outer edge reveals scalloping along the forehead and cheek, with a somewhat heavy dark return. Clean the continuous curve without adding more thickness or contrast |
 | 122 (continuous rim projection) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; non-regressive, visually near-equivalent to 121 | The mathematical surface correction does not resolve the visible forehead wave; slight cheek cleanup is not a meaningful grade increase. The reviewer prioritizes the thin angular belly route versus the broad flowing source mark over another minute rim adjustment |
+| 123 (flowing belly inlay) | Guide 7.5 craft / 8.0 fidelity; ensemble/room 7.5 / 7.5; campus 7.0 / 7.5; retained | The broad flowing ribbon visibly matches the source without lifting or silhouette regressions. The bulky compass bezel/disc/star/clasp assembly is the next guide priority; room-wide light and grouping matter more for the overall result |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1212,3 +1213,22 @@ Campus submits 59.9946 fps (1.52 ms mean / 2.10 ms p95 CPU); Wayfinders close
 submits 60.00 fps (1.96 / 3.20 ms). Draw/triangle counts remain unchanged from
 121, including three dense close avatars. Evidence remains under
 surface-pass-122; production remains the smoke-tested pass 120.
+
+Pass 123 replaces the guide's bent-wire belly mark with a 48-row,
+variable-width ribbon following the chosen portrait's flowing route. The
+geometry is fitted to the belly; tests sample three points across each row
+in both mesh tiers to prevent lower-edge clipping. The guide now has 897,000
+close-up triangles. All 347 tests and the production build pass.
+
+Campus submits 60.006 fps (1.79 ms mean / 2.90 ms p95 CPU, 116 sampled draws,
+384,388 triangles); Wayfinders close submits 60.001 fps (1.66 / 2.50 ms,
+141 draws, 2,240,561 triangles, three detailed avatars). These are retained
+ten-second submission samples, not GPU-completion guarantees. Complete
+portrait, isolated character and actual-scene evidence is in surface-pass-123.
+The independent reviewer retains the ribbon and raises guide fidelity to 8.0,
+with craft unchanged at 7.5. Ensemble/room remain 7.5 / 7.5 and campus 7.0 /
+7.5. The improvement is visible in front, quarter, side and night, though
+desks hide most of it at room scale. The reviewer prioritizes the complete
+compass pendant assembly over another minute hood adjustment, and a bounded
+room-wide lighting/composition study for a substantial overall gain. The
+existing brow wave remains open. Production remains pass 120; no A is claimed.

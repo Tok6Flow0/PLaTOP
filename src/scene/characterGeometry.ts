@@ -4,7 +4,7 @@ import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'scroll'
+  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
@@ -942,6 +942,22 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
         p.setXYZ(i,p.getX(i)*.98*Math.pow(1-t,.86),-.5+t*1.1,0);
       }
       panel.computeVertexNormals();return panel;
+    }
+    case 'routeInlay': {
+      // A varying-width ceramic inlay follows three generous brush curves.
+      // Its open surface is fitted to the belly, not raised into a gold rope.
+      const path=new THREE.CurvePath<THREE.Vector3>(),v=(x:number,y:number)=>new THREE.Vector3(x,y,0);
+      path.add(new THREE.CubicBezierCurve3(v(-.15,-.455),v(-.16,-.28),v(0,-.16),v(.125,-.20)));
+      path.add(new THREE.CubicBezierCurve3(v(.125,-.20),v(.19,-.225),v(-.10,-.245),v(-.055,-.30)));
+      path.add(new THREE.CubicBezierCurve3(v(-.055,-.30),v(-.01,-.34),v(.15,-.34),v(.165,-.455)));
+      const positions:number[]=[],uv:number[]=[],indices:number[]=[],rows=48;
+      for(let row=0;row<rows;row++) {
+        const t=row/(rows-1),point=path.getPointAt(t),tangent=path.getTangentAt(t),halfWidth=.004+.017*Math.pow(Math.abs(2*t-1),1.3);
+        for(const sign of [-1,1]){positions.push(point.x-tangent.y*halfWidth*sign,point.y+tangent.x*halfWidth*sign,0);uv.push(t,(sign+1)/2);}
+        if(row<rows-1){const a=row*2;indices.push(a,a+2,a+1,a+1,a+2,a+3);}
+      }
+      const geometry=new THREE.BufferGeometry();geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+      geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));geometry.setIndex(indices);geometry.computeVertexNormals();return geometry;
     }
     case 'scroll': return new THREE.CylinderGeometry(.5, .5, 1, 12, 1, false, .12, Math.PI * 1.78);
     case 'spiritBody': return softLathe([[0, -.50], [.34, -.50], [.47, -.45], [.5, -.30], [.46, -.12], [.37, .12], [.30, .32], [.26, .46], [.16, .55], [0, .58]]);
