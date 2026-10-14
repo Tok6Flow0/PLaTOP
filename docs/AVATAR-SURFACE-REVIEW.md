@@ -1663,3 +1663,28 @@ rail, floating corner, avatar intersection or night regression. The tabletop
 material remains uniformly smooth, but restoring the broad band is not advised.
 Extending the construction is recommended, with separate support/overhang
 checks for rounded and near-square shapes before acceptance.
+
+Pass 141 extends the accepted joined construction to the other shared desks
+and Wayfinder pair. Each keeps its outer dimensions, .82 support height,
+rotation, object placement and walking map. Additional tests raycast the
+actual curved top above rail corners and every leg shoulder, as well as
+checking bounds and two rail joins per leg. All 362 tests/build pass.
+Campus submits 59.9994 fps (CPU mean/p95 1.78/2.40 ms; 132 draws, 394,510
+triangles); Merchant close submits 59.5970 fps (1.94/3.20 ms; 156 draws,
+2,658,375 triangles). Additional Wayfinder close coverage submits 59.8994 fps
+(1.94/3.10 ms; 151 draws, 2,312,411 triangles, three dense avatars), without
+a matched prior sample in this pass pair. Matched campus, Clear Path and
+Wayfinder windows, other current room windows and timings are in surface-pass-141.
+Foyer windows have no same-pass-pair baseline. Pass 140 remote CI succeeded.
+
+The independent reviewer retains the extension, raising campus craft to 7.5
+while fidelity stays 7.5. Whole-room craft/fidelity: Clear Path 7.5/7.5,
+Wayfinders 8.0/8.0, Beacon 8.0/7.5, Lantern Desk 7.0/7.0 and Dispatch 7.5/7.5.
+Rounded tables show the clearest gain; near-square pairs remain substantial
+and supported. Night preserves readable supports and contacts without a
+conspicuous new seam or lighting regression. Dispatch's thin top is retained
+but its newly conspicuous square corners need a restrained edge/radius repair.
+The next largest study is Lantern Desk's grouping: broad rug/table overwhelm
+the small paper residents, storage is left-heavy, and rear pots lack an
+integrated arrangement. Preserve paper identities and genuine home/work
+positions; do not fabricate activity to compose the scene.

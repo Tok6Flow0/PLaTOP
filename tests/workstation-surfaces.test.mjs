@@ -363,6 +363,29 @@ test('joined Merchant desk separates its thin top from recessed rails and suppor
   disposeObject(root);kit.dispose();
 });
 
+test('each rounded, long and paired joined desk keeps real supports beneath its curved perimeter',t=>{
+  canvasDocument(t);const kit=new SceneKit(),all=new THREE.Group();
+  for(const [width,depth,style] of [[2.5,1.6,'capsule'],[3.05,1.6,'capsule'],[3.15,1.4,'soft'],[2.65,1.4,'rect'],[1.34,1.65,'soft'],[1.34,1.50,'soft']]){
+    const root=new THREE.Group();all.add(root);table(root,kit,0,0,width,depth,style,.2,'joined');root.updateMatrixWorld(true);
+    const top=root.getObjectByName('Joined timber top'),bounds=new THREE.Box3().setFromObject(root);
+    assert.ok(bounds.min.x>=-width/2-1e-6&&bounds.max.x<=width/2+1e-6&&bounds.min.z>=-depth/2-1e-6&&bounds.max.z<=depth/2+1e-6);
+    assert.ok(Math.abs(bounds.max.y-.82)<1e-6,'every shape retains the tabletop object height');
+    const underTop=(x,z)=>new THREE.Raycaster(new THREE.Vector3(x,2,z),new THREE.Vector3(0,-1,0)).intersectObject(top).length>0;
+    const rails=root.children.filter(o=>o.name==='Recessed table rail').map(o=>new THREE.Box3().setFromObject(o));
+    for(const rail of rails)for(const x of [rail.min.x,rail.max.x])for(const z of [rail.min.z,rail.max.z]){
+      assert.ok(underTop(x,z),`${style} ${width}×${depth}: rail corners stay inside the actual curved top, not only its box`);
+    }
+    for(const leg of root.children.filter(o=>o.name==='Tapered joinery leg')){
+      const shoulder=new THREE.Vector3(0,.5,0).applyMatrix4(leg.matrixWorld),box=new THREE.Box3().setFromObject(leg);
+      assert.ok(underTop(shoulder.x,shoulder.z),'each leg shoulder reaches actual timber');
+      assert.equal(rails.filter(rail=>rail.intersectsBox(box)).length,2,'every shape retains two joins at each leg');
+    }
+    let triangles=0;root.traverse(o=>{if(o.isMesh)triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;});
+    assert.ok(triangles<5000);assert.equal(root.userData.floorContacts.length,4);
+  }
+  disposeObject(all);kit.dispose();
+});
+
 test('diverse connected plants keep actual vertices inside their certified floor envelopes and release owned meshes once', () => {
   const kit = new SceneKit(), resources = new THREE.Group(), owned = new Set();
   for (const [kind, bound] of [['leaf', 0.5], ['broad', 0.57], ['spear', 0.28], ['herb', 0.48], ['ivy', 0.5]]) {

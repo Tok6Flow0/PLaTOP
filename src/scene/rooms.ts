@@ -299,7 +299,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   ].map((layout,i)=>{
     const group=new THREE.Group();group.name=`Wayfinders paired desk ${i+1}`;
     group.position.set(layout.x,0,layout.z);group.rotation.y=layout.angle;interior.add(group);
-    table(group,kit,0,0,layout.width,layout.depth,'soft',.12);
+    table(group,kit,0,0,layout.width,layout.depth,'soft',.12,'joined');
     group.userData.workstationSurface={width:layout.width,depth:layout.depth};
     const halfX=(layout.width*Math.abs(Math.cos(layout.angle))+layout.depth*Math.abs(Math.sin(layout.angle)))/2;
     const halfZ=(layout.width*Math.abs(Math.sin(layout.angle))+layout.depth*Math.abs(Math.cos(layout.angle)))/2;
@@ -319,7 +319,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if(i===0)tidyStaticMeshes(props);
     return {...layout,group,point};
   }) : [];
-  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer||index===0?'soft':'rect',.2,index===0?'joined':'solid');
+  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer||index===0?'soft':'rect',.2,'joined');
   if(index===3||index===5){
     // Angled empty guest seats expose their cushion and legs instead of a
     // cabinet-like straight back. Their full rotated footprints are obstacles;
