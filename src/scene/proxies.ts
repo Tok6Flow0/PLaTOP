@@ -35,7 +35,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const data: Personality = { kind, body, head, bodyY: .57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
   const sculpt = (parent: THREE.Object3D, form: CharacterForm, color: string, at: [number, number, number],
     scale: [number, number, number], rotation?: [number, number, number], finish?: CharacterFinish) =>
-    characterMesh(kit, parent, form, color, at, scale, rotation, finish);
+    characterMesh(kit, parent, form, color, at, scale, rotation, id==='reflection-echo'&&finish==='paper'?'paperFiber':finish);
   const ring = (parent: THREE.Object3D, color: string, diameter: number, at: [number, number, number], rotation?: [number, number, number]) =>
     sculpt(parent, 'ring', color, at, [diameter, diameter, diameter], rotation, 'brass');
   const stroke = (parent: THREE.Object3D, color: string, points: Array<[number, number, number]>, radius = .007, finish: CharacterFinish = 'brass') =>

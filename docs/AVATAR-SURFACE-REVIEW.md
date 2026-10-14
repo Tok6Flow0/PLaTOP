@@ -2055,3 +2055,35 @@ commit was served separately and measured in the same browser fixture
 immediately before156. These short CPU-side submission samples show no
 candidate-specific slowdown here, not locked60fps or GPU-completion proof.
 All baseline/candidate timing and full visual evidence is in surface-pass-156.
+
+Retained156 was pushed as6266bb864e03caefe31d40ee8f62671270ec73bc;
+remote readback matches and CI38631850100 succeeded. The isolated production
+preview serves index-1S1UsMEz.js. Window, close-zoom invitation, third/first
+person mist, exit and reset pass; all teams remain Awaiting update on the
+empty connected bridge and console warnings/errors are empty. No native
+installation or genuine agent adoption is established by this smoke.
+
+Pass157 isolates a matte paper-fibre material to Echo. Geometry, pose and
+lighting are unchanged; dense refinement still uses the existing paper
+algorithm. One shared512px texture contains short, irregular crossing fibres
+and bounded pulp variation. The first self-reviewed attempt was too quiet
+at normal portrait size; its portrait is retained as initial-quiet evidence.
+The final candidate passes373 tests/build, including identity isolation,
+bounded texture allocation, matte response and absence of a strong single
+grain direction. No test result is treated as a visual score.
+
+Independent verdict: retain final157 over156. Echo7.0 craft/6.5 fidelity,
+Reflection6.5/6.5, campus7.5/7.5. Normal512px face/chest variation is modestly
+more paper-like without dirty/coarse noise; enlarged surfaces look less like
+streaky wood. Side temple/holding-wing streaking remains. Room/campus effect
+is negligible; do not amplify grain to force campus visibility. Next priority
+is localized warm illumination and quieter outer planes around Lumen, with
+geometry/material frozen. No A or exact match is claimed.
+
+Campus157 submits59.994fps (CPU mean/p95 1.73/2.50ms;137 draws;431,832
+triangles); Reflection close60.00fps (2.12/3.70ms;133 draws;879,809 triangles).
+The material adds two campus batching calls, correcting an early assumption
+that draws would be unchanged. Close draw count is unchanged. These are
+short CPU-side submission samples, not GPU completion or zero-regression
+proof. Full ordinary/inspection, day/night room/campus and timing evidence
+is saved in surface-pass-157.

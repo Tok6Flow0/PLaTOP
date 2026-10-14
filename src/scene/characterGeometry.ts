@@ -7,7 +7,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood' | 'paperEchoChestL' | 'paperEchoChestR' | 'paperEchoRestWing' | 'paperEchoBody' | 'paperEchoBackL' | 'paperEchoBackR' | 'paperEchoCrownBackL' | 'paperEchoCrownBackR';
-export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
+export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'paperFiber' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.46,.08],[.29,.18],[.14,.235],[0,.26]];
@@ -1187,12 +1187,31 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
     const ix=Math.floor(x),iy=Math.floor(y),fx=x-ix,fy=y-iy,sx=fx*fx*(3-2*fx),sy=fy*fy*(3-2*fy);
     return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(ix,iy),hash(ix+1,iy),sx),THREE.MathUtils.lerp(hash(ix,iy+1),hash(ix+1,iy+1),sx),sy);
   };
+  const fibreField=finish==='paperFiber'?new Float32Array(size*size):undefined;
+  if(fibreField)for(let i=0;i<3200;i++){
+    // Short, independently oriented cellulose strands. The soft end/tube
+    // profile avoids hard scratches, repeated hatching or pepper-like dots.
+    const cx=hash(i,301)*size,cy=hash(i,719)*size,angle=hash(i,953)*Math.PI*2;
+    const ux=Math.cos(angle),uy=Math.sin(angle),half=2+hash(i,1171)*5,width=.35+hash(i,1291)*.65;
+    const amplitude=(hash(i,1499)>.52?1:-1)*(16+hash(i,1693)*20),radius=Math.ceil(half+width*2);
+    for(let y=Math.floor(cy)-radius;y<=Math.ceil(cy)+radius;y++)for(let x=Math.floor(cx)-radius;x<=Math.ceil(cx)+radius;x++){
+      const dx=x-cx,dy=y-cy,along=dx*ux+dy*uy,across=-dx*uy+dy*ux;
+      if(Math.abs(along)>half||Math.abs(across)>width*2)continue;
+      const weight=(1-(along/half)**2)*Math.exp(-2*(across/width)**2);
+      fibreField[((y+size)%size)*size+(x+size)%size]+=amplitude*weight;
+    }
+  }
   for(let y=0;y<size;y++)for(let x=0;x<size;x++) {
     seed=(Math.imul(seed,1664525)+1013904223)>>>0;
     const noise=(seed>>>24)/255, broad=Math.sin(x*.063+Math.sin(y*.081))*Math.sin(y*.048);
     const pore=noiseAt(x/6,y/6),fibre=noiseAt(x/2.8+Math.sin(y*.036)*.7,y/25);
     const barbs=Math.pow(Math.max(0,Math.sin(y*.67+Math.abs(x-size*.5)*.28)),12);
-    const grain=finish==='paper'?247-24*fibre-13*pore-8*noise-24*noiseAt(x/41,y/37)
+    // Short crossing fibres and irregular pulp replace the old long vertical
+    // streaks for Echo's isolated material study. No directional wood grain,
+    // coarse dots, extra surface layer or per-frame texture work.
+    const cellulose=fibreField?THREE.MathUtils.clamp(
+      244-24*(noiseAt(x/23,y/21)+noiseAt(x/11,y/13))*.5-28*noiseAt(x/3.1,y/3.4)-6*noise+fibreField[y*size+x],165,250):0;
+    const grain=finish==='paperFiber'?cellulose:finish==='paper'?247-24*fibre-13*pore-8*noise-24*noiseAt(x/41,y/37)
       :finish==='brass'?249-4*Math.sin(y*1.17+x*.007)-3*noise
       // Old metal has broad rubbed patches underneath finer hammer marks.
       // This stays a shared opaque surface, not painted-on glints or lights.
@@ -1205,7 +1224,7 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
   }
   const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
   texture.userData.platopCharacterGrain=true;
-  texture.repeat.setScalar(finish==='feather'?1:2);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.repeat.setScalar(finish==='feather'?1:finish==='paperFiber'?1.3:2);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps=true;texture.needsUpdate=true;owner.grains.set(finish,texture);return texture;
 }
 
@@ -1270,11 +1289,11 @@ function plumageGrain(kit:SceneKit):THREE.DataTexture {
 }
 
 export function characterMaterial(kit: SceneKit, color: string, finish: CharacterFinish = 'clay'): THREE.MeshStandardMaterial {
-  const cache = owned(kit).material, key = `${finish}:${color}`;
+  const cache = owned(kit).material, key = `${finish}:${color}`,paper=finish==='paper'||finish==='paperFiber';
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'glass'||finish === 'opticalGlass' ? .08 : finish === 'lanternGlass' ? .26 : finish === 'ink' ? .24 : finish === 'satinShell' ? .54 : finish === 'satinClay' ? .62 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      roughness: finish === 'glass'||finish === 'opticalGlass' ? .08 : finish === 'lanternGlass' ? .26 : finish === 'ink' ? .24 : finish === 'satinShell' ? .54 : finish === 'satinClay' ? .62 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : paper||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'agedBrass' ? .72 : finish === 'brass' ? .62 : 0,
       ...(finish === 'agedBrass' ? {roughness:.55} : {}),
       // Dark-backed glass remains opaque: a curved specular response gives
@@ -1286,19 +1305,22 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       // Emission adds no light, bloom pass, transparency or animation.
       ...(finish === 'warmInk' ? { emissive: '#ffba55', emissiveIntensity: .80, roughness: .62 } : {}),
     });
-    material.userData.characterFinish = finish;
+    // The reference finish changes only shading. Its dense geometry keeps
+    // the existing paper refinement and exactly the same authored folds.
+    material.userData.characterFinish = paper?'paper':finish;
+    if(finish==='paperFiber')material.userData.paperFiberStudy=true;
     if(finish==='glass'||finish==='opticalGlass'){
       material.transparent=true;material.opacity=finish==='opticalGlass'?.045:.16;
       material.depthWrite=false;material.envMapIntensity=1.2;
     }
     if (finish === 'ink') material.envMapIntensity = .65;
-    if (['clay','satinClay','glaze','satinShell','paper','feather','facialFeather','plumage','brass','agedBrass','cloth'].includes(finish)) {
+    if (['clay','satinClay','glaze','satinShell','paper','paperFiber','feather','facialFeather','plumage','brass','agedBrass','cloth'].includes(finish)) {
       // Ceramic and brass need a broad reflected softbox to describe their
       // curvature. Keep dry clay, paper and fibres at their existing response.
       material.envMapIntensity=finish==='glaze'?1.15:finish==='satinShell'?.80:finish==='satinClay'?.75:finish==='brass'||finish==='agedBrass'?.85:.5;
       // Satin clay reuses the porous clay map; only its broad reflected
       // response differs. It is still an opaque standard surface, not a coat.
-      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish==='satinClay'?'clay':finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='satinShell'?.017:finish==='glaze'?.009:finish==='agedBrass'?.006:finish==='brass'?.0015:finish==='paper'?.014:.012;
+      material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish==='satinClay'?'clay':finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='satinShell'?.017:finish==='glaze'?.009:finish==='agedBrass'?.006:finish==='brass'?.0015:finish==='paperFiber'?.009:finish==='paper'?.014:.012;
       material.map=material.bumpMap;
       // The same cellulose field varies its grazing response without an
       // additional texture allocation, transparent layer or geometry draw.

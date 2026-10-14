@@ -23,6 +23,13 @@ paper material with geometry/lighting frozen. Paired timing: retained154
 prove completed-GPU work or locked60fps.155 remains a revision-requested
 prototype in the historical ledger, not a visual success.
 
+Pass157's isolated Echo paper material is retained, with unchanged grades.
+The reviewer sees modestly improved irregular fibres at ordinary portrait
+size, clearer in inspection; room/campus impact is negligible. All373 tests
+and build pass. Campus/close samples submit59.994/60.00fps. The new isolated
+material adds two campus draw calls (137 total); close remains133. The next
+study is local illumination around Lumen with geometry/materials frozen.
+
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
 pass-60 reviewer, without prior scores, gave **7.5/10 character craft, 8.0/10

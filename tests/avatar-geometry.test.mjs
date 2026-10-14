@@ -1759,6 +1759,31 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
   disposeObject(all);kit.dispose();
 });
 
+test('Echo paper material uses bounded crossing fibres without changing other identities or mesh refinement',()=>{
+  const kit=new SceneKit(),base=characterMaterial(kit,'#ffffff','paper'),study=characterMaterial(kit,'#ffffff','paperFiber');
+  assert.equal(study.userData.characterFinish,'paper','dense surfaces keep the original paper refinement');
+  assert.equal(study.userData.paperFiberStudy,true);
+  assert.equal(study.roughness,.94);assert.equal(study.roughnessMap,null,'the dry study stays matte rather than dark fibres becoming polished');
+  assert.equal(study.transparent,false);assert.equal(study.bumpScale,.009);
+  assert.equal(study.map,study.bumpMap);assert.notEqual(study.map,base.map);
+  assert.equal(study.map,characterMaterial(kit,'#cdb68f','paperFiber').map,'all study parts share one texture');
+  const {width,height,data}=study.map.image;assert.equal(width,512);assert.equal(height,512);assert.equal(data.byteLength,1048576);
+  let dx=0,dy=0,min=255,max=0;
+  for(let y=1;y<height;y++)for(let x=1;x<width;x++){
+    const i=(y*width+x)*4,v=data[i];min=Math.min(min,v);max=Math.max(max,v);
+    dx+=Math.abs(v-data[i-4]);dy+=Math.abs(v-data[i-width*4]);assert.equal(data[i+3],255);
+  }
+  assert.ok(dx/dy>.8&&dx/dy<1.25,'short fibres do not have the previous strong vertical streak bias');
+  assert.ok(min>=160&&max<=250&&max-min>35,'quiet bounded variation, not black speckles');
+  const all=new THREE.Group();
+  for(const id of ['reflection-echo','reflection-quill','email-swift']){
+    const model=makeProxy(members.find(c=>c.id===id),kit);all.add(model);
+    const paper=meshes(model).filter(mesh=>mesh.material.userData.characterFinish==='paper');assert.ok(paper.length>0);
+    for(const mesh of paper)assert.equal(!!mesh.material.userData.paperFiberStudy,id==='reflection-echo','the material study remains isolated to Echo');
+  }
+  disposeObject(all);kit.dispose();
+});
+
 test('paper folds and compass relief expose their authored front planes with one-sided materials',()=>{
   const kit=new SceneKit(),material=new THREE.MeshBasicMaterial();
   for(const form of ['compassStar','paperDisc','pageFold','paperWing','capePanel']){
