@@ -1511,3 +1511,35 @@ front row is the largest remaining scene-scale gap. The reviewer recommends
 a bounded Dispatch work-corner study: a rug fitted to the actual workstation,
 coherent resident/desk grouping without invented poses, and better constructed
 storage and planting at varied heights. Production remains accepted 133.
+
+Pass 136 studies Dispatch's complete work corner. A 3.9 × 3.45 rug replaces
+the oversized 4.55 × 4.2 field. The rear storage now uses a joined carcass,
+recessed books and drawers; naturally proportioned small pots/leaves sit
+outside its shallow rack transform but within the same certified bounds.
+Layered front planting uses the already accepted botanical surface. Swift's
+real home, egress and paper-facing work anchor move to the desk's right side;
+its floor height and neutral pose remain unchanged, as do the owl and lights.
+No activity event is injected. An initial new test looked for a retained group
+inside retired mesh sources; the corrected structure batches the rack and
+natural planting together and checks their actual merged envelope.
+
+All 356 tests/build pass, including full-radius routes, unique filing-cabinet
+identity, surface anchors and actual plant/cabinet bounds. Campus submits
+59.9994 fps (1.74/2.60 ms CPU mean/p95; 128 draws, 393,952 triangles);
+Merchant close submits 59.80 fps (1.75/2.40 ms; 154 draws, 2,654,177 triangles,
+three dense avatars). An additional Dispatch close sample submits 60.0054 fps
+(1.79/2.80 ms; 119 draws, 1,563,371 triangles, two dense avatars). The Dispatch
+sample is additional coverage, not a matched prior-pass comparison. Matched
+Dispatch/campus day/night images and all three timings are in surface-pass-136.
+Pass 135 remote CI succeeded.
+
+The independent reviewer retains the rug, cabinet and planting but requires
+a Swift placement revision before accepting the whole grouping. Dispatch
+craft rises to 7.5; fidelity stays 7.5, campus remains 7.0 / 7.5. Swift is
+clearer but looks like a separate visitor at the outer rug edge. The next
+revision brings its real home toward the desk's short-end corner, preserving
+its visible side silhouette. Cabinet fronts still look somewhat cork-like.
+The reviewer also sees lamp-top/whiteboard-edge differences outside this
+pass's source changes; their cause is not established by screenshots. Broader
+furnishing construction and layering remain the campus priority. This is a
+partially retained prototype checkpoint, not an A or production promotion.

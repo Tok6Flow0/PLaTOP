@@ -112,6 +112,38 @@ test('all five enclosed offices share painted joinery while the open foyer remai
   }
 });
 
+test('Dispatch groups its real work corner without a pose or a fictitious smaller walking envelope',async t=>{
+  const {rooms,teams,kit,disposeObject,navigator}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  const room=rooms.get('email');room.root.updateMatrixWorld(true);
+  assert.deepEqual(room.root.userData.rugSurface.bounds,[-1.95,-1.725,1.95,1.725]);
+  for(const [i,expected]of [[-.8,.1,-1.6],[1.8,.1,-.25]].entries()){
+    assert.ok(room.actorHomes[i].distanceTo(new THREE.Vector3(...expected))<1e-9);
+  }
+  assert.equal(room.actorFacing[1],-.42,'Swift has a neutral arrival orientation, not a work pose');
+  assert.equal(room.navigation.desks[1].seatHeight,.1,'Swift is never lifted to pretend it is sitting on a desktop');
+  assert.ok(Math.abs(room.navigation.desks[1].screen[0]-.78)<1e-9&&Math.abs(room.navigation.desks[1].screen[1]-.44)<1e-9,'work faces the actual paper surface');
+  const filing=room.root.getObjectByName('email:cabinet'),bookcase=room.root.getObjectByName('email:bookcase');
+  assert.ok(filing&&bookcase&&filing!==bookcase,'the reachable filing cabinet keeps its unique identity');
+  const localBounds=object=>{
+    const bounds=new THREE.Box3().setFromObject(object);
+    bounds.min.sub(room.center);bounds.max.sub(room.center);return bounds;
+  };
+  const cabinetBounds=localBounds(bookcase);
+  assert.ok(cabinetBounds.min.x>=1.7&&cabinetBounds.max.x<=2.83);
+  assert.ok(cabinetBounds.min.z>=-2.4595&&cabinetBounds.max.z<=-2.1155,
+    'actual merged cabinet and leaf vertices fit the existing rear-aisle reservation');
+  const natural=bookcase.getObjectByName('Dispatch upright cabinet planting');
+  assert.ok(natural);
+  assert.deepEqual(natural.getWorldScale(new THREE.Vector3()).toArray(),[1,1,1],'plants are not flattened with the shallow cabinet');
+  const swift=navigator.desk('email-swift');
+  assert.equal(navigator.pointClear(swift.position,.6),true);
+  for(const team of teams)for(const place of ['door','task','lounge','whiteboard','cabinet']){
+    const target=navigator.anchor(team.id,place);if(!target)continue;
+    assert.ok(navigator.route(swift.position,target.position,.6),'Swift retains routes from its actual side position');
+  }
+});
+
 test('Beacon starter reading nook fits the existing reserved floor slot and leaves neutral homes unchanged', async () => {
   const {rooms,kit,disposeObject}=await realLayout();
   const room=rooms.get('support'),nook=room.defaultSlotProps.floor;

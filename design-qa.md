@@ -19,7 +19,12 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-135 suite passes **355 tests** and the production build passes. Its
+The pass-136 suite passes **356 tests** and the production build passes. The
+Dispatch prototype's rug, cabinet and planting are retained at **7.5 craft /
+7.5 fidelity**, but Swift's side placement requires revision before the whole
+grouping is accepted. Campus remains 7.0 / 7.5; its camera sample submits
+59.9994 fps, Merchant close 59.80 fps and additional Dispatch close 60.0054 fps.
+The earlier pass-135
 floor material study is retained: narrower timber modules and quiet relief
 improve the exposed margins without a significant night regression. Campus
 remains **7.0 craft / 7.5 fidelity**. Fixed campus and close workloads submit

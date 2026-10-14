@@ -81,11 +81,11 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const center = new THREE.Vector3((index % 3 - 1) * 6.15, 0, (Math.floor(index / 3) - 0.5) * OFFICE_ROW_SPACING);
   root.position.copy(center);
   const palette = finishes[index];
-  const framedStorage = index===0 || index===2;
+  const framedStorage = index===0 || index===2 || index===5;
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
-  const rugWidth=index===0?4.4:index===2?4.0:index===4||index===3?4.1:4.55, rugDepth=index===0?4.0:index===2?4.4:index===3?3.35:index===1?4.1:4.2, rugZ=index===0?-1:index===2?-.8:index===3?.05:index===1?-.65:.35;
+  const rugWidth=index===0?4.4:index===2?4.0:index===5?3.9:index===4||index===3?4.1:4.55, rugDepth=index===0?4.0:index===2?4.4:index===3?3.35:index===5?3.45:index===1?4.1:4.2, rugZ=index===0?-1:index===2?-.8:index===5?0:index===3?.05:index===1?-.65:.35;
   root.userData.rugSurface = { bounds: [-rugWidth/2,rugZ-rugDepth/2,rugWidth/2,rugZ+rugDepth/2], height: 0.13 };
   const isFoyer = index === 4;
   const walls: Room['walls'] = [];
@@ -195,13 +195,15 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     const shelfWidth = index < 3 ? 0.88 : 1;
     const storageX = index === 5 ? shelfX : -shelfX;
     const storageZ = index === 5 ? backZ + 0.31 : shelfZ;
-    // Dispatch uses a genuinely shallow wall rack. Its full-height books and
-    // foliage are compressed with the carcass, so the open rear aisle has no
-    // unaccounted-for overhangs or a smaller navigation-only shelf footprint.
+    // Dispatch keeps its shallow wall rack and certified rear aisle. Its
+    // smaller upright plants below are built at natural proportions, outside
+    // the rack's depth transform, and fit that same physical envelope.
     const storageDepth = index === 5 ? 0.4 : 1;
-    const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, storageDepth); (framedStorage?root:interior).add(leftShelf);
-    const leftTop=framedStorage?storageCabinet(leftShelf,kit,true,index===0?'merchant':'wayfinder'):shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,4);
-    if(framedStorage)leftShelf.name=`${team.id}:cabinet`;
+    const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, index===5?1:storageDepth); (framedStorage?root:interior).add(leftShelf);
+    const rack=index===5?new THREE.Group():leftShelf;
+    if(index===5){rack.scale.z=storageDepth;leftShelf.add(rack);}
+    const leftTop=framedStorage?storageCabinet(rack,kit,true,index===2?'wayfinder':'merchant'):shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,4);
+    if(framedStorage)leftShelf.name=`${team.id}:${index===5?'bookcase':'cabinet'}`;
     shelfAsset=[storageX,leftTop+.01,storageZ+.02];
     if (index === 3) {
       const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, -1.65); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
@@ -227,8 +229,15 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     blockers.push({ bounds: index < 3 ? [-2.9, shelfZ - 0.38, -1.94, shelfZ + 0.48]
       : index === 5 ? [1.7, storageZ - 0.38 * storageDepth, 2.83, storageZ + 0.48 * storageDepth] : [-2.83, shelfZ - 0.38, -1.7, shelfZ + 0.48] });
     if (!lowerRoom) blockers.push({ bounds: [1.94, shelfZ - 0.38, 2.9, shelfZ + 0.48] });
-    plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a','leaf',index===2);
-    plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
+    if(index===5){
+      const planting=new THREE.Group();planting.name='Dispatch upright cabinet planting';
+      leftShelf.add(planting);
+      plant(planting,kit,-.20,.02,.57,leftTop,'#b5aa8a','spear');
+      plant(planting,kit,.24,.02,.38,leftTop,'#a88e61','herb');
+    }else{
+      plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a','leaf',index===2);
+      plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
+    }
     if(framedStorage)tidyStaticMeshes(leftShelf);
   }
   if (index % 3 === 0) wall('left', -3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);
@@ -337,7 +346,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     : index===0 ? [[-1.95,.25],[0,-1.5],[1.95,.10]]
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
-    : team.members.length === 2 ? [[-0.8, index === 5 ? -1.7 : -1.5], [0.8, index === 5 ? -1.7 : -1.5]]
+    : index===5 ? [[-.8,-1.7],[1.8,-.35]]
+    : team.members.length === 2 ? [[-0.8, -1.5], [0.8, -1.5]]
       : team.members.length === 4 ? [[-.70, -1.5], [.70, -1.23], [-.70, 1.5], [.70, 1.63]]
         : [[-0.8, 1.5], [0, -1.5], [0.8, 1.5]];
   const desks: DeskNavigation[] = seats.map(([x, side], memberIndex) => {
@@ -376,18 +386,19 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       }
       blockers.push({ bounds: [x - 0.36, z - (character.id==='bridge-scout'?.48:.36), x + 0.36, z + 0.36], deskIndex: memberIndex });
     }
-    const screen:NavigationPoint=paired?paired.point(0,north?paired.screenZ:.25):[computer?.position.x ?? x,screenZ];
-    const workFacing=paired||index===3&&computer?Math.atan2(screen[0]-x,screen[1]-z):facing;
+    const screen:NavigationPoint=index===5&&memberIndex===1?[tableX+Math.min(1,tableWidth/2-.32),tableZ+.34]
+      :paired?paired.point(0,north?paired.screenZ:.25):[computer?.position.x ?? x,screenZ];
+    const workFacing=paired||index===3&&computer||index===5&&memberIndex===1?Math.atan2(screen[0]-x,screen[1]-z):facing;
     return { position: [x, z], screen, facing:workFacing,
       egress: paired ? [Math.sign(x)*(north?.6:.45),north?-3.6:1.8]
         : isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
-        : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? character.id==='bridge-scout'?-1.29:-1.15 : paired&&memberIndex===3?1.15:1.2)],
+        : index===5&&memberIndex===1 ? [aisleX,z] : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? character.id==='bridge-scout'?-1.29:-1.15 : paired&&memberIndex===3?1.15:1.2)],
       ...(isFoyer || standingSide || index === 5 ? { seatHeight: OFFICE_FLOOR_Y } : character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
   });
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
   // These are neutral arrival silhouettes, not work poses. Keep the real desk
   // facing on the navigation anchor so an agent's chosen work turns to its task.
-  const actorFacing = desks.map((desk,i) => index===3?0:index===2?-Math.sign(desk.position[0])*(i<2?.28:.65):isFoyer && i===2 ? -.42
+  const actorFacing = desks.map((desk,i) => index===3?0:index===5&&i===1?-.42:index===2?-Math.sign(desk.position[0])*(i<2?.28:.65):isFoyer && i===2 ? -.42
     : sideSeating && i!==1 ? (i===0?.32:-.38) : desk.facing);
   const paperX = Math.min(1, tableWidth / 2 - 0.32), mugX = Math.min(1.12, tableWidth / 2 - 0.27);
   // Distinct default tabletop layouts leave the same physical work stops free.
@@ -400,7 +411,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - 1.0, 0.825 + i * 0.057, tableZ - 0.4], [0.44, 0.055, 0.32], [0, -0.12, 0]));
   const frontPlantParent=index===2?new THREE.Group():interior;
   if(index===2){frontPlantParent.name='Wayfinders starter floor plant';root.add(frontPlantParent);defaultSlotProps.floor=frontPlantParent;}
-  plant(frontPlantParent, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad',index===2);
+  plant(frontPlantParent, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad',index===2||index===5);
   if(index===2)tidyStaticMeshes(frontPlantParent);
   if(index===5)parcelStack(interior,kit,2.63,frontPlantZ);
   else plant(interior, kit, 2.63, frontPlantZ, 1.18, 0.1, '#c5b998', 'spear');
