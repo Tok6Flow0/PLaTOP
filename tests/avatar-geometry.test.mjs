@@ -224,8 +224,11 @@ test('close-up LOD is bounded, follows existing joints and releases its worker a
   const worker = { postMessage(message) { queueMicrotask(() => this.onmessage?.({ data: { id: message.id, result: refineCharacterSurface(message.source, message.finish, 1) } })); }, terminate() { terminated = true; } };
   const detail = new CharacterDetail(scene, actors, () => wake++, () => worker);
   detail.select(camera, 800);
+  assert.equal(detail.count,0);assert.ok(detail.pending>0);
+  assert.equal(detail.closeSurfaces,true,'near contact shading is selected before any worker result');
   for (let i = 0; i < 500 && detail.pending; i++) await new Promise(resolve => setImmediate(resolve));
   assert.equal(detail.count, MAX_DETAILED_CHARACTERS); assert.equal(wake, MAX_DETAILED_CHARACTERS);
+  assert.equal(detail.closeSurfaces,true,'worker completion cannot switch the room shading');
   detail.select(camera, 800); scene.updateMatrixWorld(true); detail.sync();
   const ownedMaterials=new Map();
   for(const mesh of meshes(scene))if(mesh.userData.characterDetailMesh&&mesh.material.isMeshPhysicalMaterial&&!ownedMaterials.has(mesh.material)){
@@ -240,6 +243,7 @@ test('close-up LOD is bounded, follows existing joints and releases its worker a
   assert.equal(source.userData.characterDetailHidden, undefined, 'hidden actor restores authored layers');
   camera.position.z = 70; camera.updateMatrixWorld(true); detail.select(camera, 800);
   assert.equal(detail.count, 0, 'campus view retains no dense buffers');
+  assert.equal(detail.closeSurfaces,false,'a real camera scale change returns campus shading');
   assert.ok([...ownedMaterials.values()].every(count=>count===1),'leaving close view releases material clones once');
   detail.dispose(); assert.equal(terminated, true);
   actors.forEach(actor => { assert.ok(meshes(actor.model).every(mesh => !mesh.userData.characterDetailHidden && mesh.layers.mask === 1)); });
@@ -268,8 +272,16 @@ test('worker failure leaves original characters visible and does not retry forev
   const detail = new CharacterDetail(scene, [{ root, model }], () => {}, () => { starts++; throw Error('Worker unavailable'); });
   detail.select(camera, 800); await new Promise(resolve => setImmediate(resolve)); detail.select(camera, 800);
   assert.equal(starts, 1); assert.equal(detail.count, 0); assert.equal(detail.pending, 0);
+  assert.equal(detail.closeSurfaces,true,'worker failure keeps the camera-selected shading profile');
   assert.ok(meshes(model).every(mesh => mesh.visible && mesh.layers.mask === 1));
   detail.dispose(); disposeObject(scene); kit.dispose();
+});
+
+test('both scene rendering paths use camera-selected contact shading, not completed mesh count',async()=>{
+  const scene=await readFile(new URL('../src/scene.ts',import.meta.url),'utf8');
+  assert.equal((scene.match(/output\.render\(camera, !!idleTeamId, characterDetail\.closeSurfaces\)/g)??[]).length,2);
+  assert.doesNotMatch(scene,/output\.render\([^\n]*characterDetail\.count/);
+  assert.match(scene,/sceneContactProfile = characterDetail\.closeSurfaces/);
 });
 
 test('a synchronous worker transfer failure resolves pending detail without hiding the source',async()=>{

@@ -735,7 +735,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       batches.sync();
       characterDetail.sync();
       contacts.sync(camera);
-      output.render(camera, !!idleTeamId, characterDetail.count > 0);
+      output.render(camera, !!idleTeamId, characterDetail.closeSurfaces);
       return;
     }
     const batchStart = performance.now();
@@ -744,10 +744,11 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     characterDetail.sync();
     host.dataset.detailedCharacters = String(characterDetail.count);
     host.dataset.detailPending = String(characterDetail.pending);
+    host.dataset.sceneContactProfile = characterDetail.closeSurfaces ? 'close' : 'campus';
     const contactStart = performance.now();
     contacts.sync(camera);
     const renderStart = performance.now();
-    output.render(camera, !!idleTeamId, characterDetail.count > 0);
+    output.render(camera, !!idleTeamId, characterDetail.closeSurfaces);
     const renderEnd = performance.now();
     stageCurrent![1] = contactStart - batchStart;
     stageCurrent![2] = renderStart - contactStart;
@@ -804,6 +805,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
         delete host.dataset.sceneTriangles;
         delete host.dataset.sceneRenderMs;
         delete host.dataset.sceneCpuMs;
+        delete host.dataset.sceneContactProfile;
         resolutionFields.forEach((field) => { delete host.dataset[field]; });
         contextFields.forEach((field) => { delete host.dataset[field]; });
       }
@@ -1386,6 +1388,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       delete host.dataset.proxyCount;
       delete host.dataset.detailedCharacters;
       delete host.dataset.detailPending;
+      delete host.dataset.sceneContactProfile;
       delete host.dataset.sceneDrawCalls;
       delete host.dataset.sceneTriangles;
       delete host.dataset.sceneRenderMs;

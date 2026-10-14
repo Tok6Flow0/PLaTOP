@@ -1565,3 +1565,41 @@ remain inconsistent across saved images and cannot be attributed to Swift;
 night is substantially stable. Stop tuning its home. Varied furniture
 construction—older stacked-tray shelves and heavy table bands—is the next
 priority. Production remains accepted 133 until the new smoke check.
+
+Accepted 137 was then promoted to the isolated production QA server. The
+served entry is index-D4599wBz.js. Office window, exit, reset, close zoom,
+third-person mist, first-person mist, exit and reset all pass; browser warnings
+and errors are empty. The bridge is connected and all six teams remain
+Awaiting update. Saved responsive production images are in surface-pass-137,
+not presented as matched reference captures. Pass 137 remote CI succeeded.
+
+Pass 138 makes contact shading reproducible without altering furniture,
+characters or lights. The close/campus profile follows camera-selected surface
+scale before asynchronous detail meshes finish, including worker failure.
+An observed close-lab transition stays close from ready=0/pending=3 to
+ready=3/pending=0. Separately, the existing GTAO-owned denoiser texture is
+filled in place with fixed seeded noise at construction, keeping its size,
+sampling, allocation lifetime and frame cost unchanged. Two independent
+Dispatch daylight window captures have identical SHA-256
+0d9e34cafe18e32a81449d41610e6d19aca061e504d056e6e2a7fd753f93e39d.
+That fixed window uses the campus profile, so the earlier lamp differences
+cannot be attributed to worker readiness there. These are separate fixes;
+the precise cause of every earlier screenshot difference is not established.
+
+All 358 tests/build pass. Tests cover selection before readiness and on worker
+failure, both render paths, deterministic in-place texture filling and no
+global random replacement. Campus submits 59.9916 fps (CPU mean/p95
+1.99/3.20 ms), Merchant close 60.0018 fps (1.90/3.20 ms), and Dispatch close
+59.9982 fps (1.63/2.80 ms). Draw/triangle counts remain 128/393,952,
+154/2,654,177 and 119/1,563,371 respectively. These are short CPU-side
+submission samples, not GPU-completion guarantees. Matched views, readiness
+observations and timings are in surface-pass-138.
+
+The independent reviewer retains 138 with no meaningful visual regression:
+Dispatch stays 7.5 craft / 7.5 fidelity; campus stays 7.0 / 7.5. The daylight
+lamp opening/rim and whiteboard-edge shading agree across supplied reloads;
+night silhouettes, cabinet and lamp pool persist. Bottom-control opacity is
+the notable daylight capture difference, not scene geometry. This confirms
+consistency of these captures, not every possible device or camera. The next
+priority remains larger furniture construction/layering, not another lamp,
+whiteboard or Swift adjustment. No A or reference match is claimed.

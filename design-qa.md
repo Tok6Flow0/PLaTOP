@@ -19,7 +19,19 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-137 suite passes **356 tests** and the production build passes. Its
+The pass-138 suite passes **358 tests** and the production build passes. Close
+contact shading now follows the camera selection before worker meshes arrive;
+the existing denoiser texture receives deterministic noise at construction.
+Two independent fixed Dispatch daylight reload captures are byte-identical.
+The independent reviewer retains the consistency fix with no score increase:
+Dispatch 7.5 / 7.5 and campus 7.0 / 7.5. Campus, Merchant close and Dispatch
+close each submit about 60 fps; CPU timings and limitations are in the ledger.
+The isolated production smoke now serves accepted pass 137: office window,
+close zoom, third/first-person mist, exit and reset pass without console
+warnings/errors. All six teams remain Awaiting update; this is not live-agent
+adoption evidence.
+
+The pass-137 suite passed **356 tests** and its production build passed. Its
 corrected Swift placement is retained, with a clearer desk-side pairing and
 no conspicuous new overlap. All three fixed camera samples submit about 60 fps.
 The earlier
@@ -32,7 +44,7 @@ floor material study is retained: narrower timber modules and quiet relief
 improve the exposed margins without a significant night regression. Campus
 remains **7.0 craft / 7.5 fidelity**. Fixed campus and close workloads submit
 60.0006 and 59.40 fps respectively; CPU cost and additional draws are recorded
-in the ledger. Production remains accepted pass 133. The earlier
+in the ledger. The earlier
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;

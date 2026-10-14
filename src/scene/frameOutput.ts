@@ -1,6 +1,19 @@
 import * as THREE from 'three';
 import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
 import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
+import { SimplexNoise } from 'three/addons/math/SimplexNoise.js';
+
+/** Fixed denoising directions make an unchanged room reproducible on reload.
+ * Fill the pass-owned texture in place: no extra GPU allocation or frame work. */
+export function seedDenoiseTexture(texture:THREE.DataTexture):void {
+  let seed=0x504c4154;
+  const simplex=new SimplexNoise({random:()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;}});
+  const {width,height}=texture.image,data=texture.image.data as Uint8Array;
+  for(let y=0;y<height;y++)for(let x=0;x<width;x++)for(let channel=0;channel<4;channel++){
+    data[(y*width+x)*4+channel]=(simplex.noise(x+(channel%2)*width,y+Math.floor(channel/2)*height)*.5+.5)*255;
+  }
+  texture.needsUpdate=true;
+}
 
 export interface OcclusionPipeline {
   resize(width: number, height: number): void;
@@ -16,6 +29,7 @@ export function makeOcclusionPipeline(renderer: THREE.WebGLRenderer, scene: THRE
   const colour = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType,
     depthTexture: depth, samples: Math.min(2, renderer.capabilities.maxSamples) });
   const ao = new GTAOPass(scene, camera, 1, 1);
+  seedDenoiseTexture(ao.pdNoiseTexture);
   ao.setGBuffer(depth);
   ao.output = GTAOPass.OUTPUT.Off;
   ao.updateGtaoMaterial({ radius: 1.05, thickness: 0.7, distanceFallOff: 1, scale: 1.6, samples: 8 });

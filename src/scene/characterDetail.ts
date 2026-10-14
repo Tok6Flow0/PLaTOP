@@ -202,6 +202,9 @@ export class CharacterDetail {
 
   get count(): number { return [...this.residents.values()].filter(resident => resident.ready).length; }
   get pending(): number { return [...this.residents.values()].filter(resident => !resident.ready && !resident.failed).length; }
+  /** Camera-selected surface scale is available before asynchronous meshes.
+   * A worker finishing (or failing) must not change the room's contact light. */
+  get closeSurfaces(): boolean { return !this.disposed && this.selected.size > 0; }
 
   private release(actor: DetailActor, resident: Resident): void {
     for (const part of resident.parts) { delete part.source.userData.characterDetailHidden; part.source.layers.mask = part.layers; }

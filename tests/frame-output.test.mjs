@@ -8,7 +8,19 @@ const source = await readFile(new URL('../src/scene/frameOutput.ts', import.meta
 const javascript = ts.transpileModule(source, {
   compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 },
 }).outputText.replaceAll(/from '([^']+)'/g, (_, name) => `from ${JSON.stringify(import.meta.resolve(name))}`);
-const { FrameOutput, makeOcclusionPipeline } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+const { FrameOutput, makeOcclusionPipeline, seedDenoiseTexture } = await import(`data:text/javascript;base64,${Buffer.from(javascript).toString('base64')}`);
+
+test('contact denoising fills the same bounded noise in place on every pipeline creation',()=>{
+  const originalRandom=Math.random;
+  const a=new THREE.DataTexture(new Uint8Array(64*64*4),64,64),b=new THREE.DataTexture(new Uint8Array(64*64*4).fill(255),64,64);
+  const pixels=a.image.data,version=a.version;
+  seedDenoiseTexture(a);seedDenoiseTexture(b);
+  assert.equal(a.image.data,pixels,'the existing pass-owned allocation is retained');
+  assert.deepEqual(a.image.data,b.image.data,'fresh page/pipeline instances have identical sample directions');
+  assert.equal(a.version,version+1);assert.equal(Math.random,originalRandom,'the global random source is never replaced');
+  assert.ok(new Set(a.image.data).size>180,'the seeded field is varied, not constant');
+  a.dispose();b.dispose();
+});
 
 function fixture(t, { workspace = true, initialReset = true, pipelineFactory } = {}) {
   const originalDocument = globalThis.document;
