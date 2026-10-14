@@ -1603,3 +1603,37 @@ the notable daylight capture difference, not scene geometry. This confirms
 consistency of these captures, not every possible device or camera. The next
 priority remains larger furniture construction/layering, not another lamp,
 whiteboard or Swift adjustment. No A or reference match is claimed.
+
+Pass 139 replaces Beacon's intersecting rear shelf towers with one joined
+filing cabinet and a separate narrow plant stand. The low agent-replaceable
+reading nook becomes a joined two-bay cabinet, and its intersecting floor pot
+is removed. Identity, home, neutral pose, desk, lights and full actor radii
+stay unchanged. The first new support test incorrectly compared retired mesh
+sources after their hierarchy had been removed by batching. The corrected
+tests check real unbatched pot/top geometry and the actual merged room bounds
+separately. All 360 tests/build pass, including every full-radius route.
+
+Initial capture URLs omitted /tools and silently fell back to the normal
+local clock. All pass-139 final views were replaced with verified fixed noon
+and 23:00 fixture captures before review. The extra pass-138 Beacon daylight
+image remains local-clock construction evidence only; its night image and
+earlier campus evidence use the correct fixture. The reviewer was informed.
+No lighting claim is based on that unmatched daylight pair.
+
+Campus submits 59.9988 fps (CPU mean/p95 1.69/2.30 ms; 132 draws, 394,482
+triangles); Merchant close submits 59.9994 fps (1.88/3.10 ms; 156 draws,
+2,658,347 triangles). Additional Beacon close coverage submits 60.00 fps
+(1.72/3.30 ms; 87 draws, 995,187 triangles, one detailed avatar), without a
+matched preceding Beacon benchmark. The four additional campus draws are
+recorded rather than described as free. These short submission samples are
+not GPU-completion guarantees. Evidence is in surface-pass-139. Pass 138
+remote CI succeeded.
+
+The independent reviewer retains 139: continuous cabinet construction,
+recessed contents and the stand's intermediate height improve separation.
+Beacon stays 7.5 craft / 7.5 fidelity and campus stays 7.0 / 7.5. There is no
+obvious new intersection, hidden face or significant night regression.
+The corner is less leafy and the low cabinet's broad side is plain at campus
+scale; restoring tangled clutter is not recommended. Next is a bounded
+Merchant desk prototype with a distinct thin top, recessed supporting rails
+and articulated legs, judged at campus scale before wider application.

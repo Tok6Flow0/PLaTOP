@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Decoration, Team } from '../types';
 import { SceneKit } from './primitives';
-import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paneledWallFinish, paper, parcelStack, plant, rug, shelf, sign, stool, storageCabinet, table, tidyStaticMeshes } from './environmentProps';
+import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paneledWallFinish, paper, parcelStack, plant, plantStand, rug, shelf, sign, stool, storageCabinet, table, tidyStaticMeshes } from './environmentProps';
 
 export type NavigationPoint = [number, number];
 export type NavigationBounds = [number, number, number, number];
@@ -81,7 +81,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const center = new THREE.Vector3((index % 3 - 1) * 6.15, 0, (Math.floor(index / 3) - 0.5) * OFFICE_ROW_SPACING);
   root.position.copy(center);
   const palette = finishes[index];
-  const framedStorage = index===0 || index===2 || index===5;
+  const framedStorage = index===0 || index===2 || index===3 || index===5;
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
@@ -206,12 +206,12 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if(framedStorage)leftShelf.name=`${team.id}:${index===5?'bookcase':'cabinet'}`;
     shelfAsset=[storageX,leftTop+.01,storageZ+.02];
     if (index === 3) {
-      const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, -1.65); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
-      const sideTop=shelf(sideShelf, kit, 0, 0, index + 1, false);
-      plant(sideShelf, kit, -0.23, -0.07, 0.61, sideTop, '#b6a17c', 'leaf');
-      plant(sideShelf, kit, 0.01, -0.24, 0.42, sideTop, '#cbb488', 'herb');
-      plant(sideShelf, kit, 0.21, -0.06, 0.63, sideTop, '#c7b794', index % 2 ? 'herb' : 'spear');
-      blockers.push({ bounds: [-2.9, -2.22, -2.02, -1.08] });
+      // A separate small stand occupies the gap between storage and lamp.
+      // The former perpendicular bookcase physically intersected the cabinet.
+      const stand=plantStand(root,kit,-2.45,-1.18);
+      plant(stand,kit,0,0,.62,stand.userData.supportHeight,'#c7b794','spear');
+      tidyStaticMeshes(stand);
+      blockers.push({bounds:[-2.70,-1.43,-2.20,-.93]});
     } else if (!lowerRoom) {
       const rightShelf = new THREE.Group(); rightShelf.position.set(shelfX, 0, shelfZ + 0.01); rightShelf.scale.x = shelfWidth; interior.add(rightShelf);
       const rightTop=framedStorage?storageCabinet(rightShelf,kit,false,index===0?'merchant':'wayfinder'):shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
@@ -421,10 +421,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     { bounds: index===5 ? [2.10,frontPlantZ-.44,3.16,frontPlantZ+.44] : [2.24, frontPlantZ - 0.39, 3.02, frontPlantZ + 0.39] });
   const shelfPlant=sideSeating||index===2;
   const midPlant: NavigationPoint = isFoyer ? [-1.85, -2.8] : [-2.53, shelfPlant ? -2.2 - halfGain - rearExtension : lowerRoom ? 1.1 : -0.85];
-  plant(interior, kit, ...midPlant, 0.54, shelfPlant ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
+  if(index!==3)plant(interior, kit, ...midPlant, 0.54, shelfPlant ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
   // In the two side-standing rooms this pot is physically supported by the
   // existing shelf and fits its already-blocked envelope, not the walking lane.
-  if (!shelfPlant) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
+  if (!shelfPlant&&index!==3) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
   if (index >= 3 && index !== 4) {
     lamp(interior, kit, -2.12, -0.38, index);
     blockers.push({ bounds: [-2.52, -0.78, -1.72, 0.02] });
@@ -435,7 +435,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // authors that slot; the default never crowds an agent's own furnishing.
     const nook=new THREE.Group();nook.name='Beacon starter reading nook';
     nook.position.set(-2.15,0,1.0);nook.rotation.y=Math.PI/2;root.add(nook);
-    const top=shelf(nook,kit,0,0,3,false,.70);
+    const top=storageCabinet(nook,kit,false,'reading');
     plant(nook,kit,-.15,0,.48,top,'#c3b9a2','herb');
     tidyStaticMeshes(nook);defaultSlotProps.floor=nook;
   }

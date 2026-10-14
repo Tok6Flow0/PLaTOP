@@ -444,10 +444,10 @@ export function mug(parent: THREE.Object3D, kit: SceneKit, x: number, z: number,
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.026, 8, 16), kit.material(color, 'ceramic')); handle.position.set(x + 0.15, 0.95, z); handle.castShadow = true; parent.add(handle);
 }
 /** A joined cabinet: internal shelves end inside continuous sides, not tray rims. */
-export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: boolean, profile: 'wayfinder'|'merchant'='wayfinder'): number {
+export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: boolean, profile: 'wayfinder'|'merchant'|'reading'='wayfinder'): number {
   const cabinet=new THREE.Group();cabinet.name=drawers?'Framed filing cabinet':'Framed open cabinet';parent.add(cabinet);
   floorContact(cabinet,0,.105,.04,1.15,.82);
-  const merchant=profile==='merchant',top=merchant&&drawers?1.96:2.38;
+  const merchant=profile==='merchant',reading=profile==='reading',top=reading?1.05:merchant&&drawers?1.96:2.38;
   const board=(name:string,color:string,position:Point,size:Point,radius=.009)=>{
     const mesh=surface(beveledBlock(cabinet,kit,color,position,size,radius),'furniture');
     mesh.material=kit.material(color,'wood');mesh.name=name;return mesh;
@@ -459,9 +459,9 @@ export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: b
     board('Cabinet front stile','#b28a5e',[side*.4775,(top+.14)/2,.371],[.075,top-.22,.045],.008);
   }
   board('Cabinet crown','#b68e60',[0,top-.04,.04],[1.09,.08,.75],.014);
-  const levels=merchant?(drawers?[.23,.96,1.48]:[.23,.93,1.62]):[.23,1.03,1.68];
+  const levels=reading?[.23,.62]:merchant?(drawers?[.23,.96,1.48]:[.23,.93,1.62]):[.23,1.03,1.68];
   for(const y of levels)board('Inset cabinet shelf','#ac865c',[0,y,.025],[.88,.055,.63],.006);
-  if(drawers)for(const y of merchant?[.435,.77]:[.455,.825]){
+  if(drawers&&!reading)for(const y of merchant?[.435,.77]:[.455,.825]){
     board('Framed drawer','#a98a60',[0,y,.341],[.875,.315,.045],.01);
     board('Recessed drawer panel','#987d57',[0,y,.367],[.735,.218,.009],.003);
     kit.mesh(cabinet,'box','#d8c6a0',[0,y+.053,.375],[.15,.047,.008]);
@@ -489,7 +489,12 @@ export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: b
     kit.mesh(archive,'box','#bbb396',[0,height/2-.013,0],[width+.01,.026,.35],undefined,'fabric');
     kit.mesh(archive,'box','#e5d6b3',[0,.015,.173],[width*.43,.055,.004]);
   };
-  if(merchant&&drawers){
+  if(reading){
+    volume(-.30,.2575,.28,.09,0);volume(-.185,.2575,.30,.10,1);volume(-.055,.2575,.25,.08,3);
+    box(.25,.2575,.22,.25);
+    for(let i=0;i<3;i++)volume(-.20,.6475+i*.048,.30,.048,i+1,0,true);
+    volume(.21,.6475,.25,.10,0,-.10);
+  }else if(merchant&&drawers){
     volume(-.29,.9875,.38,.10,3);volume(-.155,.9875,.43,.11,1);volume(-.015,.9875,.34,.09,0);
     box(.25,.9875,.18,.22);
     for(let i=0;i<3;i++)volume(-.20,1.5075+i*.048,.32,.048,i+2,0,true);
@@ -512,6 +517,22 @@ export function storageCabinet(parent: THREE.Object3D, kit: SceneKit, drawers: b
     for(let i=0;i<3;i++)volume(.20,1.7075+i*.058,.34,.058,i+2,0,true);
   }
   return top;
+}
+/** A narrow, joined stand gives foliage its own support rather than intersecting storage. */
+export function plantStand(parent:THREE.Object3D,kit:SceneKit,x:number,z:number):THREE.Group {
+  const group=new THREE.Group();group.name='Joined plant stand';group.position.set(x,0,z);parent.add(group);
+  floorContact(group,0,.105,0,.49,.49);
+  const piece=(name:string,position:Point,size:Point,radius=.008)=>{
+    const mesh=surface(beveledBlock(group,kit,'#94734e',position,size,radius),'furniture');
+    mesh.material=kit.material('#94734e','wood');mesh.name=name;
+  };
+  piece('Plant stand top',[0,.7275,0],[.46,.065,.46],.022);
+  for(const dx of [-.17,.17])for(const dz of [-.17,.17])piece('Plant stand leg',[dx,.40,dz],[.045,.60,.045]);
+  for(const side of [-1,1]){
+    piece('Plant stand rail',[side*.17,.655,0],[.035,.08,.30]);
+    piece('Plant stand rail',[0,.655,side*.17],[.30,.08,.035]);
+  }
+  group.userData.supportHeight=.76;return group;
 }
 export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, variant: number, cupboard: boolean, scale = 1, tiers: 3|4|5 = 3): number {
   if (scale !== 1) { const group = new THREE.Group(); group.position.set(x, 0, z); group.scale.setScalar(scale); parent.add(group); parent = group; x = z = 0; }

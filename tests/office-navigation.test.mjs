@@ -71,9 +71,10 @@ test('joined room cabinets have continuous sides and recessed supported contents
   const {SceneKit,disposeObject}=await loadScene('scene/primitives.ts');
   const {storageCabinet}=await loadScene('scene/environmentProps.ts');
   const kit=new SceneKit();t.after(()=>kit.dispose());
-  for(const profile of ['wayfinder','merchant'])for(const drawers of [false,true]){
+  for(const profile of ['wayfinder','merchant','reading'])for(const drawers of [false,true]){
+    if(profile==='reading'&&drawers)continue;
     const root=new THREE.Group();t.after(()=>disposeObject(root));
-    const expectedTop=profile==='merchant'&&drawers?1.96:2.38;
+    const expectedTop=profile==='reading'?1.05:profile==='merchant'&&drawers?1.96:2.38;
     assert.equal(storageCabinet(root,kit,drawers,profile),expectedTop,'top plants retain their existing support height');
     root.updateMatrixWorld(true);
     const bounds=new THREE.Box3().setFromObject(root);
@@ -82,7 +83,7 @@ test('joined room cabinets have continuous sides and recessed supported contents
     assert.ok(bounds.min.y>=.099999&&bounds.max.y<=expectedTop+.000001);
     const named=name=>{const found=[];root.traverse(o=>{if(o.name===name)found.push(o);});return found;};
     assert.equal(named('Continuous cabinet side').length,2);
-    const shelves=named('Inset cabinet shelf');assert.equal(shelves.length,3,'three larger bays replace five tray rows');
+    const shelves=named('Inset cabinet shelf');assert.equal(shelves.length,profile==='reading'?2:3,'larger joined bays replace tray rows');
     assert.equal(named('Framed drawer').length,drawers?2:0);
     const shelfTops=shelves.map(s=>new THREE.Box3().setFromObject(s).max.y);
     const items=root.getObjectByName('Recessed cabinet contents').children;
@@ -97,6 +98,26 @@ test('joined room cabinets have continuous sides and recessed supported contents
       assert.ok(shelves.every(s=>{const shelf=new THREE.Box3().setFromObject(s);return box.max.y<=shelf.min.y+.0001||box.min.y>=shelf.max.y-.0001;}),'contents do not intersect shelf boards');
     }
   }
+});
+
+test('Beacon planting has real independent support without intersecting its storage or lamp envelopes',async t=>{
+  const {rooms,kit,disposeObject}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  const room=rooms.get('support');room.root.updateMatrixWorld(true);
+  const stand=room.root.getObjectByName('Joined plant stand');assert.ok(stand);
+  const bounds=new THREE.Box3().setFromObject(stand);bounds.min.sub(room.center);bounds.max.sub(room.center);
+  assert.ok(bounds.min.x>=-2.70&&bounds.max.x<=-2.20&&bounds.min.z>=-1.43&&bounds.max.z<=-.93,
+    'all actual stand, pot and leaf vertices fit the navigation blocker');
+  assert.ok(bounds.min.y>=.0999&&bounds.max.y<1.9);
+  const planting=stand.getObjectByName('Botanical plant spear');assert.ok(planting);
+  assert.equal(planting.position.y,stand.userData.supportHeight,'the room places its pot on the authored support');
+  const cupboard=room.root.getObjectByName('support:cabinet');assert.ok(cupboard);
+  assert.ok(cupboard.position.z+.48<bounds.min.z,'the stand is in front of the cabinet, not inside it');
+  assert.ok(bounds.max.z<-.78,'the stand clears the existing lamp envelope');
+  const floorPots=[];room.root.traverse(root=>root.userData.staticSources?.traverse(object=>{
+    if(object.name==='Botanical plant leaf'&&Math.abs(object.position.x+2.53)<1e-6&&Math.abs(object.position.z-1.1)<1e-6)floorPots.push(object);
+  }));
+  assert.equal(floorPots.length,0,'the redundant pot no longer intersects the agent-replaceable reading cabinet');
 });
 
 test('all five enclosed offices share painted joinery while the open foyer remains open',async t=>{

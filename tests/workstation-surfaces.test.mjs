@@ -13,7 +13,7 @@ async function moduleUrl(path, imports = {}) {
 }
 const primitives = await moduleUrl('../src/scene/primitives.ts');
 const { SceneKit, disposeObject } = await import(primitives);
-const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, parcelStack, paneledWallFinish, floorSurface, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
+const { laptop, monitor, table, chair, plant, plantStand, rug, lamp, notebook, shelf, parcelStack, paneledWallFinish, floorSurface, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
 
 function canvasDocument(t) {
   const prior = globalThis.document;
@@ -22,6 +22,24 @@ function canvasDocument(t) {
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => context }) };
   t.after(() => { globalThis.document = prior; });
 }
+
+test('joined plant stand has supported legs, rails and a real top under its pot',()=>{
+  const kit=new SceneKit(),root=new THREE.Group(),stand=plantStand(root,kit,0,0);
+  plant(stand,kit,0,0,.62,stand.userData.supportHeight,'#c7b794','spear');root.updateMatrixWorld(true);
+  const top=new THREE.Box3().setFromObject(stand.getObjectByName('Plant stand top'));
+  const pot=new THREE.Box3().setFromObject(stand.getObjectByName('Rounded plant pot'));
+  assert.ok(Math.abs(top.max.y-pot.min.y)<1e-6,'pot bottom rests on the actual top, not a guessed height');
+  const legs=stand.children.filter(o=>o.name==='Plant stand leg');assert.equal(legs.length,4);
+  for(const leg of legs){const bounds=new THREE.Box3().setFromObject(leg);
+    assert.ok(bounds.min.y>=.0999&&bounds.max.y>=top.min.y,'legs touch the floor and top');
+  }
+  const bounds=new THREE.Box3().setFromObject(stand);
+  assert.ok(bounds.min.x>=-.25&&bounds.max.x<=.25&&bounds.min.z>=-.25&&bounds.max.z<=.25);
+  let triangles=0;stand.traverse(o=>{if(o.isMesh){triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;
+    assert.equal(o.material.transparent,false);
+  }});assert.ok(triangles<7000,'one small supporting assembly stays bounded and opaque');
+  disposeObject(root);kit.dispose();
+});
 
 test('timber and limestone floors retain physical heights with bounded shared relief and independent passage UVs',t=>{
   canvasDocument(t);const kit=new SceneKit(),root=new THREE.Group();

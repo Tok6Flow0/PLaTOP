@@ -19,7 +19,15 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-138 suite passes **358 tests** and the production build passes. Close
+The pass-139 suite passes **360 tests** and the production build passes. The
+independent reviewer retains Beacon's separated cabinet/plant stand and joined
+reading nook at **7.5 craft / 7.5 fidelity**; campus remains **7.0 / 7.5**.
+Its unchanged neutral character and matched night views show no significant
+regression. Campus, Merchant close and additional Beacon close timing samples
+each submit about 60 fps, with the added draws and capture limitations recorded
+in the ledger. Merchant's heavy desk apron is the next construction study.
+
+The pass-138 suite passed **358 tests** and its production build passed. Close
 contact shading now follows the camera selection before worker meshes arrive;
 the existing denoiser texture receives deterministic noise at construction.
 Two independent fixed Dispatch daylight reload captures are byte-identical.
