@@ -541,7 +541,7 @@ export function lamp(parent: THREE.Object3D, kit: SceneKit, x: number, z: number
   kit.mesh(parent, 'cylinder', metal, [x, 0.16, z], [0.52, 0.09, 0.52]); kit.mesh(parent, 'cylinder', metal, [x, 0.92, z], [0.055, 1.52, 0.055]);
   const shade = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.39, 0.44, 24, 1, true), new THREE.MeshStandardMaterial({ color: '#e5cd98', roughness: 0.9, side: THREE.DoubleSide, emissive: '#efb450', emissiveIntensity: 0.6 })); shade.position.set(x, 1.77, z); shade.castShadow = true; parent.add(shade);
   kit.mesh(parent, 'sphere', '#f7dc9f', [x, 1.68, z], [0.16, 0.2, 0.16]);
-  const glow = new THREE.PointLight('#ffd08b', 0.8, 3.6, 2); glow.name = `warm-desk-lamp-${variant}`; glow.position.set(x, 1.57, z); parent.add(glow);
+  const glow = new THREE.PointLight('#ffd08b', 1.5, 3.6, 2); glow.name = `warm-desk-lamp-${variant}`; glow.position.set(x, 1.57, z); parent.add(glow);
   const haloTexture = canvasTexture(64, 64, (context) => {
     const gradient = context.createRadialGradient(32, 32, 1, 32, 32, 31); gradient.addColorStop(0, 'rgba(255,205,101,.35)'); gradient.addColorStop(0.42, 'rgba(255,208,128,.13)'); gradient.addColorStop(1, 'rgba(255,211,138,0)'); context.fillStyle = gradient; context.fillRect(0, 0, 64, 64);
   });

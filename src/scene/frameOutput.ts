@@ -18,12 +18,12 @@ export function makeOcclusionPipeline(renderer: THREE.WebGLRenderer, scene: THRE
   const ao = new GTAOPass(scene, camera, 1, 1);
   ao.setGBuffer(depth);
   ao.output = GTAOPass.OUTPUT.Off;
-  ao.updateGtaoMaterial({ radius: 0.8, thickness: 0.7, distanceFallOff: 1, scale: 1.2, samples: 8 });
+  ao.updateGtaoMaterial({ radius: 1.05, thickness: 0.7, distanceFallOff: 1, scale: 1.6, samples: 8 });
   ao.updatePdMaterial({ radius: 4, samples: 8 });
   const material = new THREE.ShaderMaterial({
     uniforms: { tColour: { value: colour.texture }, tDepth: { value: depth },
       tBackground: { value: null }, backgroundColour: { value: new THREE.Color() }, backgroundIsTexture: { value: false },
-      tAO: { value: ao.gtaoMap }, strength: { value: 0.88 } },
+      tAO: { value: ao.gtaoMap }, strength: { value: 0.95 } },
     vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }',
     fragmentShader: `varying vec2 vUv;
       uniform sampler2D tColour; uniform sampler2D tDepth; uniform sampler2D tAO; uniform float strength;

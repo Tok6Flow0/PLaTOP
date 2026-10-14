@@ -51,6 +51,7 @@ not asked for a desired score or instructed to approve.
 | 60 (Dispatch continuity review) | 8.4/10 — B+; rejected lower-body prototype | Quieter facial fibres improve; shorter exposed legs help but the extended breast ends as a blunt projecting block |
 | 60 (fresh full-set reviewer) | Campus craft 7.0 / fidelity 7.5; characters craft 7.5 / fidelity 8.0 | Sparse staging, uniform campus light/materials, simplified primary forms and mixed paper/plastic construction remain conspicuous |
 | 61 (Dispatch continuity review) | 8.5/10 — B+; preferred over 59 and 60 | Tapered underside resolves the blunt peg and shorter legs improve proportions; broad stiff wing and slightly pinched lower keel remain |
+| 62 (fresh campus reviewer) | Campus craft 7.0 / fidelity 7.5; modest improvement, unchanged grade | Better contact depth and warm/cool night separation; uniform materials, sparse staging and broad desk shadows remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -96,6 +97,19 @@ The facial texture now uses shorter irregular fibre groups rather than coherent
 sunburst rays. The reviewer prefers 61 over 59 and 60, but flags the broad wing
 plate as the largest remaining Swift mismatch. The stricter fresh full-set
 scores above remain current; a targeted correction does not replace them.
+
+Pass 62: 301 tests and the production build pass. Stronger soft contact shading
+uses the existing half-resolution eight-sample occlusion pass. Two existing
+floor lamps cast stronger warm pools while the ambient fill is reduced modestly;
+no lights, geometry draws or rendering passes were added. The fresh reviewer
+recommends retaining the depth improvement but not further global darkening:
+broad desk contact patches risk looking dirty, and material richness still needs
+work. This is not a new character grade or accepted reference match.
+The isolated compiled pass-62 application loads its local dense worker under
+the normal CSP. Its Savor Bridge window reports one detailed avatar, zero
+pending requests and 75 draws / 846,565 triangles; no console warning or error
+was observed. The window's separate 30-fps target is not the camera benchmark.
+The isolated bridge remains empty; no live chat activity was produced.
 
 - 280 tests pass; production build passes, with the existing large-bundle warning.
 - All sixteen exact 100× counts, finite attributes, source preservation, curvature,
@@ -372,6 +386,7 @@ and is not treated as close-up evidence.
 | Pass 59 campus | 51.80 | 2.31 / 4.00 ms | 110 / 354,087 | 0 |
 | Pass 60 campus | 53.60 | 1.61 / 3.00 ms | 110 / 354,087 | 0 |
 | Pass 61 campus | 55.10 | 1.92 / 2.70 ms | 110 / 354,087 | 0 |
+| Pass 62 campus | 51.70 | 1.64 / 2.50 ms | 110 / 354,087 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -424,6 +439,10 @@ same-machine sample rather than proof of unchanged worst-case GPU cost.
 Pass 60 Dispatch submitted 51.60 fps / 2.17 ms mean / 4.00 ms p95; pass 61
 submitted 51.80 fps / 1.94 ms / 3.20 ms. Both used two dense avatars, 109 draws
 and 1,670,062 triangles. The rejected 60 shape still has its measured evidence.
+Pass 62 Dispatch submitted 50.40 fps / 2.03 ms mean / 3.40 ms p95, with two
+dense avatars, 109 draws and 1,670,062 triangles. Its fixed-night campus sample
+submitted 52.30 fps / 2.03 ms / 3.50 ms (110 draws, 354,087 triangles, no dense
+avatars). These retain the same sampling limits; no night baseline was measured.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for
