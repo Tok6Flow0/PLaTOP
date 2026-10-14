@@ -1149,6 +1149,22 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
   disposeObject(all); kit.dispose();
 });
 
+test('paper chest sheets have a shallow ordered overlap rather than coincident centre faces',()=>{
+  const kit=new SceneKit(),ray=new THREE.Raycaster();
+  for(const id of ['reflection-echo','reflection-quill']){
+    const model=makeProxy(members.find(c=>c.id===id),kit);model.updateMatrixWorld(true);
+    const over=model.getObjectByName('paperChestL'),under=model.getObjectByName('paperChestR');let checked=0;
+    for(let y=-.39;y<.05;y+=.02){
+      const point=over.localToWorld(new THREE.Vector3(0,y,0));
+      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+      const top=ray.intersectObject(over,false)[0],bottom=ray.intersectObject(under,false)[0];
+      if(top&&bottom){const gap=top.point.z-bottom.point.z;assert.ok(gap>.003&&gap<.015,'one thin stock of paper overlaps the other without a deep air gap');checked++;}
+    }
+    assert.ok(checked>=15,'the ordering persists down the visible breast seam');disposeObject(model);
+  }
+  kit.dispose();
+});
+
 test('paper temple folds use long shared planes and rear overlaps follow the actual head',()=>{
   const kit=new SceneKit();
   for(const [form,edges] of [['paperEchoHead',9],['paperQuillHead',11]]){

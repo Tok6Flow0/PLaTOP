@@ -361,7 +361,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     if(!navy){
       sculpt(head,id==='reflection-echo'?'paperEchoHood':'paperQuillHood','#ffffff',[0,0,0],[.78,.65,.42],undefined,'paper');
       sculpt(body,'paperChestL','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
-      sculpt(body,'paperChestR','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
+      // The mirrored chest sheets overlap at their centre seam. Give the
+      // under-fold its own depth instead of letting both faces coincide;
+      // the upper sheet now exposes a thin edge and a local overlap shadow.
+      sculpt(body,'paperChestR','#ffffff',[0,0,-.010],[.70,.70,.62],undefined,'paper');
       sculpt(body,'paperBackL','#ffffff',[0,0,0],[.70,.70,.36],undefined,'paper');
       sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],[.70,.66,.36],[0,0,-.065],'paper');
       for(const [index,form] of ['paperCrownBackL','paperCrownBackR'].entries()){

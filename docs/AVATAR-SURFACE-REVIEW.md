@@ -87,6 +87,7 @@ not asked for a desired score or instructed to approve.
 | 92 (fresh Reflection head-wrap review) | Craft 7.5 / fidelity 7.5; modestly retained | Fine facial edges and broad panels improve separation and preserve expressions. Side/rear still reads as a solid mass, with a slightly shield-like double cheek edge. Next correction should use long brow/temple folds, not another projecting rim |
 | 93 (fresh Reflection temple prototype) | Craft 7.0 / fidelity 7.5; rejected | Longer temple planes improve the quarter view, but the rear converges into a distracting pinched cluster. Keep 92 until the back closes with broad tucked panels |
 | 94 (fresh Reflection rear-closure correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 92 | Broad rear closure removes the distracting star and keeps longer temple folds. Stop rearranging small rear panels; establish thin-edge and overlap-shadow hierarchy on visible cheeks, wings and chest |
+| 95 (fresh Reflection chest-overlap review) | Craft 7.5 / fidelity 7.5; retained as a visual tie | Shallow ordered overlap removes coincident centre faces without visible regression, but the change is not confidently distinguishable at supplied image size. Prioritize warm-to-shadow material transitions and recover amber lantern detail |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -752,3 +753,10 @@ and 2,000 close-view triangles relative to 92 without adding textures, lights
 or passes. Submission samples remain variable, not GPU-completion guarantees.
 The isolated production server and campus capture files still show 92; 94 is
 a source/portrait checkpoint, not a new host-installation claim.
+
+Pass 95 passes 323 tests/build. Ray checks verify that the two chest sheets
+have a shallow ordered overlap instead of coincident centre faces. Campus
+submits 54.90 fps (1.96 ms mean / 3.20 ms p95 CPU), Reflection close 54.30 fps
+(1.88 ms / 3.30 ms), with 94's draw/triangle counts. No new geometry, material,
+texture or light is allocated. The reviewer treats the visual result as a tie;
+the numerical correction is not evidence of a higher appearance score.
