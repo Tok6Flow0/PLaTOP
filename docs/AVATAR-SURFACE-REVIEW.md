@@ -1785,3 +1785,38 @@ redesign is recommended. The next campus study is vegetation structure and
 height, first in Beacon: fuller varied leaf volumes around a tall crown and
 complementary mid-height planting, preserving circulation rather than adding
 pots indiscriminately.
+
+Pass 145 changes only two existing Beacon plants. The cabinet crown and
+separate stand now use 31 leaves on five connected, height-varied boughs;
+leaf tissue has closed .006-thick edges. The stand changes from an upright
+spear to a smaller broadleaf crown. Existing pots, supports, collision bounds,
+map/material ownership and draw batching remain unchanged. All 367 tests and
+the build pass, including closed manifold leaf surfaces and actual plant
+bounds. Forty-five offline portraits were regenerated; 28 are shipped.
+
+The independent reviewer retains145: Beacon 8.0 craft / 7.5 fidelity,
+campus 7.5 / 7.5. Cabinet foliage has clearer gaps and light/dark layering;
+the stand is a smaller gain and loses some species contrast. Night retains
+readable leaves/furniture without new broad bands. More density in these two
+plants would have diminishing returns. Matched144/145 Beacon day/night,
+campus day/night, portraits and measurements are in surface-pass-145.
+
+Campus samples submit 57.70 and 53.50 fps (CPU mean/p95 2.86/5.20 and
+3.04/5.30 ms). A same-session previous-plant sample submits57.60 fps
+(2.50/4.60 ms); restoring145 submits60.00 fps (2.59/4.50 ms). All four
+samples are retained, not just the fastest. Campus is135 draws/431,806
+triangles versus144's416,734. Merchant close submits60.00 fps
+(2.65/4.60 ms),155 draws/2,659,455 triangles. These short CPU-submission
+samples do not establish GPU completion or zero regression; variability also
+occurs in the matched previous-plant baseline.
+
+A fresh144 character-only review records craft/fidelity: Merchant7.5/7.0,
+Clear Path6.5/6.5, Wayfinders7.5/7.0, Beacon7.0/6.5,
+Lantern Desk6.5/6.0 and Dispatch7.0/6.5; ensemble about7.0/6.5.
+This lower assessment is not discarded in favor of earlier scores. Main
+gaps are shape/construction: separate primitive-like torsos and shoulders,
+solid-looking paper bodies, opaque-looking lantern panes, repeated feather
+plates and Swift's smooth breast. The next bounded prototype reconstructs
+one Reflection owl torso/resting wing as coordinated descending sheets,
+preserving its head, expression, accessory and neutral state. Neither145
+nor that assessment establishes the requested A. Production remains143.

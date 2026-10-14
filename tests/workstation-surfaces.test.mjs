@@ -476,6 +476,38 @@ test('layered crowns use curved transverse ribs and connected bounded leaves wit
   const resources=new THREE.Group();resources.add(root,root.userData.staticSources);disposeObject(resources);kit.dispose();
 });
 
+test('full crowns have closed leaf tissue, varied connected boughs and bounded shared-map construction',()=>{
+  const kit=new SceneKit(),root=new THREE.Group();plant(root,kit,0,0,1,.1,'#bca581','leaf','full');root.updateMatrixWorld(true);
+  const group=root.children[0],canopy=group.getObjectByName('Connected botanical canopy'),leaves=[];
+  const inverse=new THREE.Matrix4().copy(group.matrixWorld).invert(),point=new THREE.Vector3();let triangles=0;
+  group.traverse(mesh=>{
+    if(!mesh.isMesh)return;triangles+=(mesh.geometry.index?.count??mesh.geometry.attributes.position.count)/3;
+    if(mesh.name==='Cupped botanical leaf')leaves.push(mesh);
+  });
+  assert.equal(leaves.length,31);assert.ok(triangles<15000,'fullness has an explicit small-prototype budget');
+  assert.equal(new Set(leaves.map(leaf=>leaf.geometry)).size,3);
+  for(const leaf of leaves){
+    const geometry=leaf.geometry,positions=geometry.attributes.position,index=geometry.index;
+    assert.equal(geometry.userData.leafThickness,.006);assert.equal(leaf.material.map,leaf.material.bumpMap);
+    const vertex=i=>new THREE.Vector3().fromBufferAttribute(positions,i);
+    const key=i=>vertex(i).toArray().map(n=>n.toFixed(6)).join(','),edges=new Map();
+    for(let i=0;i<index.count;i+=3){
+      const [a,b,c]=[index.getX(i),index.getX(i+1),index.getX(i+2)];
+      assert.ok(vertex(b).sub(vertex(a)).cross(vertex(c).sub(vertex(a))).lengthSq()>1e-16,'no collapsed tissue or rim triangles');
+      for(const [from,to]of [[a,b],[b,c],[c,a]]){
+        const edge=[key(from),key(to)].sort().join('|');edges.set(edge,(edges.get(edge)??0)+1);
+      }
+    }
+    assert.ok([...edges.values()].every(count=>count===2),'front/back tissue and separate rim vertices form a closed leaf');
+    for(let i=0;i<positions.count;i++){
+      point.fromBufferAttribute(positions,i).applyMatrix4(leaf.matrixWorld).applyMatrix4(inverse);
+      assert.ok(Math.hypot(point.x,point.z)<=.500001,'thickness is included in the certified crown envelope');
+    }
+  }
+  tidyStaticMeshes(root);assert.equal(root.children.filter(o=>o.isMesh&&o.material.map?.userData.botanicalGrain).length,1);
+  const resources=new THREE.Group();resources.add(root,root.userData.staticSources);disposeObject(resources);kit.dispose();
+});
+
 test('fine botanical surfaces share one opaque map, preserve UVs when merged and dispose once', () => {
   const kit=new SceneKit(),root=new THREE.Group(),resources=new THREE.Group();
   plant(root,kit,-1,0,1);plant(root,kit,1,0,1,.1,'#bca581','broad');

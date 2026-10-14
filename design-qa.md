@@ -19,7 +19,17 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-144 suite passes **366 tests** and the production build passes.
+The pass-145 suite passes **367 tests** and the production build passes.
+The reviewer retains two fuller Beacon plants at room **8.0 craft / 7.5
+fidelity**, campus **7.5 / 7.5**. A fresh character-only assessment is lower:
+ensemble about **7.0 craft / 6.5 fidelity**, with Reflection **6.5 / 6.0**.
+These scores are retained without substituting the earlier, more favorable
+judgments. The next prototype is one Reflection owl's torso/resting wing.
+Campus samples varied (53.50–60.00 fps); a matched previous-plant sample
+was 57.60 fps and the restored candidate was 60.00 fps. Merchant close was
+60.00 fps. This is not proof of completed-GPU timing or zero regression.
+
+The pass-144 suite passed **366 tests** and the production build passed.
 The reviewer retains the thicker, rounded shell at campus **7.5 craft /
 7.5 fidelity**. An experimental material that caused visible bands was
 removed; the accepted finish is unchanged. Campus/close samples submit

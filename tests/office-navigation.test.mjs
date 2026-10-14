@@ -129,7 +129,7 @@ test('Beacon planting has real independent support without intersecting its stor
   assert.ok(bounds.min.x>=-2.70&&bounds.max.x<=-2.20&&bounds.min.z>=-1.43&&bounds.max.z<=-.93,
     'all actual stand, pot and leaf vertices fit the navigation blocker');
   assert.ok(bounds.min.y>=.0999&&bounds.max.y<1.9);
-  const planting=stand.getObjectByName('Botanical plant spear');assert.ok(planting);
+  const planting=stand.getObjectByName('Botanical plant leaf');assert.ok(planting);
   assert.equal(planting.position.y,stand.userData.supportHeight,'the room places its pot on the authored support');
   const cupboard=room.root.getObjectByName('support:cabinet');assert.ok(cupboard);
   assert.ok(cupboard.position.z+.48<bounds.min.z,'the stand is in front of the cabinet, not inside it');

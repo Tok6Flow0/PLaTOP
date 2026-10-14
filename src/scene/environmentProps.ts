@@ -617,7 +617,7 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   }
   return (height+.11)*scale;
 }
-export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0, layered=false): THREE.BufferGeometry {
+export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0, layered=false,solid=false): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   // Broad floor leaves need a shallow fold and an upward tip; applying the
   // small cabinet leaf's deeper cup everywhere makes a petal-like rosette.
@@ -658,7 +658,40 @@ export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, vari
   }
   const geometry = new THREE.BufferGeometry(); geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
   geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2)); geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-  geometry.setIndex(indices); geometry.computeVertexNormals(); return geometry;
+  geometry.setIndex(indices); geometry.computeVertexNormals();
+  if(!solid)return geometry;
+  // Closed leaf tissue has a real edge under a grazing camera. Share the
+  // original smooth face normals; give the thin rim its own vertices/normals.
+  const count=positions.length/3,normals=geometry.getAttribute('normal');
+  const tissue:number[]=[],tissueNormals:number[]=[],tissueUV:number[]=[],tissueColors:number[]=[],faces:number[]=[];
+  const thickness=.006;
+  for(const side of [1,-1])for(let i=0;i<count;i++){
+    const normal=new THREE.Vector3().fromBufferAttribute(normals,i);
+    tissue.push(positions[i*3]+normal.x*thickness*.5*side,positions[i*3+1]+normal.y*thickness*.5*side,positions[i*3+2]+normal.z*thickness*.5*side);
+    tissueNormals.push(normal.x*side,normal.y*side,normal.z*side);
+    tissueUV.push(uvs[i*2],uvs[i*2+1]);tissueColors.push(...colors.slice(i*3,i*3+3));
+  }
+  const edges=new Map<string,[number,number,number]>();
+  for(let i=0;i<indices.length;i+=3){
+    const [a,b,c]=indices.slice(i,i+3);faces.push(a,b,c,c+count,b+count,a+count);
+    for(const [from,to]of [[a,b],[b,c],[c,a]]){
+      const key=`${Math.min(from,to)}:${Math.max(from,to)}`,edge=edges.get(key);
+      if(edge)edge[2]++;else edges.set(key,[from,to,1]);
+    }
+  }
+  for(const [a,b,uses]of edges.values())if(uses===1){
+    const start=tissue.length/3,front=new THREE.Vector3().fromArray(tissue,a*3),back=new THREE.Vector3().fromArray(tissue,(a+count)*3),end=new THREE.Vector3().fromArray(tissue,(b+count)*3);
+    const normal=back.clone().sub(front).cross(end.clone().sub(front)).normalize();
+    for(const i of [a,a+count,b+count,b]){
+      tissue.push(...tissue.slice(i*3,i*3+3));tissueNormals.push(normal.x,normal.y,normal.z);
+      tissueUV.push(...tissueUV.slice(i*2,i*2+2));tissueColors.push(...tissueColors.slice(i*3,i*3+3));
+    }
+    faces.push(start,start+1,start+2,start,start+2,start+3);
+  }
+  geometry.dispose();const closed=new THREE.BufferGeometry();
+  closed.setAttribute('position',new THREE.Float32BufferAttribute(tissue,3));closed.setAttribute('normal',new THREE.Float32BufferAttribute(tissueNormals,3));
+  closed.setAttribute('uv',new THREE.Float32BufferAttribute(tissueUV,2));closed.setAttribute('color',new THREE.Float32BufferAttribute(tissueColors,3));
+  closed.setIndex(faces);closed.userData.leafThickness=thickness;return closed;
 }
 const botanicalGrains = new WeakMap<SceneKit, THREE.DataTexture>();
 /** One opaque vein map serves every real cupped leaf. The canopy geometry,
@@ -679,7 +712,8 @@ function botanicalGrain(kit: SceneKit): THREE.DataTexture {
   texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;
   botanicalGrains.set(kit,texture);return texture;
 }
-export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf', layered=false): void {
+export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, size: number, base = 0.1, potColor = '#bca581', kind: 'leaf' | 'spear' | 'herb' | 'broad' | 'ivy' = 'leaf', layered:boolean|'full'=false): void {
+  const fullCrown=layered==='full';
   const group = new THREE.Group(); group.position.set(x, base, z); group.scale.setScalar(size); parent.add(group);
   group.name = `Botanical plant ${kind}`;
   if (base <= 0.12) floorContact(group, 0, 0.006 / size, 0, 0.57, 0.57);
@@ -716,7 +750,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   const canopy = new THREE.Group(); canopy.name = 'Connected botanical canopy';
   // Three shared curved forms vary the leaf blade within a fixed crown budget.
   // This is immutable botany; no randomized per-frame motion is introduced.
-  const geometries=(kind==='leaf'||kind==='broad'?[-1,0,1]:[0]).map(variation=>leafGeometry(kind==='spear',kind==='herb'||kind==='ivy',kind==='broad',variation,layered));
+  const geometries=(kind==='leaf'||kind==='broad'?[-1,0,1]:[0]).map(variation=>leafGeometry(kind==='spear',kind==='herb'||kind==='ivy',kind==='broad',variation,Boolean(layered),fullCrown));
   // Spend the unchanged per-plant triangle budget on visible leaves. These
   // millimetre-wide stems need only five sides and share one local geometry.
   const stemGeometry=new THREE.CylinderGeometry(.5,.5,1,5);
@@ -756,7 +790,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     if(kind==='leaf'||kind==='broad'){
       // Offset pairs and apical leaves follow connected boughs. The layered
       // crown has four boughs and 28 leaves; default crowns retain 21/17.
-      const sizes=layered?[7,7,7,7]:kind==='leaf'?[7,7,7]:[6,6,5],phase=x*1.7+z*2.3+size*5.1+base*.7;let index=0;
+      const sizes=fullCrown?[7,6,7,6,5]:layered?[7,7,7,7]:kind==='leaf'?[7,7,7]:[6,6,5],phase=x*1.7+z*2.3+size*5.1+base*.7;let index=0;
       for(let branch=0;branch<sizes.length;branch++){
         const angle=branch*2.399+.31+.20*Math.sin(phase+branch);
         const broadCrown=layered&&kind==='broad';

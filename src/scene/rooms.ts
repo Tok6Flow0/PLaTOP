@@ -216,7 +216,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       // A separate small stand occupies the gap between storage and lamp.
       // The former perpendicular bookcase physically intersected the cabinet.
       const stand=plantStand(root,kit,-2.45,-1.18);
-      plant(stand,kit,0,0,.62,stand.userData.supportHeight,'#c7b794','spear');
+      plant(stand,kit,0,0,.49,stand.userData.supportHeight,'#c7b794','leaf','full');
       tidyStaticMeshes(stand);
       blockers.push({bounds:[-2.70,-1.43,-2.20,-.93]});
     } else if (!lowerRoom) {
@@ -242,7 +242,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       plant(planting,kit,-.20,.02,.57,leftTop,'#b5aa8a','spear');
       plant(planting,kit,.24,.02,.38,leftTop,'#a88e61','herb');
     }else{
-      plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a','leaf',index===2);
+      plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a','leaf',index===3?'full':index===2);
       plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
     }
     if(framedStorage)tidyStaticMeshes(leftShelf);
