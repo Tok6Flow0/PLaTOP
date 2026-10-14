@@ -280,11 +280,15 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   // flared shell. Their unequal paths drift from shoulder to hem; valleys
   // remain outside the actual torso instead of cutting into it.
   const lobe=(centre:number,width:number)=>Math.exp(-(((angle-centre)/width)**2));
-  const fold=(.068*lobe(1.65+.90*t,.52)+.060*lobe(4.75-.75*t,.57))*THREE.MathUtils.smoothstep(t,.04,.36);
-  const drape=.225+.170*THREE.MathUtils.smoothstep(t,0,.63);
-  // The lining remains inset even at the silhouette limit. Clamping both
-  // layers together would erase their thickness at the outermost pleats.
-  return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape)+fold)-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78)+fold*.80)-inset)];
+  const fold=(.130*lobe(2.58+.18*t,.23)+.110*lobe(3.80-.12*t,.25))*THREE.MathUtils.smoothstep(t,.04,.36);
+  const drape=.225+.190*THREE.MathUtils.smoothstep(t,0,.63);
+  // Bound actual lateral/depth coordinates, not the radial control value.
+  // Clamping that value flattened the rear pleats even when their actual
+  // points lay well inside the walking envelope. Fabric can now hang away
+  // from the tapering torso while its lining keeps real thickness.
+  const x=THREE.MathUtils.clamp(Math.sin(angle)*(Math.max(r*.85+.027,drape)+fold),-.512,.512);
+  const z=THREE.MathUtils.clamp(Math.cos(angle)*(Math.max(r*.64+.029,drape*.78)+fold*.80),-.43,.43);
+  return [x-Math.sin(angle)*inset,y,z-Math.cos(angle)*inset];
 }
 
 /** Continuous forearm from shoulder into a rounded inward clasp, not a pad
@@ -309,13 +313,13 @@ function embracingArm():THREE.BufferGeometry {
 function cape(collar=false): THREE.BufferGeometry {
   // Rebalance the existing cloth budget between the drape and its overlap.
   // The worker still refines every patch 100x at close range.
-  const vertices: number[] = [], indices: number[] = [], uv:number[]=[], columns = collar?20:24, rows = collar?3:11;
+  const vertices: number[] = [], indices: number[] = [], uv:number[]=[], columns = collar?20:32, rows = collar?3:10;
   const sample=(row:number,column:number,inset:number)=>{
     // A short turned neckline sits at the neck. Extending it down the
     // shoulders made a second capelet and a rigid horizontal rear ledge.
     const u=row/rows,base=collar?.018+.070*u:u,bound=.035+1.23*Math.sin(base*Math.PI/2);
     const angle=bound+column/columns*(Math.PI*2-bound*2),t=base+(collar?.008*Math.sin(angle)*u:0);
-    return {point:navigatorCapePoint(t,angle,inset-(collar?.022:0)),uv:[angle/(Math.PI*2),t]};
+    return {point:navigatorCapePoint(t,angle,inset-(collar?.026:0)),uv:[angle/(Math.PI*2),t]};
   };
   for (let row = 0; row <= rows; row++) {
     for (let column = 0; column <= columns; column++) {

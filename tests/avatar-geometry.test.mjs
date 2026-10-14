@@ -1146,6 +1146,11 @@ test('the wrapped cape carries continuous cloth coordinates and broad asymmetric
     return Math.hypot(a[0]+b[0],a[2]-b[2]);
   });
   assert.ok(Math.max(...asymmetry)>.004,'the folds are not identically mirrored');
+  for(const t of [.65,.85]){
+    const radius=(angle)=>{const [x,,z]=navigatorCapePoint(t,angle);return Math.hypot(x,z/.78);};
+    assert.ok(radius(2.58+.18*t)>radius(Math.PI)+.035,'left hanging fold departs from the rear valley');
+    assert.ok(radius(3.80-.12*t)>radius(Math.PI)+.025,'right hanging fold departs from the rear valley');
+  }
   geometry.dispose();kit.dispose();
 });
 

@@ -109,6 +109,7 @@ not asked for a desired score or instructed to approve.
 | 114 (fresh wrapped-cape study) | Characters craft 8.0 / fidelity 7.5; campus 7.0 / 7.5; narrowly retained | Shoulders and side sweep soften without visible holes/clipping, but the exposed rear still reads as a broad navy trapezoid. Folds are too subtle. A clear overlapping neckline feeding two broad descending folds matters more than additional grain |
 | 115 (isolated guide construction review) | Guide craft 7.0 / fidelity 7.0; ensemble 7.5 / 7.5; campus 7.0 / 7.5; mixed | Retain shallow belly inlay; reject the shoulder-wide armored capelet. Isolated views reveal an existing floating hood emblem, previously hidden by the group composition |
 | 116 (guide attachment correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 115 | Attached hood star and narrow neck turn remove the largest regressions. Small pointed neckline ends remain; the rear now reads as a fitted jacket. Hanging shoulder-to-hem folds, not further shortening or grain, are the next construction priority |
+| 117 (hanging-fold prototype) | Guide craft 7.0 / fidelity 7.5; ensemble/room 7.5 / 7.5; revise before retention | Two descending folds are visibly improved, but an exposed/intersecting round shoulder component interrupts the cloth. Preserve the fold direction while correcting coverage; then prioritize the cream-edged hood point and layered head silhouette |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1088,3 +1089,30 @@ The reviewer retains the correction at guide/ensemble/room craft and fidelity
 7.5 / 7.5. The hat star is visibly attached and the broad neckline ledge is
 gone; small stepped neckline ends remain. The cape still hugs the body like a
 jacket. Hanging fold structure remains unfinished, and no A is granted.
+
+The isolated production checkpoint now serves pass 116, `index-BqkTfWng.js`.
+Wayfinders window, eleven-step zoom invitation, third/first-person mist, exit
+and reset pass without console warnings/errors. The empty QA bridge connects;
+all teams remain awaiting update, with no injected event or live-chat claim.
+
+Pass 117 passes 340 tests/build after correcting a collar-clearance failure.
+The cape's limits now bound actual Cartesian coordinates, not an over-restrictive
+radial control value. Two narrower rear fold paths depart from the lower torso;
+32 columns resolve them without increasing material, texture or draw-pass count.
+The guide has 843,600 close triangles, still inside its original coarse budget.
+Geometry checks retain lining clearance, closed winding and distinct hanging
+ridge/valley depth. These checks do not constitute visual acceptance.
+
+Campus submits 48.20 fps (1.90 ms mean / 3.30 ms p95 CPU, 114 sampled draws,
+383,854 triangles). Wayfinders close submits 46.50 fps (1.90 / 3.30 ms, 139
+draws, 2,240,027 triangles, three dense avatars). RAF remains approximately
+60 fps. These lower submission rates are retained, not replaced by a faster
+repeat; CPU time is lower than pass 116, but neither measure proves GPU time
+or identical responsiveness. Same-size actual scene and isolated/group portrait
+evidence remains under surface-pass-117. Production remains pass 116.
+The independent reviewer rejects retention unchanged: a conspicuous shoulder
+oval breaks the otherwise improved cloth. The rear folds are visibly stronger,
+not merely a test-only change; they should be preserved while coverage is
+repaired. Guide craft is 7.0, fidelity 7.5; ensemble/room remain 7.5 / 7.5.
+After that repair, the separate navy cone/plain helmet is the largest remaining
+normal-view mismatch against the cream-edged point and layered reference hood.
