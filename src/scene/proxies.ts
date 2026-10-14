@@ -99,7 +99,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       fitCharacterRelief(border,facePanel,.001,.002);
       eyes(head, .112, .018, .276, true, ink, 1.12);
       data.eyes.forEach(eye=>fitCharacterRelief(eye,facePanel,.002,.006));
-      sculpt(body,'keeperTurnedCorner','#ffffff',[0,0,0],[1,1,1],undefined,'paper');
+      sculpt(body,'keeperTurnedCorner','#efe3c7',[0,0,0],[1,1,1],undefined,'paper');
       limbs(cream, cream, true);
       data.feet.forEach(foot=>{
         foot.position.y=.065;foot.position.z=.045;
@@ -407,8 +407,14 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     }
     if (navy) {
       sculpt(body, 'breastFeathers', '#25364d', [0, 0, 0], [1, 1, 1], undefined, 'plumage');
-      sculpt(body, 'envelope', '#dcb26a', [0, .08, .388], [.19, .135, .016], undefined, 'brass');
-      stroke(body, '#835d31', [[-.083, .130, .403], [0, .065, .403], [.083, .130, .403]], .005, 'clay');
+      // A small flat insignia resting on the breast, not a projecting pouch.
+      // Separate straight fold segments retain the envelope's crisp corners.
+      const badge=joint(body,'dispatch-envelope',[0,.08,.315]);
+      sculpt(badge, 'envelope', '#dcb26a', [0,0,0], [.140, .100, .006], undefined, 'brass');
+      for(const sign of [-1,1]){
+        stroke(badge,'#835d31',[[sign*.063,.043,.005],[0,-.011,.005]],.0022,'clay');
+        stroke(badge,'#a07a3e',[[sign*.063,-.043,.004],[sign*.014,-.001,.004]],.0014,'clay');
+      }
     }
     else {
       body.scale.set(1.06,.90,1.06);

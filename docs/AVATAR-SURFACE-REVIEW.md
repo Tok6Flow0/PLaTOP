@@ -70,6 +70,7 @@ not asked for a desired score or instructed to approve.
 | 78 (fresh Dispatch beak review) | Craft 7.0 / fidelity 7.5; retained over 77 | Narrow matte rounded root improves integration; bulb-to-point taper still feels pin-like, while small repeated feathers and lower-breast dark wedges are the larger gap |
 | 79 (fresh Dispatch feather review) | Craft 7.5 / fidelity 7.5; retained | Continuous beak taper and broader breast groups improve construction; dark flank-to-wing band and angular upper rear feather boundary remain |
 | 80 (fresh Dispatch join review) | Craft 7.5 / fidelity 7.5; retained | Rear roots disappear beneath the head and closer wing overlap reduces separation; no substantial silhouette regression; oversized pouch-like envelope badge remains |
+| 81 (fresh Dispatch and Keeper detail review) | Dispatch 7.5 craft / 7.5 fidelity; Merchant 8.0 / 8.0; retained | Envelope reads smaller and flatter, Keeper corner shares the cover's cream; no visible regression; Swift's rounded head/neck and solid breast remain inconsistent with its planar wings |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -610,3 +611,13 @@ the earlier same-machine range; they do not establish equal worst-case GPU cost.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
 from the matched table; the uninterrupted rerun above does not hide that caveat.
+
+Pass 81 passes 315 tests and the production build. Dispatch's smaller, flatter
+envelope has four straight folds and sits within 0.035 units of its actual
+feather surface. Keeper's curled sheet shares its cover's warm paper colour.
+Campus submits 55.61 fps (1.63 ms mean / 3.10 ms p95 CPU, 108 draws, 371,484
+triangles); Dispatch close submits 54.00 fps (2.00 ms / 3.60 ms, 110 draws,
+1,552,423 triangles, two dense avatars). These remain samples, not a locked
+frame-rate claim. The isolated pass-80 production bundle `index-BHMpy-HH.js`
+also loaded without console warnings/errors; its idle responsive view is a
+smoke check, not an additional fixed-workload performance measurement.

@@ -642,6 +642,21 @@ test('broader owl breast groups overlap across the visible front instead of expo
   material.dispose();kit.dispose();
 });
 
+test('Dispatch envelope is a compact flat badge resting just above its feather surface',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  model.updateMatrixWorld(true);
+  const badge=model.getObjectByName('dispatch-envelope'),plate=badge.getObjectByName('envelope');
+  const bounds=new THREE.Box3().setFromObject(badge),size=bounds.getSize(new THREE.Vector3());
+  assert.ok(size.x<.16&&size.y<.12&&size.z<.014,'small, paper-flat insignia rather than thick pouch');
+  const centre=new THREE.Box3().setFromObject(plate).getCenter(new THREE.Vector3());
+  const ray=new THREE.Raycaster(new THREE.Vector3(centre.x,centre.y,2),new THREE.Vector3(0,0,-1));
+  const feather=ray.intersectObject(model.getObjectByName('breastFeathers'),false)[0];
+  assert.ok(feather,'the badge is positioned over actual plumage');
+  assert.ok(bounds.min.z>feather.point.z&&bounds.min.z-feather.point.z<.035,'badge is outside the breast without floating far away');
+  assert.equal(badge.children.length,5,'four separately straight fold segments');
+  disposeObject(model);kit.dispose();
+});
+
 test('upper rear owl feather roots tuck beneath the actual head rather than ending on a flat shoulder edge',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);
