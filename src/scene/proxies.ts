@@ -366,7 +366,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         data.highlights.push(highlight);
       }
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
-      if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.10,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
+      if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * (sign<0?.115:.135), .255, .030], sign<0?[1.02,1.10,1.30]:[1.06,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * (navy?.300:.315), .12, navy?.075:-.025]);
       if(navy)wing.scale.x=1.10;
       if(navy) sculpt(wing,'featherCore','#283b54',[sign*.015,-.10,0],[.19,.54,.245],[0,0,sign*.23],'feather');

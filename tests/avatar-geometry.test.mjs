@@ -467,6 +467,27 @@ test('owl plumage covers all four sides within the existing cached geometry budg
   geometry.dispose();kit.dispose();
 });
 
+test('owl facial fibres share one opaque surface and radiate from each actual eye',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-owl'),kit);
+  const maps=new Set();
+  for(const sign of [-1,1]){
+    const disc=model.getObjectByName(`owl-facial-disc:${sign}`),p=disc.geometry.attributes.position,uv=disc.geometry.attributes.uv;
+    maps.add(disc.material.map);
+    assert.equal(disc.material.transparent,false);
+    for(let i=0;i<p.count;i++){
+      assert.ok(Math.abs((uv.getX(i)-.5)*.365+sign*.130-p.getX(i))<1e-7);
+      assert.ok(Math.abs((uv.getY(i)-.5)*.43+.002-p.getY(i))<1e-7);
+    }
+  }
+  assert.equal(maps.size,1,'both hearts reuse one scene-owned fibre map');
+  const [map]=maps;assert.equal(map.image.width,512);assert.equal(map.image.height,512);
+  let low=255,high=0;
+  for(let i=0;i<map.image.data.length;i+=4){low=Math.min(low,map.image.data[i]);high=Math.max(high,map.image.data[i]);}
+  assert.ok(low>=185&&high<=246,'soft bundles remain cream, not dark crack marks');
+  assert.ok(high-low>35,'fibre groups retain a visible tonal scale');
+  disposeObject(model);kit.dispose();
+});
+
 test('shallow owl irises follow their curved facial discs without clipping through them',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);

@@ -828,7 +828,13 @@ function facialGrain(kit:SceneKit):THREE.DataTexture {
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const seed=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%101/100;
     const barbs=Math.pow(Math.max(0,Math.sin(a*97+r*113+Math.sin(r*43+a*13)*4)),8);
-    const tone=242-22*barbs*Math.min(1,r*3)-22*seed;
+    // Broad, softly broken fibre bundles survive downsampling. Their smaller
+    // barbs still provide the close surface; neither is a raised crack mesh.
+    const bundle=(.5+.5*Math.sin(a*43+r*14+Math.sin(a*7+r*19)*.9))**2;
+    const broken=.55+.45*Math.sin(r*37+a*9)**2;
+    const middle=(.5+.5*Math.sin(a*71+r*53+Math.sin(r*23)*2))**4;
+    const outer=THREE.MathUtils.smoothstep(r,.07,.25);
+    const tone=246-26*bundle*broken*outer-12*middle*outer-10*barbs*outer-12*seed;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;
@@ -977,7 +983,9 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
     geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
     if(owlSign)geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
-    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(vertices.flatMap((value,index)=>index%3===0?[(value-(owlSign?centre[0]:0))/width+.5,(vertices[index+1]-(owlSign?centre[1]:0))/height+.5]:[]),2));
+    // Radial facial fibres grow away from the actual eye, not the offset
+    // centre of the heart-shaped shield. The two discs share one texture.
+    geometry.setAttribute('uv',new THREE.Float32BufferAttribute(vertices.flatMap((value,index)=>index%3===0?[(value-(owlSign?owlSign*.130:0))/width+.5,(vertices[index+1]-(owlSign?.002:0))/height+.5]:[]),2));
     geometry.setIndex(indices);
     if(!torsoSurface)geometry.userData.characterEllipsoid={radii:surfaceRadii,owlSocket:!!owlSign};
     cache.set(key, geometry);
