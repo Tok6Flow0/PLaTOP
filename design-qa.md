@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-121 suite passes **346 tests** and the production build passes. Its
+The pass-122 suite passes **347 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -78,6 +78,11 @@ It is retained at unchanged scores; curve regularity is the next issue.
 Measured camera rates are 59.90 campus / 59.80 close fps. The isolated production
 preview now serves pass 120, with window, zoom, both mist views, exit and reset
 verified and no console warnings/errors. No live agent activity was injected.
+Pass 122 analytically regularizes the rim surface and passes a full-contour
+regression check, but the reviewer sees little visual change and leaves the
+forehead/cheek concern open. Its next priority is the guide's broad flowing
+belly marking. Camera samples remain approximately 60 fps in both workloads;
+no visual grade increase is claimed from the numerical surface correction.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

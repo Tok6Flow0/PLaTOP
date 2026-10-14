@@ -1335,7 +1335,8 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
 /** The guide's ceramic hood rolls inward to its glass and outward to the
  * shell. Its separation is actual shallow geometry, not a drawn outline. */
 export function navigatorHoodFrame(kit:SceneKit,parent:THREE.Object3D,helmet:THREE.Mesh,color:string):THREE.Mesh {
-  const frame=curvedFace(kit,parent,color,.735,.575,0,[0,.005,0],'satinClay',undefined,false,undefined,.43,0,[.577,.395],6,true);
+  const radii:Tuple=[helmet.scale.x*.5125,helmet.scale.y*.5,helmet.scale.z*.5];
+  const frame=curvedFace(kit,parent,color,.735,.575,0,[0,.005,0],'satinClay',radii,false,undefined,.43,0,[.577,.395],6,true);
   const sampled=frame.geometry.clone();frame.geometry=sampled;
   const raw=sampled.attributes.position,columns=(raw.count-1)/6,radial=[0,.06,.28,.56,.82,1];
   for(let row=0;row<radial.length;row++)for(let col=0;col<columns;col++) {
@@ -1343,12 +1344,15 @@ export function navigatorHoodFrame(kit:SceneKit,parent:THREE.Object3D,helmet:THR
     raw.setX(i,raw.getX(i)*THREE.MathUtils.lerp(.577/.735,1,radial[row])/THREE.MathUtils.lerp(.577/.735,1,t));
     raw.setY(i,.005+(raw.getY(i)-.005)*THREE.MathUtils.lerp(.395/.575,1,radial[row])/THREE.MathUtils.lerp(.395/.575,1,t));
   }
-  fitCharacterRelief(frame,helmet,.006,0);
-  sampled.dispose();
-  delete frame.geometry.userData.characterEllipsoid;
+  // The front helmet has a continuous elliptical envelope. Projecting each
+  // rim vertex onto its coarse triangles copied their latitude facets into
+  // the return. Evaluate the envelope here and again for every dense vertex.
+  frame.geometry.userData.characterFitted=true;
+  frame.geometry.userData.characterEllipsoid={radii};
   const p=frame.geometry.attributes.position,profile=[.024,.030,.030,.030,.026,0],colours=new Float32Array(p.count*3).fill(1);
   for(let row=0;row<profile.length;row++)for(let col=0;col<columns;col++){
-    const i=1+row*columns+col;p.setZ(i,p.getZ(i)+profile[row]);
+    const i=1+row*columns+col,x=p.getX(i),y=p.getY(i);
+    p.setZ(i,radii[2]*Math.sqrt(Math.max(.05,1-(x/radii[0])**2-(y/radii[1])**2))+.006+profile[row]);
     // Narrow inward and outward returns expose the darker ceramic recess;
     // the broad raised cream face remains unpainted.
     if(row===0)colours.set([.65,.57,.46],i*3);
@@ -1358,7 +1362,7 @@ export function navigatorHoodFrame(kit:SceneKit,parent:THREE.Object3D,helmet:THR
   const materials=owned(kit).material,key=`satinClay:${color}:hood-return`;
   if(!materials.has(key)){const material=(frame.material as THREE.MeshStandardMaterial).clone();material.vertexColors=true;materials.set(key,material);}
   frame.material=materials.get(key)!;
-  frame.geometry.computeVertexNormals();frame.geometry.computeBoundingBox();frame.geometry.computeBoundingSphere();
+  smoothDeformedSurface(frame.geometry);frame.geometry.computeBoundingBox();frame.geometry.computeBoundingSphere();
   frame.geometry.userData.hoodReturnProfile=profile;
   frame.castShadow=true;frame.name='visor-rim';return frame;
 }

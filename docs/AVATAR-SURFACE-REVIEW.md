@@ -114,6 +114,7 @@ not asked for a desired score or instructed to approve.
 | 119 (cream hood layers, intermediate) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5 | Retain the cream outer point, fitted navy inset/star and lighter surround. Revise the seam: it reads as a drawn tan outline and looks wavy in the actual close scene. A returned cream edge and shallow shadow separation are still needed |
 | 120 (modeled ceramic return) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 119 | The tan outline is gone, with a credible soft visor edge in quarter/night views and no visible new break. The broad cream band still merges into the helmet at normal portrait size; distinct raised profile separation remains missing |
 | 121 (readable raised hood frame) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 120 | The raised cream frame now reads at ordinary portrait and actual-room sizes. Its stronger outer edge reveals scalloping along the forehead and cheek, with a somewhat heavy dark return. Clean the continuous curve without adding more thickness or contrast |
+| 122 (continuous rim projection) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; non-regressive, visually near-equivalent to 121 | The mathematical surface correction does not resolve the visible forehead wave; slight cheek cleanup is not a meaningful grade increase. The reviewer prioritizes the thin angular belly route versus the broad flowing source mark over another minute rim adjustment |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1198,3 +1199,16 @@ Campus submits 59.90 fps (2.11 ms mean / 3.60 ms p95 CPU); close submits 59.80
 fps (1.98 / 3.30 ms). Counts remain 116 / 384,390 and 141 / 2,240,563, with
 three dense close avatars. These measured results are retained unchanged under
 surface-pass-121. Isolated production remains the smoke-tested pass 120.
+
+Pass 122 evaluates the rim on a continuous elliptical helmet envelope rather
+than its coarse triangle facets, welds coincident normal seams and tests the
+outer contour in both mesh tiers. All 347 tests and the production build pass.
+The independent review permits retention as non-regressive but sees no clear
+normal-view improvement: the forehead wave and small cheek irregularities
+remain. The contour issue is not closed. The next prioritized source mismatch
+is the guide's thin angular belly route, not further minute rim work.
+
+Campus submits 59.9946 fps (1.52 ms mean / 2.10 ms p95 CPU); Wayfinders close
+submits 60.00 fps (1.96 / 3.20 ms). Draw/triangle counts remain unchanged from
+121, including three dense close avatars. Evidence remains under
+surface-pass-122; production remains the smoke-tested pass 120.

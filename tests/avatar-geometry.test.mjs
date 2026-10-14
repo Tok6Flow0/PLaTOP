@@ -1274,6 +1274,21 @@ test('the resting guide sleeves stay beneath the cape in both mesh tiers',()=>{
   check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
 });
 
+test('the guide outer hood contour follows a continuous envelope in both mesh tiers',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit),rim=model.getObjectByName('visor-rim');
+  const {radii:[rx,ry,rz]}=rim.geometry.userData.characterEllipsoid;
+  const check=tolerance=>{
+    const p=rim.geometry.attributes.position,c=rim.geometry.attributes.color;let checked=0;
+    for(let i=0;i<p.count;i++){
+      if(Math.abs(c.getX(i)-.48)>1e-5||Math.abs(c.getY(i)-.42)>1e-5)continue;
+      const expected=rz*Math.sqrt(Math.max(.05,1-(p.getX(i)/rx)**2-(p.getY(i)/ry)**2))+.006;
+      assert.ok(Math.abs(p.getZ(i)-expected)<tolerance,'the return is continuous, not a chain of coarse-shell facets');checked++;
+    }
+    assert.ok(checked>=76,'probe the complete outer contour');
+  };
+  check(1e-6);const release=refineCharacterModel(model);check(.0025);release();disposeObject(model);kit.dispose();
+});
+
 test('the guide route stays visibly inlaid on the dense belly rather than floating as a rope',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
   const route=model.getObjectByName('navigator-route-inlay'),body=model.getObjectByName('wayfinderBody');
