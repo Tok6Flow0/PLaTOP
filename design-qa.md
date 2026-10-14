@@ -4,6 +4,18 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
+Pass164 is a provisional Swift eye/beak candidate, not a promoted release.
+378 tests/build pass, including both-tier cheek seating and enclosed beak
+roots. Ordinary day/night and group quarter/rear portraits are available.
+Browser and native inspection became unavailable before live turntable,
+room, production smoke and timing checks; performance remains unverified.
+The isolated preview remains retained163, synced at ed2be736 with CI success.
+
+The independent reviewer provisionally retains164 (Swift/Dispatch7 craft,
+6.5 fidelity), with all-angle, unclipped framing and speed verification still
+open. The14 October request now authorizes releasing the improved current
+candidate to main and the local app; it does not constitute A-level review.
+
 Pass163 is retained for Swift's complete folded breast/neck and returning
 wing: Swift7/6.5, Dispatch7/6.5, campus7.5/7.5.377 tests/build pass. Paired
 campus/Dispatch close samples submit approximately60fps in both builds;

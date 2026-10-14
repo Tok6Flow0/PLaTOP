@@ -2266,3 +2266,42 @@ wing/tail collision or campus regression is visible. Rear group occlusion
 and the lack of a matched162 actual-room capture limit those comparisons.
 Next: a coordinated smaller, shallower eye fit and compact pointed beak,
 preserving the accepted163 body/wing construction. No A is claimed.
+
+Retained163 was pushed as ed2be736e9a99b664b938170a3ba0ec4df3189bb;
+remote readback matches and CI38641892026 succeeded. The isolated production
+directory now serves index-BqiaOux6.js. Its initial browser reload showed the
+six Awaiting-update teams, but the subsequent room/mist smoke check timed out.
+No completed163 production-interaction smoke pass is claimed.
+
+Pass164 fits smaller shallow eyes to the actual folded cheek planes, aligned
+to their surface normals, and replaces Swift's blunt wedge with a compact
+closed pointed fold. All four beak-root corners are inside the head surface;
+the initial root depth failed that test and was corrected before rendering.
+Both authored and dense eye attachment tests pass. The163 body, wings, feet,
+materials, scene lighting and genuine-activity protocol are unchanged.
+378 tests and the production build pass; the existing bundle-size warning
+remains. Fresh ordinary day/night and group quarter/rear portraits are saved
+in surface-pass-164. Other team raster variation is regeneration noise, not
+an additional character redesign.
+
+Runtime verification is blocked: browser automation timed out and reset;
+the fresh surface inventory reported no available browsers, an explicit
+in-app browser reconnection was unavailable, and native Chrome inspection
+also timed out. No runtime-control bypass was attempted. There is no164
+isolated turntable, actual-room capture, production smoke or performance
+sample. The163 short timing pair cannot be used as164 speed evidence.
+The candidate is not promoted over retained163 while these checks are open.
+
+Independent provisional verdict: retain164 over163; Swift and Dispatch remain
+7/10 craft and6.5/10 fidelity. The short pointed beak and quieter eye fit are
+visible improvements at ordinary day/night scale. This is not all-angle
+attachment approval. Remaining issues include the curved supports, long stiff
+breast and directional grain. The isolated Swift portrait clips its crown and
+wing; group quarter clips its feet and group rear occludes it. Unclipped
+side/rear-quarter and actual-room verification are still needed. No A claimed.
+
+On14 October the user requested release of the current improved app to main
+and local use, superseding continued visual iteration for this turn. This
+release request is not evidence that the outstanding fidelity or164 timing
+checks passed. Existing private state and the unrelated dirty original
+checkout must be preserved during deployment.

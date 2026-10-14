@@ -473,17 +473,29 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     // Swift's split tail, creased ochre wings and teal folded edge are solid
     // low-poly paper surfaces rather than flattened ceramic spheres.
     body.position.y = .30; data.bodyY = .30;head.position.set(0,.47,.065); data.headY = .47;
-    sculpt(body, 'swiftBody', '#d2a34c', [0,0,0], [1,1,1], undefined, 'paper');
+    const foldedBody=sculpt(body, 'swiftBody', '#d2a34c', [0,0,0], [1,1,1], undefined, 'paper');
+    body.updateWorldMatrix(true,true);head.updateWorldMatrix(true,true);
     [-1, 1].forEach(sign => {
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .078, .12, .075]);
       sculpt(wing, sign < 0 ? 'swiftWingL' : 'swiftWingR', '#ffffff', [0, 0, 0], sign<0?[.62,.59,.70]:[.74,.66,.80], [-.13,0,0], 'paper');data.wings.push(wing);
-      const eye = sculpt(head, 'bean', ink, [sign * .098, .041, .092], [.052,.059,.028], [0,sign*Math.PI/2,0], 'ink'); data.eyes.push(eye);
-      data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.101], [.006,.013,.013], undefined, 'glaze'));
+      // Seat the shallow eye on the actual folded cheek, with its optical
+      // axis normal to that plane. A fixed side offset floats off the crown
+      // in three-quarter views and exposes the far eye below the beak.
+      const origin=head.localToWorld(new THREE.Vector3(sign,.041,.092));
+      const hit=new THREE.Raycaster(origin,new THREE.Vector3(-sign,0,0)).intersectObject(foldedBody,false)[0];
+      if(!hit?.face)throw new Error('Swift eye has no supporting cheek plane');
+      const normal=hit.face.normal.clone().applyNormalMatrix(new THREE.Matrix3().getNormalMatrix(foldedBody.matrixWorld));
+      const eyeFrame=joint(head,sign<0?'swift-eye-seat-l':'swift-eye-seat-r',[0,0,0]);
+      eyeFrame.position.copy(head.worldToLocal(hit.point.clone().addScaledVector(normal,-.001)));
+      normal.applyQuaternion(head.getWorldQuaternion(new THREE.Quaternion()).invert());
+      eyeFrame.quaternion.setFromUnitVectors(new THREE.Vector3(0,0,1),normal);
+      const eye=sculpt(eyeFrame,'bean',ink,[0,0,0],[.034,.038,.014],undefined,'ink');data.eyes.push(eye);
+      data.highlights.push(sculpt(eyeFrame,'detail','#fff2d4',[-sign*.004,.009,.006],[.006,.008,.003],undefined,'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);
       [-1,0,1].forEach(toe=>sculpt(foot,'toe','#967140',[toe*.02,-.005,.02],[.022,.026,.13],[0,toe*.24,0],'clay'));
       const leg=stroke(foot,'#957446',[[-sign*.070,.105,-.025],[-sign*.02,.035,-.03],[0,.008,0]],.008,'clay');leg.name='swift-leg'; data.feet.push(foot);
     });
-    sculpt(head,'paperBeak','#a57d40',[0,.048,.153],[.60,.45,.38],[-.20,0,0],'paper');
+    sculpt(head,'swiftBeak','#a57d40',[0,.048,.129],[1,1,1],undefined,'paper');
     sculpt(body,'swiftTail','#ffffff',[0,-.105,-.03],[.74,.78,.86],undefined,'paper');
     head.position.y-=body.position.y;body.add(head);
     const expression=joint(group,'paper-bird-expression',[0,.40,0]);body.position.y-=.40;expression.add(body);expression.rotation.x=.12;

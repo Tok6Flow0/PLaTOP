@@ -564,14 +564,46 @@ test('Swift carries diagonal cheek planes into the breast without hiding its eye
   }
   assert.ok(broadPlanes>70,'the enclosed breast carries those folds continuously below the crown');
   const restore=refineCharacterModel(model);model.updateMatrixWorld(true);
-  for(const [index,eye] of model.userData.personality.eyes.entries()){
-    const sign=index===0?-1:1,center=eye.getWorldPosition(new THREE.Vector3());
-    const outward=new THREE.Vector3(sign,0,0).transformDirection(eye.parent.matrixWorld);
+  for(const eye of model.userData.personality.eyes){
+    const center=eye.getWorldPosition(new THREE.Vector3());
+    const outward=new THREE.Vector3(0,0,1).transformDirection(eye.matrixWorld);
     const ray=new THREE.Raycaster(center.clone().addScaledVector(outward,1),outward.negate());
     const first=ray.intersectObjects([eye,body],false)[0];
     assert.equal(first?.object,eye,'the continuous cheek must not cover the eye');
   }
   restore();disposeObject(model);kit.dispose();
+});
+
+test('Swift shallow eyes seat on cheek planes and its pointed beak root is enclosed',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-swift'),kit);
+  const body=model.getObjectByName('swiftBody'),beak=model.getObjectByName('swiftBeak');
+  for(const dense of [false,true]){
+    const restore=dense?refineCharacterModel(model):()=>{};model.updateMatrixWorld(true);
+    for(const eye of model.userData.personality.eyes){
+      const center=eye.getWorldPosition(new THREE.Vector3());
+      const normal=new THREE.Vector3(0,0,1).transformDirection(eye.matrixWorld);
+      const ray=new THREE.Raycaster(center.clone().addScaledVector(normal,.2),normal.clone().negate());
+      const cheek=ray.intersectObject(body,false)[0],surface=ray.intersectObject(eye,false)[0];
+      assert.ok(cheek&&surface,'both actual surfaces lie on the eye optical axis');
+      assert.ok(Math.abs(cheek.distance-.19905)<.001,'eye centre stays embedded by approximately one millimetre');
+      assert.ok(cheek.distance-surface.distance>.003&&cheek.distance-surface.distance<.008,'eye protrudes only a shallow lens, in both detail tiers');
+    }
+    const shell=new THREE.Mesh(body.geometry,new THREE.MeshBasicMaterial({side:THREE.DoubleSide}));
+    shell.matrixAutoUpdate=false;shell.matrixWorld.copy(body.matrixWorld);
+    for(const x of [-.028,.028])for(const y of [-.013,.013]){
+      const root=beak.localToWorld(new THREE.Vector3(x,y,-.009));
+      for(const sign of [-1,1]){
+        const direction=new THREE.Vector3(0,0,sign).transformDirection(beak.matrixWorld);
+        assert.ok(new THREE.Raycaster(root,direction).intersectObject(shell,false).length>0,'all beak-root corners are enclosed by actual folded head surfaces');
+      }
+    }
+    shell.material.dispose();restore();
+  }
+  const p=beak.geometry.attributes.position;
+  for(let i=0;i<p.count;i++)if(p.getZ(i)>.06){
+    assert.ok(Math.abs(p.getX(i))<1e-7,'the beak terminates at a single folded point, not a blunt edge');
+  }
+  disposeObject(model);kit.dispose();
 });
 
 test('folded paper chest sheets sit in front of their closed inner body',()=>{

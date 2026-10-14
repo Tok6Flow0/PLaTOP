@@ -5,7 +5,7 @@ import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
-  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperQuillRestWing' | 'paperQuillHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
+  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftBeak' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperQuillRestWing' | 'paperQuillHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood' | 'paperEchoChestL' | 'paperEchoChestR' | 'paperEchoRestWing' | 'paperEchoBody' | 'paperEchoBackL' | 'paperEchoBackR' | 'paperEchoCrownBackL' | 'paperEchoCrownBackR';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'paperFiber' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
@@ -1197,6 +1197,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
     case 'swiftWingR': return swiftWing();
     case 'paperBeak': return polyhedron([[-.065,-.025,0],[.065,-.025,0],[0,.035,.24],[0,.065,0],[0,-.04,.19]],[[0,3,2],[3,1,2],[0,2,4],[2,1,4],[0,4,1],[0,1,3]]);
+    case 'swiftBeak': return polyhedron([[-.028,-.013,-.009],[.028,-.013,-.009],[.028,.013,-.009],[-.028,.013,-.009],[0,.004,.065]],[[0,1,4],[1,2,4],[2,3,4],[3,0,4],[3,2,1],[3,1,0]]);
     case 'pageCorner': return polyhedron([[-.5,.5,0],[.5,-.5,0],[.5,.5,-.10],[.12,.12,.34]],[[0,3,2],[3,1,2],[0,1,3]]);
     case 'merchantBase': return softLathe([[0,-.5],[.44,-.5],[.5,-.28],[.5,.08],[.46,.38],[.33,.5],[0,.5]]);
     case 'spiritFigure': return spiritFigure('compass');
