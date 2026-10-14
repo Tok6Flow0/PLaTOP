@@ -71,20 +71,21 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     if (id === 'bridge-keeper') {
       // The source is a little standing book, including actual recessed pages,
       // rounded covers, folded corner and the seedling volume held in its arms.
-      sculpt(body, 'book', '#e7d8b8', [.015, .18, .020], [.615, 1.06, .405], undefined, 'paper').name='page-block';
-      const cover=sculpt(body, 'bowedCover', '#efe3c7', [0, .18, .232], [.70, 1.12, .046], undefined, 'paper');cover.name='front-cover';
-      sculpt(body, 'bowedCover', '#d5bd96', [0, .18, -.190], [.70, 1.12, .046], [0,Math.PI,0], 'paper').name='back-cover';
-      sculpt(body, 'book', '#d2b994', [-.326, .18, .018], [.43, 1.10, .061], [0, Math.PI/2, 0], 'paper').name='book-spine';
+      sculpt(body, 'book', '#e7d8b8', [.015, .18, .012], [.615, 1.06, .30], undefined, 'paper').name='page-block';
+      const cover=sculpt(body, 'keeperCover', '#efe3c7', [0, .18, .177], [.70, 1.12, .038], undefined, 'paper');cover.name='front-cover';
+      sculpt(body, 'keeperCover', '#d5bd96', [0, .18, -.145], [.70, 1.12, .038], [0,Math.PI,0], 'paper').name='back-cover';
+      sculpt(body, 'book', '#d2b994', [-.326, .18, .012], [.33, 1.10, .061], [0, Math.PI/2, 0], 'paper').name='book-spine';
       // Separate leaf edges remain visible between the thin covers, including
       // along the top, instead of painting lines onto a padded solid block.
       for(let leaf=0;leaf<8;leaf++){
-        const z=-.151+leaf*.043;
+        const z=-.112+leaf*.035;
         stroke(body, '#bda985', [[.340, -.30, z],[.346,.18,z],[.340,.64,z]], .0022, 'paper');
         stroke(body, '#c7b492', [[-.25,.749,z],[.26,.749,z],[.324,.685,z]], .0018, 'paper');
       }
       // The warm binding stays readable at roster size while the broad pages
       // and face keep Keeper's pale-paper identity.
-      stroke(body, '#bda783', [[-.323, -.32, .235], [-.328, .08, .235], [-.312, .62, .235]], .005, 'clay');
+      const binding=stroke(body, '#bda783', [[-.323, -.32, .19], [-.328, .08, .19], [-.312, .62, .19]], .005, 'clay');
+      fitCharacterRelief(binding,cover,.002,.004);
       const facePanel=sculpt(head,'bowedCover','#e6d7b9',[0,-.021,.263],[.48,.31,.011],undefined,'paper');
       fitCharacterRelief(facePanel,cover,.002,.006);
       const faceOutline:Array<[number,number,number]>=[];
@@ -101,7 +102,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       const corner=sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
       fitCharacterRelief(corner,cover,.003,.025);
       limbs(cream, cream, true);
-      const book = joint(body, 'seedling-book', [0, .015, .325]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
+      const book = joint(body, 'seedling-book', [0, .015, .29]); book.rotation.z = -.06;book.scale.set(1.24,1.08,1);
       sculpt(book, 'book', '#d8c69b', [0, 0, 0], [.31, .34, .07]);
       sculpt(book, 'book', '#36574f', [0, 0, .025], [.28, .32, .04], undefined, 'glaze');
       stroke(book, gold, [[0, -.11, .052], [0, -.025, .052], [.035, .052, .052]], .007);
@@ -109,7 +110,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(book, 'tuft', gold, [.035, .055, .055], [.065, .10, .017], [0, 0, -.6], 'brass');
       data.arms.forEach((arm, index) => {
         const sign=index?1:-1;
-        arm.position.z=.325;arm.position.y=.13;arm.position.x=sign*.285;
+        arm.position.z=.29;arm.position.y=.13;arm.position.x=sign*.285;
         const forearm=arm.children[0],palm=arm.children[1];
         forearm.position.set(-sign*.0225,-.1375,.0225);forearm.scale.set(.22,.27,.22);forearm.rotation.z=-sign*1.03;
         palm.position.set(-sign*.11,-.19,.045);palm.scale.set(.20,.20,.14);
@@ -245,9 +246,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
           ring(body, '#e0bb7a', .25, [0, .125, .280]);
           stroke(body, '#e0bb7a', [[-.085, .11, .29], [-.045, .16, .29], [0, .17, .29], [.045, .16, .29], [.085, .11, .29]], .010);
           stroke(body,'#e0bb7a',[[-.113,.103,.293],[.113,.103,.293]],.007);
-          const outline=stroke(body, '#854124', [[-.23,.23,.25],[-.27,-.11,.23],[-.20,-.35,.20],[-.07,-.43,.18],[.07,-.43,.18],[.20,-.35,.20],[.27,-.11,.23],[.23,.23,.25]], .005, 'clay');
+          const seam=new THREE.CatmullRomCurve3([[-.23,.23,.25],[-.27,-.11,.23],[-.20,-.35,.20],[-.07,-.43,.18],[.07,-.43,.18],[.20,-.35,.20],[.27,-.11,.23],[.23,.23,.25]].map(p=>new THREE.Vector3(...p)));
+          const outline=stroke(body, '#924c2c', seam.getPoints(30).map(p=>[p.x,p.y,p.z]), .0038, 'clay');outline.name='merchant-chest-seam';
           outline.scale.y=1.32/1.04;
-          fitCharacterRelief(outline,body.children[0] as THREE.Mesh,.003,.010);
+          fitCharacterRelief(outline,body.children[0] as THREE.Mesh,.007,.007);
           sculpt(head, 'limb', '#aa7442', [0, .394, 0], [.04, .14, .04], undefined, 'brass');
           sculpt(head, 'detail', '#d89a48', [0, .495, 0], [.112, .134, .112], undefined, 'brass');
         }

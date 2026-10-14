@@ -44,6 +44,7 @@ not asked for a desired score or instructed to approve.
 | 52 (Reflection only) | Small edge-construction improvement; no new full-set grade | Thinner free wings and quieter lower jaw retained; broad solid-looking masses and a blade-like wing tip still differ from source |
 | 53 | Portraits 8.5/10 — B+; campus 8.2/10 — B; lighting 8.3/10 | Branch attachment improves; repeated horizontal leaf tiers, sparse furnishings, solid-looking paper faces and regular feather overlaps remain |
 | 55 (Merchant only) | 8.6/10 — B+; craft 8.5 / fidelity 8.7 / all-angle 8.5 | Better Jarvis/Scout hierarchy; existing dark seam remnants, rigid Keeper silhouette, glossy shoulders and short simplified arms remain |
+| 56 (Merchant only) | 8.6/10 — B+; small construction improvement | Seam endpoints join cleanly and lower curve is smoother; thinner bowed cover is intact but Keeper remains comparatively rigid |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -255,6 +256,18 @@ scale without widening the motor envelope. It retains the original standing
 height limit and floor contact. All 297 tests and the production build pass.
 An initial full-suite run overlapped portrait generation and correctly rejected
 the previous manifest; the complete rerun after generation passed.
+The compiled pass-55 worker loads dense meshes with zero pending requests and
+no observed browser warning/error. A settled zoom frame reports two dense
+avatars, 129 draws and 1,878,645 submitted triangles. A clock-driven shadow
+refresh also drew dense receivers: 296 draws / 3,810,182 triangles in one
+observed frame. These are different workloads, not a matched frame-time result;
+the fixed-hour camera benchmark does not measure that occasional refresh cost.
+
+Pass 56 makes the fitted torso seam continuous and reduces Keeper's page-block
+depth while bowing the thinner covers. A new dense-surface ray test checks more
+than fifty seam positions, not just endpoints. All 298 tests and the production
+build pass. Independent front/night/quarter/rear review retains both changes;
+Keeper's primary silhouette and the ceramic highlights still need refinement.
 
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
@@ -303,6 +316,7 @@ and is not treated as close-up evidence.
 | Pass 54 campus, before eye batching | 52.50 | 2.45 / 4.30 ms | 117 / 352,427 | 0 |
 | Pass 54 campus, after eye batching | 52.40 | 2.38 / 4.20 ms | 110 / 352,427 | 0 |
 | Pass 55 campus | 53.10 | 1.94 / 3.50 ms | 110 / 352,427 | 0 |
+| Pass 56 campus | 49.50 | 2.51 / 4.00 ms | 110 / 352,795 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -321,6 +335,7 @@ and is not treated as close-up evidence.
 | Pass 53 full-face close | 50.90 | 2.01 / 3.80 ms | 134 / 2,387,397 | 3 |
 | Pass 54 full-face close, before eye batching | 50.10 | 2.36 / 4.30 ms | 135 / 2,407,557 | 3 |
 | Pass 55 full-face close | 52.30 | 2.00 / 3.80 ms | 135 / 2,379,397 | 3 |
+| Pass 56 full-face close | 49.40 | 2.48 / 4.20 ms | 134 / 2,408,197 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material

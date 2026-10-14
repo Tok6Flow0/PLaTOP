@@ -295,6 +295,27 @@ test('Bridge silhouettes retain a tall Jarvis torso and the smaller Scout from t
   models.forEach(disposeObject);kit.dispose();
 });
 
+test('Jarvis chest seam remains continuous above its dense curved torso',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='bridge-jarvis'),kit);
+  model.updateMatrixWorld(true);
+  const seam=model.getObjectByName('merchant-chest-seam'),shell=model.getObjectByName('merchantTorso');
+  const position=seam.geometry.attributes.position,centers=[];
+  // Four vertices plus a duplicated UV seam make each tube ring. Inspect
+  // every ring rather than only endpoints, where former clipping left dots.
+  for(let ring=1;ring<position.count/5-1;ring++){
+    const center=new THREE.Vector3();
+    for(let side=0;side<4;side++)center.add(new THREE.Vector3().fromBufferAttribute(position,ring*5+side));
+    centers.push(center.multiplyScalar(.25).applyMatrix4(seam.matrixWorld));
+  }
+  const restore=refineCharacterModel(model),ray=new THREE.Raycaster();let checked=0;
+  for(const center of centers){
+    ray.set(new THREE.Vector3(center.x,center.y,3),new THREE.Vector3(0,0,-1));
+    const relief=ray.intersectObject(seam,false)[0],torso=ray.intersectObject(shell,false)[0];
+    assert.ok(relief&&torso&&relief.distance<torso.distance-.0001,`visible seam at ${center.x},${center.y}`);checked++;
+  }
+  assert.ok(checked>50);restore();disposeObject(model);kit.dispose();
+});
+
 test('Wayfinder ivory shells and dark faces keep their source matte finishes',()=>{
   const kit=new SceneKit();
   for(const member of members.filter(member=>member.id.startsWith('intake-'))){
@@ -400,6 +421,8 @@ test('Keeper has separate thin covers around a recessed page block and a bound s
   assert.ok(front.scale.z<pages.scale.z*.15&&back.scale.z<pages.scale.z*.15,'covers are thin, not solid padded book volumes');
   assert.ok(front.position.z>pages.position.z&&back.position.z<pages.position.z,'leaves sit between the two covers');
   assert.ok(front.scale.x>pages.scale.x&&back.scale.y>pages.scale.y,'pages are recessed inside the cover edge');
+  assert.ok(pages.scale.z/front.scale.x<.45,'the recessed page block avoids a uniformly deep slab');
+  assert.equal(front.geometry,characterGeometry(kit,'keeperCover'));
   const cover=characterGeometry(kit,'bowedCover'),p=cover.attributes.position,layer=cover.userData.coverSkinVertices;
   assert.ok(p.getZ(0)-p.getZ(1+32*6)>.5,'the thin cover has real central bow');
   for(let i=0;i<layer;i++)assert.ok(Math.abs(p.getZ(i)-p.getZ(i+layer)-.92)<1e-6,'both cover skins preserve thickness');
