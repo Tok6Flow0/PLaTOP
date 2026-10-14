@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-124 suite passes **348 tests** and the production build passes. Its
+The pass-125 suite passes **348 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -99,6 +99,16 @@ mesh tiers. Both fixed camera workloads submit 60.00 fps. The reviewer retains
 the cleaner pendant at unchanged overall grades, finding no visible fitting
 regressions in the five other team portraits. Its next priority is a compact,
 asymmetric Wayfinders workstation cluster with genuine circulation around it.
+The isolated production preview now serves accepted pass 124, with window,
+close zoom, first/third-person mist, exit and reset verified. Its empty local
+bridge connects with all six teams Awaiting update; no console warnings or
+errors appear and no agent activity is injected.
+Pass 125 clusters the two Wayfinder desks and neutral homes on a fitted rug.
+The center is genuinely blocked; a full-size visiting owl can use the outer
+route. All 32 navigation checks pass. Fixed camera samples remain about 60
+submitted fps. The reviewer retains the cluster at 7.5 craft / 8.0 fidelity;
+campus remains 7.0 / 7.5. Its next priority is daylight form and material
+hierarchy with this layout locked, not further furniture nudging.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

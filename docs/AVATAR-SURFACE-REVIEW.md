@@ -117,6 +117,7 @@ not asked for a desired score or instructed to approve.
 | 122 (continuous rim projection) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; non-regressive, visually near-equivalent to 121 | The mathematical surface correction does not resolve the visible forehead wave; slight cheek cleanup is not a meaningful grade increase. The reviewer prioritizes the thin angular belly route versus the broad flowing source mark over another minute rim adjustment |
 | 123 (flowing belly inlay) | Guide 7.5 craft / 8.0 fidelity; ensemble/room 7.5 / 7.5; campus 7.0 / 7.5; retained | The broad flowing ribbon visibly matches the source without lifting or silhouette regressions. The bulky compass bezel/disc/star/clasp assembly is the next guide priority; room-wide light and grouping matter more for the overall result |
 | 124 (integrated compass pendant) | Guide 7.5 / 8.0; ensemble/room 7.5 / 7.5; campus 7.0 / 7.5; retained | The thinner complete assembly is visibly clearer at portrait and room scale, with no visible new fitting regressions. The next priority is a compact asymmetric Wayfinders workstation cluster and circulation around it, rather than another small guide revision |
+| 125 (compact workstation cluster) | Wayfinders room 7.5 craft / 8.0 fidelity; campus 7.0 / 7.5; retained | The fitted rug and compact staggered desks gather all four readable silhouettes without clipping. Matching desktop arrangements remain regular. Lock the layout and study daylight form/material separation without broad dark wall/floor bands |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1257,3 +1258,34 @@ images do not certify every concealed connection. Guide remains 7.5 craft /
 8.0 fidelity, ensemble/room 7.5 / 7.5, campus 7.0 / 7.5. The next priority
 is a compact, asymmetric workstation cluster with a real circulation route,
 not decorative clutter or fake activity. Production remains 120.
+
+Accepted pass 124 now runs in the isolated production preview as
+index-qEda49fC.js. Window view, eleven zoom-in steps to the mist invitation,
+first/third-person mist, exit and reset pass without console warnings/errors.
+The empty local bridge connects; all teams remain Awaiting update. Responsive
+production captures are in surface-pass-124, separately from matched full-size
+reference captures. This does not establish live-chat adoption.
+
+Pass 125 reorganizes Wayfinders into one compact asymmetric workstation group.
+The near-square desks retain at least two square world-units of supported
+surface each; screens and agent-replaceable desktop/floor anchors move with
+their real furniture. Neutral arrival homes move with work anchors, without
+posing activity. A shorter fitted rug gathers the cluster. The joined center
+is blocked by real geometry; an explicit outer route admits the largest
+visiting owl at its unchanged radius. All 32 navigation checks and all 348
+full-suite tests pass, followed by the production build.
+
+Campus submits 60.006 fps (1.78 ms mean / 2.50 ms p95 CPU, 116 sampled draws,
+384,372 triangles). Wayfinders close submits 60.005 fps (1.86 / 2.80 ms,
+145 draws, 2,311,345 triangles, three detailed avatars). The new grouping
+changes near-avatar selection, so the close workload has more triangles than
+124; it is not reported as identical. Fixed-size ten-second samples and noon,
+night, close and window images are in surface-pass-125. Character portraits
+and lighting are unchanged from 124. The independent reviewer retains the
+grouping, with room fidelity rising to 8.0 and craft staying 7.5. All four
+silhouettes remain separated and rear faces stay clear of their screens,
+including at campus scale and night. No visible clipping or shadow regression
+is reported. The matching laptop/notebook/mug columns remain rather regular.
+Campus stays 7.0 / 7.5. The reviewer prioritizes daylight form and material
+hierarchy with this layout locked, at the same camera/exposure, rejecting
+broad dark shadow bands. Production remains the smoke-tested pass 124.

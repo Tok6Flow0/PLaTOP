@@ -99,7 +99,9 @@ test('Wayfinder paired desks carry their real screens, blockers and replaceable 
   assert.notEqual(stations[0].position.z,stations[1].position.z);
   assert.notEqual(stations[0].rotation.y,stations[1].rotation.y);
   for(const [i,station] of stations.entries()){
-    assert.ok(station.userData.workstationSurface.width>=1.6&&station.userData.workstationSurface.depth>=1.4);
+    const surface=station.userData.workstationSurface;
+    assert.ok(surface.width>=1.3&&surface.depth>=1.5&&surface.width*surface.depth>=2,
+      'each compact desk retains a usable near-square surface, not a narrow laptop tray');
     const bounds=station.userData.workstationBounds;
     assert.ok(room.navigation.blockers.some(blocker=>blocker.bounds===bounds));
     const screen=station.getObjectByName('Workstation laptop');
@@ -131,8 +133,12 @@ test('Wayfinder paired desks carry their real screens, blockers and replaceable 
   assert.equal(room.defaultSlotProps.desk.parent,room.root);
   assert.deepEqual(room.assetSlots.floor.position,[-2.15,.1,2.8]);
   const world=([x,z])=>[x+room.center.x,z+room.center.z];
-  assert.equal(navigator.segmentClear(world([0,1.8]),world([0,-3.6]),.7),true,
-    'the actual central aisle accommodates a visiting owl, not just the local smaller residents');
+  assert.ok(stations[1].position.x-stations[0].position.x<=1.5,'the desks form one shared cluster');
+  assert.equal(navigator.segmentClear(world([0,1.8]),world([0,-3.6]),.7),false,
+    'the joined center is furniture, never an invisible shortcut');
+  const around=[[0,1.8],[2.15,1.8],[2.15,-3.5675],[0,-3.5675]];
+  for(let i=1;i<around.length;i++)assert.equal(navigator.segmentClear(world(around[i-1]),world(around[i]),.7),true,
+    `the real outer circulation admits a visiting owl on segment ${i}`);
   assert.deepEqual(room.actorFacing,[.28,-.28,.65,-.65],'neutral arrival orientations are not work gestures');
   assert.ok(room.navigation.desks.slice(2).every(desk=>Math.abs(desk.facing)>3),'chosen work faces the real paired desk');
 });

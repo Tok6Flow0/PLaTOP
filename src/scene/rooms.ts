@@ -75,8 +75,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   root.userData.teamId = team.id;
   const depthGain = 1.475;
   const halfGain = depthGain / 2;
-  // Four full-clearance north seats need a real rear cross aisle, not a route
-  // through their chair backs. The other upper rooms keep their shorter plan.
+  // Wayfinders' workstation cluster needs a real rear cross aisle, not a
+  // route through chair backs. The other upper rooms keep their shorter plan.
   const rearExtension = index === 2 ? 1.75 : index < 3 ? 1 : -1;
   const center = new THREE.Vector3((index % 3 - 1) * 6.15, 0, (Math.floor(index / 3) - 0.5) * OFFICE_ROW_SPACING);
   root.position.copy(center);
@@ -84,7 +84,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
-  const rugWidth=index===4||index===3?4.1:4.55, rugDepth=index===3?3.35:index===1?4.1:4.2, rugZ=index===3?.05:index===1?-.65:.35;
+  const rugWidth=index===2?4.0:index===4||index===3?4.1:4.55, rugDepth=index===2?4.4:index===3?3.35:index===1?4.1:4.2, rugZ=index===2?-.8:index===3?.05:index===1?-.65:.35;
   root.userData.rugSurface = { bounds: [-rugWidth/2,rugZ-rugDepth/2,rugWidth/2,rugZ+rugDepth/2], height: 0.13 };
   const isFoyer = index === 4;
   const walls: Room['walls'] = [];
@@ -281,9 +281,11 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Paired Wayfinder desks are real independently oriented furniture groups.
   // Their screens, papers and asset anchor use the same transform as the wood;
   // the walking map includes the entire rotated tabletop, not a smaller proxy.
+  // The joined center forms one staggered cluster; circulation runs around
+  // its outside at the unchanged full avatar radii.
   const pairedDesks = index===2 ? [
-    { x:-1.63,z:-.95,width:1.6,depth:1.6,angle:-.045,screenZ:-.32 },
-    { x:1.63,z:-.65,width:1.6,depth:1.4,angle:.045,screenZ:-.20 },
+    { x:-.70,z:-.95,width:1.34,depth:1.65,angle:-.02,screenZ:-.32 },
+    { x:.70,z:-.75,width:1.34,depth:1.50,angle:.02,screenZ:-.20 },
   ].map((layout,i)=>{
     const group=new THREE.Group();group.name=`Wayfinders paired desk ${i+1}`;
     group.position.set(layout.x,0,layout.z);group.rotation.y=layout.angle;interior.add(group);
@@ -334,7 +336,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
     : team.members.length === 2 ? [[-0.8, index === 5 ? -1.7 : -1.5], [0.8, index === 5 ? -1.7 : -1.5]]
-      : team.members.length === 4 ? [[-1.63, -1.5], [1.63, -1.3], [-1.63, 1.5], [1.63, 1.75]]
+      : team.members.length === 4 ? [[-.70, -1.5], [.70, -1.23], [-.70, 1.5], [.70, 1.63]]
         : [[-0.8, 1.5], [0, -1.5], [0.8, 1.5]];
   const desks: DeskNavigation[] = seats.map(([x, side], memberIndex) => {
     const z = isFoyer ? side : tableZ + side;
@@ -461,9 +463,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   };
   const navigation: RoomNavigation = { floorY: OFFICE_FLOOR_Y,
     bounds: [-2.9, index < 3 ? backZ + 0.12 : backZ - 1.4, 2.9, index < 3 ? 4.9 : 4.25],
-    blockers, door, lounge: [index===3?-.25:0, isFoyer ? 2.5 : index < 3 ? 2.1 : index===3||index===5?2.0:1.7], task: [index===2?0:aisleX, tableZ], interactions,
+    blockers, door, lounge: [index===3?-.25:0, isFoyer ? 2.5 : index < 3 ? 2.1 : index===3||index===5?2.0:1.7], task: [aisleX, tableZ], interactions,
     waypoints: [door, [doorX, backZ + 0.7], [2, backZ + 0.9], [aisleX, backZ + 1.05], [aisleX, rearCross], [aisleX, rearApproach], [aisleX, tableZ],
-      [0, rearCross], ...(index===2?[[0,tableZ],[0,rearApproach]] as NavigationPoint[]:[]), ...(!lowerRoom && !isFoyer ? [[-1.15, rearApproach], [-1.15, rearCross], [1.15, rearApproach], [1.15, rearCross]] as NavigationPoint[] : []),
+      [0, rearCross], ...(index===2?[[-aisleX,rearCross],[-aisleX,rearApproach],[-aisleX,tableZ]] as NavigationPoint[]:[]), ...(!lowerRoom && !isFoyer ? [[-1.15, rearApproach], [-1.15, rearCross], [1.15, rearApproach], [1.15, rearCross]] as NavigationPoint[] : []),
       ...(lowerRoom ? [[index === 3 ? 2.15 : -2.15, sideDoorZ], [index === 3 ? 2.15 : -2.15, tableZ - 1.5]] as NavigationPoint[] : []),
       ...(index === 5 ? [[0.8, -1.36], [aisleX, -1.36]] as NavigationPoint[] : []),
       [aisleX, frontCross], [0, frontCross], [0, index < 3 ? 4.7875 : 4.0], ...(isFoyer ? [[1.4, -2.03], [aisleX, -2.03]] as NavigationPoint[] : []), ...desks.map(desk => desk.egress)], desks };
