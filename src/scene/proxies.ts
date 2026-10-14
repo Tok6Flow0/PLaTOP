@@ -183,8 +183,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(body, 'limb', wayfinder ? '#b6aa8c' : bodyColor, [0, .35, 0], [.18, .15, .18]);
       const headColor = wayfinder ? cream : bodyColor;
       sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, shellFinish).name='helmet';
-      curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, .010, [0, .005, 0], 'clay').name='visor-rim';
-      curvedFace(kit, head, wayfinder ? '#273b4a' : '#f2e2bf', .583, .401, .019, [0, .005, 0], wayfinder ? 'cloth' : 'clay').name='rounded-visor';
+      // A shallow lip surrounds the glass instead of putting a cloth plaque
+      // in front of a lower rim. Both surfaces retain the helmet curvature.
+      curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, wayfinder ? .021 : .010, [0, .005, 0], 'clay',undefined,false,undefined,.43,0,wayfinder?[.577,.395]:undefined).name='visor-rim';
+      curvedFace(kit, head, wayfinder ? '#142631' : '#f2e2bf', .583, .401, wayfinder ? .014 : .019, [0, .005, 0], wayfinder ? 'visorGlass' : 'clay').name='rounded-visor';
       if (id === 'bridge-scout') {
         // One generously sized magnifier is Scout's face, not a tiny monocle
         // pasted onto the same visor worn by every other character.
@@ -202,8 +204,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         sculpt(head, 'paperWing', '#d4a05f', [0, .485, -.01], [.13, .24, .13], [0, 0, -.24], 'brass');
         sculpt(head, 'limb', '#527669', [0, .395, 0], [.04, .13, .04], undefined, 'brass');
       } else {
-        if (id === 'intake-compass') [-1, 1].forEach(sign => data.eyes.push(characterEyeArc(kit, head, '#ffe0a0', [sign * .121, .048, .365], .044, -.026,'warmInk')));
-        else eyes(head, .121, .030, .365, true, wayfinder ? '#ffe0a0' : '#493a2d', leader?1.25:1);
+        if (id === 'intake-compass') [-1, 1].forEach(sign => data.eyes.push(characterEyeArc(kit, head, '#ffcb6c', [sign * .121, .048, .365], .044, -.026,'warmInk')));
+        else eyes(head, .121, .030, .365, true, wayfinder ? '#ffcb6c' : '#493a2d', leader?1.25:1);
         if(!wayfinder && !leader) characterSmile(kit, head, '#735131', .046, .023, [0, -.068, .365]);
         if (wayfinder) {
           if(id==='intake-jarvis') {

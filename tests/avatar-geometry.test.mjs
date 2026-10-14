@@ -447,7 +447,7 @@ test('Jarvis chest seam remains continuous above its dense curved torso',()=>{
   assert.ok(checked>50);restore();disposeObject(model);kit.dispose();
 });
 
-test('Wayfinder ivory shells remain uncoated satin while dark faces retain their matte finish',()=>{
+test('Wayfinder ivory shells stay uncoated satin while dark-backed visors remain opaque',()=>{
   const kit=new SceneKit();
   for(const member of members.filter(member=>member.id.startsWith('intake-'))){
     const model=makeProxy(member,kit);
@@ -455,13 +455,45 @@ test('Wayfinder ivory shells remain uncoated satin while dark faces retain their
       const mesh=model.getObjectByName(name);assert.ok(mesh);assert.equal(mesh.material.userData.characterFinish,'satinClay');
       assert.equal(mesh.material.roughness,.62);assert.equal(mesh.material.type,'MeshStandardMaterial');assert.equal(mesh.material.transparent,false);
     }
-    assert.equal(model.getObjectByName('rounded-visor').material.userData.characterFinish,'cloth');
+    const visor=model.getObjectByName('rounded-visor');
+    assert.equal(visor.material.userData.characterFinish,'visorGlass');
+    assert.equal(visor.material.roughness,.30);assert.equal(visor.material.transparent,false);
+    assert.equal(visor.material.map,null);assert.equal(visor.material.bumpMap,null);
     for(const eye of model.userData.personality.eyes){
       assert.equal(eye.material.userData.characterFinish,'warmInk');
       assert.ok(eye.material.emissiveIntensity>0&&eye.material.emissiveIntensity<1);
       assert.ok(eye.material.emissive.r>eye.material.emissive.g&&eye.material.emissive.g>eye.material.emissive.b);
       assert.equal(eye.material.transparent,false);
     }
+    disposeObject(model);
+  }
+  kit.dispose();
+});
+
+test('Wayfinder visor lips are genuinely open and preserve eye depth in both mesh tiers',()=>{
+  const kit=new SceneKit(),ray=new THREE.Raycaster();
+  for(const member of members.filter(member=>member.id.startsWith('intake-'))){
+    const model=makeProxy(member,kit),rim=model.getObjectByName('visor-rim'),visor=model.getObjectByName('rounded-visor');
+    const sourceMaterial=visor.material;
+    const check=()=>{
+      model.updateMatrixWorld(true);
+      for(const x of [-.121,0,.121]){
+        const point=visor.localToWorld(new THREE.Vector3(x,.030,2));
+        ray.set(point,new THREE.Vector3(0,0,-1));
+        assert.equal(ray.intersectObject(rim,false).length,0,`${member.id} rim has an open aperture`);
+        assert.ok(ray.intersectObject(visor,false).length>0,`${member.id} dark glass fills its aperture`);
+      }
+      for(const eye of model.userData.personality.eyes){
+        const box=new THREE.Box3().setFromObject(eye),point=box.getCenter(new THREE.Vector3());
+        ray.set(point.clone().add(new THREE.Vector3(0,0,2)),new THREE.Vector3(0,0,-1));
+        const face=ray.intersectObject(visor,false)[0];
+        assert.ok(face&&box.max.z>face.point.z+.001,`${member.id} luminous eyes remain ahead of the glass`);
+      }
+    };
+    check();const release=refineCharacterModel(model);check();
+    assert.equal(visor.material.type,'MeshPhysicalMaterial');assert.equal(visor.material.clearcoat,.20);
+    assert.equal(visor.material.transparent,false);assert.equal(visor.material.transmission,0);
+    assert.equal(sourceMaterial.type,'MeshStandardMaterial');release();assert.equal(visor.material,sourceMaterial);
     disposeObject(model);
   }
   kit.dispose();
@@ -938,7 +970,7 @@ test('rounded-square helmet cheeks retain a closely fitted visor and rim on the 
         const ray = new THREE.Raycaster(vertex.clone().add(new THREE.Vector3(0, 0, 1)), new THREE.Vector3(0, 0, -1));
         const surface = ray.intersectObject(shell, false)[0];
         assert.ok(surface && vertex.z - surface.point.z >= .006 && vertex.z - surface.point.z <= .05,
-          `${character.id}/${name} follows the helmet without clipping or floating`);
+          `${character.id}/${name} follows the helmet without clipping or floating (gap ${surface?vertex.z-surface.point.z:'missing'})`);
       }
     }
   }

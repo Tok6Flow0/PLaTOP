@@ -104,6 +104,7 @@ not asked for a desired score or instructed to approve.
 | 109 (fresh Wayfinders proportion correction) | Wayfinders craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Broader surfaces, thinner aprons and smoother corners read as real workstations with clear circulation. The larger central gap loosens the grouping, so do not spread it farther. Next priority is directional room-scale lighting and tactile surface modelling, not more furniture placement |
 | 110 (fresh lateral-daylight study) | Campus craft 7.0 / fidelity 7.0; rejected, retain 109 lighting | Larger shadow bands divide Wayfinders and cross Reflection's wall, floor and desk without enough character-form improvement. Restore 109 and study local material response instead; night is unchanged |
 | 111 (fresh Wayfinder satin-clay study) | Characters/room craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained, nearly tied with 109 | Soft matte/satin shells survive front, quarter, rear and night checks without plastic hotspots. The broad highlight difference is subtle. Dark face panels still read as uniform blue-gray plaques; curved optical depth and warm-eye contrast are the next character priority |
+| 112 (fresh Wayfinder glass review) | Characters craft 8.0 / fidelity 7.5; room 7.5 / 7.5; campus 7.0 / 7.5; retained | Dark curved inserts and a shallow perimeter replace flat plaques; warm eyes stay legible. Actual-room highlights are restrained, but repeated white/gold portrait forehead blobs exceed the chosen reference. Soften peak reflections without losing dark depth or curvature |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -981,3 +982,26 @@ warm-up and ten-second fixed-viewport sample; CPU submission is not GPU
 completion. Actual campus, close, window and regenerated multi-angle portraits
 remain under surface-pass-111. The independent review retains the finish as
 a nearly tied variation, not an A-level result. Production remains pass 109.
+
+Pass 112 passes 335 tests/build. Dark-backed Wayfinder glass replaces the
+cloth-like face finish, retaining the existing analytic curved surface. Its
+shallow lip is an open annulus, not a raised filled panel that could obscure
+the eyes. Coarse/dense ray tests verify the aperture, visible eyes and original
+helmet-fit bounds. The first prototype failed the original-count minimum and
+rim fit; a seven-ring frame and closer surface offsets correct both without
+weakening the tests. The close glass uses a restrained stock clearcoat, with
+no transmission, transparent duplicate, new texture, light or render pass.
+
+Campus submits 57.60 fps (2.01 ms mean / 3.10 ms p95 CPU, 115 sampled draws,
+384,318 triangles). Wayfinders close submits 53.40 fps (2.14 / 3.90 ms, 139
+draws, 2,236,235 triangles); an unchanged repeat submits 54.90 fps (1.70 /
+3.10 ms, 140 draws, 2,239,435 triangles). Both close samples retain three
+dense avatars; orbit timing changes sampled visibility. Both results are kept,
+not averaged into an identical-speed claim. The same fixed viewport, two-second
+warm-up and ten-second workload apply. CPU submission is not GPU completion.
+Actual full campus/window/close captures and model-generated front/night/group
+quarter/rear portraits remain under surface-pass-112. Occluded characters in
+group views do not establish hidden all-angle fit.
+The independent reviewer retains the change, raising character craft to 8.0
+while fidelity stays 7.5. Room and campus scores do not rise. Peak portrait
+reflections remain the next targeted correction; A-level acceptance is open.

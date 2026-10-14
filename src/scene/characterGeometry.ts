@@ -7,7 +7,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
-export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
+export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.46,.08],[.29,.18],[.14,.235],[0,.26]];
@@ -1076,11 +1076,14 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       roughness: finish === 'glass'||finish === 'opticalGlass' ? .08 : finish === 'lanternGlass' ? .26 : finish === 'ink' ? .24 : finish === 'satinShell' ? .54 : finish === 'satinClay' ? .62 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'agedBrass' ? .72 : finish === 'brass' ? .62 : 0,
       ...(finish === 'agedBrass' ? {roughness:.55} : {}),
+      // Dark-backed glass remains opaque: a curved specular response gives
+      // depth without a transparent duplicate, refraction target or extra draw.
+      ...(finish === 'visorGlass' ? { roughness:.30, envMapIntensity:.80 } : {}),
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
       ...(finish === 'lanternGlass' ? { emissive: '#ffd487', emissiveIntensity: .65, emissiveMap:glassGlow(kit,true), map:glassGlow(kit,true),envMapIntensity:.75 } : {}),
       // Source Wayfinder eyes are softly luminous strokes, not tiny lamps.
       // Emission adds no light, bloom pass, transparency or animation.
-      ...(finish === 'warmInk' ? { emissive: '#ffc675', emissiveIntensity: .65, roughness: .62 } : {}),
+      ...(finish === 'warmInk' ? { emissive: '#ffba55', emissiveIntensity: .80, roughness: .62 } : {}),
     });
     material.userData.characterFinish = finish;
     if(finish==='glass'||finish==='opticalGlass'){
@@ -1124,9 +1127,9 @@ export function characterMesh(kit: SceneKit, parent: THREE.Object3D, form: Chara
 /** Fit an inset to its helmet or pear belly, sharing its curvature and normals. */
 export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string, width: number, height: number,
   offset: number, centre: Tuple = [0, 0, 0], finish: CharacterFinish = 'ink', surfaceRadii: Tuple = [.461, .38, .345], bubble = false,
-  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0): THREE.Mesh {
+  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0,frameOpening?:[number,number]): THREE.Mesh {
   const cache = owned(kit).geometry;
-  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}`;
+  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}:${frameOpening?.join(':')??''}`;
   let geometry = cache.get(key);
   if (!geometry) {
     // Four continuous arcs give a rounded boundary at close range while using
@@ -1153,7 +1156,7 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     }
     if(bubble){boundary.length=0;boundary.push(...speechBoundary(width,height));}
     const area=boundary.reduce((sum,[x,y],i)=>{const next=boundary[(i+1)%boundary.length];return sum+x*next[1]-next[0]*y},0);if(area<0)boundary.reverse();
-    const vertices: number[] = [], normals: number[] = [], colours:number[] = [], indices: number[] = [], rings = 6;
+    const vertices: number[] = [], normals: number[] = [], colours:number[] = [], indices: number[] = [], rings = frameOpening ? 7 : 6;
     const contour = torsoSurface ? wayfinderContour : undefined;
     const add = (x: number, y: number) => {
       const px = x + centre[0], py = y + centre[1];
@@ -1187,10 +1190,16 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
       }
     };
     add(0, 0);
-    for (let row = 1; row <= rings; row++) boundary.forEach(([x, y]) => add(x * row / rings, y * row / rings));
+    for (let row = 1; row <= rings; row++) boundary.forEach(([x, y]) => {
+      // A real open frame may sit in front of its glass; no centre triangles
+      // are retained to obscure the inset or its eyes.
+      const t=(row-1)/(rings-1);
+      add(x*(frameOpening?THREE.MathUtils.lerp(frameOpening[0]/width,1,t):row/rings),
+        y*(frameOpening?THREE.MathUtils.lerp(frameOpening[1]/height,1,t):row/rings));
+    });
     for (let i = 0; i < boundary.length; i++) {
       const next = (i + 1) % boundary.length;
-      indices.push(0, 1 + i, 1 + next);
+      if(!frameOpening)indices.push(0, 1 + i, 1 + next);
       for (let row = 1; row < rings; row++) {
         const a = 1 + (row - 1) * boundary.length + i, b = 1 + (row - 1) * boundary.length + next;
         const c = a + boundary.length, d = b + boundary.length;
