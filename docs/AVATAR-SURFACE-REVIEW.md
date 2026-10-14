@@ -2199,3 +2199,33 @@ paper robe. The thin mask-like head is an existing limitation exposed by
 inspection, not established as a161 regression. Next: a compact bent overlap
 that turns around the flank and returns toward the pencil, preserving the
 improved proportions rather than merely shortening the triangle tip.
+
+Revision-requested161 was pushed as145513dc05fb55cfe7a09beccc4082e90991d436;
+remote readback matches and CI38639252446 succeeded. It was not promoted.
+
+Pass162 bends the writing wing around the flank, brings its inner edge close
+to the real breast and returns its wrist across the actual pencil. The rear
+torso loses the bulging middle course in favor of longer oblique planes.
+377 tests/build pass, including normal-thickness/winding, an inner-edge ray
+check and actual pencil-behind-wrist proof. Authored triangle counts do not
+change from161. No face, material, lighting, room or agent-state changes.
+
+Independent verdict: retain162 over160/161. Quill7/6.5, Reflection6.5/6.5,
+campus7.5/7.5. Compact bent wing and slimmer chest read better at ordinary
+portrait size and in the actual room. The rear is cleaner but now has a long
+near-vertical edge and broad flat shield; it is not fully resolved. The
+existing thin mask-like head over the deeper torso and robe-like long chest
+remain larger form issues. No obvious new hole, pencil collision, face
+occlusion or night-readability regression is visible, but screenshots alone
+do not certify hidden attachment. Next cast-wide priority: Swift's complete
+origami construction, not more small Quill wing/back adjustments.
+
+162 first campus/close samples submit57.51/59.99fps, CPU mean/p95
+2.48/4.40ms and2.33/4.00ms. Frozen160 measured immediately afterward in the
+same fixture submits60.00/59.80fps, CPU2.42/4.10ms and2.58/4.30ms. A second
+162 campus sample submits60.01fps, CPU2.43/4.20ms. All samples are retained:
+the first slower campus run is not erased or called a60fps pass. Candidate
+draws137/134 and triangles431,846/904,409; retained160137/136 and
+431,832/903,009. Short samples show variability and no repeatable CPU-cost
+increase here, not locked60 or completed-GPU timing. Evidence is saved in
+surface-pass-162, including both candidate campus runs and the frozen pair.

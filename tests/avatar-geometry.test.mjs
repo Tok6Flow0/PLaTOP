@@ -1575,7 +1575,21 @@ test('Quill jacket and diagonal wings are closed thin stocks around a taller tap
   assert.deepEqual(model.userData.personality.head.position.toArray(),[0,.650,.005],'chosen smiling face frame is unchanged');
   assert.deepEqual(model.userData.personality.head.scale.toArray(),[.89,.93,.92]);
   const wing=new THREE.Box3().setFromObject(model.getObjectByName('paperQuillHoldingWing')).getSize(new THREE.Vector3());
-  assert.ok(wing.x/wing.y>.9,'the holding wing is a broad descending diagonal, not an upright flap');
+  assert.ok(wing.x>.25&&wing.x<.34&&wing.z>.23,'compact wing turns around the flank, not an oversized flat sail');
+  const stock=model.getObjectByName('paperQuillHoldingWing'),breast=model.getObjectByName('paperChestR'),body=model.userData.personality.body;
+  const direction=new THREE.Vector3(0,0,1).transformDirection(body.matrixWorld),ray=new THREE.Raycaster();
+  for(const t of [.2,.4,.6,.8]){
+    const edge=stock.localToWorld(new THREE.Vector3(-.14,-.10,.158).lerp(new THREE.Vector3(-.14,-.34,.228),t));
+    ray.set(edge.clone().addScaledVector(direction,2),direction.clone().negate());
+    const hit=ray.intersectObject(breast,false)[0];assert.ok(hit,'the inner return lies over the real breast');
+    assert.ok(hit.distance-2>.003&&hit.distance-2<.025,'inner wing edge returns to paper-scale breast clearance');
+  }
+  const pencil=model.getObjectByName('quill-pencil');
+  const grip=body.localToWorld(new THREE.Vector3(.323,-.13,.19*.85/1.06));
+  ray.set(grip.clone().addScaledVector(direction,2),direction.clone().negate());
+  const hits=ray.intersectObjects([stock,pencil],false);
+  assert.equal(hits[0]?.object,stock,'a folded wrist crosses in front of the pencil at the actual grip');
+  assert.ok(hits.some(hit=>hit.object===pencil),'the pencil is behind that fold, not displaced away from it');
   disposeObject(model);kit.dispose();
 });
 

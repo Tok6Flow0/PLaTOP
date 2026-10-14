@@ -4,6 +4,13 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
+Pass162 is retained over160/161: Quill7/6.5, Reflection6.5/6.5 and campus7.5/7.5.
+Its compact bent writing wing and slimmer chest improve the ordinary portrait
+and room. The broad rear shield and thin head-to-body connection remain
+unresolved.377 tests/build pass. Campus timings57.51 then60.01fps, close59.99;
+paired retained16060.00/59.80fps. Every sample remains in the ledger; no
+locked60 or GPU-completion claim. Next: Swift's whole origami construction.
+
 Pass161 is revision-requested, not promoted. Quill6.5/6.5, Reflection6.5/6.5,
 campus7.5/7.5: its slimmer torso is better, but the writing wing reads as an
 oversized sail and side construction remains divided.377 tests/build pass;

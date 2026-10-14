@@ -740,6 +740,15 @@ function paperQuillBody(side?:'left'|'right'):THREE.BufferGeometry {
   for(const i of [1,9,17,7,15,23]){
     const [x,y]=vertices[i];vertices[i][2]=ridgeZ(y)+(i%8===1?.38:-.34)*(x-ridgeX(y));
   }
+  // Two oblique rear stocks replace the rounded middle course. Their
+  // long planes return from neck to hem instead of bulging behind the
+  // much thinner chest and wing construction.
+  const backX=(y:number)=>.04-.10*(y+.50)/.75;
+  const backZ=(y:number)=>-.12-.035*(y+.50)/.75;
+  for(const i of [4,12,20]){vertices[i][0]=backX(vertices[i][1]);vertices[i][2]=backZ(vertices[i][1]);}
+  for(const i of [3,11,19,5,13,21]){
+    const [x,y]=vertices[i];vertices[i][2]=backZ(y)+.35*Math.abs(x-backX(y));
+  }
   const faces:number[][]=[];
   for(let row=0;row<2;row++)for(let col=0;col<8;col++){
     const a=row*8+col,b=row*8+(col+1)%8,c=a+8,d=b+8;
@@ -779,7 +788,7 @@ function paperQuillWing(holding:boolean):THREE.BufferGeometry {
   // A broad diagonal return goes around each shoulder. The outer wrist
   // folds down across the pencil; it is not an upright collar tab.
   const front:Tuple[]=holding
-    ?[[-.03,.025,.025],[.10,-.12,.15],[.24,-.35,.25],[-.04,-.28,.34],[-.17,-.10,.20],[.085,-.19,.30]]
+    ?[[-.07,.025,-.015],[.05,-.04,-.010],[.12,-.27,.14],[-.14,-.34,.228],[-.14,-.10,.158],[.055,-.20,.34]]
     :[[.03,.04,.005],[-.04,-.06,.07],[.07,-.39,.25],[.24,-.40,.28],[.14,-.03,.15],[.055,-.17,.23]];
   return closedPaperPanels(front,[[0,1,5],[1,2,5],[2,3,5],[3,4,5],[4,0,5]].map(face=>{
     const [a,b,c]=face.map(i=>front[i]);
