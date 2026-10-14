@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-70 suite passes **307 tests** and the production build passes. The
+The pass-71 suite passes **308 tests** and the production build passes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
@@ -43,7 +43,7 @@ The targeted campus review remains **8.2/10**, with chair readability and hidden
 storage limiting the improvement. Pass 58's matched
 [noon](docs/images/surface-campus-noon.jpg) and
 [night](docs/images/surface-campus-night.jpg) capture locations now contain pass
-70, superseding the older campus evidence below.
+71, superseding the older campus evidence below.
 Live agent actions remain the only source of work gestures and locomotion.
 
 Pass 62 strengthens existing contact shading and lamp pools without adding

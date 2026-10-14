@@ -207,20 +207,22 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     for(let i=0;i<18;i++){
       const cx=random()*768,cy=random()*384,r=45+random()*120;
       const cloud=context.createRadialGradient(cx,cy,0,cx,cy,r);
-      cloud.addColorStop(0,i%2?'rgba(69,49,34,.07)':'rgba(255,236,201,.10)');
+      cloud.addColorStop(0,i%2?'rgba(69,49,34,.15)':'rgba(255,236,201,.17)');
       cloud.addColorStop(1,'rgba(130,108,80,0)');context.fillStyle=cloud;
       context.fillRect(cx-r,cy-r,r*2,r*2);
     }
     for (let i = 0; i < 230; i++) {
       const y=random()*384,start=random()*240-80,length=210+random()*650,bend=2+random()*9;
-      context.strokeStyle = i % 3 ? 'rgba(76,57,39,.09)' : 'rgba(243,223,186,.13)'; context.lineWidth = .35+random()*.65;
+      context.strokeStyle = i % 3 ? 'rgba(76,57,39,.17)' : 'rgba(243,223,186,.18)'; context.lineWidth = .35+random()*.65;
       context.beginPath(); context.moveTo(start,y);context.bezierCurveTo(start+length*.27,y+bend,start+length*.65,y-bend*.6,start+length,y+random()*3);context.stroke();
     }
   });
   const top = texturedPlane(parent, grain, [x, 0.82, z], width - 0.16, depth - 0.14, true);
   (top.material as THREE.MeshStandardMaterial).alphaTest = 0.3;
-  (top.material as THREE.MeshStandardMaterial).roughness = 0.68;
-  (top.material as THREE.MeshStandardMaterial).envMapIntensity = 0.65;
+  // Oiled timber has a broader grazing highlight than chalky walls or woven
+  // cloth. Keep this ordinary PBR plane on the existing texture-array path.
+  (top.material as THREE.MeshStandardMaterial).roughness = 0.56;
+  (top.material as THREE.MeshStandardMaterial).envMapIntensity = 0.78;
   surface(top, 'furniture');
 }
 export function stool(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string): void {
@@ -442,7 +444,20 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   const potGeometry = new THREE.LatheGeometry([[0, 0], [0.13, 0], [0.155, 0.018], [0.18, 0.07], [0.205, 0.17],
     [0.216, 0.29], [0.207, 0.365], [0.2, 0.39], [0.181, 0.39], [0.189, 0.355], [0.193, 0.29],
     [0.173, 0.1], [0.13, 0.04], [0, 0.04]].map(([r, y]) => new THREE.Vector2(r, y)), 20);
-  const pot = new THREE.Mesh(potGeometry, kit.material(clay, 'ceramic'));
+  // Mineral variation belongs to the turned clay surface, not a transparent
+  // decal. Existing lathe vertices carry a quiet glaze cloud and rolled-rim
+  // highlight, so every pot still joins the same static colour batch.
+  const potPositions=potGeometry.attributes.position,potColors=new Float32Array(potPositions.count*3);
+  for(let i=0;i<potPositions.count;i++){
+    const px=potPositions.getX(i),py=potPositions.getY(i),pz=potPositions.getZ(i),angle=Math.atan2(pz,px);
+    const cloud=Math.sin(angle*3+py*19)*Math.sin(py*31+Math.sin(angle*2)*.7);
+    const rim=THREE.MathUtils.smoothstep(py,.33,.39);
+    const tone=.94+.045*cloud+.075*rim;
+    potColors.set([tone,tone*(1-.012*cloud),tone*(1-.025*cloud)],i*3);
+  }
+  potGeometry.setAttribute('color',new THREE.BufferAttribute(potColors,3));
+  const potMaterial=kit.material(clay,'ceramic').clone();potMaterial.vertexColors=true;
+  const pot = new THREE.Mesh(potGeometry,potMaterial);
   pot.name = 'Rounded plant pot'; pot.castShadow = pot.receiveShadow = true; group.add(pot);
   const lip = new THREE.Mesh(new THREE.TorusGeometry(0.199, 0.017, 6, 24), kit.material(clay, 'ceramic'));
   lip.name = 'Pot rolled lip'; lip.position.y = 0.39; lip.rotation.x = Math.PI / 2; lip.castShadow = lip.receiveShadow = true; group.add(lip);

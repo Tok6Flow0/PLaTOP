@@ -60,6 +60,7 @@ not asked for a desired score or instructed to approve.
 | 68 (fresh Reflection review) | Craft 7.5 / fidelity 7.5; retained lighting improvement | Warm spill now models inner cheeks, folds and tabletop; avoid further intensity increases, as the central pane approaches white |
 | 69 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained modest staging improvement | Taller real shelf tiers balance upper rooms; repeated storage and sparse lower-room desk/seating relationships remain |
 | 70 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained seating improvement | Angled guest chairs and visible foyer stool clarify use; evenly smooth material response and broad empty rug remain |
+| 71 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained subtle material refinement | Stronger tabletop grain and mineral pot finish are safe but small; broad light/shadow shaping remains the larger material-depth gap |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -536,6 +537,12 @@ the same room-grid offset, while the real table and homes moved rearward by
 0.4 units. That is a changed layout, not an exact pixel-matched close comparison.
 
 These samples remain in the earlier performance range, but do not prove a speed
+increase or an unchanged worst case. Pass 71 submits 53.90 campus fps (1.89 ms
+mean / 3.70 ms p95 CPU, 109 draws, 372,303 triangles) and 51.50 Merchant close
+fps (2.21 ms / 4.40 ms, 135 draws, 2,435,449 triangles, three dense avatars).
+The 308-test suite and production build pass. No new texture, light or draw is
+introduced by the finish changes; material variation uses existing vertex colour
+and the existing wood map. These samples do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for
 the distant campus. JavaScript submission time is not GPU completion time.
 An additional pass-25 close run overlapped a production-window change and fell

@@ -89,6 +89,26 @@ test('taller shelves add real tiers without stretching books or changing floor f
   disposeObject(resources);kit.dispose();
 });
 
+test('mineral pot finish is bounded vertex colour that survives static merging',()=>{
+  const kit=new SceneKit(),root=new THREE.Group();
+  plant(root,kit,0,0,1);plant(root,kit,1.1,0,.8);
+  const pots=[];root.traverse(object=>{if(object.name==='Rounded plant pot')pots.push(object);});
+  assert.equal(pots.length,2);
+  for(const pot of pots){
+    const colors=pot.geometry.attributes.color;assert.ok(colors);
+    assert.equal(pot.material.vertexColors,true);assert.equal(pot.material.map,null);
+    let min=Infinity,max=-Infinity;
+    for(const value of colors.array){assert.ok(value>=.88&&value<=1.08);min=Math.min(min,value);max=Math.max(max,value);}
+    assert.ok(max-min>.10,'rolled rim and mineral clouds remain distinct');
+  }
+  const sourceCount=pots[0].geometry.attributes.position.count;
+  tidyStaticMeshes(root);
+  const batch=root.children.find(object=>object.isMesh&&object.material.roughness===.48);
+  assert.ok(batch&&batch.geometry.attributes.position.count>sourceCount);
+  assert.ok(batch.geometry.attributes.color,'painted mineral variation survives colour batching');
+  const resources=new THREE.Group();resources.add(root,root.userData.staticSources);disposeObject(resources);kit.dispose();
+});
+
 test('luminous lamp haze uses bounded normal coverage and explicit room-light tracking', t => {
   canvasDocument(t);
   const kit = new SceneKit(), root = new THREE.Group();
