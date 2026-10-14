@@ -151,6 +151,30 @@ test('dense patches improve round curvature but preserve hard folds, UVs and sou
   source.dispose(); plane.dispose();
 });
 
+test('dense paper normals follow displaced relief while preserving the authored plane',()=>{
+  const plane=new THREE.PlaneGeometry(.8,.8).rotateY(.4),source=surfaceData(plane);
+  const original=source.attributes.position.array.slice(),fine=refineCharacterSurface(source,'paper');
+  const p=fine.attributes.position.array,n=fine.attributes.normal.array,uv=fine.attributes.uv.array;
+  const relief=(x,y,z)=>.001*Math.sin(x*37+y*17+Math.sin(y*23))*Math.sin(y*42+z*11)+.0002*Math.sin(x*231+y*43);
+  const eps=1e-5;let varying=0;
+  for(let i=0;i<p.length/3;i++){
+    const local=(uv[i*2]-.5)*.8,x=local*Math.cos(.4),y=(uv[i*2+1]-.5)*.8,z=-local*Math.sin(.4);
+    assert.ok(Math.abs(p[i*3]-x)<1e-6&&Math.abs(p[i*3+1]-y)<1e-6);
+    assert.ok(Math.abs(p[i*3+2]-z-relief(x,y,z))<1e-6);
+    const dx=(relief(x+eps,y,z)-relief(x-eps,y,z))/(2*eps);
+    const dy=(relief(x,y+eps,z)-relief(x,y-eps,z))/(2*eps);
+    const dz=(relief(x,y,z+eps)-relief(x,y,z-eps))/(2*eps);
+    const nz=Math.cos(.4)/(1+dz),expected=new THREE.Vector3(Math.sin(.4)-nz*dx,-nz*dy,nz).normalize();
+    const actual=new THREE.Vector3(...n.subarray(i*3,i*3+3));
+    assert.ok(actual.dot(expected)>.99999,'normal is perpendicular to the displaced surface');
+    if(Math.abs(actual.y)>.01)varying++;
+  }
+  assert.ok(varying>30);assert.deepEqual(source.attributes.position.array,original);plane.dispose();
+  const kit=new SceneKit(),material=characterMaterial(kit,'#dbc49e','paper');
+  assert.equal(material.roughnessMap,material.bumpMap,'one shared cellulose texture');
+  assert.equal(material.transparent,false);kit.dispose();
+});
+
 test('close materials add bounded fibre or glaze response without mutating or disposing source textures',()=>{
   const kit=new SceneKit(),model=new THREE.Group(),originals=[];
   for(const finish of ['feather','plumage','facialFeather','cloth','glaze','paper']){

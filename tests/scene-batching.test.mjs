@@ -89,6 +89,19 @@ test('shared character micrograin stays batched with UVs and preserves map owner
   batches.dispose();assert.equal(disposed,0,'source material retains its grain');grain.dispose();
 });
 
+test('cellulose roughness reuses the approved grain without merging a different surface response',t=>{
+  const {scene,moving,batches}=fixture(t);
+  const grain=new THREE.DataTexture(new Uint8Array(16),2,2);grain.userData.platopCharacterGrain=true;
+  const other=new THREE.DataTexture(new Uint8Array(16),2,2);t.after(()=>{grain.dispose();other.dispose();});
+  moving.forEach(mesh=>{mesh.material.map=grain;mesh.material.bumpMap=grain;mesh.material.roughnessMap=grain;});
+  const grainBatches=()=>scene.getObjectByName('Shared character draws').children.filter(mesh=>mesh.isTransformPaletteMesh&&mesh.material.bumpMap===grain);
+  batches.rebuild();assert.equal(grainBatches().length,1);
+  assert.equal(grainBatches()[0].material.roughnessMap,grain);assert.equal(grainBatches()[0].instanceCount,2);
+  moving[0].material.roughnessMap=null;batches.rebuild();assert.equal(grainBatches().length,0,'mapped and constant roughness cannot share a shader');
+  moving.forEach(mesh=>{mesh.material.roughnessMap=other;});batches.rebuild();
+  assert.equal(grainBatches().length,0,'unapproved independent maps retain their original path');
+});
+
 function mappedPlane(texture, alphaTest = 0) {
   const mesh = new THREE.Mesh(new THREE.PlaneGeometry(2.3, 1.7), new THREE.MeshStandardMaterial({
     map: texture, roughness: 0.95, metalness: 0, side: THREE.DoubleSide, alphaTest,

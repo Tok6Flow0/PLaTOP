@@ -409,8 +409,9 @@ export class SceneBatches {
     // survives palette cloning. Arbitrary authored maps remain on their safe path.
     const sharedGrain = bump instanceof THREE.DataTexture && bump.userData.platopCharacterGrain === true;
     const grainColour = sharedGrain && material.map === bump;
+    const grainRoughness = sharedGrain && pbr?.roughnessMap === bump;
     if (material.transparent || material.opacity !== 1 || (pbr && pbr.emissive.getHex() !== 0 && !staticEmission)
-      || Object.entries(material).some(([name, value]) => name.endsWith('Map') && value && !(sharedGrain && name === 'bumpMap'))
+      || Object.entries(material).some(([name, value]) => name.endsWith('Map') && value && !(sharedGrain && name === 'bumpMap') && !(grainRoughness && name === 'roughnessMap'))
       || (!staticMap && ((material.map && !grainColour) || material.alphaTest)) || material.clippingPlanes?.length
       || material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile
       || (material.type !== 'MeshStandardMaterial' && material.type !== 'MeshBasicMaterial')) return null;
@@ -424,7 +425,7 @@ export class SceneBatches {
       material.blendEquationAlpha, material.blendColor.toArray().join(','), material.blendAlpha, pbr?.envMapIntensity,
       material.stencilWrite, material.stencilWriteMask, material.stencilFunc, material.stencilRef,
       material.stencilFuncMask, material.stencilFail, material.stencilZFail, material.stencilZPass,
-      sharedGrain ? bump.uuid : undefined, sharedGrain ? pbr?.bumpScale : undefined, grainColour,
+      sharedGrain ? bump.uuid : undefined, sharedGrain ? pbr?.bumpScale : undefined, grainColour, grainRoughness,
       staticEmission ? pbr?.emissive.toArray().join(',') : undefined, staticEmission ? pbr?.emissiveIntensity : undefined].join(':');
   }
 

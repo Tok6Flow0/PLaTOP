@@ -76,6 +76,21 @@ export function refineCharacterSurface(source: SurfaceData, finish = 'clay', fre
           outN[offset+2]=1;
         }
       }
+      if(finish==='paper'){
+        // Normals follow the actual dense relief, including its shallow
+        // waviness. Leaving the old planar normals hid these new surfaces
+        // from the light even though their vertices were displaced.
+        const px=outP[offset],py=outP[offset+1],pz=outP[offset+2];
+        const a=px*37+py*17+Math.sin(py*23),b=py*42+pz*11,c=px*231+py*43;
+        const sa=Math.sin(a),ca=Math.cos(a),sb=Math.sin(b),cb=Math.cos(b),cc=Math.cos(c);
+        const dx=.0010*ca*37*sb+.0002*cc*231;
+        const dy=.0010*(ca*(17+23*Math.cos(py*23))*sb+sa*cb*42)+.0002*cc*43;
+        const dz=.0010*sa*cb*11;
+        // Inverse transpose of p -> p + (0,0,relief(p)). Apply separately to
+        // each authored normal, so creases keep their intentional hard edges.
+        const nz=outN[offset+2]/(1+dz);
+        outN[offset]-=nz*dx;outN[offset+1]-=nz*dy;outN[offset+2]=nz;
+      }
       const length = Math.hypot(outN[offset], outN[offset + 1], outN[offset + 2]) || 1;
       const displacement = relief(outP[offset], outP[offset + 1], outP[offset + 2], finish);
       for (let axis = 0; axis < 3; axis++) {

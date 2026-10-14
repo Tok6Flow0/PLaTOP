@@ -54,6 +54,7 @@ not asked for a desired score or instructed to approve.
 | 62 (fresh campus reviewer) | Campus craft 7.0 / fidelity 7.5; modest improvement, unchanged grade | Better contact depth and warm/cool night separation; uniform materials, sparse staging and broad desk shadows remain |
 | 63 (Dispatch prototype) | 8.4/10 — B+; rejected coverage regression | Narrower fold shows more breast, but missing-looking teal backing and a culled lower triangle prevent acceptance |
 | 64 (Dispatch continuity review) | 8.5/10 — B+; narrowly preferred over 61 | Closed backing restores a visible continuous surface; smaller wing bulk helps, but the stepped central fold remains unlike the source |
+| 65 (fresh Reflection and Swift review) | Each craft 7.0 / fidelity 7.5; subtle surface improvement, unchanged tier | Drier paper grain, but solid-looking volumes and short belly facets remain; longer overlapping chest/wing sheets are the priority |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -120,6 +121,15 @@ mirrored wings. The modestly narrower outline preserves standing feet, visible
 eyes and all moving clearances. Four extra authored triangles become 400 extra
 close-tier triangles; the exact 100-times test still holds for all sixteen.
 This is a local repair, not a new full-set acceptance.
+
+Pass 65: 304 tests and the production build pass. Paper's dense normals now
+follow the derivative of its geometric relief, retaining split crease normals
+and unchanged source meshes. Numerical-gradient tests verify that relationship.
+The existing cellulose texture also modulates roughness; a narrowly keyed batch
+path preserves that same-map response and rejects independent unapproved maps.
+The fresh reviewer sees a slight dry/fibrous improvement with no major regression,
+but the unchanged short belly facets and thick side masses still dominate the
+Reflection figures. No improved character score is claimed.
 
 - 280 tests pass; production build passes, with the existing large-bundle warning.
 - All sixteen exact 100× counts, finite attributes, source preservation, curvature,
@@ -398,6 +408,7 @@ and is not treated as close-up evidence.
 | Pass 61 campus | 55.10 | 1.92 / 2.70 ms | 110 / 354,087 | 0 |
 | Pass 62 campus | 51.70 | 1.64 / 2.50 ms | 110 / 354,087 | 0 |
 | Pass 64 campus | 55.10 | 1.48 / 2.10 ms | 110 / 354,091 | 0 |
+| Pass 65 campus | 56.10 | 1.40 / 2.00 ms | 110 / 354,091 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -419,6 +430,7 @@ and is not treated as close-up evidence.
 | Pass 56 full-face close | 49.40 | 2.48 / 4.20 ms | 134 / 2,408,197 | 3 |
 | Pass 57 full-face close | 53.10 | 2.11 / 4.30 ms | 135 / 2,414,805 | 3 |
 | Pass 58 full-face close | 51.89 | 2.40 / 4.40 ms | 135 / 2,416,713 | 3 |
+| Pass 65 full-face close | 49.90 | 1.57 / 2.20 ms | 135 / 2,416,717 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material
@@ -457,6 +469,16 @@ avatars). These retain the same sampling limits; no night baseline was measured.
 Pass 64 Dispatch submitted 56.30 fps / 1.62 ms mean / 2.30 ms p95, with two
 dense avatars, 109 draws and 1,670,462 triangles. The failed pass-63 prototype
 was corrected before timing; its rendered comparison remains in the review ledger.
+Pass 65 Lantern Desk submitted 54.81 fps / 1.47 ms mean / 2.10 ms p95, with
+three dense avatars, 123 draws and 812,568 triangles. The normal construction
+runs in the existing worker; this steady-state sample does not time initial mesh
+construction or GPU completion.
+The original 271831b fixture was re-run after pass 65 at the same 1000 × 800
+viewport and 1.5 DPR cap. It submitted 51.30 campus fps / 1.42 ms mean / 2.30 ms
+p95 and 50.40 close fps / 1.16 ms / 1.90 ms, retaining 93/329,483 and 46/303,944
+draws/triangles respectively. Pass 65's matching close sample is 49.90 fps with
+three dense avatars: comparable submitted cadence, but higher CPU submission
+cost (1.57 vs 1.16 ms mean), not a speed increase or proof of equal GPU cost.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

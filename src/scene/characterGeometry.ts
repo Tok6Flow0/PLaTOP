@@ -810,7 +810,7 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
     const noise=(seed>>>24)/255, broad=Math.sin(x*.063+Math.sin(y*.081))*Math.sin(y*.048);
     const pore=noiseAt(x/6,y/6),fibre=noiseAt(x/2.8+Math.sin(y*.036)*.7,y/25);
     const barbs=Math.pow(Math.max(0,Math.sin(y*.67+Math.abs(x-size*.5)*.28)),12);
-    const grain=finish==='paper'?237-29*fibre-13*pore-8*noise
+    const grain=finish==='paper'?247-24*fibre-13*pore-8*noise-24*noiseAt(x/41,y/37)
       :finish==='brass'?249-4*Math.sin(y*1.17+x*.007)-3*noise
       :finish==='cloth'?238-13*(Math.sin(x*Math.PI/4)**2+Math.sin(y*Math.PI/4)**2)-15*pore-6*noise
       :finish==='feather'?250-16*barbs-28*pore-7*noise-28*noiseAt(x/19,y/17)-22*fibre
@@ -898,6 +898,9 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       material.envMapIntensity=finish==='glaze'?.60:.5;
       material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='glaze'?.009:finish==='brass'?.0015:finish==='paper'?.014:.012;
       material.map=material.bumpMap;
+      // The same cellulose field varies its grazing response without an
+      // additional texture allocation, transparent layer or geometry draw.
+      if(finish==='paper')material.roughnessMap=material.bumpMap;
     }
     cache.set(key, material);
   }
