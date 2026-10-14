@@ -4,7 +4,7 @@ import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
@@ -933,6 +933,16 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperDiscL': return reflect(makeGeometry('paperDisc'));
     case 'pageFold': return folded([[-.5, .5], [.5, .5], [.5, -.5]], .04, .04);
     case 'hoodTip': return lathe([[0, -.5], [.49, -.5], [.43, -.32], [.30, -.12], [.21, .15], [.13, .36], [0, .6]], 16);
+    case 'hoodInset': {
+      // One front-facing patch, not a second closed cone flattened over the
+      // first. Back faces would overlap the front after relief projection.
+      const panel=new THREE.PlaneGeometry(1,1,8,10),p=panel.attributes.position;
+      for(let i=0;i<p.count;i++) {
+        const t=p.getY(i)+.5;
+        p.setXYZ(i,p.getX(i)*.98*Math.pow(1-t,.86),-.5+t*1.1,0);
+      }
+      panel.computeVertexNormals();return panel;
+    }
     case 'scroll': return new THREE.CylinderGeometry(.5, .5, 1, 12, 1, false, .12, Math.PI * 1.78);
     case 'spiritBody': return softLathe([[0, -.50], [.34, -.50], [.47, -.45], [.5, -.30], [.46, -.12], [.37, .12], [.30, .32], [.26, .46], [.16, .55], [0, .58]]);
     case 'spiritHood': return spiritHood();
@@ -1144,23 +1154,33 @@ export function characterMesh(kit: SceneKit, parent: THREE.Object3D, form: Chara
 /** Fit an inset to its helmet or pear belly, sharing its curvature and normals. */
 export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string, width: number, height: number,
   offset: number, centre: Tuple = [0, 0, 0], finish: CharacterFinish = 'ink', surfaceRadii: Tuple = [.461, .38, .345], bubble = false,
-  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0,frameOpening?:[number,number]): THREE.Mesh {
+  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0,frameOpening?:[number,number],frameRings=7): THREE.Mesh {
   const cache = owned(kit).geometry;
-  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}:${frameOpening?.join(':')??''}`;
+  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}:${frameOpening?.join(':')??''}:${frameRings}`;
   let geometry = cache.get(key);
   if (!geometry) {
     // Four continuous arcs give a rounded boundary at close range while using
     // fewer triangles than the old grid's visibly stair-stepped outline.
     const radius = Math.min(width, height) * cornerRatio, boundary: Array<[number, number]> = [];
-    const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]];
+    const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]],arcSteps=frameOpening&&frameRings===2?16:8;
     corners.forEach(([sx, sy], corner) => {
-      for (let step = 0; step < 8; step++) {
-        const angle = (corner + step / 7) * Math.PI / 2;
+      for (let step = 0; step < arcSteps; step++) {
+        const angle = (corner + step / (arcSteps-1)) * Math.PI / 2;
         let x = sx * (width / 2 - radius) + Math.cos(angle) * radius;
         let y = sy * (height / 2 - radius) + Math.sin(angle) * radius;
         boundary.push([x, y]);
       }
     });
+    if(frameOpening&&frameRings===2){
+      // A fine seam must sample the straight spans too. A single wide top
+      // chord otherwise sinks through the convex helmet between its ends.
+      const sampled:Array<[number,number]>=[];
+      boundary.forEach(([x,y],i)=>{
+        const next=boundary[(i+1)%boundary.length],steps=Math.max(1,Math.ceil(Math.hypot(next[0]-x,next[1]-y)/.025));
+        for(let step=0;step<steps;step++)sampled.push([THREE.MathUtils.lerp(x,next[0],step/steps),THREE.MathUtils.lerp(y,next[1],step/steps)]);
+      });
+      boundary.splice(0,boundary.length,...sampled);
+    }
     if(owlSign){
       const disc=new THREE.Path();disc.moveTo(-.169,.06);
       disc.bezierCurveTo(-.14,.16,-.09,.27,.035,.252);
@@ -1173,7 +1193,7 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     }
     if(bubble){boundary.length=0;boundary.push(...speechBoundary(width,height));}
     const area=boundary.reduce((sum,[x,y],i)=>{const next=boundary[(i+1)%boundary.length];return sum+x*next[1]-next[0]*y},0);if(area<0)boundary.reverse();
-    const vertices: number[] = [], normals: number[] = [], colours:number[] = [], indices: number[] = [], rings = frameOpening ? 7 : 6;
+    const vertices: number[] = [], normals: number[] = [], colours:number[] = [], indices: number[] = [], rings = frameOpening ? Math.max(2,Math.min(7,Math.round(frameRings))) : 6;
     const contour = torsoSurface ? wayfinderContour : undefined;
     const add = (x: number, y: number) => {
       const px = x + centre[0], py = y + centre[1];

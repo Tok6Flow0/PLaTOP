@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-118 suite passes **345 tests** and the production build passes. Its
+The pass-119 suite passes **346 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -62,6 +62,12 @@ guide, ensemble and room. A deterministic jitter test reproduces the camera
 throttle loss; a separate input deadline restores 60.00 submitted fps in both
 fixed workloads without changing the mesh/draw counts, idle behavior or 30 fps
 animation cadence. These short samples are not GPU-completion guarantees.
+Pass 119's cream hood point, attached navy inset/star and lighter face surround
+are retained at unchanged scores. Its new seam is an intermediate construction:
+the reviewer sees a drawn/wavy outline rather than the reference's nested rim.
+Both fixed camera tests submit 60.00 fps. One initial full-run MCP-client failure
+is retained in the validation record; the isolated client suite and unchanged
+full rerun passed. Production remains 116 pending the seam revision.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

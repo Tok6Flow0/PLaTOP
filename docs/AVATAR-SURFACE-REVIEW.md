@@ -111,6 +111,7 @@ not asked for a desired score or instructed to approve.
 | 116 (guide attachment correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 115 | Attached hood star and narrow neck turn remove the largest regressions. Small pointed neckline ends remain; the rear now reads as a fitted jacket. Hanging shoulder-to-hem folds, not further shortening or grain, are the next construction priority |
 | 117 (hanging-fold prototype) | Guide craft 7.0 / fidelity 7.5; ensemble/room 7.5 / 7.5; revise before retention | Two descending folds are visibly improved, but an exposed/intersecting round shoulder component interrupts the cloth. Preserve the fold direction while correcting coverage; then prioritize the cream-edged hood point and layered head silhouette |
 | 118 (sleeve coverage correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 117 and 116 | Side, quarter and night show a continuous shoulder with the oval gone, retaining stronger folds. Further cape polishing has diminishing value; the layered cream hood/head silhouette remains the next normal-view priority |
+| 119 (cream hood layers, intermediate) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5 | Retain the cream outer point, fitted navy inset/star and lighter surround. Revise the seam: it reads as a drawn tan outline and looks wavy in the actual close scene. A returned cream edge and shallow shadow separation are still needed |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1137,3 +1138,24 @@ Sampled draws/triangles remain 114 / 383,854 and 139 / 2,240,027, with three
 dense close avatars. This is a scheduling correction, not a reduced graphics
 workload or guaranteed GPU-completion rate. Both ten-second measurements and
 full visual evidence remain under surface-pass-118. Production remains 116.
+
+Pass 119 adds the guide's cream outer point, a single fitted navy front patch,
+and a light ceramic face surround. The initial closed inset produced overlapping
+surfaces and was replaced before final capture. A narrow seam samples both arcs
+and straight spans and is fitted to the real helmet. New coarse/dense checks
+guard its open aperture, positive shell clearance, and the star's clearance
+above the inset. Guide density is 889,200 close-up triangles.
+
+The independent reviewer retains the cream point/inset and lighter surround,
+but requires replacing the drawn-looking, slightly wavy seam with a shallow
+returned edge. Guide/ensemble/room remain 7.5 / 7.5, campus 7.0 / 7.5. This is
+an intermediate checkpoint, not A-level acceptance or a production promotion.
+
+The initial full suite had one unconfirmed MCP-client activity failure under
+load. No protocol or timeout was changed: the isolated 17-test client suite
+passed, followed by all 346 tests and the production build. Both runs are
+retained in the temporary validation logs. Campus submits 60.00 fps (1.48 ms
+mean / 2.00 ms p95 CPU, 115 draws, 384,310 triangles); Wayfinders close submits
+60.00 fps (1.73 / 2.70 ms, 140 draws, 2,240,483 triangles, three dense avatars).
+These fixed ten-second samples are not GPU-completion guarantees. Full visual
+and timing evidence is in surface-pass-119. Isolated production remains 116.

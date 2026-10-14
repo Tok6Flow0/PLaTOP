@@ -185,7 +185,14 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, shellFinish).name='helmet';
       // A shallow lip surrounds the glass instead of putting a cloth plaque
       // in front of a lower rim. Both surfaces retain the helmet curvature.
-      curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, wayfinder ? .021 : .010, [0, .005, 0], 'clay',undefined,false,undefined,.43,0,wayfinder?[.577,.395]:undefined).name='visor-rim';
+      curvedFace(kit, head, id==='intake-jarvis'?cream:wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, wayfinder ? .021 : .010, [0, .005, 0], id==='intake-jarvis'?'satinClay':'clay',undefined,false,undefined,.43,0,wayfinder?[.577,.395]:undefined).name='visor-rim';
+      if(id==='intake-jarvis') {
+        // The chosen guide wears a layered ceramic hood. This thin open seam
+        // follows the helmet itself, not a floating flat ring over the face.
+        const seam=curvedFace(kit,head,'#b9aa8e',.735,.575,.006,[0,.005,0],'clay',undefined,false,undefined,.43,0,[.719,.559],2);
+        seam.name='navigator-hood-seam';fitCharacterRelief(seam,head.getObjectByName('helmet') as THREE.Mesh,.006,0);
+        delete seam.geometry.userData.characterEllipsoid;
+      }
       curvedFace(kit, head, wayfinder ? '#142631' : '#f2e2bf', .583, .401, wayfinder ? .014 : .019, [0, .005, 0], wayfinder ? 'visorGlass' : 'clay').name='rounded-visor';
       if (id === 'bridge-scout') {
         // One generously sized magnifier is Scout's face, not a tiny monocle
@@ -218,12 +225,16 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
           }
           if(id==='intake-jarvis')sculpt(body, 'detail', gold, [0, .20, .290], [.044, .044, .022], undefined, 'brass');
           if (id === 'intake-jarvis') {
-            const hood=sculpt(head, 'hoodTip', '#273b4a', [0, .399, -.025], [.29, .31, .23],undefined,'cloth');
+            const hood=sculpt(head, 'hoodTip', cream, [0, .399, -.025], [.29, .31, .23],undefined,'satinClay');
+            // A cream point continues the helmet silhouette, framing a navy
+            // inset. Fit both the inset and star to the real hood surface.
+            const inset=sculpt(head,'hoodInset','#273b4a',[0,.413,.075],[.18,.27,1],undefined,'cloth');
+            inset.name='navigator-hood-inset';fitCharacterRelief(inset,hood,.004,0);
             // The chosen portrait has a star on the hood, not a second
             // free-standing medallion in front of it. Fit its shallow relief
             // onto the real cone so side views retain an attached emblem.
             const crest=sculpt(head,'compassStar',gold,[0,.444,.095],[.078,.125,.10],undefined,'brass');
-            crest.name='navigator-hood-star';fitCharacterRelief(crest,hood,.002,.003);
+            crest.name='navigator-hood-star';fitCharacterRelief(crest,hood,.007,.001);
             compass(body, [0, -.02, .307], .225);
             stroke(body, '#bea06b', [[.06,-.43,.185],[.03,-.35,.24],[-.09,-.29,.285],[-.07,-.22,.31],[.08,-.19,.315],[.12,-.16,.312]], .009, 'clay').name='navigator-route-inlay';
           } else if (id === 'intake-beacon') {

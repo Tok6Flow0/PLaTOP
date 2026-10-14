@@ -1212,7 +1212,40 @@ test('the guide hood star is fitted to the actual cone in both surface tiers',()
       const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
       const emblem=ray.intersectObject(star,false)[0],cloth=ray.intersectObject(hood,false)[0];
       assert.ok(emblem&&cloth&&cloth.distance-emblem.distance>0&&cloth.distance-emblem.distance<.012,`star is visible and attached to the hood surface at ${point.x},${point.y}: star ${emblem?.distance}, hood ${cloth?.distance}`);
+      const inset=ray.intersectObject(model.getObjectByName('navigator-hood-inset'),false)[0];
+      assert.ok(inset&&inset.distance-emblem.distance>.001,'the star clears the navy inset without clipping');
     }
+  };
+  check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
+});
+
+test('the guide hood has a fitted single-face inset and an open ceramic surround',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const hood=model.getObjectByName('hoodTip'),inset=model.getObjectByName('navigator-hood-inset');
+  const seam=model.getObjectByName('navigator-hood-seam'),helmet=model.getObjectByName('helmet');
+  assert.equal(inset.geometry.userData.characterFitted,true);
+  assert.equal(inset.material.color.getHexString(),'273b4a');
+  assert.equal(hood.material.color.getHexString(),'eee4d0');
+  model.updateMatrixWorld(true);
+  const probes=[inset,seam].flatMap(mesh=>{
+    const p=mesh.geometry.attributes.position,index=mesh.geometry.index,result=[];
+    for(let i=0;i<index.count;i+=6){
+      const triangle=[0,1,2].map(c=>new THREE.Vector3().fromBufferAttribute(p,index.getX(i+c)));
+      if(new THREE.Vector3().subVectors(triangle[1],triangle[0]).cross(new THREE.Vector3().subVectors(triangle[2],triangle[0])).lengthSq()<1e-14)continue;
+      const point=triangle.reduce((sum,vertex)=>sum.add(vertex),new THREE.Vector3());
+      result.push({mesh,point:mesh.localToWorld(point.multiplyScalar(1/3))});
+    }
+    return result;
+  });
+  const check=()=>{
+    for(const {mesh,point} of probes){
+      const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
+      const detail=ray.intersectObject(mesh,false)[0],shell=ray.intersectObject(mesh===inset?hood:helmet,false)[0];
+      assert.ok(detail&&shell&&shell.distance-detail.distance>0&&shell.distance-detail.distance<.035,`hood layers stay fitted: ${mesh.name} detail ${detail?.distance}, shell ${shell?.distance}`);
+    }
+    const centre=seam.parent.localToWorld(new THREE.Vector3(0,.005,0));
+    const ray=new THREE.Raycaster(new THREE.Vector3(centre.x,centre.y,3),new THREE.Vector3(0,0,-1));
+    assert.equal(ray.intersectObject(seam,false).length,0,'the face surround has no centre triangles over the glass');
   };
   check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
 });
