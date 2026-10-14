@@ -1217,6 +1217,27 @@ test('the guide hood star is fitted to the actual cone in both surface tiers',()
   check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
 });
 
+test('the resting guide sleeves stay beneath the cape in both mesh tiers',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const {body,arms}=model.userData.personality,cape=model.getObjectByName('cape');model.updateMatrixWorld(true);
+  const probes=arms.flatMap(arm=>[-.30,-.20,-.10,0].flatMap(y=>[-.06,0,.06].map(z=>{
+    const point=arm.localToWorld(new THREE.Vector3(0,y,z)),local=body.worldToLocal(point.clone());
+    const center=body.localToWorld(new THREE.Vector3(0,local.y,0));
+    return {arm:arm.children[0],center,direction:point.sub(center).normalize()};
+  })));
+  const check=()=>{
+    let checked=0;
+    for(const {arm,center,direction} of probes){
+      const ray=new THREE.Raycaster(center.clone().addScaledVector(direction,2),direction.clone().negate());
+      const sleeve=ray.intersectObject(arm,false)[0];if(!sleeve)continue;
+      const cloth=ray.intersectObject(cape,false)[0];
+      assert.ok(cloth&&sleeve.distance-cloth.distance>.001,'covered sleeve cannot appear as an oval through the shoulder');checked++;
+    }
+    assert.ok(checked>=12,'probe both real sleeve surfaces across their height');
+  };
+  check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
+});
+
 test('the guide route stays visibly inlaid on the dense belly rather than floating as a rope',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
   const route=model.getObjectByName('navigator-route-inlay'),body=model.getObjectByName('wayfinderBody');

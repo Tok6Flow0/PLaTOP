@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-117 suite passes **340 tests** and the production build passes. Its
+The pass-118 suite passes **345 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -57,6 +57,11 @@ Pass 117's stronger rear folds are visible, but the reviewer requires repair
 of an intersecting shoulder patch before retention (guide 7.0 craft / 7.5
 fidelity; ensemble/room 7.5 / 7.5). Its lower submitted rates, 48.20 campus
 and 46.50 close fps, remain in the ledger; no identical-speed claim is made.
+Pass 118 repairs the sleeve intersection and is retained at 7.5 / 7.5 for
+guide, ensemble and room. A deterministic jitter test reproduces the camera
+throttle loss; a separate input deadline restores 60.00 submitted fps in both
+fixed workloads without changing the mesh/draw counts, idle behavior or 30 fps
+animation cadence. These short samples are not GPU-completion guarantees.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

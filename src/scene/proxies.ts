@@ -282,10 +282,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7',false,wayfinder);
       if(wayfinder) [-1,1].forEach(sign=>{
         const navigator=id==='intake-jarvis';
-        const arm=joint(body,sign<0?'arm_l':'arm_r',[sign*.375,navigator?.08:.10,navigator?-.03:.025]);
+        const arm=joint(body,sign<0?'arm_l':'arm_r',[sign*(navigator?.32:.375),navigator?.03:.10,navigator?-.02:.025]);
         // Jarvis's arms sit beneath the mantle, not as two exposed padded
         // tubes beside it. The existing joints still carry agent-chosen poses.
-        const shell=sculpt(arm,'bean',navigator?'#2d4250':bodyColor,[0,-.15,0],navigator?[.125,.40,.22]:[.19,.53,.31],undefined,'clay');
+        const shell=sculpt(arm,'bean',navigator?'#2d4250':bodyColor,[0,-.15,0],navigator?[.10,.36,.19]:[.19,.53,.31],undefined,'clay');
         if(!navigator){
           const inset=sculpt(arm,'detail','#2d4250',[0,-.065,.15],[.095,.22,.016],undefined,'clay');
           fitCharacterRelief(inset,shell,.006);

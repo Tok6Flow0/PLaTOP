@@ -110,6 +110,7 @@ not asked for a desired score or instructed to approve.
 | 115 (isolated guide construction review) | Guide craft 7.0 / fidelity 7.0; ensemble 7.5 / 7.5; campus 7.0 / 7.5; mixed | Retain shallow belly inlay; reject the shoulder-wide armored capelet. Isolated views reveal an existing floating hood emblem, previously hidden by the group composition |
 | 116 (guide attachment correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 115 | Attached hood star and narrow neck turn remove the largest regressions. Small pointed neckline ends remain; the rear now reads as a fitted jacket. Hanging shoulder-to-hem folds, not further shortening or grain, are the next construction priority |
 | 117 (hanging-fold prototype) | Guide craft 7.0 / fidelity 7.5; ensemble/room 7.5 / 7.5; revise before retention | Two descending folds are visibly improved, but an exposed/intersecting round shoulder component interrupts the cloth. Preserve the fold direction while correcting coverage; then prioritize the cream-edged hood point and layered head silhouette |
+| 118 (sleeve coverage correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 117 and 116 | Side, quarter and night show a continuous shoulder with the oval gone, retaining stronger folds. Further cape polishing has diminishing value; the layered cream hood/head silhouette remains the next normal-view priority |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1116,3 +1117,23 @@ not merely a test-only change; they should be preserved while coverage is
 repaired. Guide craft is 7.0, fidelity 7.5; ensemble/room remain 7.5 / 7.5.
 After that repair, the separate navy cone/plain helmet is the largest remaining
 normal-view mismatch against the cream-edged point and layered reference hood.
+
+Pass 118 passes 345 tests/build. The guide's hidden upper sleeves are tucked
+inside the cape; coarse/dense ray checks guard actual coverage across both
+sleeves. The independent reviewer sees the oval disappear in side, quarter
+and night views, retaining the folds and narrower shoulders at 7.5 / 7.5 for
+guide, ensemble and room. No visible regression is reported; no A is granted.
+
+Performance investigation reproduces the camera scheduling loss without any
+WebGL work: sinusoidal 1.2 ms timestamp jitter lowers the old input throttle
+from 60 to 43.8 fps at 60 Hz and 45.6 fps at 120 Hz. Input now tracks its own
+60 fps deadline grid with bounded jitter tolerance and a no-burst guard. It
+does not add a loop or change the 30 fps animation clock. Tests cover jitter
+at 60/120/144/240 Hz, late recovery, coalescing, idle and reset behavior.
+
+The unchanged fixed camera workload now submits 60.00 fps for campus (1.30 ms
+mean / 1.90 ms p95 CPU) and 60.00 fps for Wayfinders close (1.76 / 3.10 ms).
+Sampled draws/triangles remain 114 / 383,854 and 139 / 2,240,027, with three
+dense close avatars. This is a scheduling correction, not a reduced graphics
+workload or guaranteed GPU-completion rate. Both ten-second measurements and
+full visual evidence remain under surface-pass-118. Production remains 116.

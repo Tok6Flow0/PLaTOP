@@ -82,6 +82,22 @@ test('static scenes request only invalidated frames and reset drops queued work'
   assert.equal(pacer.shouldRender(10_016.667, true), false);
 });
 
+for(const refreshRate of [60,120,144,240]){
+  test(`camera input retains its 60 fps deadline with bounded timestamp jitter at ${refreshRate} Hz`,()=>{
+    const pacer=new FramePacer(),frames=[];
+    for(let i=0;i<refreshRate*10;i++){
+      const now=i*1000/refreshRate+1.2*Math.sin(i*1.7);
+      pacer.invalidate();if(pacer.shouldRender(now,false))frames.push(now);
+    }
+    assert.ok(frames.length>=595&&frames.length<=602,`submitted ${frames.length/10} fps`);
+    for(let i=1;i<frames.length;i++)assert.ok(frames[i]-frames[i-1]>=1000/60*.8-.5,'no short catch-up burst');
+    pacer.invalidate();assert.equal(pacer.shouldRender(20_000,false),true);
+    pacer.invalidate();assert.equal(pacer.shouldRender(20_001,false),false);
+    assert.equal(pacer.shouldRender(20_017,false),true);
+    assert.equal(pacer.needsFrame(false),false,'input leaves no animation loop after its last invalidation');
+  });
+}
+
 test('non-finite display timestamps cannot render', () => {
   const pacer = new FramePacer();
   pacer.invalidate();
