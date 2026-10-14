@@ -351,7 +351,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         data.highlights.push(highlight);
       }
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
-      if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.50,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
+      if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.10,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * (navy?.300:.315), .12, navy?.075:-.025]);
       if(navy)wing.scale.x=1.10;
       if(navy) sculpt(wing,'featherCore','#283b54',[sign*.015,-.10,0],[.19,.54,.245],[0,0,sign*.23],'feather');
@@ -387,10 +387,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(body, '#835d31', [[-.083, .130, .403], [0, .065, .403], [.083, .130, .403]], .005, 'clay');
     }
     else {
-      body.scale.set(1.10,.90,1.06);
+      body.scale.set(1.06,.90,1.06);
       // A fuller paper breast must not enlarge the held lens/pencil or their
       // certified swept radius. Keep those props in their original frame.
-      const propFrame=new THREE.Vector3(1.06/1.10,.86/.90,.85/1.06);
+      const propFrame=new THREE.Vector3(1,.86/.90,.85/1.06);
       for(const part of body.children)if(!part.name.startsWith('paper')&&!part.name.startsWith('wing_')){
         part.position.multiply(propFrame);part.scale.multiply(propFrame);
       }
@@ -398,8 +398,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       body.rotation.z=id==='reflection-echo'?-.055:.06;
       // A complete folded volume must still read from a side-on office window.
       // Front-only silhouettes are not a substitute for an embodied model.
-      head.scale.set(.85,.91,.92);
-      head.position.set(0,.640,.005);data.headY=.640;
+      head.scale.set(.89,.93,.92);
+      head.position.set(0,.650,.005);data.headY=.650;
       data.wings.forEach(wing=>{wing.scale.z=.72;});
     }
   } else {
@@ -432,7 +432,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     for(const [i,foot]of data.feet.entries()){
       foot.position.x=(i?1:-1)*.20;
       const toe=foot.children[0];toe.scale.set(.27,.30,.36);
-      sculpt(foot,'bean','#315d58',[0,0,.173],[.195,.235,.025],undefined,'glaze');
+      const toeCap=sculpt(foot,'bean','#315d58',[0,0,.173],[.182,.214,.025],undefined,'glaze');
+      toeCap.name='scout-fitted-toe-cap';fitCharacterRelief(toeCap,toe as THREE.Mesh,.002);
       foot.rotation.set(0,(i?1:-1)*.25,(i?1:-1)*-.13);
       foot.updateWorldMatrix(true,true);foot.position.y-=new THREE.Box3().setFromObject(foot).min.y/group.scale.y;
     }

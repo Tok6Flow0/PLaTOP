@@ -13,7 +13,7 @@ async function moduleUrl(path, imports = {}) {
 }
 const primitives = await moduleUrl('../src/scene/primitives.ts');
 const { SceneKit, disposeObject } = await import(primitives);
-const { laptop, monitor, table, chair, plant, rug, lamp, notebook, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
+const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
 
 function canvasDocument(t) {
   const prior = globalThis.document;
@@ -22,6 +22,27 @@ function canvasDocument(t) {
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => context }) };
   t.after(() => { globalThis.document = prior; });
 }
+
+test('bound shelf books and archive boxes keep the original furniture envelope and static batches',()=>{
+  const kit=new SceneKit(),resources=new THREE.Group();
+  for(let variant=0;variant<6;variant++){
+    const root=new THREE.Group();shelf(root,kit,0,0,variant,false);root.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(root);
+    assert.ok(bounds.min.x>=-.551&&bounds.max.x<=.551&&bounds.min.z>=-.336&&bounds.max.z<=.416);
+    assert.ok(bounds.min.y>=.099&&bounds.max.y<=1.541);
+    const books=[];let triangles=0;
+    root.traverse(object=>{
+      if(object.name==='Bound shelf book')books.push(object);
+      if(object.isMesh){triangles+=(object.geometry.index?.count??object.geometry.attributes.position.count)/3;
+        assert.equal(object.material.map,null);assert.equal(object.material.transparent,false);}
+    });
+    assert.ok(books.length>=12);assert.ok(triangles<6500);
+    for(const book of books)assert.ok(book.children.length>=9,'pages and thin covers are separate surfaces');
+    tidyStaticMeshes(root);assert.ok(root.children.filter(object=>object.isMesh).length<=4);
+    resources.add(root,root.userData.staticSources);
+  }
+  disposeObject(resources);kit.dispose();
+});
 
 test('luminous lamp haze uses bounded normal coverage and explicit room-light tracking', t => {
   canvasDocument(t);

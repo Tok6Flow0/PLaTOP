@@ -228,6 +228,24 @@ test('Scout keeps a magnifier and compass, rather than the generic cream belly p
   disposeObject(model);kit.dispose();
 });
 
+test('Scout toe caps follow the cream foot surface rather than floating as flat discs',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='bridge-scout'),kit);
+  model.updateMatrixWorld(true);
+  const caps=meshes(model).filter(mesh=>mesh.name==='scout-fitted-toe-cap');assert.equal(caps.length,2);
+  for(const cap of caps){
+    assert.equal(cap.geometry.userData.characterFitted,true);
+    const positions=cap.geometry.attributes.position,foot=cap.parent,point=new THREE.Vector3();
+    const inverse=new THREE.Matrix4().copy(foot.matrixWorld).invert();let min=Infinity,max=-Infinity;
+    for(let i=0;i<positions.count;i++){
+      point.fromBufferAttribute(positions,i).applyMatrix4(cap.matrixWorld).applyMatrix4(inverse);
+      min=Math.min(min,point.z);max=Math.max(max,point.z);
+    }
+    assert.ok(max-min>.05,'the cap bends over the toe instead of retaining the flat relief depth');
+    assert.ok(max<.22&&min>.04,'the fitted cap stays on the front of the cream foot');
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('Keeper has separate thin covers around a recessed page block and a bound spine',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);
   const front=model.getObjectByName('front-cover'),back=model.getObjectByName('back-cover'),pages=model.getObjectByName('page-block');

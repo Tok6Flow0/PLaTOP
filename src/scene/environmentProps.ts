@@ -325,12 +325,33 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     [-0.085, 0.085].forEach((dx) => kit.mesh(parent, 'detailSphere', '#ccba8c', [x + dx, 0.88, z + 0.46], [0.045, 0.045, 0.045]));
   } else {
     const colors = ['#526847', '#dfcfa3', '#516a69', '#9c6242', '#c1ba9e'];
+    const boundBook=(bookParent:THREE.Object3D,color:string,thickness:number,bookHeight:number,depth:number)=>{
+      // Separate page block, cloth boards and rounded spine read from above
+      // and the side. These opaque details join existing static batches.
+      const book=new THREE.Group();book.name='Bound shelf book';bookParent.add(book);
+      kit.mesh(book,'box','#e7dab9',[0,0,-.012],[thickness-.018,bookHeight-.014,depth-.027]);
+      for(const side of [-1,1])kit.mesh(book,'box',color,[side*(thickness-.008)/2,0,0],[.008,bookHeight,depth]);
+      kit.mesh(book,'roundedDetail',color,[0,0,depth/2-.013],[thickness,bookHeight,.028]);
+      for(const y of [-bookHeight*.30,bookHeight*.31])kit.mesh(book,'box','#d4b887',[0,y,depth/2+.001],[thickness*.72,.008,.002]);
+      for(const y of [-bookHeight*.25,0,bookHeight*.25])kit.mesh(book,'box','#c9b892',[0,y,-depth/2+.001],[thickness-.020,.002,.002]);
+      return book;
+    };
     for (let level = 0; level < 3; level++) for (let book = 0; book < 4; book++) {
       const bookHeight = 0.23 + ((book * 3 + level + variant) % 5) * 0.025;
-      kit.mesh(parent, 'roundedDetail', colors[(book + level + variant) % colors.length], [x - 0.31 + book * 0.15, 0.25 + level * 0.42 + bookHeight / 2, z + 0.17+(book+level)%3*.012], [0.12, bookHeight, 0.28], [0, 0, book === 3 ? -0.08 : book===0?.035:0]);
-      kit.mesh(parent, 'box', '#e8dab7', [x - 0.31 + book * 0.15, 0.31 + level * 0.42, z + 0.348], [0.074, 0.014, 0.003]);
+      const volume=boundBook(parent,colors[(book+level+variant)%colors.length],.10+(book%2)*.012,bookHeight,.28);
+      volume.position.set(x-.31+book*.15,.25+level*.42+bookHeight/2,z+.17+(book+level)%3*.012);
+      volume.rotation.z=book===3?-.08:book===0?.035:0;
     }
-    for (let level = 0; level < 2; level++) for (let book = 0; book < 3; book++) kit.mesh(parent, 'roundedDetail', book % 2 ? '#e4d7b4' : '#73816b', [x + 0.31, 0.27 + level * 0.42 + book * 0.05, z + 0.19], [0.23, 0.045, 0.31], [0, book * 0.07, 0]);
+    for(let level=0;level<2;level++){
+      if((variant+level)%3===0){
+        const box=kit.mesh(parent,'roundedDetail','#a49a7b',[x+.30,.345+level*.42,z+.14],[.245,.19,.33]);box.name='Archive box';
+        kit.mesh(parent,'box','#d8c9a5',[x+.30,.425+level*.42,z+.14],[.255,.028,.34]);
+        kit.mesh(parent,'box','#eee2c6',[x+.30,.345+level*.42,z+.307],[.11,.052,.003]);
+      }else for(let book=0;book<3;book++){
+        const volume=boundBook(parent,colors[(book+variant+level)%colors.length],.045,.23,.31);
+        volume.position.set(x+.30,.27+level*.42+book*.05,z+.19);volume.rotation.set(0,book*.07,Math.PI/2);
+      }
+    }
   }
 }
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {

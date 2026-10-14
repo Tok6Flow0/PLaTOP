@@ -33,6 +33,8 @@ not asked for a desired score or instructed to approve.
 | 31 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Wing regression corrected; pointed vanes, smooth felt, thick paper folds, sparse seating and stiff foliage remain |
 | 33 | Portraits 8.5/10 — B+; campus 8.0/10 — B | Branching foliage added, but paddle-like leaves, projecting paper faces and rectangular rug patches regress the scene |
 | 35 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Rug patches corrected and fuller owl wings; paper jaw/chest joins, regular feather rows, bird breast/crown transition and furnishing variety remain |
+| 39 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Shorter paper faces and broader chest planes help locally, but oversized raised wing/shoulder mass makes the owls too stocky |
+| 40 (targeted) | Email 8.5 craft / 8.5 fidelity / 8.5 all-angle; campus 8.1/10 — B | More legible shelves and consistent bird shading; coarse facial strokes and narrow rear feather notches need correction |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -168,7 +170,14 @@ have broader diagonal resting wings and a fuller, tapered breast. The first
 internal attempt (37) enlarged a held prop beyond its movement envelope and
 occluded the chin; these were corrected, not accepted. A new ray test prevents
 the breast from cutting across the lower facial shield. Independent acceptance
-is still pending for this checkpoint; no A/reference-match claim is made.
+remains below A; no reference-match claim is made.
+
+Pass 41 retains the 100× tier, with 290 passing tests and a passing production
+build. Fitted Scout toe caps follow the cream foot instead of forming flat
+discs. Paper wing shoulders are lower/narrower and their head proportions are
+restored. Bound shelf books have separate page blocks, boards and spines; archive
+boxes vary shelf contents inside the original envelope and a 6,500-triangle
+per-shelf budget. The pass-40 reviewer reservations remain open at this point.
 
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
@@ -205,6 +214,8 @@ and is not treated as close-up evidence.
 | Pass 31 campus | 55.71 | 2.02 / 2.90 ms | 108 / 341,711 | 0 |
 | Pass 36 campus | 55.90 | 1.92 / 2.60 ms | 108 / 341,723 | 0 |
 | Pass 39 campus | 56.50 | 2.03 / 3.00 ms | 108 / 341,739 | 0 |
+| Pass 40 campus | 54.70 | 1.96 / 2.80 ms | 108 / 351,883 | 0 |
+| Pass 41 campus | 50.40 | 1.96 / 2.90 ms | 108 / 351,883 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -215,6 +226,8 @@ and is not treated as close-up evidence.
 | Pass 31 full-face close | 52.30 | 1.82 / 3.20 ms | 133 / 2,346,793 | 3 |
 | Pass 36 full-face close | 52.40 | 2.08 / 3.60 ms | 133 / 2,346,805 | 3 |
 | Pass 39 full-face close | 54.40 | 2.26 / 3.70 ms | 133 / 2,346,821 | 3 |
+| Pass 40 full-face close | 55.80 | 1.79 / 3.20 ms | 133 / 2,356,965 | 3 |
+| Pass 41 full-face close | 52.81 | 1.91 / 3.40 ms | 133 / 2,356,965 | 3 |
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

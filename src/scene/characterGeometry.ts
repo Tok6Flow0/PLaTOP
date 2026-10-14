@@ -366,7 +366,7 @@ function swiftHead(): THREE.BufferGeometry {
 /** Closed elliptical paper sections give the bird a breast and round crown
  * from every viewpoint. Broad quads keep the folds intentional, not noisy. */
 function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=false):THREE.BufferGeometry {
-  const vertices:Tuple[]=[],faces:number[][]=[],columns=softCrown?24:10;
+  const vertices:Tuple[]=[],faces:number[][]=[],columns=softCrown?16:10;
   for(const[y,rx,rz,z]of rings)for(let i=0;i<columns;i++){
     const a=i/columns*Math.PI*2;
     const fold=softCrown&&y<.23?.055*Math.sin(a+.7)*Math.sin(Math.max(0,(y+.20)/.43)*Math.PI):0;
@@ -379,7 +379,9 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
     const foldedNormals=geometry.attributes.normal.clone();smoothDeformedSurface(geometry);
     const p=geometry.attributes.position,n=geometry.attributes.normal,normal=new THREE.Vector3(),flat=new THREE.Vector3();
     for(let i=0;i<p.count;i++){
-      const blend=THREE.MathUtils.smoothstep(p.getY(i),.04,.18);
+      // Keep the same paper language through the neck: a fully smooth crown
+      // above a flat-shaded breast read as a ceramic ball glued to origami.
+      const blend=.18+.22*THREE.MathUtils.smoothstep(p.getY(i),-.03,.23);
       normal.fromBufferAttribute(n,i);flat.fromBufferAttribute(foldedNormals,i).lerp(normal,blend).normalize();n.setXYZ(i,flat.x,flat.y,flat.z);
     }
   }
@@ -396,7 +398,7 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return foldedSheet([[-.035,.18,.08],[.045,-.08,.11],[-.13,-.31,.21],[-.27,-.24,.27],[-.18,.035,.24]],[-.115,-.09,.31],
+  return foldedSheet([[-.035,.09,.035],[.025,-.12,.09],[-.13,-.34,.20],[-.23,-.25,.25],[-.15,-.015,.19]],[-.095,-.16,.255],
     ['#dbc29a','#d8bf97','#cdb089','#dfc69f','#e5ceaa']);
 }
 
@@ -559,18 +561,18 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
       // rows. One cached mesh replaces the old front-only breast panel.
       const row=Math.floor(featherIndex/14),column=featherIndex%14;
       const variation=Math.sin(column*2.7+row*1.91),tilt=.055*Math.sin(column*1.7+row*2.2);
-      const angle=(column+.5+(row%2?.5:0)+.055*variation)/14*Math.PI*2,y=.22-row*.095+.004*Math.sin(column*2.1+row);
+      const angle=(column+.5+(row%2?.5:0)+.16*variation)/14*Math.PI*2,y=.22-row*.095+.008*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
       for(let i=0;i<source.attributes.position.count;i++){
         point.fromBufferAttribute(source.attributes.position,i);
         uv.push(THREE.MathUtils.clamp(point.x+.5,0,1),THREE.MathUtils.clamp((point.y+.62)/1.12,0,1));
-        const tone=.93+.075*(point.y+.62)/1.12+.035*Math.max(0,point.z)-.015*Math.abs(point.x)+.027*Math.sin(featherIndex*1.73);
+        const tone=.93+.075*(point.y+.62)/1.12+.035*Math.max(0,point.z)-.015*Math.abs(point.x)+.016*Math.sin(featherIndex*1.73);
         colours.push(tone,tone,tone);
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
-        const length=(row===5?.145:.23+.015*Math.sin(featherIndex*2.17));
+        const length=(row===5?.145:.23+.026*Math.sin(featherIndex*2.17));
         const py=y+point.y*length+point.x*tilt*.10,normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
@@ -699,7 +701,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperOwlWingL': return reflect(paperOwlWing());
     // The wrist folds forward around the handle, with a narrow return flap.
     // This is an authored rest pose, not a scheduled or simulated action.
-    case 'paperHoldingWing': return foldedSheet([[-.02,.17,.10],[.07,-.02,.16],[.055,-.23,.62],[-.065,-.25,.60],[-.18,-.04,.24]],[.002,-.11,.64],['#d9bd94','#e8cda4','#c6a578','#d8b98e','#e4c89f']);
+    case 'paperHoldingWing': return foldedSheet([[-.02,.095,.07],[.05,-.055,.14],[.055,-.23,.62],[-.065,-.25,.60],[-.15,-.065,.22]],[.002,-.13,.62],['#d9bd94','#e8cda4','#c6a578','#d8b98e','#e4c89f']);
     case 'paperWing': return folded([[-.50, .43], [-.18, -.50], [.35, -.34], [.50, .36], [.12, .18]], .16, .14);
     case 'paperTail': return folded([[-.5, -.5], [0, -.26], [.5, -.5], [.27, .5], [-.27, .5]], .12, .07);
     case 'paperDisc': return folded([[-.48,.08],[-.37,.34],[-.12,.49],[.19,.45],[.41,.26],[.49,-.10],[.20,-.50],[-.23,-.43],[-.42,-.22]], .06, .023);
@@ -805,8 +807,9 @@ function facialGrain(kit:SceneKit):THREE.DataTexture {
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5,r=Math.hypot(dx,dy),a=Math.atan2(dy,dx);
     const seed=((Math.imul(x+7,374761393)^Math.imul(y+13,668265263))>>>0)%101/100;
-    const barbs=Math.pow(Math.max(0,Math.sin(a*97+r*113+Math.sin(r*43+a*13)*4)),8);
-    const tone=242-22*barbs*Math.min(1,r*3)-22*seed;
+    const barbs=Math.pow(Math.max(0,Math.sin(a*51+r*61+Math.sin(r*31+a*13)*4)),8);
+    const fibre=.5+.5*Math.sin(dx*53+Math.sin(dy*37)*2)*Math.sin(dy*61+dx*17);
+    const tone=246-34*barbs*Math.min(1,r*3)-14*seed-12*fibre;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;
