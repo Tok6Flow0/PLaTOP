@@ -1307,3 +1307,24 @@ side/back construction, fewer larger compartments, recessed contents and
 varied book groupings, preserving their footprint and accepted desk layout.
 Matched images and fixed ten-second timings are in surface-pass-126.
 Production remains accepted pass 124; pass 125 remote CI succeeded.
+
+Pass 127 replaces Wayfinders' repeated tray-like shelves with joined cabinets:
+continuous sides and backing, three larger inset bays, recessed books/boxes
+and framed filing drawers. The top plants and certified storage footprint are
+unchanged. Structural tests cover true shelf/book support, front recess,
+side clearance and board intersections. An initial check caught the filing
+interaction root being emptied by interior batching; retaining that complete
+cabinet root fixes the real-prop regression. All 33 navigation tests and all
+350 full-suite tests pass; production builds successfully.
+
+Campus submits 59.9934 fps (1.71 ms mean / 2.50 ms p95 CPU; 118 draws,
+377,640 triangles). Wayfinders close submits 60.00 fps (2.05 / 3.60 ms;
+146 draws, 2,302,653 triangles, three detailed avatars). The same fixed
+ten-second sampling method and complete matched scenes are in surface-pass-127.
+Portrait assets were regenerated for their shared source fingerprint; character
+geometry is unchanged. The independent reviewer retains the cabinets as a
+visible construction gain at room and campus scale, without obvious clipping
+or shadow regressions. Wayfinders room rises to 8.0 craft / 8.0 fidelity;
+campus remains 7.0 / 7.5. The next priority is fuller curved foliage at existing
+pot locations, especially foreground and cabinet-top crowns. Production remains
+accepted pass 124. Pass 126 remote CI succeeded; no A is claimed.

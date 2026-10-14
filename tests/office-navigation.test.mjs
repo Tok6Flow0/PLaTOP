@@ -67,6 +67,37 @@ function fixture({ chair = false } = {}) {
   return { navigator, home, motor: new OfficeMotor('actor', 'home', .4, navigator, home) };
 }
 
+test('Wayfinder cabinets have continuous sides and recessed supported contents inside their unchanged footprint',async t=>{
+  const {SceneKit,disposeObject}=await loadScene('scene/primitives.ts');
+  const {storageCabinet}=await loadScene('scene/environmentProps.ts');
+  const kit=new SceneKit();t.after(()=>kit.dispose());
+  for(const drawers of [false,true]){
+    const root=new THREE.Group();t.after(()=>disposeObject(root));
+    assert.equal(storageCabinet(root,kit,drawers),2.38,'top plants retain their existing support height');
+    root.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(root);
+    assert.ok(bounds.min.x>=-.545001&&bounds.max.x<=.545001);
+    assert.ok(bounds.min.z>=-.335001&&bounds.max.z<=.415001);
+    assert.ok(bounds.min.y>=.099999&&bounds.max.y<=2.380001);
+    const named=name=>{const found=[];root.traverse(o=>{if(o.name===name)found.push(o);});return found;};
+    assert.equal(named('Continuous cabinet side').length,2);
+    const shelves=named('Inset cabinet shelf');assert.equal(shelves.length,3,'three larger bays replace five tray rows');
+    assert.equal(named('Framed drawer').length,drawers?2:0);
+    const shelfTops=shelves.map(s=>new THREE.Box3().setFromObject(s).max.y);
+    const items=root.getObjectByName('Recessed cabinet contents').children;
+    for(const item of items){
+      const box=new THREE.Box3().setFromObject(item);
+      assert.ok(box.min.x>=-.44&&box.max.x<=.44,'books stay within the continuous sides');
+      assert.ok(box.max.z<=.233,'contents sit at least .11 behind the front stiles');
+      const onBook=items.some(other=>{if(other===item)return false;const support=new THREE.Box3().setFromObject(other);
+        return Math.abs(support.max.y-box.min.y)<.0001&&support.min.x<=box.min.x+.001&&support.max.x>=box.max.x-.001;
+      });
+      assert.ok(shelfTops.some(y=>Math.abs(y-box.min.y)<.0001)||onBook,'every book/box rests on a real shelf or another supported volume');
+      assert.ok(shelves.every(s=>{const shelf=new THREE.Box3().setFromObject(s);return box.max.y<=shelf.min.y+.0001||box.min.y>=shelf.max.y-.0001;}),'contents do not intersect shelf boards');
+    }
+  }
+});
+
 test('Beacon starter reading nook fits the existing reserved floor slot and leaves neutral homes unchanged', async () => {
   const {rooms,kit,disposeObject}=await realLayout();
   const room=rooms.get('support'),nook=room.defaultSlotProps.floor;

@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Decoration, Team } from '../types';
 import { SceneKit } from './primitives';
-import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paper, parcelStack, plant, rug, shelf, sign, stool, table, tidyStaticMeshes } from './environmentProps';
+import { beveledBlock, board, chair, floorSurface, lamp, laptop, monitor, mug, notebook, paper, parcelStack, plant, rug, shelf, sign, stool, storageCabinet, table, tidyStaticMeshes } from './environmentProps';
 
 export type NavigationPoint = [number, number];
 export type NavigationBounds = [number, number, number, number];
@@ -200,8 +200,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // foliage are compressed with the carcass, so the open rear aisle has no
     // unaccounted-for overhangs or a smaller navigation-only shelf footprint.
     const storageDepth = index === 5 ? 0.4 : 1;
-    const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, storageDepth); interior.add(leftShelf);
-    const leftTop=shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,index===2?5:4);
+    const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, storageDepth); (index===2?root:interior).add(leftShelf);
+    const leftTop=index===2?storageCabinet(leftShelf,kit,true):shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,4);
+    if(index===2)leftShelf.name=`${team.id}:cabinet`;
     shelfAsset=[storageX,leftTop+.01,storageZ+.02];
     if (index === 3) {
       const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, -1.65); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
@@ -212,7 +213,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       blockers.push({ bounds: [-2.9, -2.22, -2.02, -1.08] });
     } else if (!lowerRoom) {
       const rightShelf = new THREE.Group(); rightShelf.position.set(shelfX, 0, shelfZ + 0.01); rightShelf.scale.x = shelfWidth; interior.add(rightShelf);
-      const rightTop=shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
+      const rightTop=index===2?storageCabinet(rightShelf,kit,false):shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
       plant(rightShelf, kit, -0.23, 0.07, 0.61, rightTop, '#b6a17c', 'leaf');
       plant(rightShelf, kit, 0.01, -0.17, 0.42, rightTop, '#cbb488', 'herb');
       plant(rightShelf, kit, 0.21, 0.1, 0.63, rightTop, '#c7b794', index % 2 ? 'herb' : 'spear');
@@ -223,12 +224,13 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       // its true front, not through the newly continuous back wall.
       filingCabinet(2.8, 1.8, -Math.PI / 2, false).scale.z = 0.8;
       blockers.push({ bounds: [2.67, 1.25, 2.9, 2.35] });
-    } else filingCabinet(-shelfX, shelfZ).scale.x = shelfWidth;
+    } else if(index!==2)filingCabinet(-shelfX, shelfZ).scale.x = shelfWidth;
     blockers.push({ bounds: index < 3 ? [-2.9, shelfZ - 0.38, -1.94, shelfZ + 0.48]
       : index === 5 ? [1.7, storageZ - 0.38 * storageDepth, 2.83, storageZ + 0.48 * storageDepth] : [-2.83, shelfZ - 0.38, -1.7, shelfZ + 0.48] });
     if (!lowerRoom) blockers.push({ bounds: [1.94, shelfZ - 0.38, 2.9, shelfZ + 0.48] });
     plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a');
     plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
+    if(index===2)tidyStaticMeshes(leftShelf);
   }
   if (index % 3 === 0) wall('left', -3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);
   if (index % 3 === 2) wall('right', 3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);
