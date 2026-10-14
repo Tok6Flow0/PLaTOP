@@ -1224,7 +1224,8 @@ test('the guide hood has a fitted single-face inset and an open ceramic surround
   const hood=model.getObjectByName('hoodTip'),inset=model.getObjectByName('navigator-hood-inset');
   const seam=model.getObjectByName('visor-rim'),helmet=model.getObjectByName('helmet');
   assert.equal(model.getObjectByName('navigator-hood-seam'),undefined,'no drawn seam remains');
-  assert.deepEqual(seam.geometry.userData.hoodReturnProfile,[.024,.030,.027,.018,.010,0]);
+  assert.deepEqual(seam.geometry.userData.hoodReturnProfile,[.024,.030,.030,.030,.026,0]);
+  assert.equal(seam.castShadow,true,'the real shallow return can shade the shell beneath it');
   assert.equal(inset.geometry.userData.characterFitted,true);
   assert.equal(inset.material.color.getHexString(),'273b4a');
   assert.equal(hood.material.color.getHexString(),'eee4d0');

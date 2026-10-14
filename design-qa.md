@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-120 suite passes **346 tests** and the production build passes. Its
+The pass-121 suite passes **346 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -72,6 +72,12 @@ Pass 120 replaces that drawn outline with a modeled open ceramic return. The
 reviewer retains its cleaner edge at unchanged scores, but the cream band is
 still too flush to read as a distinct nested hood in normal portrait views.
 Both fixed workloads submit 60.00 fps; the full suite passes on the first run.
+Pass 121 makes the raised rim readable at ordinary portrait/room size, but its
+stronger contrast exposes a scalloped outer contour and somewhat heavy return.
+It is retained at unchanged scores; curve regularity is the next issue.
+Measured camera rates are 59.90 campus / 59.80 close fps. The isolated production
+preview now serves pass 120, with window, zoom, both mist views, exit and reset
+verified and no console warnings/errors. No live agent activity was injected.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

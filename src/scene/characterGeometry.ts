@@ -1346,12 +1346,13 @@ export function navigatorHoodFrame(kit:SceneKit,parent:THREE.Object3D,helmet:THR
   fitCharacterRelief(frame,helmet,.006,0);
   sampled.dispose();
   delete frame.geometry.userData.characterEllipsoid;
-  const p=frame.geometry.attributes.position,profile=[.024,.030,.027,.018,.010,0],colours=new Float32Array(p.count*3).fill(1);
+  const p=frame.geometry.attributes.position,profile=[.024,.030,.030,.030,.026,0],colours=new Float32Array(p.count*3).fill(1);
   for(let row=0;row<profile.length;row++)for(let col=0;col<columns;col++){
     const i=1+row*columns+col;p.setZ(i,p.getZ(i)+profile[row]);
-    // Only the narrow inward return is warm recessed ceramic; the broad
-    // cream face and the outer join remain unpainted.
+    // Narrow inward and outward returns expose the darker ceramic recess;
+    // the broad raised cream face remains unpainted.
     if(row===0)colours.set([.65,.57,.46],i*3);
+    if(row===5)colours.set([.48,.42,.34],i*3);
   }
   frame.geometry.setAttribute('color',new THREE.BufferAttribute(colours,3));
   const materials=owned(kit).material,key=`satinClay:${color}:hood-return`;
@@ -1359,5 +1360,5 @@ export function navigatorHoodFrame(kit:SceneKit,parent:THREE.Object3D,helmet:THR
   frame.material=materials.get(key)!;
   frame.geometry.computeVertexNormals();frame.geometry.computeBoundingBox();frame.geometry.computeBoundingSphere();
   frame.geometry.userData.hoodReturnProfile=profile;
-  frame.name='visor-rim';return frame;
+  frame.castShadow=true;frame.name='visor-rim';return frame;
 }

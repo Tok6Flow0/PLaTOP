@@ -113,6 +113,7 @@ not asked for a desired score or instructed to approve.
 | 118 (sleeve coverage correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 117 and 116 | Side, quarter and night show a continuous shoulder with the oval gone, retaining stronger folds. Further cape polishing has diminishing value; the layered cream hood/head silhouette remains the next normal-view priority |
 | 119 (cream hood layers, intermediate) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5 | Retain the cream outer point, fitted navy inset/star and lighter surround. Revise the seam: it reads as a drawn tan outline and looks wavy in the actual close scene. A returned cream edge and shallow shadow separation are still needed |
 | 120 (modeled ceramic return) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 119 | The tan outline is gone, with a credible soft visor edge in quarter/night views and no visible new break. The broad cream band still merges into the helmet at normal portrait size; distinct raised profile separation remains missing |
+| 121 (readable raised hood frame) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 120 | The raised cream frame now reads at ordinary portrait and actual-room sizes. Its stronger outer edge reveals scalloping along the forehead and cheek, with a somewhat heavy dark return. Clean the continuous curve without adding more thickness or contrast |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1177,3 +1178,23 @@ Campus submits 60.00 fps (1.60 ms mean / 2.20 ms p95 CPU, 116 sampled draws,
 384,390 triangles). Wayfinders close submits 60.00 fps (1.87 / 3.20 ms,
 141 draws, 2,240,563 triangles, three detailed avatars). Fixed-size evidence is
 under surface-pass-120. No GPU-completion or A-level visual claim is made.
+
+Pass 120 is now served by the isolated production preview (bundle
+index-OFALvFWY.js). Window view, eleven zoom-in steps to mist invitation,
+third/first-person mist, exit and reset pass. The isolated bridge connects,
+all six teams remain Awaiting update, and no console warnings/errors appear.
+Responsive production smoke captures are retained in surface-pass-120; they
+are not a replacement for the full-size reference comparison.
+
+Pass 121 flattens the raised cream face and gives its outer return a steeper
+profile, a recessed ceramic tint and real shadow casting. Triangle counts
+remain unchanged. All 346 tests and the production build pass. The independent
+reviewer now sees the nested hood at ordinary portrait and actual-room size,
+retaining 121 over 120 without raising the scores. That contrast exposes a
+scalloped contour at the forehead/cheek and a heavy return. The next requirement
+is a cleaner curve, not more thickness or darker edging.
+
+Campus submits 59.90 fps (2.11 ms mean / 3.60 ms p95 CPU); close submits 59.80
+fps (1.98 / 3.30 ms). Counts remain 116 / 384,390 and 141 / 2,240,563, with
+three dense close avatars. These measured results are retained unchanged under
+surface-pass-121. Isolated production remains the smoke-tested pass 120.
