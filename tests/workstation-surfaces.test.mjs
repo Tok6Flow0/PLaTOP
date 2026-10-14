@@ -65,6 +65,30 @@ test('bound shelf books and archive boxes keep the original furniture envelope a
   disposeObject(resources);kit.dispose();
 });
 
+test('taller shelves add real tiers without stretching books or changing floor footprints',()=>{
+  const kit=new SceneKit(),resources=new THREE.Group();
+  for(const tiers of [4,5])for(const cupboard of [false,true]){
+    const root=new THREE.Group(),top=shelf(root,kit,0,0,2,cupboard,1,tiers);root.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(root);
+    assert.ok(Math.abs(bounds.min.y-.1)<1e-6&&Math.abs(bounds.max.y-top)<1e-6);
+    assert.ok(bounds.min.x>=-.551&&bounds.max.x<=.551&&bounds.min.z>=-.336&&bounds.max.z<=.484);
+    const books=[];let triangles=0;
+    root.traverse(object=>{
+      if(object.name==='Bound shelf book')books.push(object);
+      if(object.isMesh)triangles+=(object.geometry.index?.count??object.geometry.attributes.position.count)/3;
+    });
+    const rows=new Set(books.map(book=>Math.floor((book.position.y-.25)/.42)));
+    assert.ok(books.length>=(tiers-(cupboard?3:0))*4);
+    assert.ok(rows.has(tiers-1),'upper tier contains real volumes');
+    for(const book of books)assert.deepEqual(book.scale.toArray(),[1,1,1]);
+    assert.deepEqual(root.userData.floorContacts,[[0,.105,.04,1.15,.82]]);
+    assert.ok(triangles<10500,'additional tiers remain bounded static geometry');
+    tidyStaticMeshes(root);assert.ok(root.children.filter(object=>object.isMesh).length<=4);
+    resources.add(root,root.userData.staticSources);
+  }
+  disposeObject(resources);kit.dispose();
+});
+
 test('luminous lamp haze uses bounded normal coverage and explicit room-light tracking', t => {
   canvasDocument(t);
   const kit = new SceneKit(), root = new THREE.Group();

@@ -172,6 +172,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     return section;
   }
 
+  let shelfAsset: [number,number,number]=[-2.32,1.27,1.9];
   if (!isFoyer) {
     const back = wall('back', 0, backZ, 6.1, 0.2);
     const panelOffset = index === 2 ? -0.12 : 0;
@@ -191,20 +192,21 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // unaccounted-for overhangs or a smaller navigation-only shelf footprint.
     const storageDepth = index === 5 ? 0.4 : 1;
     const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, storageDepth); interior.add(leftShelf);
-    shelf(leftShelf, kit, 0, 0, index, index % 2 === 1);
+    const leftTop=shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,index===2?5:4);
+    shelfAsset=[storageX,leftTop+.01,storageZ+.02];
     if (index === 3) {
       const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, -1.65); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
-      shelf(sideShelf, kit, 0, 0, index + 1, false);
-      plant(sideShelf, kit, -0.23, -0.07, 0.61, 1.48, '#b6a17c', 'leaf');
-      plant(sideShelf, kit, 0.01, -0.24, 0.42, 1.48, '#cbb488', 'herb');
-      plant(sideShelf, kit, 0.21, -0.06, 0.63, 1.48, '#c7b794', index % 2 ? 'herb' : 'spear');
+      const sideTop=shelf(sideShelf, kit, 0, 0, index + 1, false);
+      plant(sideShelf, kit, -0.23, -0.07, 0.61, sideTop, '#b6a17c', 'leaf');
+      plant(sideShelf, kit, 0.01, -0.24, 0.42, sideTop, '#cbb488', 'herb');
+      plant(sideShelf, kit, 0.21, -0.06, 0.63, sideTop, '#c7b794', index % 2 ? 'herb' : 'spear');
       blockers.push({ bounds: [-2.9, -2.22, -2.02, -1.08] });
     } else if (!lowerRoom) {
       const rightShelf = new THREE.Group(); rightShelf.position.set(shelfX, 0, shelfZ + 0.01); rightShelf.scale.x = shelfWidth; interior.add(rightShelf);
-      shelf(rightShelf, kit, 0, 0, index + 1, false);
-      plant(rightShelf, kit, -0.23, 0.07, 0.61, 1.48, '#b6a17c', 'leaf');
-      plant(rightShelf, kit, 0.01, -0.17, 0.42, 1.48, '#cbb488', 'herb');
-      plant(rightShelf, kit, 0.21, 0.1, 0.63, 1.48, '#c7b794', index % 2 ? 'herb' : 'spear');
+      const rightTop=shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
+      plant(rightShelf, kit, -0.23, 0.07, 0.61, rightTop, '#b6a17c', 'leaf');
+      plant(rightShelf, kit, 0.01, -0.17, 0.42, rightTop, '#cbb488', 'herb');
+      plant(rightShelf, kit, 0.21, 0.1, 0.63, rightTop, '#c7b794', index % 2 ? 'herb' : 'spear');
     }
     if (index === 5) {
       // Dispatch's real filing cabinet belongs on the right, as in its source
@@ -216,8 +218,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     blockers.push({ bounds: index < 3 ? [-2.9, shelfZ - 0.38, -1.94, shelfZ + 0.48]
       : index === 5 ? [1.7, storageZ - 0.38 * storageDepth, 2.83, storageZ + 0.48 * storageDepth] : [-2.83, shelfZ - 0.38, -1.7, shelfZ + 0.48] });
     if (!lowerRoom) blockers.push({ bounds: [1.94, shelfZ - 0.38, 2.9, shelfZ + 0.48] });
-    plant(leftShelf, kit, -0.19, 0.1, 0.74, 1.48, '#b5aa8a');
-    plant(leftShelf, kit, 0.24, 0.12, 0.54, 1.48, '#a88e61', 'ivy');
+    plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a');
+    plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
   }
   if (index % 3 === 0) wall('left', -3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);
   if (index % 3 === 2) wall('right', 3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);
@@ -395,7 +397,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       [aisleX, frontCross], [0, frontCross], [0, index < 3 ? 4.7875 : 4.0], ...(isFoyer ? [[1.4, -2.03], [aisleX, -2.03]] as NavigationPoint[] : []), ...desks.map(desk => desk.egress)], desks };
   const assetSlots: Room['assetSlots'] = {
     desk: { position: [tableX, 0.84, tableZ + 0.3] },
-    shelf: { position: isFoyer ? [-2.32, 1.27, 1.9] : [index === 5 ? 2.26 : -2.26, 1.55, backZ + (index === 5 ? 0.32 : 0.57)] },
+    shelf: { position: shelfAsset },
     // The foyer has a low parapet, not an imaginary full-height wall.
     wall: { position: [-2.85, isFoyer ? 0.5 : 2.1, 1.7], rotation: [0, Math.PI / 2, 0] },
     floor: { position: isFoyer ? [0, OFFICE_FLOOR_Y, -3.55] : [-2.15, OFFICE_FLOOR_Y, 1.0] },

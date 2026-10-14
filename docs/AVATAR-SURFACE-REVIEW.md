@@ -58,6 +58,7 @@ not asked for a desired score or instructed to approve.
 | 66 (Reflection prototype) | Craft 6.5 / fidelity 7.0; rejected silhouette regression | Long creases remove the belly zigzag, but flat apron panels and detached wing tabs make the owls rectangular |
 | 67 (fresh Reflection review) | Craft 7.0 / fidelity 7.5; retained over 65, unchanged quality tier | Wrapped and tapered chest restores volume, with closer wings; triangular patchwork, solid thickness and weak lantern spill remain |
 | 68 (fresh Reflection review) | Craft 7.5 / fidelity 7.5; retained lighting improvement | Warm spill now models inner cheeks, folds and tabletop; avoid further intensity increases, as the central pane approaches white |
+| 69 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained modest staging improvement | Taller real shelf tiers balance upper rooms; repeated storage and sparse lower-room desk/seating relationships remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -82,6 +83,13 @@ live office and all portraits, with no portrait-only renderer adjustment. The
 304-test suite and production build pass. The independent reviewer raises
 Reflection craft to 7.5 but retains fidelity 7.5: folded-paper construction and
 casing variation remain open, and increasing light further is not recommended.
+
+Pass 69: 306 tests and the production build pass. Storage has varied three-,
+four- and five-tier carcasses with unscaled books and plants seated on actual
+top planks. Floor footprints, contacts and walking lanes are unchanged; all
+sixteen real-layout routes pass with decorations on and off. Agent decoration
+anchors follow the physical top surfaces. The campus reviewer retains this
+pass but leaves both scores unchanged, prioritizing desk/seating composition.
 
 The fresh pass-60 reviewer was not shown prior scores, target scores or ledgers.
 It viewed the campus concept, all six chosen identity portraits, two campus
@@ -431,6 +439,7 @@ and is not treated as close-up evidence.
 | Pass 66 campus (rejected shape) | 52.60 | 2.18 / 4.50 ms | 110 / 354,107 | 0 |
 | Pass 67 campus | 54.20 | 2.08 / 4.10 ms | 110 / 354,155 | 0 |
 | Pass 68 campus | 53.31 | 2.31 / 4.10 ms | 110 / 354,155 | 0 |
+| Pass 69 campus | 52.61 | 2.25 / 4.20 ms | 110 / 370,367 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -453,6 +462,7 @@ and is not treated as close-up evidence.
 | Pass 57 full-face close | 53.10 | 2.11 / 4.30 ms | 135 / 2,414,805 | 3 |
 | Pass 58 full-face close | 51.89 | 2.40 / 4.40 ms | 135 / 2,416,713 | 3 |
 | Pass 65 full-face close | 49.90 | 1.57 / 2.20 ms | 135 / 2,416,717 | 3 |
+| Pass 69 full-face close | 53.20 | 2.20 / 4.20 ms | 135 / 2,432,993 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material

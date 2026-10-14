@@ -509,6 +509,21 @@ test('wall decoration anchors bind to a real wall or the foyer parapet', async t
   }
 });
 
+test('shelf decoration anchors follow actual varied storage top surfaces',async t=>{
+  const {rooms,kit,disposeObject}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  const heights=new Set();
+  for(const [id,room]of rooms){
+    room.root.updateMatrixWorld(true);
+    const local=new THREE.Vector3(...room.assetSlots.shelf.position);heights.add(local.y);
+    const origin=room.root.localToWorld(local.clone());
+    const surfaces=[];room.root.traverse(object=>{if(object.isMesh)surfaces.push(object);});
+    const hit=new THREE.Raycaster(origin,new THREE.Vector3(0,-1,0),0,.04).intersectObjects(surfaces)[0];
+    assert.ok(hit&&hit.distance<.025,`${id} shelf recipe sits just above a real plank`);
+  }
+  assert.ok(heights.size>=3,'the campus retains low foyer storage and varied taller bookcases');
+});
+
 test('every interaction stop faces a nearby real prop with full avatar clearance', async t => {
   const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
   t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });

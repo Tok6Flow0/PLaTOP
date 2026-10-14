@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-68 suite passes **304 tests** and the production build passes. The
+The pass-69 suite passes **306 tests** and the production build passes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
@@ -42,8 +42,8 @@ connected foliage; pass 58 adds wider tables, a guest chair and wrapped storage.
 The targeted campus review remains **8.2/10**, with chair readability and hidden
 storage limiting the improvement. Pass 58's matched
 [noon](docs/images/surface-campus-noon.jpg) and
-[night](docs/images/surface-campus-night.jpg) captures supersede the older campus
-evidence below.
+[night](docs/images/surface-campus-night.jpg) capture locations now contain pass
+69, superseding the older campus evidence below.
 Live agent actions remain the only source of work gestures and locomotion.
 
 Pass 62 strengthens existing contact shading and lamp pools without adding
@@ -61,6 +61,12 @@ warm lantern spill on neighboring folds, not insufficient triangle count.
 Pass 68 strengthens the existing model light, with no extra lights or shadow
 passes. Reflection craft rises to **7.5**, while fidelity stays **7.5**. Noon
 and night close samples submit 53.10 and 54.40 fps; the same limitations apply.
+Pass 69 adds varied storage height using real book tiers, not scaled contents.
+Actual shelf anchors and all sixteen walking routes are tested. The independent
+campus review retains the change at **7.0 craft / 7.5 fidelity**, identifying
+lower-room seating and repeated storage as the largest staging gaps. Matching
+campus and Merchant close samples submit 52.61 and 53.20 fps, with unchanged
+draw counts but approximately 16,000 additional static triangles.
 
 ## Earlier checkpoint evidence
 

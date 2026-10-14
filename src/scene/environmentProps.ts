@@ -330,18 +330,22 @@ export function mug(parent: THREE.Object3D, kit: SceneKit, x: number, z: number,
   kit.mesh(parent, 'pot', color, [x, 0.945, z], [0.24, 0.24, 0.24], undefined, 'ceramic'); kit.mesh(parent, 'cylinder', '#4b4433', [x, 1.067, z], [0.185, 0.006, 0.185]);
   const handle = new THREE.Mesh(new THREE.TorusGeometry(0.075, 0.026, 8, 16), kit.material(color, 'ceramic')); handle.position.set(x + 0.15, 0.95, z); handle.castShadow = true; parent.add(handle);
 }
-export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, variant: number, cupboard: boolean, scale = 1): void {
+export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, variant: number, cupboard: boolean, scale = 1, tiers: 3|4|5 = 3): number {
   if (scale !== 1) { const group = new THREE.Group(); group.position.set(x, 0, z); group.scale.setScalar(scale); parent.add(group); parent = group; x = z = 0; }
   floorContact(parent, x, 0.105 / scale, z + 0.04, 1.15, 0.82);
-  const height = 1.43;
+  const height = 1.43 + (tiers - 3) * .42;
   // A real open carcass, with the dark backing behind the books rather than across their spines.
   for (const dx of [-0.48, 0.48]) surface(beveledBlock(parent, kit, '#98744f', [x + dx, height / 2 + 0.1, z], [0.09, height, 0.67], 0.02), 'furniture');
   surface(kit.mesh(parent, 'box', '#473a28', [x, height / 2 + 0.1, z - 0.3], [0.91, height - 0.1, 0.055], undefined, 'wood'), 'furniture');
-  for (const y of [0.2, 0.62, 1.04, 1.5]) surface(kit.mesh(parent, 'roundedBox', '#b18a5e', [x, y, z + 0.04], [1.09, 0.08, 0.75], undefined, 'wood'), 'furniture');
+  for (let level=0;level<=tiers;level++) {
+    const y=level===tiers?height+.07:.2+level*.42;
+    surface(kit.mesh(parent, 'roundedBox', '#b18a5e', [x, y, z + 0.04], [1.09, 0.08, 0.75], undefined, 'wood'), 'furniture');
+  }
   if (cupboard) {
     surface(kit.mesh(parent, 'roundedBox', '#9f8861', [x, 0.86, z + 0.396], [0.91, 1.18, 0.055], undefined, 'wood'), 'furniture'); surface(kit.mesh(parent, 'box', '#967f5a', [x, 0.86, z + 0.43], [0.02, 1.1, 0.013], undefined, 'wood'), 'furniture');
     [-0.085, 0.085].forEach((dx) => kit.mesh(parent, 'detailSphere', '#ccba8c', [x + dx, 0.88, z + 0.46], [0.045, 0.045, 0.045]));
-  } else {
+  }
+  {
     const colors = ['#526847', '#dfcfa3', '#516a69', '#9c6242', '#c1ba9e'];
     const boundBook=(bookParent:THREE.Object3D,color:string,thickness:number,bookHeight:number,depth:number)=>{
       // Separate page block, cloth boards and rounded spine read from above
@@ -354,13 +358,15 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       for(const y of [-bookHeight*.25,0,bookHeight*.25])kit.mesh(book,'box','#c9b892',[0,y,-depth/2+.001],[thickness-.020,.002,.002]);
       return book;
     };
-    for (let level = 0; level < 3; level++) for (let book = 0; book < 4; book++) {
+    // Tall storage adds actual open tiers, never stretched books or foliage.
+    // Closed lower cupboards keep their doors, with open shelving above.
+    for (let level = cupboard ? 3 : 0; level < tiers; level++) for (let book = 0; book < 4; book++) {
       const bookHeight = 0.23 + ((book * 3 + level + variant) % 5) * 0.025;
       const volume=boundBook(parent,colors[(book+level+variant)%colors.length],.10+(book%2)*.012,bookHeight,.28);
       volume.position.set(x-.31+book*.15,.25+level*.42+bookHeight/2,z+.17+(book+level)%3*.012);
       volume.rotation.z=book===3?-.08:book===0?.035:0;
     }
-    for(let level=0;level<2;level++){
+    for(let level=cupboard?3:0;level<tiers-1;level++){
       if((variant+level)%3===0){
         const box=kit.mesh(parent,'roundedDetail','#a49a7b',[x+.30,.345+level*.42,z+.14],[.245,.19,.33]);box.name='Archive box';
         kit.mesh(parent,'box','#d8c9a5',[x+.30,.425+level*.42,z+.14],[.255,.028,.34]);
@@ -371,6 +377,7 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       }
     }
   }
+  return (height+.11)*scale;
 }
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
