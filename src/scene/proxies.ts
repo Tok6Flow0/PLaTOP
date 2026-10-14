@@ -72,7 +72,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       // The source is a little standing book, including actual recessed pages,
       // rounded covers, folded corner and the seedling volume held in its arms.
       sculpt(body, 'keeperPages', '#e7d8b8', [.015, .18, .012], [.615, 1.06, .30], undefined, 'paper').name='page-block';
-      const cover=sculpt(body, 'keeperCover', '#efe3c7', [0, .18, .177], [.70, 1.12, .038], undefined, 'paper');cover.name='front-cover';
+      const cover=sculpt(body, 'keeperFrontCover', '#efe3c7', [0, .18, .177], [.70, 1.12, .038], undefined, 'paper');cover.name='front-cover';
       sculpt(body, 'keeperCover', '#d5bd96', [0, .18, -.145], [.70, 1.12, .038], [0,Math.PI,0], 'paper').name='back-cover';
       sculpt(body, 'book', '#d2b994', [-.314, .20, .012], [.33, 1.02, .061], [0, Math.PI/2, 0], 'paper').name='book-spine';
       // Separate leaf edges remain visible between the thin covers, including
@@ -99,8 +99,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       fitCharacterRelief(border,facePanel,.001,.002);
       eyes(head, .112, .018, .276, true, ink, 1.12);
       data.eyes.forEach(eye=>fitCharacterRelief(eye,facePanel,.002,.006));
-      const corner=sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
-      fitCharacterRelief(corner,cover,.003,.025);
+      sculpt(body,'keeperTurnedCorner','#ffffff',[0,0,0],[1,1,1],undefined,'paper');
       limbs(cream, cream, true);
       data.feet.forEach(foot=>{
         foot.position.y=.065;foot.position.z=.045;

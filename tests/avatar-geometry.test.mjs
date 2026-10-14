@@ -511,7 +511,7 @@ test('Keeper has separate thin covers around a recessed page block and a bound s
   assert.ok(front.position.z>pages.position.z&&back.position.z<pages.position.z,'leaves sit between the two covers');
   assert.ok(front.scale.x>pages.scale.x&&back.scale.y>pages.scale.y,'pages are recessed inside the cover edge');
   assert.ok(pages.scale.z/front.scale.x<.45,'the recessed page block avoids a uniformly deep slab');
-  assert.equal(front.geometry,characterGeometry(kit,'keeperCover'));
+  assert.equal(front.geometry,characterGeometry(kit,'keeperFrontCover'));
   const cover=characterGeometry(kit,'bowedCover'),p=cover.attributes.position,layer=cover.userData.coverSkinVertices;
   assert.ok(p.getZ(0)-p.getZ(1+32*6)>.5,'the thin cover has real central bow');
   for(let i=0;i<layer;i++)assert.ok(Math.abs(p.getZ(i)-p.getZ(i+layer)-.92)<1e-6,'both cover skins preserve thickness');
@@ -525,12 +525,15 @@ test('Keeper has separate thin covers around a recessed page block and a bound s
 test('Keeper lower cover tapers around low tucked feet rather than ending above ball feet',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);
   model.updateMatrixWorld(true);
-  const cover=model.getObjectByName('front-cover'),p=cover.geometry.attributes.position;
-  let lower=0,middle=0;
-  for(let i=0;i<p.count;i++){
-    if(p.getY(i)<-.40)lower=Math.max(lower,Math.abs(p.getX(i)));
-    if(Math.abs(p.getY(i))<.20)middle=Math.max(middle,Math.abs(p.getX(i)));
-  }
+  const cover=model.getObjectByName('front-cover'),material=new THREE.MeshBasicMaterial();
+  const local=new THREE.Mesh(cover.geometry,material),ray=new THREE.Raycaster();local.updateMatrixWorld();
+  // Compare actual silhouette coverage, not vertex distribution: the turned
+  // cover retains exact hinge corners and samples straight edges differently.
+  const width=y=>{let edge=0;for(let x=0;x<.52;x+=.005){
+    ray.set(new THREE.Vector3(x,y,5),new THREE.Vector3(0,0,-1));
+    if(ray.intersectObject(local,false).length)edge=x;
+  }return edge;};
+  const lower=width(-.44),middle=width(0);
   assert.ok(lower<middle*.9,'lower corners are rounded and narrower than the broad page face');
   const coverBounds=new THREE.Box3().setFromObject(cover);
   for(const foot of model.userData.personality.feet){
@@ -539,7 +542,31 @@ test('Keeper lower cover tapers around low tucked feet rather than ending above 
     assert.ok(Math.abs(sole.min.y)<.012,'feet retain their floor contact');
     assert.ok(sole.max.y>coverBounds.min.y,'lower cover tucks over the upper foot');
   }
-  disposeObject(model);kit.dispose();
+  material.dispose();disposeObject(model);kit.dispose();
+});
+
+test('Keeper turned corner replaces the upper cover and joins its curved hinge',()=>{
+  const kit=new SceneKit(),material=new THREE.MeshBasicMaterial(),ray=new THREE.Raycaster();
+  const front=new THREE.Mesh(characterGeometry(kit,'keeperFrontCover'),material);
+  const back=new THREE.Mesh(characterGeometry(kit,'keeperCover'),material);
+  front.updateMatrixWorld();back.updateMatrixWorld();
+  ray.set(new THREE.Vector3(.44,.44,5),new THREE.Vector3(0,0,-1));
+  assert.equal(ray.intersectObject(front,false).length,0,'the original unturned corner is really absent');
+  assert.ok(ray.intersectObject(back,false).length>0,'back cover still protects the page block');
+  const flap=characterGeometry(kit,'keeperTurnedCorner'),p=flap.attributes.position;
+  for(const [x,y,z] of [[.196,.740,.19448],[.273,.6168,.19448+.0532*Math.cos(.39*Math.PI)**2],[.350,.4936,.19448]]){
+    let nearest=Infinity;
+    for(let i=0;i<p.count;i++)nearest=Math.min(nearest,Math.hypot(p.getX(i)-x,p.getY(i)-y,p.getZ(i)-z));
+    assert.ok(nearest<1e-6,'the turned sheet shares its actual cover hinge');
+  }
+  const model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);model.updateMatrixWorld(true);
+  const folded=model.getObjectByName('keeperTurnedCorner');
+  for(const eye of model.userData.personality.eyes){
+    const centre=new THREE.Box3().setFromObject(eye).getCenter(new THREE.Vector3());
+    ray.set(new THREE.Vector3(centre.x,centre.y,3),new THREE.Vector3(0,0,-1));
+    assert.equal(ray.intersectObject(folded,false).length,0,'turned paper does not cover the expression');
+  }
+  material.dispose();disposeObject(model);kit.dispose();
 });
 
 test('Beacon has a real face opening with an outward-facing green shell',()=>{
@@ -986,7 +1013,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
   const expected={
     'bridge-jarvis':['merchantTorso','helmet','ring'],
     'bridge-scout':['helmet','compass-emblem','ring'],
-    'bridge-keeper':['book','pageCorner','seedling-book'],
+    'bridge-keeper':['keeperTurnedCorner','front-cover','page-block','seedling-book'],
     'hr-compass':['spiritFigure','compassCowl','compassNeedle','compass-emblem'],
     'hr-lens':['spiritLens','lensCowl','ring'],
     'hr-relay':['spiritRelay','relayCowl','detail'],

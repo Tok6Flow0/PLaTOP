@@ -64,6 +64,7 @@ not asked for a desired score or instructed to approve.
 | 72 (fresh material review) | Merchant 7.5 craft / 8.0 fidelity; Support 8.0 / 8.5; Email 7.0 / 7.5; retained | Clearer ceramic curvature and brass separation, unchanged quality tier; avoid more gloss and improve Jarvis breast/shoulder construction |
 | 73 (fresh Merchant shape review) | Craft 7.5 / fidelity 8.0; retained | Clearer shoulder separation, forward breast volume and tapered waist; small lower seam kink and Keeper's slab/ball-foot silhouette remain |
 | 74 (fresh Keeper shape review) | Merchant craft 8.0 / fidelity 8.0; retained | Rounded lower cover, following pages and tucked feet improve proportions; upper cover/spine and turned corner remain rigid |
+| 75 (fresh Keeper corner review) | Merchant craft 8.0 / fidelity 8.0; retained | Turned corner joins the cut-away bowed cover without a floating gap; the long sharp flap still needs a shorter, softer curl |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -565,6 +566,11 @@ deep-zoom mist invitation, third/first-person modes and exit were checked in
 the browser without console warnings/errors. This is isolated build evidence,
 not installation or a live-agent action. The dense tier is deliberately not used for
 the distant campus. JavaScript submission time is not GPU completion time.
+Pass 75 passes 311 tests and the production build. The actual cut-away cover and
+three curved hinge points are checked geometrically. Campus submits 54.01 fps
+(2.06 ms mean / 3.80 ms p95 CPU, 108 draws, 372,524 triangles); Merchant close
+submits 53.10 fps (2.09 ms / 4.00 ms, 141 draws, 2,485,449 triangles, three dense
+avatars). The unchanged review score is retained, not rounded up to acceptance.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
 from the matched table; the uninterrupted rerun above does not hide that caveat.

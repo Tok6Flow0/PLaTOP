@@ -4,7 +4,7 @@ import { owlEyeRecess, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'limb' | 'ankle' | 'beak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
 export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass';
@@ -206,13 +206,17 @@ function roundedBook(softLower=false): THREE.BufferGeometry {
 
 /** A flexible thin cover has a gently bowed face, not a padded cuboid. Both
  * skins share the bow and join at their edge; the page block stays separate. */
-function bowedCover(bow=.65,softLower=false):THREE.BufferGeometry {
+function bowedCover(bow=.65,softLower=false,turnedCorner=false):THREE.BufferGeometry {
   const shape=new THREE.Shape(),r=.13;
   const lower=softLower?.23:r,edge=softLower?.46:.5;
   shape.moveTo(-edge+lower,-.5);shape.lineTo(edge-lower,-.5);shape.quadraticCurveTo(edge,-.5,edge,-.5+lower);
-  shape.lineTo(.5,.5-r);shape.quadraticCurveTo(.5,.5,.5-r,.5);shape.lineTo(-.5+r,.5);
+  if(turnedCorner){shape.lineTo(.5,.28);shape.lineTo(.28,.5);}
+  else {shape.lineTo(.5,.5-r);shape.quadraticCurveTo(.5,.5,.5-r,.5);}
+  shape.lineTo(-.5+r,.5);
   shape.quadraticCurveTo(-.5,.5,-.5,.5-r);shape.lineTo(-edge,-.5+lower);shape.quadraticCurveTo(-edge,-.5,-edge+lower,-.5);
-  const boundary=shape.getSpacedPoints(32).slice(0,-1),rings=7,count=boundary.length;
+  // Explicit path vertices retain the two hinge endpoints on the turned
+  // cover; uniformly spaced samples alone cut across those exact corners.
+  const boundary=(turnedCorner?shape.getPoints(10):shape.getSpacedPoints(32)).slice(0,-1),rings=7,count=boundary.length;
   const positions:number[]=[],uv:number[]=[],indices:number[]=[];
   const add=(x:number,y:number,side:number)=>{
     positions.push(x,y,side*.46+bow*Math.cos(x*Math.PI)*Math.cos(y*Math.PI));uv.push(x+.5,y+.5);
@@ -745,6 +749,15 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'keeperPages': return roundedBook(true);
     case 'bowedCover': return bowedCover();
     case 'keeperCover': return bowedCover(1.4,true);
+    case 'keeperFrontCover': return bowedCover(1.4,true,true);
+    case 'keeperTurnedCorner': {
+      // Body-local hinge points coincide with the clipped front cover. The
+      // reverse face curls toward the reader; the original corner is absent.
+      const front:Tuple[]=[[.196,.740,.19448],[.273,.6168,.19448+.0532*Math.cos(.39*Math.PI)**2],[.350,.4936,.19448],[.205,.590,.242]];
+      return polyhedron([...front,...front.map(([x,y,z])=>[x,y,z-.004] as Tuple)],
+        [[0,3,1],[1,3,2],[4,5,7],[5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]],
+        ['#fff2d6','#fff0d3','#e1ceb0','#e1ceb0','#e8d7b8','#e8d7b8','#eddcbe','#e3d0ad'],true);
+    }
     case 'envelope': return folded([[-.46,-.5],[.46,-.5],[.5,-.44],[.5,.44],[.46,.5],[-.46,.5],[-.5,.44],[-.5,-.44]],.9,.02);
     case 'cloak': return softLathe([[0, -.5], [.36, -.49], [.5, -.39], [.48, -.20], [.34, .12], [.21, .36], [.09, .49], [0, .54]]);
     case 'cape': return cape();
