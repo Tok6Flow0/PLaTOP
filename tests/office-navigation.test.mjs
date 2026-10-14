@@ -431,20 +431,21 @@ test('real sixteen-avatar layout connects every assigned desk, interaction stop,
   }
 });
 
-test('three-member side places use their real floor-height homes beside a full-width desk without imaginary chairs', async t => {
+test('three-member side places use their real floor-height homes beside their shared desk without imaginary chairs', async t => {
   const { teams, rooms, kit, disposeObject, navigator } = await realLayout();
   t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
   for (const officeId of ['merchant', 'hr']) {
     const room = rooms.get(officeId), { desks, blockers, floorY } = room.navigation;
+    const width=officeId==='hr'?2.5:2.75,depth=officeId==='hr'?1.6:1.4;
     const table = blockers.find(({ bounds: [x0, z0, x1, z1], deskIndex }) => deskIndex === undefined
-      && Math.abs(x1 - x0 - 2.75) < 1e-9 && Math.abs(z1 - z0 - 1.4) < 1e-9);
-    assert.ok(table, `${officeId} preserves its actual full-width shared table`);
+      && Math.abs(x1 - x0 - width) < 1e-9 && Math.abs(z1 - z0 - depth) < 1e-9);
+    assert.ok(table, `${officeId} blocks its actual shared table dimensions`);
     const [x0, z0, x1, z1] = table.bounds, tableZ = (z0 + z1) / 2;
     for (const memberIndex of [0, 2]) {
       const desk = desks[memberIndex], home = room.actorHomes[memberIndex];
       assert.deepEqual([home.x, home.y, home.z], [desk.position[0], floorY, desk.position[1]], `${officeId}/${memberIndex} has no visual-only offset`);
       assert.equal(desk.seatHeight, floorY, `${officeId}/${memberIndex} stands rather than floating over a missing chair`);
-      assert.ok(Math.abs(desk.position[1] - tableZ) < .2, `${officeId}/${memberIndex} is beside the table, not along its front edge`);
+      assert.ok(Math.abs(desk.position[1] - tableZ) < .4, `${officeId}/${memberIndex} is beside the table, not along its front edge`);
       assert.ok(memberIndex === 0 ? desk.position[0] < x0 : desk.position[0] > x1, `${officeId}/${memberIndex} is outside the tabletop`);
       assert.equal(blockers.some(blocker => blocker.deskIndex === memberIndex), false, `${officeId}/${memberIndex} has no unrendered side chair`);
       const character=teams.find(team=>team.id===officeId).members[memberIndex];

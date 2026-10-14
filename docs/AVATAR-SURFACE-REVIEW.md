@@ -99,6 +99,7 @@ not asked for a desired score or instructed to approve.
 | 104 (fresh textile correction review) | Campus craft 7.0 / fidelity 7.5; retained | Irregular tuft groups recover textile variation without 102's checker pattern; wood stays quieter and no lighting regression is seen. Room staging and furniture-character integration are the larger remaining gap |
 | 105 (fresh Beacon staging review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Tighter rug and low reading shelf improve grouping at campus scale and night without crowding. Do not repeat this exact template everywhere; the monitor partially hiding Beacon's face is the next focal-point problem |
 | 106 (fresh Beacon focal-point review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Smaller angled screen exposes the full face and both eyes, including at campus scale and night. Its near-edge-on window angle is acceptable; stop adjusting it and address Clear Path's separated desk group and broad foreground rug |
+| 107 (fresh Clear Path grouping review) | Clear Path craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Shorter rug, deeper rounded desk and closer side residents improve cohesion without hiding faces. The group remains symmetric and the front apron is visibly faceted close up; next priority is distinct staggered Wayfinders workstations, not more tiny Clear Path positioning changes |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -898,3 +899,19 @@ bridge: no live agent event or decoration was injected. Its responsive
 screenshots are smoke evidence, separate from the full 1536 × 1024 visual
 comparison. The reviewer retains the focal-point correction without increasing
 the score; overall A-level acceptance remains open.
+
+Pass 107 passes 331 tests/build. Clear Path has a shorter, rear-shifted rug,
+a deeper capsule table and closer side homes. The center home and all neutral
+facings remain unchanged. Initial route checks caught a visiting paper owl's
+pinched rear approach; the actual rear aisle waypoints were moved back to fit
+the deeper table. Body radii, physical blockers and clearance assertions were
+not reduced. The final complete route suite passes with decorations on/off.
+
+Campus submits 54.30 fps (1.64 ms mean / 2.30 ms p95 CPU, 112 sampled draws,
+376,974 triangles); Clear Path close submits 53.70 fps (1.44 / 2.30 ms, 100
+draws, 1,853,423 triangles, three dense avatars). The same two-second warm-up,
+ten-second sample and fixed viewport apply; GPU completion remains unmeasured.
+Actual noon/night campus, full close and window-view captures are saved under
+surface-pass-107. The independent reviewer retains the grouping improvement
+without increasing the grade. Shipped portrait models remain pass 104, and
+the separately smoke-tested production checkpoint remains pass 106.
