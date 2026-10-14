@@ -116,6 +116,7 @@ not asked for a desired score or instructed to approve.
 | 121 (readable raised hood frame) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 120 | The raised cream frame now reads at ordinary portrait and actual-room sizes. Its stronger outer edge reveals scalloping along the forehead and cheek, with a somewhat heavy dark return. Clean the continuous curve without adding more thickness or contrast |
 | 122 (continuous rim projection) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; non-regressive, visually near-equivalent to 121 | The mathematical surface correction does not resolve the visible forehead wave; slight cheek cleanup is not a meaningful grade increase. The reviewer prioritizes the thin angular belly route versus the broad flowing source mark over another minute rim adjustment |
 | 123 (flowing belly inlay) | Guide 7.5 craft / 8.0 fidelity; ensemble/room 7.5 / 7.5; campus 7.0 / 7.5; retained | The broad flowing ribbon visibly matches the source without lifting or silhouette regressions. The bulky compass bezel/disc/star/clasp assembly is the next guide priority; room-wide light and grouping matter more for the overall result |
+| 124 (integrated compass pendant) | Guide 7.5 / 8.0; ensemble/room 7.5 / 7.5; campus 7.0 / 7.5; retained | The thinner complete assembly is visibly clearer at portrait and room scale, with no visible new fitting regressions. The next priority is a compact asymmetric Wayfinders workstation cluster and circulation around it, rather than another small guide revision |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1232,3 +1233,27 @@ desks hide most of it at room scale. The reviewer prioritizes the complete
 compass pendant assembly over another minute hood adjustment, and a bounded
 room-wide lighting/composition study for a substantial overall gain. The
 existing brow wave remains open. Production remains pass 120; no A is claimed.
+
+Pass 124 treats the guide's compass as a complete pendant: a thin turned
+bezel, navy inset, shallow compass rose/pin and top clasp sit higher together
+on the chest. Fitted ring normals retain their UV seam continuity. A ray
+exactly on a duplicated lathe meridian could miss both adjoining triangles,
+leaving an unfitted bottom vertex. A bounded 1e-7 neighbouring probe fixes
+that numerical miss; regression checks cover the entire bezel and dial plus
+the star's shallow separation in both geometry tiers. The guide contains
+895,400 close-up triangles, still above 100 times the original embodiment.
+
+All 348 tests and the production build pass. Campus submits 60.00 fps
+(1.67 ms mean / 2.30 ms p95 CPU, 116 sampled draws, 384,372 triangles);
+Wayfinders close submits 60.00 fps (1.67 / 2.70 ms, 141 draws, 2,240,545
+triangles, three detailed avatars). These fixed ten-second samples do not
+measure GPU completion. Full visual and timing evidence remains under
+surface-pass-124. The independent reviewer retains the pendant: its thin
+circle, recessed navy dial and shallow star replace the mounted-badge effect,
+and side views confirm reduced projection. The lower edge is continuous in
+front, quarter and night. No fitting regression is visible in the five other
+team day portraits. The upper clasp is partly hidden by the head, so the
+images do not certify every concealed connection. Guide remains 7.5 craft /
+8.0 fidelity, ensemble/room 7.5 / 7.5, campus 7.0 / 7.5. The next priority
+is a compact, asymmetric workstation cluster with a real circulation route,
+not decorative clutter or fake activity. Production remains 120.

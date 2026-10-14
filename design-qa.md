@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-123 suite passes **347 tests** and the production build passes. Its
+The pass-124 suite passes **348 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -92,6 +92,13 @@ fidelity rises to 8.0. Ensemble/room remain 7.5 / 7.5 and campus 7.0 / 7.5.
 The next guide correction is the entire bulky compass assembly. A bounded,
 room-wide lighting/composition study is the larger overall priority.
 Production remains pass 120; no A-level acceptance is claimed.
+Pass 124 rebuilds the guide compass as a thin bezel, navy dial, shallow rose
+and attached clasp. An exact-meridian ray miss found during inspection is
+fixed before final capture, with full bezel/dial coverage guarded in both
+mesh tiers. Both fixed camera workloads submit 60.00 fps. The reviewer retains
+the cleaner pendant at unchanged overall grades, finding no visible fitting
+regressions in the five other team portraits. Its next priority is a compact,
+asymmetric Wayfinders workstation cluster with genuine circulation around it.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

@@ -6,7 +6,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -842,6 +842,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
       return smoothDeformedSurface(geometry);
     }
     case 'ring': return new THREE.TorusGeometry(.5, .085, 8, 24);
+    case 'compassRim': return new THREE.TorusGeometry(.5,.045,6,32);
+    case 'compassClasp': return new THREE.TorusGeometry(.5,.075,4,16);
+    case 'compassDial': return new THREE.CylinderGeometry(.5,.5,1,24,1).rotateX(Math.PI/2);
     case 'lanternHandle': return new THREE.TorusGeometry(.5,.14,12,32);
     case 'neckBand': return lathe([[.46,-.5],[.5,-.3],[.5,.3],[.46,.5],[.44,.3],[.44,-.3],[.46,-.5]],16);
     case 'heart': return smallHeart();
@@ -1340,10 +1343,18 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
       point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
       const relief=Math.min(maxRelief,Math.max(0,side*(point.z-(side===1?bounds.min.z:bounds.max.z))));
       ray.set(new THREE.Vector3(point.x,point.y,2*side),new THREE.Vector3(0,0,-side));
-      const hit=ray.intersectObject(shell,false)[0];
+      let hit=ray.intersectObject(shell,false)[0];
+      // Lathe meridians duplicate their vertices. A ray exactly on that
+      // shared edge can miss both triangles through floating-point rounding.
+      // Probe its immediate neighbour instead of leaving an unfitted vertex.
+      if(!hit){ray.ray.origin.x+=1e-7;hit=ray.intersectObject(shell,false)[0];}
       if(hit) {point.z=hit.point.z+side*(standOff+relief);point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}
     }
-    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    // Continuous turned-metal rings retain a welded UV seam after fitting;
+    // recomputing each duplicate separately makes a segmented gold surround.
+    if(mesh.name==='compassRim'||mesh.name==='compassClasp')smoothDeformedSurface(geometry);
+    else geometry.computeVertexNormals();
+    geometry.computeBoundingBox();geometry.computeBoundingSphere();
     geometry.userData.characterFitted=true;mesh.geometry=geometry;
   });
 }

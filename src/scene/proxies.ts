@@ -50,6 +50,16 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   };
   const compass = (parent: THREE.Object3D, at: [number, number, number], diameter = .22, color = gold) => {
     const emblem = joint(parent, 'compass-emblem', at);
+    if(id==='intake-jarvis'){
+      // A fine pendant, not a thick mounted badge: its inset, shallow rose,
+      // pin and top clasp are designed as one assembly.
+      sculpt(emblem,'compassRim',color,[0,0,0],[diameter,diameter,diameter],undefined,'agedBrass');
+      sculpt(emblem,'compassDial','#263b4b',[0,0,-.004],[diameter*.94,diameter*.94,.008],undefined,'clay');
+      sculpt(emblem,'compassStar',color,[0,0,.003],[diameter*.74,diameter*.84,.035],[0,0,-.08],'agedBrass');
+      sculpt(emblem,'detail','#d1b577',[0,0,.006],[.014,.014,.006],undefined,'agedBrass');
+      sculpt(emblem,'compassClasp',color,[0,diameter*.59,.002],[.030,.036,.025],undefined,'agedBrass');
+      return;
+    }
     ring(emblem, color, diameter, [0, 0, 0]);
     if (wayfinder) sculpt(emblem, 'detail', '#2b4252', [0, 0, -.006], [diameter * .88, diameter * .88, .025], undefined, 'clay');
     sculpt(emblem, id==='bridge-scout'?'compassPointer':hr?'compassNeedle':'compassStar', id==='bridge-scout'?'#ffffff':hr?'#2d5244':color, [0, 0, .010], [diameter * .78, diameter * .90, .11], [0, 0, id==='bridge-scout'?-.50:-.08], hr?'clay':'brass');
@@ -217,7 +227,6 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
               stroke(body,'#bd985c',trim,.008).name='cape-trim';
             });
           }
-          if(id==='intake-jarvis')sculpt(body, 'detail', gold, [0, .20, .290], [.044, .044, .022], undefined, 'brass');
           if (id === 'intake-jarvis') {
             const hood=sculpt(head, 'hoodTip', cream, [0, .399, -.025], [.29, .31, .23],undefined,'satinClay');
             // A cream point continues the helmet silhouette, framing a navy
@@ -229,7 +238,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
             // onto the real cone so side views retain an attached emblem.
             const crest=sculpt(head,'compassStar',gold,[0,.444,.095],[.078,.125,.10],undefined,'brass');
             crest.name='navigator-hood-star';fitCharacterRelief(crest,hood,.007,.001);
-            compass(body, [0, -.02, .307], .225);
+            compass(body, [0, .025, .307], .225);
             sculpt(body,'routeInlay','#bea06b',[0,0,.32],[1,1,1],undefined,'clay').name='navigator-route-inlay';
           } else if (id === 'intake-beacon') {
             sculpt(head, 'limb', '#b8a07b', [0, .427, 0], [.205, .15, .205], undefined, 'brass');
@@ -305,7 +314,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         // This is a shallow decorative route, not a rope preserving the old
         // path's full depth above the newly fitted belly.
         const route=ornament.name==='navigator-route-inlay';
-        fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,route?.010:id==='intake-compass'?.036:.012,route?.006:Infinity);
+        const pendant=id==='intake-jarvis'&&ornament.name==='compass-emblem';
+        fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,route?.010:pendant?.009:id==='intake-compass'?.036:.012,route?.006:pendant?.022:Infinity);
       }
     }
     group.scale.setScalar(leader ? 1.02 : id === 'bridge-scout' ? .93 : id === 'bridge-keeper' ? .97 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : id==='hr-lens'?.93:id==='hr-relay'?.92:hr ? .99 : 1.10);

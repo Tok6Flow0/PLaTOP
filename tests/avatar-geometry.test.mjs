@@ -1308,6 +1308,40 @@ test('the guide route stays visibly inlaid on the dense belly rather than floati
   release();disposeObject(model);kit.dispose();
 });
 
+test('the guide compass is a thin inset pendant with an attached clasp and shallow rose',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const pendant=model.getObjectByName('compass-emblem'),rim=pendant.getObjectByName('compassRim');
+  const dial=pendant.getObjectByName('compassDial'),rose=pendant.getObjectByName('compassStar');
+  const clasp=pendant.getObjectByName('compassClasp'),shell=model.getObjectByName('wayfinderBody');
+  assert.equal(rim.geometry.parameters.tube,.045,'the pendant has a fine bezel, not the generic thick ring');
+  assert.equal(rim.material.userData.characterFinish,'agedBrass');
+  assert.ok(clasp.position.y-clasp.scale.y*.575<rim.scale.y*.545,'the clasp connects to the bezel');
+  model.updateMatrixWorld(true);
+  const p=rose.geometry.attributes.position,index=rose.geometry.index,roseProbes=[];
+  for(let i=0;i<(index?.count??p.count);i+=3){
+    const a=new THREE.Vector3().fromBufferAttribute(p,index?index.getX(i):i),b=new THREE.Vector3().fromBufferAttribute(p,index?index.getX(i+1):i+1),c=new THREE.Vector3().fromBufferAttribute(p,index?index.getX(i+2):i+2);
+    if(b.clone().sub(a).cross(c.clone().sub(a)).z>0)roseProbes.push(a.add(b).add(c).multiplyScalar(1/3).applyMatrix4(rose.matrixWorld));
+  }
+  const check=()=>{
+    for(let i=0;i<32;i++){
+      const angle=i/32*Math.PI*2,point=new THREE.Vector3(Math.cos(angle)*.083,Math.sin(angle)*.083,0).applyMatrix4(pendant.matrixWorld);
+      const ray=new THREE.Raycaster(new THREE.Vector3(point.x+1e-7,point.y,3),new THREE.Vector3(0,0,-1));
+      const face=ray.intersectObject(dial,false)[0],body=ray.intersectObject(shell,false)[0];
+      assert.ok(face&&body&&body.distance-face.distance>.001,`the navy dial remains visible on the curved chest: ${i} ${point.toArray()} dial ${face?.distance} shell ${body?.distance}`);
+      const edge=new THREE.Vector3(Math.cos(angle)*.1125,Math.sin(angle)*.1125,0).applyMatrix4(pendant.matrixWorld);
+      ray.set(new THREE.Vector3(edge.x+1e-7,edge.y,3),new THREE.Vector3(0,0,-1));
+      const bezel=ray.intersectObject(rim,false)[0],chest=ray.intersectObject(shell,false)[0];
+      assert.ok(bezel&&chest&&chest.distance-bezel.distance>.001,'the full bezel clears the chest, including its exact bottom meridian');
+    }
+    for(const point of roseProbes){
+      const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
+      const star=ray.intersectObject(rose,false)[0],face=ray.intersectObject(dial,false)[0];
+      assert.ok(star&&face&&face.distance-star.distance>.0003&&face.distance-star.distance<.012,'the rose is shallow relief above the inset');
+    }
+  };
+  check();const release=refineCharacterModel(model);check();release();disposeObject(model);kit.dispose();
+});
+
 test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
   const kit = new SceneKit(), left = new THREE.Vector3(), right = new THREE.Vector3();
   const expectedTriangles = { torso: 768, owlBody: 384, lanternGlass: 336, lanternCap: 384, bridgeHelmet:1216,
