@@ -633,16 +633,17 @@ function sweptBrow(left = false): THREE.BufferGeometry {
 function featherFan(sign: number, breast = false): THREE.BufferGeometry {
   const sculpt = flightFeather(), source = sculpt.index?sculpt.toNonIndexed():sculpt.clone(), vertices: number[] = [], normals: number[] = [], colours:number[]=[],uv:number[]=[];
   sculpt.dispose();
-  const count = breast ? 84 : 12, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
+  const breastColumns=10,breastRows=5;
+  const count = breast ? breastColumns*breastRows : 12, matrix = new THREE.Matrix4(), normalMatrix = new THREE.Matrix3(), quaternion = new THREE.Quaternion();
   const point = new THREE.Vector3(), normal = new THREE.Vector3();
   for (let featherIndex = 0; featherIndex < count; featherIndex++) {
     if(breast){
       // Overlapping plumage wraps the entire oval. Each small feather is
       // tangential to the body, including its sides and rear, with staggered
       // rows. One cached mesh replaces the old front-only breast panel.
-      const row=Math.floor(featherIndex/14),column=featherIndex%14;
-      const variation=Math.sin(column*2.7+row*1.91),tilt=.055*Math.sin(column*1.7+row*2.2);
-      const angle=(column+.5+(row%2?.5:0)+.055*variation)/14*Math.PI*2,y=.22-row*.095+.004*Math.sin(column*2.1+row);
+      const row=Math.floor(featherIndex/breastColumns),column=featherIndex%breastColumns;
+      const variation=Math.sin(column*2.7+row*1.91),tilt=.09*Math.sin(column*1.7+row*2.2);
+      const angle=(column+.5+(row%2?.5:0)+.065*variation)/breastColumns*Math.PI*2,y=.225-row*.113+.009*Math.sin(column*2.1+row);
       quaternion.setFromEuler(new THREE.Euler(0,angle,.04*Math.sin(angle*3+row)));
       matrix.compose(new THREE.Vector3(),quaternion,new THREE.Vector3(1,1,1));
       normalMatrix.getNormalMatrix(matrix);
@@ -653,15 +654,16 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         colours.push(tone,tone,tone);
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
-        const length=(row===5?.145:.23+.015*Math.sin(featherIndex*2.17));
+        const length=(row===breastRows-1?.210:.260+.018*Math.sin(featherIndex*2.17));
         const py=y+point.y*length+point.x*tilt*.10,normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
         // Angular, not fixed physical width: near the belly pole a fixed
         // width wraps across several neighbours and produces broken patches.
         // Tips overlap the staggered row below, not adjacent equal-depth vanes.
-        const theta=angle+point.x*(Math.PI*2/14)*1.38+point.y*tilt*.08;
-        const relief=(.006+point.z*.016+(5-row)*.0024)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
+        const width=1.40+.06*Math.sin(featherIndex*1.31)+.05*point.y;
+        const theta=angle+point.x*(Math.PI*2/breastColumns)*width+point.y*tilt*.08;
+        const relief=(.006+point.z*.020+(breastRows-1-row)*.0032)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
@@ -748,7 +750,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'owlBeak': {
       // A narrow horn with a rounded root and a tapered point. Its ridge is
       // sculpted into the continuous skin, not a four-plane pyramid.
-      const geometry=softLathe([[0,-.5],[.06,-.40],[.16,-.15],[.32,.10],[.45,.25],[.32,.44],[0,.5]],16,16);
+      const geometry=softLathe([[0,-.5],[.105,-.40],[.25,-.15],[.38,.10],[.41,.25],[.30,.43],[0,.5]],16,16);
       const p=geometry.attributes.position;
       for(let i=0;i<p.count;i++){
         const x=p.getX(i),y=p.getY(i),z=p.getZ(i),front=Math.max(0,z)/Math.max(.001,Math.hypot(x,z));

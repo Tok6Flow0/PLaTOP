@@ -627,6 +627,21 @@ test('owl facial fibres share one opaque surface and radiate from each actual ey
   disposeObject(model);kit.dispose();
 });
 
+test('broader owl breast groups overlap across the visible front instead of exposing body wedges',()=>{
+  const kit=new SceneKit(),material=new THREE.MeshBasicMaterial(),ray=new THREE.Raycaster();
+  const breast=new THREE.Mesh(characterGeometry(kit,'breastFeathers'),material),body=new THREE.Mesh(characterGeometry(kit,'owlBody'),material);
+  body.scale.set(.70,.83,.55);breast.updateMatrixWorld();body.updateMatrixWorld();let covered=0,checked=0;
+  for(let x=-.24;x<=.24;x+=.04)for(let y=-.27;y<=.15;y+=.06){
+    ray.set(new THREE.Vector3(x,y,1.5),new THREE.Vector3(0,0,-1));
+    const shell=ray.intersectObject(body,false)[0];if(!shell)continue;
+    const feather=ray.intersectObject(breast,false)[0];checked++;
+    if(feather&&feather.point.z>shell.point.z+.0005)covered++;
+  }
+  assert.ok(checked>70,'check the real front field, not a single cherry-picked point');
+  assert.equal(covered,checked,'overlapping groups cover every sampled visible breast point');
+  material.dispose();kit.dispose();
+});
+
 test('shallow owl irises follow their curved facial discs without clipping through them',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);

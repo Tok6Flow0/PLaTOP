@@ -68,6 +68,7 @@ not asked for a desired score or instructed to approve.
 | 76 (fresh Keeper curl review) | Merchant craft 8.0 / fidelity 8.0; retained | Compact curl removes the blade-like tip and keeps the expression clear; bright wedge-like shading remains, with Scout's optical depth the larger character gap |
 | 77 (fresh Dispatch face review) | Craft 7.0 / fidelity 7.5; mixed, beak revision required | Eye refinements and matte finish help; broad sharp pyramid-shaped beak is oversized relative to the source, and repeated feathers remain |
 | 78 (fresh Dispatch beak review) | Craft 7.0 / fidelity 7.5; retained over 77 | Narrow matte rounded root improves integration; bulb-to-point taper still feels pin-like, while small repeated feathers and lower-breast dark wedges are the larger gap |
+| 79 (fresh Dispatch feather review) | Craft 7.5 / fidelity 7.5; retained | Continuous beak taper and broader breast groups improve construction; dark flank-to-wing band and angular upper rear feather boundary remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -592,6 +593,13 @@ submits 53.31 fps (1.83 ms / 3.40 ms, 107 draws, 1,721,223 triangles, two dense
 avatars). The smoother authored horn adds geometry, with no new material pass.
 Its reviewer retains the correction but still prioritizes broader, varied feather
 groups and continuous lower-breast coverage.
+Pass 79 passes 313 tests and the production build. The broader feather groups
+cover every sampled front-breast ray and stay outside the actual body, while all
+sixteen detailed characters still exceed 100× their original authored triangles.
+Campus submits 54.50 fps (1.79 ms mean / 3.50 ms p95 CPU, 108 draws, 371,404
+triangles); Dispatch close submits 54.30 fps (1.96 ms / 3.70 ms, 107 draws,
+1,544,423 triangles, two dense avatars). Reduced geometry does not replace the
+visual review: its craft score rises to 7.5, with remaining joins identified.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
 from the matched table; the uninterrupted rerun above does not hide that caveat.
