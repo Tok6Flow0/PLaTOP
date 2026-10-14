@@ -6,7 +6,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood' | 'paperEchoChestL' | 'paperEchoChestR' | 'paperEchoRestWing';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood' | 'paperEchoChestL' | 'paperEchoChestR' | 'paperEchoRestWing' | 'paperEchoBody' | 'paperEchoBackL' | 'paperEchoBackR';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -470,25 +470,6 @@ function paperOwlWing():THREE.BufferGeometry {
     ['#dbc29a','#d8bf97','#d5b991','#cdb089','#dfc69f','#e5ceaa']);
 }
 
-/** Two mountain-fold vertices carry one long crease down the curved breast.
- * The boundary turns back at the flank and tapers over the feet; a single
- * high fan apex left a broad, straight apron instead of a folded volume. */
-function paperEchoChest():THREE.BufferGeometry {
-  // One uninterrupted mountain crease runs from shoulder to hem. Each side
-  // is a single plane clipped to the tapered outline, not an apex triangle
-  // fan. Its rear follows that same crease at the thickness of paper stock.
-  const ridgeX=(y:number)=>THREE.MathUtils.lerp(-.075,-.16,(y+.50)/.72);
-  const ridgeZ=(y:number)=>THREE.MathUtils.lerp(.24,.06,(y+.50)/.72);
-  const point=(x:number,y:number,slope:number):Tuple=>[x,y,ridgeZ(y)+slope*(x-ridgeX(y))];
-  const front:Tuple[]=[point(-.30,.22,.80),point(-.39,-.10,.80),point(-.20,-.50,.80),
-    point(-.075,-.50,0),point(.02,-.50,-.70),point(.02,.22,-.70),point(-.16,.22,0)];
-  const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x,y,z-.008] as Tuple)];
-  const faces:number[][]=[[0,1,2,3,6],[6,3,4,5]];
-  faces.push(...faces.map(face=>face.map(i=>i+front.length).reverse()));
-  for(let i=0;i<front.length;i++){const j=(i+1)%front.length;faces.push([j,i,i+front.length,j+front.length]);}
-  return polyhedron(vertices,faces,faces.map((_,i)=>i<2?'#dfc7a2':i<4?'#d2b890':'#c1a277'),true);
-}
-
 function paperEchoRestWing():THREE.BufferGeometry {
   // Three broad folds sweep from behind the cheek, around the outer shoulder,
   // and diagonally across the flank. The old XY sheet hung beside the torso;
@@ -496,6 +477,11 @@ function paperEchoRestWing():THREE.BufferGeometry {
   const front:Tuple[]=[[.015,.075,-.17],[-.075,.035,-.025],[-.035,.015,.145],
     [.13,-.035,.23],[.24,-.40,.27]];
   const panels=[[4,1,0],[4,2,1],[4,3,2]];
+  return closedPaperPanels(front,panels);
+}
+
+/** Closed stock follows the mean fold normal, including depth-returning folds. */
+function closedPaperPanels(front:Tuple[],panels:number[][]):THREE.BufferGeometry {
   const normals=front.map(()=>new THREE.Vector3()),edges=new Map<string,{a:number;b:number;count:number}>();
   for(const panel of panels){
     const [a,b,c]=panel.map(i=>new THREE.Vector3(...front[i]));
@@ -509,7 +495,7 @@ function paperEchoRestWing():THREE.BufferGeometry {
   const vertices:Tuple[]=[...front,...front.map((p,i)=>new THREE.Vector3(...p).addScaledVector(normals[i].normalize(),-.008).toArray() as Tuple)];
   const faces=[...panels,...panels.map(face=>face.map(i=>i+front.length).reverse())];
   for(const {a,b,count} of edges.values())if(count===1)faces.push([b,a,a+front.length,b+front.length]);
-  const geometry=polyhedron(vertices,faces,faces.map((_,i)=>i<3?'#dfc7a2':i<6?'#d2b890':'#c1a277'),true);
+  const geometry=polyhedron(vertices,faces,faces.map((_,i)=>i<panels.length?'#dfc7a2':i<panels.length*2?'#d2b890':'#c1a277'),true);
   geometry.userData.paperThickness=.008;
   return geometry;
 }
@@ -625,6 +611,29 @@ function paperOwlHead(quill=false,hoodOnly=false): THREE.BufferGeometry {
       for(const triangle of THREE.ShapeUtils.triangulateShape(panel,[])){faces.push(triangle.map(i=>ids[i]));colors.push('#edd6b0');}
     }
   }
+  if(!quill){
+    // The crown returns obliquely into a compact rear and raised neck.
+    // Scaling the whole face outline kept vertical temple walls and a low,
+    // horizontal chin shelf: a helmet attached behind the facial shield.
+    // These junctions preserve that shield but lift/turn its hidden return.
+    let previous=0;
+    const returns:Tuple[][]=[
+      [[-.34,.035,-.09],[-.20,-.035,-.015],[.015,-.11,.045],[.21,-.035,-.01],[.37,.12,-.08],[.33,.30,-.11],[.18,.43,-.08],[-.20,.40,-.14],[-.37,.23,-.14]],
+      [[-.18,-.055,-.48],[-.12,-.08,-.48],[0,-.10,-.48],[.12,-.07,-.48],[.22,.04,-.48],[.18,.21,-.48],[.08,.30,-.48],[-.10,.28,-.48],[-.23,.09,-.48]],
+    ];
+    for(const section of returns){
+      const start=vertices.length;
+      vertices.push(...section);
+      for(let i=0;i<outline.length;i++){
+        const j=(i+1)%outline.length;
+        faces.push([previous+i,start+i,start+j],[previous+i,start+j,previous+j]);colors.push('#c7aa83','#c7aa83');
+      }
+      previous=start;
+    }
+    const rear=vertices.slice(previous).map(([x,y])=>new THREE.Vector2(x,y));
+    for(const triangle of THREE.ShapeUtils.triangulateShape(rear,[])){faces.push(triangle.map(i=>previous+i));colors.push('#c7aa83');}
+    const geometry=polyhedron(vertices,faces,colors);geometry.userData.paperSections=2;return geometry;
+  }
   const apex:Tuple=[-.035,.03,-.65],rearDepth=-.20;
   const returnPoint=(x:number,y:number,fraction:number):Tuple=>[
     THREE.MathUtils.lerp(apex[0],x,fraction),THREE.MathUtils.lerp(apex[1],y,fraction),
@@ -649,6 +658,42 @@ function paperOwlHead(quill=false,hoodOnly=false): THREE.BufferGeometry {
     faces.push(triangle.map(i=>back+i));colors.push(quill?'#cfb18a':'#c7aa83');
   }
   return polyhedron(vertices,faces,colors);
+}
+
+/** Shared folded topology carries breast, flank and back in one construction.
+ * Fold junctions deliberately rise/fall around the torso: horizontal courses
+ * read as a faceted egg behind a separate apron, not a folded paper animal. */
+function paperEchoBody(side?:'left'|'right'):THREE.BufferGeometry {
+  const vertices:Tuple[]=[
+    [0,.23,.06],[-.22,.20,.08],[-.31,.11,-.04],[-.25,.17,-.17],[-.015,.23,-.21],[.25,.13,-.17],[.30,.12,-.04],[.22,.18,.08],
+    [.035,-.12,.29],[-.27,-.20,.20],[-.40,-.12,-.025],[-.28,-.18,-.28],[-.025,-.06,-.35],[.29,-.20,-.27],[.40,-.15,-.035],[.29,-.22,.18],
+    [-.02,-.50,.18],[-.21,-.50,.13],[-.24,-.45,-.02],[-.18,-.50,-.13],[.025,-.48,-.20],[.18,-.50,-.13],[.24,-.46,-.02],[.21,-.50,.13],
+  ];
+  const faces:number[][]=[];
+  for(let row=0;row<2;row++)for(let col=0;col<8;col++){
+    const a=row*8+col,b=row*8+(col+1)%8,c=a+8,d=b+8;
+    if((col+row)%2)faces.push([a,c,d],[a,d,b]);else faces.push([a,c,b],[b,c,d]);
+  }
+  // Reuse precisely the same outward normals for the two wrapping stocks.
+  // Their inner surface is .004 above the enclosed core; no deep air pocket.
+  const center=new THREE.Vector3(0,-.13,-.04),normals=vertices.map(()=>new THREE.Vector3());
+  for(const face of faces){
+    const [a,b,c]=face.map(i=>new THREE.Vector3(...vertices[i]));
+    const n=b.clone().sub(a).cross(c.clone().sub(a)).normalize();
+    if(n.dot(a.clone().add(b).add(c).multiplyScalar(1/3).sub(center))<0){face.reverse();n.negate();}
+    face.forEach(i=>normals[i].add(n));
+  }
+  if(side){
+    const selected=faces.filter((_,i)=>side==='left'?Math.floor(i/2)%8<4:Math.floor(i/2)%8>=4);
+    const ids=[...new Set(selected.flat())],map=new Map(ids.map((id,i)=>[id,i]));
+    const front=ids.map(i=>new THREE.Vector3(...vertices[i]).addScaledVector(normals[i].normalize(),.012).toArray() as Tuple);
+    const geometry=closedPaperPanels(front,selected.map(face=>face.map(i=>map.get(i)!)));
+    geometry.userData.paperWrap=side;
+    return geometry;
+  }
+  faces.push([0,7,6,5,4,3,2,1],[16,17,18,19,20,21,22,23]);
+  const geometry=polyhedron(vertices,faces,faces.map(()=>'#d7bc95'));
+  geometry.userData.paperConstruction='oblique-wrapped';return geometry;
 }
 
 function paperOwlBody(): THREE.BufferGeometry {
@@ -951,15 +996,18 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     }
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return paperOwlBody();
+    case 'paperEchoBody': return paperEchoBody();
     // Long shoulder-to-base creases replace the former short horizontal
     // belly zigzag. The two thin sheets overlap above the closed inner body.
     case 'paperChestL': return paperOwlChest();
     case 'paperChestR': return reflect(paperOwlChest());
-    case 'paperEchoChestL': return paperEchoChest();
-    case 'paperEchoChestR': return reflect(paperEchoChest());
+    case 'paperEchoChestL': return paperEchoBody('left');
+    case 'paperEchoChestR': return paperEchoBody('right');
     case 'paperEchoRestWing': return paperEchoRestWing();
     case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.205,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
+    case 'paperEchoBackR': return paperEchoBody('right');
+    case 'paperEchoBackL': return reflect(makeGeometry('paperEchoBackR'));
     case 'paperEchoHood': return paperOwlHead(false,true);
     case 'paperQuillHood': return paperOwlHead(true,true);
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);

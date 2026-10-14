@@ -384,17 +384,19 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     // both volumes on one vertical axis lets the chest cut its heart-shaped
     // chin into a straight horizontal edge.
     head.position.z=navy?.13:.025;
-    sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, echo?-.055:0], echo?[.49,.74,.70]:[.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
+    sculpt(body, navy ? 'owlBody' : echo?'paperEchoBody':'paperBody', navy?feathers:'#ffffff', [0, 0, echo?-.04:0], echo?[.68,.74,.62]:[.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
     const headShell=sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
     if(!navy){
       sculpt(head,id==='reflection-echo'?'paperEchoHood':'paperQuillHood','#ffffff',[0,0,0],[.78,.65,.42],undefined,'paper');
-      sculpt(body,echo?'paperEchoChestL':'paperChestL','#ffffff',[0,0,0],echo?[.63,.78,.62]:[.70,.70,.62],undefined,'paper');
-      // The mirrored chest sheets overlap at their centre seam. Give the
-      // under-fold its own depth instead of letting both faces coincide;
-      // the upper sheet now exposes a thin edge and a local overlap shadow.
-      sculpt(body,echo?'paperEchoChestR':'paperChestR','#ffffff',[0,0,-.010],echo?[.63,.78,.62]:[.70,.70,.62],undefined,'paper');
-      sculpt(body,'paperBackL','#ffffff',[0,0,0],echo?[.56,.74,.36]:[.70,.70,.36],undefined,'paper');
-      sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],echo?[.56,.70,.36]:[.70,.66,.36],[0,0,-.065],'paper');
+      sculpt(body,echo?'paperEchoChestL':'paperChestL','#ffffff',[0,0,echo?-.04:0],echo?[.68,.74,.62]:[.70,.70,.62],undefined,'paper');
+      // Quill keeps a shallow ordered centre overlap. Echo's stocks instead
+      // share fold junctions continuously from breast around to the back;
+      // offsetting one complete wrap would open the shared seam.
+      sculpt(body,echo?'paperEchoChestR':'paperChestR','#ffffff',[0,0,echo?-.04:-.010],echo?[.68,.74,.62]:[.70,.70,.62],undefined,'paper');
+      if(!echo){
+        sculpt(body,'paperBackL','#ffffff',[0,0,0],[.70,.70,.36],undefined,'paper');
+        sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],[.70,.66,.36],[0,0,-.065],'paper');
+      }
       for(const [index,form] of ['paperCrownBackL','paperCrownBackR'].entries()){
         const returnSheet=sculpt(head,form as CharacterForm,'#ffffff',[0,index?-.008:0,index?-.002:0],[.78,.65,.42],undefined,'paper');
         fitCharacterRelief(returnSheet,headShell,.003,Infinity,-1);

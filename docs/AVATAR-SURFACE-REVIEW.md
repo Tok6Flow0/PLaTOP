@@ -1881,3 +1881,71 @@ plateauing. The next meaningful study is coordinated head/torso volume:
 substantial crown/temple wrapping and shoulder-to-chest depth, preserving
 the face/expression and thin-sheet identity rather than extruding a block.
 Materials/light are secondary to that silhouette issue. No A is claimed.
+
+Pass148 was pushed as0742d5f9ea6715f9b24c9ff56aaa885d9e6066c7;
+remote readback matches and CI38621095750 succeeded. The isolated production
+preview now serves index-CZs8Mriz.js. Window view, close-zoom invitation,
+third/first-person mist, exit and reset passed; no console warnings/errors
+were returned. All six teams remain Awaiting update. Production screenshots
+are in surface-pass-148; this does not establish installed native/skill
+adoption or any genuine agent activity.
+
+Pass149 is rejected, not promoted. It extended Echo's temple planes to a
+deeper rear cap and deepened the torso core with fitted rear sheets. All369
+tests/build passed and campus/Reflection close both submitted60fps
+(CPU mean/p95 2.50/3.90 and2.23/3.40ms;135 draws each), but those checks
+did not establish visual success. The independent reviewer gives Echo6.0
+craft/5.5 fidelity, Reflection6.5/6.0: the true side and actual-room views
+show a box-like head sidewall/roof and slab-like back, with front folds
+hanging separately.148 remains accepted. The next study requires deliberately
+varying crown/temple/neck and torso cross-sections, not another depth-number
+adjustment or material change.
+
+Evidence149 includes day/night portraits, quarter/rear, matched actual-room
+day/night and benchmark files. echo-side-full.jpg is the complete1536×1024
+inspection capture. echo-side.jpg and baseline-148-echo-side.jpg are clipped
+1536×626 captures and cannot establish matched whole-body framing. The
+existing flat magnifier-holding sheet is a separate limitation, not a new149
+defect. No A, exact reference match or completed-GPU timing is claimed.
+
+Pass150 replaces149's extended planes with three shaped crown/temple/neck
+bands and five torso sections; the enclosed breast reaches behind the chest
+sheets.369 tests/build pass. Campus/Reflection close submit60fps
+(CPU mean/p95 2.60/4.40 and2.26/4.10ms;135 draws each;
+431,914/888,055 triangles). Full side/quarter, portraits, room day/night,
+campus day/night and benchmark evidence is in surface-pass-150.
+
+The reviewer requests revision and keeps148 accepted: Echo1506.5 craft/6.0
+fidelity, ensemble6.5/6.0. Crown and back turn more credibly than149, but
+the head still resembles a faceted helmet, the rear torso has regular bands,
+and the fixed long front sheets remain apron-like. The next substantive
+study must redesign chest, flank and back as coordinated oblique folds around
+the improved volume, rather than holding the front construction fixed.
+150 is a useful blockout, not an accepted reference-quality improvement.
+Production and the pushed accepted branch remain148.
+
+Pass151 coordinates Echo's breast, flank and back as two closed, thin stocks
+around shared oblique fold junctions.369 tests/build pass. Campus/Reflection
+close submit60.01/60.00fps (CPU mean/p95 1.71/2.60 and2.01/3.70ms;
+135/133 draws;431,834/880,055 triangles). These are CPU-side submission
+samples, not completed-GPU timing. Full inspector, room, campus, portrait
+and timing evidence is in surface-pass-151.
+
+Independent verdict: revise151, do not promote over148. Echo and Reflection
+remain6.5 craft/6.0 fidelity, campus7.5/7.5. The separate apron and regular
+rear bands are reduced, but the broad chest/back still read as a faceted solid.
+The150 head's vertical sidewall and dark underside dominate the off-axis
+and actual-room mismatch. Keep the useful torso integration as a prototype;
+next redesign crown/temple/neck folds without replacing identity or face.
+No A or exact reference match is claimed; production remains148.
+
+Pass152 retains151's integrated torso prototype and changes the hidden head
+enclosure to authored oblique crown/temple returns and a raised neck. The
+face, expression and chosen identity are unchanged. All369 tests and build
+pass, including actual face clearance and folded-stock continuity. Campus
+submits60.00fps (CPU mean/p95 1.31/2.50ms;135 draws;431,816 triangles),
+Reflection close59.9994fps (2.22/3.90ms;133 draws;878,255 triangles).
+These samples do not establish completed-GPU timing or a visual grade.
+Full day/night room and campus views, full side/quarter inspector captures,
+portraits and benchmarks are saved in surface-pass-152. Independent visual
+review is pending; the accepted production preview remains148.

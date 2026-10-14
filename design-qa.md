@@ -4,6 +4,12 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
+The branch also contains the pass152 paper-owl volume prototype. Its369 tests,
+build, campus and close-room timing checks pass, but independent visual
+acceptance is pending. The last retained production preview is pass148;
+the prototype is not presented as reference-matched. Rejected149 and
+revision-requested150/151 outcomes are retained in the review ledger.
+
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
 pass-60 reviewer, without prior scores, gave **7.5/10 character craft, 8.0/10
