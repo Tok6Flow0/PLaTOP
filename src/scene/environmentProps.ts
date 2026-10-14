@@ -261,9 +261,9 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
 }
 export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number, style: 'rect'|'soft'|'capsule'='rect', apronHeight=.2, construction:'solid'|'joined'='solid'): void {
   const joined=construction==='joined';
-  const corner=style==='capsule'?depth/2-.025:style==='soft'?.34:.09;
+  const corner=style==='capsule'?depth/2-.025:style==='soft'?.34:joined?.14:.09;
   const shapedSlab=(color:string,y:number,w:number,h:number,d:number,r:number)=>{
-    if(style==='rect')return beveledBlock(parent,kit,color,[x,y,z],[w,h,d],Math.min(r,.09));
+    if(style==='rect'&&!joined)return beveledBlock(parent,kit,color,[x,y,z],[w,h,d],Math.min(r,.09));
     const bevel=Math.min(.014,h*.3),a=w/2-bevel,b=d/2-bevel,radius=Math.min(r,a,b),shape=new THREE.Shape();
     shape.moveTo(-a+radius,-b);shape.lineTo(a-radius,-b);shape.quadraticCurveTo(a,-b,a,-b+radius);
     shape.lineTo(a,b-radius);shape.quadraticCurveTo(a,b,a-radius,b);

@@ -166,6 +166,46 @@ test('Dispatch groups its real work corner without a pose or a fictitious smalle
   }
 });
 
+test('Lantern Desk compact grouping keeps actual supported storage and full-size reachable paper homes',async t=>{
+  const {rooms,teams,kit,disposeObject,navigator}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  const room=rooms.get('reflection');room.root.updateMatrixWorld(true);
+  const rug=room.root.userData.rugSurface.bounds;
+  assert.ok(rug.every((value,i)=>Math.abs(value-[-2.05,-1.575,1.85,1.775][i])<1e-9));
+  assert.deepEqual(room.actorHomes.map(p=>p.toArray()),[[-.95,.1,-1.13],[.30,.1,-1.20],[1.40,.1,.20]]);
+  assert.deepEqual(room.actorFacing,[Math.atan2(.6,1.4),Math.atan2(-.8,1.5),-.42],
+    'furniture does not turn neutral residents into a staged work pose');
+  for(const [i,desk]of room.navigation.desks.entries()){
+    assert.equal(desk.seatHeight,.1,'paper residents and lantern remain on the real floor');
+    const expected=i===0?[-1.605,.26]:[.305,.28];
+    assert.ok(desk.screen.every((value,j)=>Math.abs(value-expected[j])<1e-9),'work targets the actual paper or notebook');
+    assert.ok(Math.abs(desk.facing-Math.atan2(expected[0]-desk.position[0],expected[1]-desk.position[1]))<1e-9);
+    const actor=teams.find(team=>team.id==='reflection').members[i],radius=actor.kind==='owl'?.7:.61;
+    const home=navigator.desk(actor.id);
+    assert.ok(navigator.pointClear(home.position,radius),'homes retain full-size body clearance');
+    assert.ok(navigator.segmentClear(home.position,home.egress,radius,home));
+  }
+  for(const [name,envelope]of [
+    ['Foyer left reading cabinet',[-2.8,1.55,-1.85,2.3]],
+    ['Foyer right reading cabinet',[2.19,-.20,2.83,.70]],
+    ['Joined plant stand',[-2.66,-3.51,-2.14,-2.99]],
+  ]){
+    const object=room.root.getObjectByName(name);assert.ok(object);
+    const bounds=new THREE.Box3().setFromObject(object);bounds.min.sub(room.center);bounds.max.sub(room.center);
+    assert.ok(bounds.min.x>=envelope[0]-1e-6&&bounds.min.z>=envelope[1]-1e-6&&bounds.max.x<=envelope[2]+1e-6&&bounds.max.z<=envelope[3]+1e-6,
+      `${name}: actual merged furniture and foliage stay inside their walking reservation`);
+    object.traverse(child=>{
+      if(child.name.startsWith('Botanical plant ')){
+        const scale=child.getWorldScale(new THREE.Vector3());
+        assert.ok(Math.abs(scale.x-scale.y)<1e-9&&Math.abs(scale.y-scale.z)<1e-9,
+          'cabinet depth scaling does not squash its plant');
+      }
+    });
+  }
+  assert.deepEqual(room.assetSlots.shelf.position,[-2.32,1.06,1.9],'agent shelf assets follow the new real cabinet top');
+  assert.equal(Object.keys(room.defaultSlotProps).length,0,'no decoration commandeers the agent-controlled floor slot');
+});
+
 test('Beacon starter reading nook fits the existing reserved floor slot and leaves neutral homes unchanged', async () => {
   const {rooms,kit,disposeObject}=await realLayout();
   const room=rooms.get('support'),nook=room.defaultSlotProps.floor;

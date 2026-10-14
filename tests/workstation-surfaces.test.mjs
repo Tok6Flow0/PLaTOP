@@ -365,12 +365,17 @@ test('joined Merchant desk separates its thin top from recessed rails and suppor
 
 test('each rounded, long and paired joined desk keeps real supports beneath its curved perimeter',t=>{
   canvasDocument(t);const kit=new SceneKit(),all=new THREE.Group();
-  for(const [width,depth,style] of [[2.5,1.6,'capsule'],[3.05,1.6,'capsule'],[3.15,1.4,'soft'],[2.65,1.4,'rect'],[1.34,1.65,'soft'],[1.34,1.50,'soft']]){
+  for(const [width,depth,style] of [[2.5,1.6,'capsule'],[3.05,1.6,'capsule'],[2.55,1.3,'soft'],[2.65,1.4,'rect'],[1.34,1.65,'soft'],[1.34,1.50,'soft']]){
     const root=new THREE.Group();all.add(root);table(root,kit,0,0,width,depth,style,.2,'joined');root.updateMatrixWorld(true);
     const top=root.getObjectByName('Joined timber top'),bounds=new THREE.Box3().setFromObject(root);
     assert.ok(bounds.min.x>=-width/2-1e-6&&bounds.max.x<=width/2+1e-6&&bounds.min.z>=-depth/2-1e-6&&bounds.max.z<=depth/2+1e-6);
     assert.ok(Math.abs(bounds.max.y-.82)<1e-6,'every shape retains the tabletop object height');
     const underTop=(x,z)=>new THREE.Raycaster(new THREE.Vector3(x,2,z),new THREE.Vector3(0,-1,0)).intersectObject(top).length>0;
+    if(style==='rect'){
+      assert.equal(top.geometry.type,'ExtrudeGeometry','plan corner radius is independent of the thin top thickness');
+      assert.equal(underTop(width/2-.025,depth/2-.025),false,'the visible rectangular corner is softly cut back');
+      assert.equal(underTop(0,depth/2-.025),true,'the straight front retains a genuine overhanging edge');
+    }
     const rails=root.children.filter(o=>o.name==='Recessed table rail').map(o=>new THREE.Box3().setFromObject(o));
     for(const rail of rails)for(const x of [rail.min.x,rail.max.x])for(const z of [rail.min.z,rail.max.z]){
       assert.ok(underTop(x,z),`${style} ${width}×${depth}: rail corners stay inside the actual curved top, not only its box`);

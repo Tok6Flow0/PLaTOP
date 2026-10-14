@@ -85,8 +85,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
-  const rugWidth=index===0?4.4:index===2?4.0:index===5?3.9:index===4||index===3?4.1:4.55, rugDepth=index===0?4.0:index===2?4.4:index===3?3.35:index===5?3.45:index===1?4.1:4.2, rugZ=index===0?-1:index===2?-.8:index===5?0:index===3?.05:index===1?-.65:.35;
-  root.userData.rugSurface = { bounds: [-rugWidth/2,rugZ-rugDepth/2,rugWidth/2,rugZ+rugDepth/2], height: 0.13 };
+  const rugWidth=index===0?4.4:index===2?4.0:index===5||index===4?3.9:index===3?4.1:4.55, rugDepth=index===0?4.0:index===2?4.4:index===3||index===4?3.35:index===5?3.45:index===1?4.1:4.2, rugZ=index===0?-1:index===2?-.8:index===5?0:index===3?.05:index===4?.1:index===1?-.65:.35;
+  const rugX=index===4?-.1:0;
+  root.userData.rugSurface = { bounds: [rugX-rugWidth/2,rugZ-rugDepth/2,rugX+rugWidth/2,rugZ+rugDepth/2], height: 0.13 };
   const isFoyer = index === 4;
   const walls: Room['walls'] = [];
   const blockers: NavigationBlocker[] = [];
@@ -126,7 +127,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const floorExtension=isFoyer?.6:rearExtension;
   beveledBlock(interior, kit, '#d2bfa4', [0, -0.03, -floorExtension / 2], [6.12, 0.22, 5.9 + depthGain + floorExtension]);
   floorSurface(interior, '#b8aa95', [0, 0.087, -floorExtension / 2], [5.94, 5.7 + depthGain + floorExtension],false,kit);
-  rug(interior, kit, palette.rug, 0, rugZ, rugWidth, rugDepth);
+  rug(interior, kit, palette.rug, rugX, rugZ, rugWidth, rugDepth);
 
   function wall(kind: 'back' | 'left' | 'right', x: number, z: number, width: number, depth: number): THREE.Group {
     const section = new THREE.Group();
@@ -259,16 +260,24 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       }
       walls.push({ root: parapet, normal: new THREE.Vector3(Math.sign(x), 0, 0), twoSided: true });
     });
-    shelf(interior, kit, -2.32, 1.9, 2, false, 0.82);
-    const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, 0.25); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
-    shelf(sideShelf, kit, 0, 0, 4, false, 0.82);
-    plant(interior, kit, -2.32, 1.89, 0.58, 1.25, '#d0c4a6', 'ivy');
-    plant(sideShelf, kit, 0, -0.01, 0.5, 1.25, '#b89c74', 'spear');
-    blockers.push({ bounds: [-2.8, 1.55, -1.85, 2.3] }, { bounds: [-2.85, -0.25, -2.08, 0.75] });
-    for (const [i, x] of [-2.4, -1.8, -1.3].entries()) {
-      plant(interior, kit, x, -3.25, i === 1 ? 0.61 : 0.7, 0.1, '#c7b896', i === 1 ? 'herb' : 'leaf');
-      blockers.push({ bounds: [x - 0.3, -3.55, x + 0.3, -2.95] });
+    // Low joined bookcases balance the workstation without closing the side
+    // doors. The plants keep natural proportions outside each shallow rack.
+    for(const [name,x,z,rotation,kind] of [
+      ['Foyer left reading cabinet',-2.32,1.9,0,'ivy'],
+      ['Foyer right reading cabinet',2.54,.25,-Math.PI/2,'herb'],
+    ] as const){
+      const cabinet=new THREE.Group();cabinet.name=name;cabinet.position.set(x,0,z);cabinet.rotation.y=rotation;root.add(cabinet);
+      const rack=new THREE.Group();rack.scale.set(.82,1,.82);cabinet.add(rack);
+      const top=storageCabinet(rack,kit,false,'reading');
+      plant(cabinet,kit,0,0,kind==='ivy'?.40:.48,top,'#c0ae8e',kind);
+      tidyStaticMeshes(cabinet);
     }
+    shelfAsset=[-2.32,1.06,1.9];
+    blockers.push({bounds:[-2.8,1.55,-1.85,2.3]},{bounds:[2.19,-.20,2.83,.70]});
+    const rearStand=plantStand(root,kit,-2.4,-3.25);
+    plant(rearStand,kit,0,0,.50,rearStand.userData.supportHeight,'#c7b896','leaf');tidyStaticMeshes(rearStand);
+    plant(interior,kit,-1.65,-3.25,.65,.1,'#b4a483','herb');
+    blockers.push({bounds:[-2.66,-3.51,-2.14,-2.99]},{bounds:[-1.98,-3.58,-1.32,-2.92]});
     // A compact board and filing base fit the open foyer's rear aisle without
     // closing its doorway or moving its existing plants, seats or shelves.
     const whiteboard = new THREE.Group(); whiteboard.name = `${team.id}:whiteboard`;
@@ -282,11 +291,11 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     blockers.push({ bounds: [2.63, -3.95, 2.9, -2.85] });
   }
 
-  const aisleX = index === 5 ? 1.9225 : 2.15;
-  const tableX = isFoyer ? -0.55 : index===3 ? -.25 : index===5 ? -.22 : 0;
-  const tableZ = isFoyer ? 0.3 : index < 3 ? -0.95 : 0.1;
-  const tableWidth = isFoyer ? 3.15 : index===3 ? 3.05 : index<2?2.5:index === 5 ? 2.65 : 2.75;
-  const tableDepth = index===0?1.5:index===3||index===1 ? 1.6 : 1.4;
+  const aisleX = index === 5 ? 1.9225 : isFoyer?1.4:2.15;
+  const tableX = isFoyer ? -.65 : index===3 ? -.25 : index===5 ? -.22 : 0;
+  const tableZ = isFoyer ? .2 : index < 3 ? -.95 : .1;
+  const tableWidth = isFoyer ? 2.55 : index===3 ? 3.05 : index<2?2.5:index === 5 ? 2.65 : 2.75;
+  const tableDepth = isFoyer?1.3:index===0?1.5:index===3||index===1 ? 1.6 : 1.4;
   const sideSeating = index < 2;
   // Paired Wayfinder desks are real independently oriented furniture groups.
   // Their screens, papers and asset anchor use the same transform as the wood;
@@ -342,7 +351,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     blockers.push({bounds:[spareX-spareRadius,spareZ-spareRadius,spareX+spareRadius,spareZ+spareRadius]});
   }
   if(index!==2)blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - tableDepth/2, tableX + tableWidth / 2, tableZ + tableDepth/2] });
-  const seats: NavigationPoint[] = isFoyer ? [[-1.15, -1.1], [0.25, -1.2], [1.85, 0.1]]
+  const seats: NavigationPoint[] = isFoyer ? [[-.95,-1.13],[.30,-1.20],[1.40,.20]]
     : index===0 ? [[-1.95,.25],[0,-1.5],[1.95,.10]]
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
@@ -388,9 +397,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       }
       blockers.push({ bounds: [x - 0.36, z - (character.id==='bridge-scout'?.48:.36), x + 0.36, z + 0.36], deskIndex: memberIndex });
     }
-    const screen:NavigationPoint=index===5&&memberIndex===1?[tableX+Math.min(1,tableWidth/2-.32),tableZ+.34]
+    const screen:NavigationPoint=isFoyer?[tableX+(memberIndex===0?-1:1)*Math.min(1,tableWidth/2-.32),tableZ+(memberIndex===0?.06:.08)]
+      :index===5&&memberIndex===1?[tableX+Math.min(1,tableWidth/2-.32),tableZ+.34]
       :paired?paired.point(0,north?paired.screenZ:.25):[computer?.position.x ?? x,screenZ];
-    const workFacing=paired||index===3&&computer||index===5&&memberIndex===1?Math.atan2(screen[0]-x,screen[1]-z):facing;
+    const workFacing=isFoyer||paired||index===3&&computer||index===5&&memberIndex===1?Math.atan2(screen[0]-x,screen[1]-z):facing;
     return { position: [x, z], screen, facing:workFacing,
       egress: paired ? [Math.sign(x)*(north?.6:.45),north?-3.6:1.8]
         : isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
@@ -400,7 +410,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
   // These are neutral arrival silhouettes, not work poses. Keep the real desk
   // facing on the navigation anchor so an agent's chosen work turns to its task.
-  const actorFacing = desks.map((desk,i) => index===3?0:index===5&&i===1?-.42:index===2?-Math.sign(desk.position[0])*(i<2?.28:.65):isFoyer && i===2 ? -.42
+  const actorFacing = desks.map((desk,i) => index===3?0:index===5&&i===1?-.42:index===2?-Math.sign(desk.position[0])*(i<2?.28:.65):isFoyer ? [Math.atan2(.6,1.4),Math.atan2(-.8,1.5),-.42][i]
     : sideSeating && i!==1 ? (i===0?.32:-.38) : desk.facing);
   const paperX = Math.min(1, tableWidth / 2 - 0.32), mugX = Math.min(1.12, tableWidth / 2 - 0.27);
   // Distinct default tabletop layouts leave the same physical work stops free.
@@ -421,10 +431,10 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     { bounds: index===5 ? [2.10,frontPlantZ-.44,3.16,frontPlantZ+.44] : [2.24, frontPlantZ - 0.39, 3.02, frontPlantZ + 0.39] });
   const shelfPlant=sideSeating||index===2;
   const midPlant: NavigationPoint = isFoyer ? [-1.85, -2.8] : [-2.53, shelfPlant ? -2.2 - halfGain - rearExtension : lowerRoom ? 1.1 : -0.85];
-  if(index!==3)plant(interior, kit, ...midPlant, 0.54, shelfPlant ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
+  if(index!==3&&!isFoyer)plant(interior, kit, ...midPlant, 0.54, shelfPlant ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
   // In the two side-standing rooms this pot is physically supported by the
   // existing shelf and fits its already-blocked envelope, not the walking lane.
-  if (!shelfPlant&&index!==3) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
+  if (!shelfPlant&&index!==3&&!isFoyer) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
   if (index >= 3 && index !== 4) {
     lamp(interior, kit, -2.12, -0.38, index);
     blockers.push({ bounds: [-2.52, -0.78, -1.72, 0.02] });

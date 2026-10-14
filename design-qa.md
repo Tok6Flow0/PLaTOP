@@ -19,7 +19,17 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-141 suite passes **362 tests** and the production build passes.
+The pass-142 suite passes **363 tests** and the production build passes.
+The tighter Lantern Desk group is independently retained at **7.5 craft /
+7.5 fidelity**, as are Dispatch's softened tabletop corners. The right
+bookcase's plain exposed back needs revision; this is a mixed-positive
+checkpoint, not full acceptance. Campus and Dispatch stay 7.5/7.5. Campus,
+Merchant close and additional Lantern Desk close samples submit about 60 fps;
+counts and limits are in the ledger. Production remains accepted pass 141,
+whose window/zoom/both mist perspectives/exit/reset smoke passed with an empty
+connected bridge, all six teams Awaiting update and no console warnings/errors.
+
+The pass-141 suite passed **362 tests** and the production build passed.
 The joined desk extension is independently retained at campus **7.5 craft /
 7.5 fidelity**. Clear Path is 7.5/7.5, Wayfinders 8/8, Beacon 8/7.5, Lantern
 Desk 7/7 and Dispatch 7.5/7.5. Dispatch's squared corners need a restrained

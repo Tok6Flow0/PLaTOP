@@ -1688,3 +1688,40 @@ The next largest study is Lantern Desk's grouping: broad rug/table overwhelm
 the small paper residents, storage is left-heavy, and rear pots lack an
 integrated arrangement. Preserve paper identities and genuine home/work
 positions; do not fabricate activity to compose the scene.
+
+Pass 141 remote CI succeeded. Its isolated production preview serves
+index-f88oPq0_.js; window, close zoom, third/first-person mist, exit and reset
+passed without console warnings/errors. The empty bridge connects with all six
+teams Awaiting update. Saved production images are in surface-pass-141; these
+responsive smoke views are not reference-sized comparisons or agent-adoption
+evidence.
+
+Pass 142 reduces Lantern Desk's table to 2.55 by 1.3 and its rug to 3.9 by
+3.35, with a tighter grouping of real floor-height homes. Neutral orientations
+are retained; genuine work targets the actual paper/notebook. Joined low
+bookcases are distributed across the sides, and the rear planting becomes a
+supported raised plant plus one floor herb. Full body radii, clearances and
+cross-office routes remain unchanged in policy. Dispatch's thin rectangular
+top gains a .14 plan corner radius independent of its thickness.
+All 363 tests/build pass. New checks cover actual merged cabinet/plant bounds,
+unflattened planting, real shelf-asset height, neutral orientation, paper
+targets and full-size home clearance; tabletop raycasts verify the softened
+rectangular corners and retained front overhang.
+
+Campus submits 60.00 fps (CPU mean/p95 1.68/2.60 ms; 135 draws, 391,342
+triangles), Merchant close 60.00 fps (2.07/3.30 ms; 156 draws, 2,656,999
+triangles). Additional Lantern Desk close coverage submits 59.9934 fps
+(1.88/2.60 ms; 136 draws, 866,159 triangles, three detailed avatars), without
+a matched preceding Lantern Desk timing. Samples and matched noon/night
+campus and room captures are in surface-pass-142. They measure CPU-side
+submission, not completed GPU throughput.
+
+The independent review is mixed-positive: retain the tighter table/rug/home
+grouping and Dispatch corners, but revise the new bookcase presentation.
+Lantern Desk rises to 7.5 craft / 7.5 fidelity; Dispatch and campus stay
+7.5/7.5. No major new character occlusion or significant night regression is
+visible. The right bookcase presents a plain back in the window view and
+reads as a block at campus scale; the left side is also broad. The next
+correction should show recessed shelves where practical or give exposed
+backs credible finished-panel construction without reopening the grouping.
+Production remains the fully accepted pass 141 while this reservation is open.
