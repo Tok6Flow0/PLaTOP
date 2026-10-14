@@ -648,8 +648,19 @@ test('Echo has two continuous planes per chest sheet and thin tapered resting-wi
   assert.ok(torso.y>torso.x,'the chest reads as descending sheets rather than a squat solid');
   assert.ok(quill.getObjectByName('paperChestL')&&!quill.getObjectByName('paperEchoChestL'),'the prototype does not silently redesign Quill');
   const wing=characterGeometry(kit,'paperEchoRestWing'),points=wing.attributes.position;
-  const paired=new Map();for(let i=0;i<points.count;i++){const key=[points.getX(i),points.getY(i)].map(v=>v.toFixed(5)).join(',');const zs=paired.get(key)||new Set();zs.add(points.getZ(i).toFixed(5));paired.set(key,zs);}
-  for(const zs of paired.values()){assert.equal(zs.size,2);const depths=[...zs].map(Number).sort((a,b)=>a-b);assert.ok(Math.abs(depths[1]-depths[0]-.010)<2e-5);}
+  const edges=new Map(),vertices=new Map();
+  for(let i=0;i<points.count;i+=3){
+    const triangle=[0,1,2].map(j=>{const v=new THREE.Vector3().fromBufferAttribute(points,i+j),key=v.toArray().map(value=>value.toFixed(5)).join(',');vertices.set(key,v);return key;});
+    for(let j=0;j<3;j++){const key=[triangle[j],triangle[(j+1)%3]].sort().join('|');edges.set(key,(edges.get(key)||0)+1);}
+  }
+  assert.ok([...edges.values()].every(count=>count===2),'the returning sheet has closed manifold edges');
+  const unique=[...vertices.values()];assert.equal(unique.length,10,'five fold corners have matching backs');
+  for(const v of unique){const nearest=Math.min(...unique.filter(other=>other!==v).map(other=>other.distanceTo(v)));assert.ok(Math.abs(nearest-.008)<2e-5,'rear follows the stock normal, not a flat XY extrusion');}
+  wing.computeBoundingBox();assert.ok(wing.boundingBox.min.z<-.16&&wing.boundingBox.max.z>.23,'one sheet returns from behind the cheek to the front flank');
+  const tip=unique.filter(v=>v.y<-.38);assert.equal(tip.length,2,'one pointed tip and its paper-thin rear replace a flat-ended lower strip');
+  assert.ok(Math.min(...tip.map(v=>v.x))>.23,'the visible tip crosses the flank diagonally toward the torso centre');
+  const normals=wing.attributes.normal,outer=new THREE.Vector3().fromBufferAttribute(normals,0);
+  assert.ok(outer.dot(new THREE.Vector3(-1,0,-1).normalize())>.65,'rear shoulder fold faces outward and backward despite the diagonal tip slope');
   disposeObject(echo);disposeObject(quill);kit.dispose();
 });
 

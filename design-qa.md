@@ -19,7 +19,14 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-146 suite passes **368 tests** and the production build passes.
+The pass-148 suite passes **368 tests** and the production build passes.
+The pointed depth-returning wing is retained as a local repair;147's blunt
+strip was rejected. Scores remain Echo **7.0 / 6.5**, Reflection **6.5 / 6.5**.
+The reviewer calls for a coordinated head/torso volume study, not further
+wing-tip tweaks. Campus and Reflection close samples both submit60.00fps,
+with135 draws each. Earlier variable samples remain in the ledger.
+
+The pass-146 suite passed **368 tests** and the production build passed.
 Echo's longer folded torso is retained at **7.0 craft / 6.5 fidelity**;
 the Reflection ensemble is **6.5 / 6.5**. The shoulder/wing relationship and
 shallow side profile still need work before the design extends to Quill.

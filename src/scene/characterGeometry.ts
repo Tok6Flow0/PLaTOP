@@ -489,6 +489,31 @@ function paperEchoChest():THREE.BufferGeometry {
   return polyhedron(vertices,faces,faces.map((_,i)=>i<2?'#dfc7a2':i<4?'#d2b890':'#c1a277'),true);
 }
 
+function paperEchoRestWing():THREE.BufferGeometry {
+  // Three broad folds sweep from behind the cheek, around the outer shoulder,
+  // and diagonally across the flank. The old XY sheet hung beside the torso;
+  // its root did not return around the body's depth at all.
+  const front:Tuple[]=[[.015,.075,-.17],[-.075,.035,-.025],[-.035,.015,.145],
+    [.13,-.035,.23],[.24,-.40,.27]];
+  const panels=[[4,1,0],[4,2,1],[4,3,2]];
+  const normals=front.map(()=>new THREE.Vector3()),edges=new Map<string,{a:number;b:number;count:number}>();
+  for(const panel of panels){
+    const [a,b,c]=panel.map(i=>new THREE.Vector3(...front[i]));
+    const normal=b.sub(a).cross(c.sub(a)).normalize();
+    panel.forEach(i=>normals[i].add(normal));
+    for(let i=0;i<panel.length;i++){
+      const a=panel[i],b=panel[(i+1)%panel.length],key=[a,b].sort((x,y)=>x-y).join(':');
+      const edge=edges.get(key);if(edge)edge.count++;else edges.set(key,{a,b,count:1});
+    }
+  }
+  const vertices:Tuple[]=[...front,...front.map((p,i)=>new THREE.Vector3(...p).addScaledVector(normals[i].normalize(),-.008).toArray() as Tuple)];
+  const faces=[...panels,...panels.map(face=>face.map(i=>i+front.length).reverse())];
+  for(const {a,b,count} of edges.values())if(count===1)faces.push([b,a,a+front.length,b+front.length]);
+  const geometry=polyhedron(vertices,faces,faces.map((_,i)=>i<3?'#dfc7a2':i<6?'#d2b890':'#c1a277'),true);
+  geometry.userData.paperThickness=.008;
+  return geometry;
+}
+
 function paperOwlChest():THREE.BufferGeometry {
   const outline:Tuple[]=[[-.012,.24,.035],[-.38,.14,.04],[-.42,-.08,.07],[-.33,-.34,.08],[-.205,-.50,.08],[.03,-.475,.155],[.025,-.20,.24],[.015,.04,.125]];
   const ridgeTop:Tuple=[-.18,-.045,.245],ridgeBottom:Tuple=[-.085,-.455,.245];
@@ -932,8 +957,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperChestR': return reflect(paperOwlChest());
     case 'paperEchoChestL': return paperEchoChest();
     case 'paperEchoChestR': return reflect(paperEchoChest());
-    case 'paperEchoRestWing': return foldedSheet([[-.025,.02,.035],[-.095,-.13,.12],[-.025,-.34,.26],[.14,-.40,.27],[.175,-.24,.26],[.09,-.075,.15]],[.03,-.23,.285],
-      ['#dbc29a','#d8bf97','#d5b991','#cdb089','#dfc69f','#e5ceaa']);
+    case 'paperEchoRestWing': return paperEchoRestWing();
     case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.205,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperEchoHood': return paperOwlHead(false,true);

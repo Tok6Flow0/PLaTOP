@@ -1849,3 +1849,35 @@ windows and campus views. Campus submits55.70 fps, CPU mean/p95 1.75/2.80ms,
 cost than145's campus samples but retain variable frame pacing; neither
 proves GPU completion or a locked60fps. No synthetic activity is used.
 Production remains143 pending a later accepted bundle.
+
+Pass146 was pushed as35bfa793fd52b41935c4f0fddba206fdf855ee35;
+remote readback matches and CI38619670428 succeeded.
+
+Pass147 tested a depth-returning resting wing with four broad folds and
+normal-offset .008 stock. The reviewer rejected it as a net advance: its
+cleaner root became a near-rectangular hanging strip, worsening the robe
+reading.146 remained the accepted baseline;147 was not shipped or committed
+as an accepted improvement. Its saved front/quarter/rear, room day/night,
+and performance evidence remains in surface-pass-147. All368 tests/build
+passed; campus/Reflection close both submitted60fps, CPU mean/p95
+2.25/3.80 and2.08/3.40ms,135 draws each. Those checks did not override the
+visual rejection.
+
+Pass148 retains the tucked depth return but makes the wing a broad oblique
+wedge: three folds converge to one point across the flank. Closed manifold
+edges, normal-offset stock, inward tip, front/rear winding and unchanged
+face visibility are checked. All368 tests/build pass. Campus submits60.00fps
+(2.36/4.20ms CPU mean/p95),135 draws/431,774 triangles; Reflection close
+submits60.00fps (2.02/3.60ms),135 draws/874,055 triangles. Timing is CPU-side
+command submission, not completed-GPU measurement. Day/night campus, actual
+room, portraits, quarter/rear and benchmark files are in surface-pass-148.
+
+The independent reviewer retains148 over146/147 only as a local repair:
+Echo7.0 craft/6.5 fidelity, Reflection6.5/6.5. The wing's diagonal overlap
+is clearer and less arm-like; an abrupt dark tab under the rear cheek
+remains. Actual-room improvement is slight and the shallow profile persists.
+The reviewer explicitly considers further local wing iteration to be
+plateauing. The next meaningful study is coordinated head/torso volume:
+substantial crown/temple wrapping and shoulder-to-chest depth, preserving
+the face/expression and thin-sheet identity rather than extruding a block.
+Materials/light are secondary to that silhouette issue. No A is claimed.
