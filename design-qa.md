@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-69 suite passes **306 tests** and the production build passes. The
+The pass-70 suite passes **307 tests** and the production build passes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
@@ -43,7 +43,7 @@ The targeted campus review remains **8.2/10**, with chair readability and hidden
 storage limiting the improvement. Pass 58's matched
 [noon](docs/images/surface-campus-noon.jpg) and
 [night](docs/images/surface-campus-night.jpg) capture locations now contain pass
-69, superseding the older campus evidence below.
+70, superseding the older campus evidence below.
 Live agent actions remain the only source of work gestures and locomotion.
 
 Pass 62 strengthens existing contact shading and lamp pools without adding
@@ -67,6 +67,10 @@ campus review retains the change at **7.0 craft / 7.5 fidelity**, identifying
 lower-room seating and repeated storage as the largest staging gaps. Matching
 campus and Merchant close samples submit 52.61 and 53.20 fps, with unchanged
 draw counts but approximately 16,000 additional static triangles.
+Pass 70 adds angled guest seating and exposes the Lantern Desk stool, with
+full physical footprint and route checks. Campus craft/fidelity remain
+**7.0 / 7.5**; the reviewer now prioritizes material depth. Campus and Reflection
+close samples submit 50.00 and 52.90 fps. A-level acceptance remains open.
 
 ## Earlier checkpoint evidence
 

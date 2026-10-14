@@ -59,6 +59,7 @@ not asked for a desired score or instructed to approve.
 | 67 (fresh Reflection review) | Craft 7.0 / fidelity 7.5; retained over 65, unchanged quality tier | Wrapped and tapered chest restores volume, with closer wings; triangular patchwork, solid thickness and weak lantern spill remain |
 | 68 (fresh Reflection review) | Craft 7.5 / fidelity 7.5; retained lighting improvement | Warm spill now models inner cheeks, folds and tabletop; avoid further intensity increases, as the central pane approaches white |
 | 69 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained modest staging improvement | Taller real shelf tiers balance upper rooms; repeated storage and sparse lower-room desk/seating relationships remain |
+| 70 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained seating improvement | Angled guest chairs and visible foyer stool clarify use; evenly smooth material response and broad empty rug remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -90,6 +91,14 @@ top planks. Floor footprints, contacts and walking lanes are unchanged; all
 sixteen real-layout routes pass with decorations on and off. Agent decoration
 anchors follow the physical top surfaces. The campus reviewer retains this
 pass but leaves both scores unchanged, prioritizing desk/seating composition.
+
+Pass 70: 307 tests and the production build pass. Beacon's angled empty chair,
+Dispatch's new guest chair and the visible Lantern Desk stool are real static
+furnishings, not implied agent activity. Their rotated bounds and adjusted front
+crossings pass all sixteen routes, including optional decorations. The foyer's
+rear homes move with its table and remain floor-height. Two side-standing rooms'
+extra plants now sit on their updated shelf top. The reviewer retains the change
+at the same scores and prioritizes material depth over another seating addition.
 
 The fresh pass-60 reviewer was not shown prior scores, target scores or ledgers.
 It viewed the campus concept, all six chosen identity portraits, two campus
@@ -440,6 +449,7 @@ and is not treated as close-up evidence.
 | Pass 67 campus | 54.20 | 2.08 / 4.10 ms | 110 / 354,155 | 0 |
 | Pass 68 campus | 53.31 | 2.31 / 4.10 ms | 110 / 354,155 | 0 |
 | Pass 69 campus | 52.61 | 2.25 / 4.20 ms | 110 / 370,367 | 0 |
+| Pass 70 campus | 50.00 | 2.25 / 3.90 ms | 109 / 372,303 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -520,6 +530,10 @@ Pass 68 Lantern Desk submitted 53.10 fps / 2.11 ms mean / 4.00 ms p95 at noon
 and 54.40 fps / 1.98 ms / 4.00 ms at night. Both retained three dense avatars,
 123 draws and 818,968 triangles. These bounded samples do not establish unchanged
 worst-case GPU completion time.
+Pass 70 Lantern Desk submitted 52.90 fps / 1.96 ms mean / 3.80 ms p95, with
+three dense avatars, 123 draws and 837,636 triangles. Its camera workload uses
+the same room-grid offset, while the real table and homes moved rearward by
+0.4 units. That is a changed layout, not an exact pixel-matched close comparison.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

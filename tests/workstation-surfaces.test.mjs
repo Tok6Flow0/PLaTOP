@@ -184,6 +184,18 @@ test('rounded timber furniture preserves certified desk height and chair clearan
   disposeObject(resources); kit.dispose();
 });
 
+test('angled guest chairs fit the actual lower-room blockers with visible seat proportions',()=>{
+  const kit=new SceneKit(),all=new THREE.Group();
+  for(const sign of [-1,1]){
+    const seat=chair(all,kit,0,0,'#6a795b',Math.PI+sign*.55);seat.scale.set(.9,.92,.8);all.updateMatrixWorld(true);
+    const bounds=new THREE.Box3().setFromObject(seat);
+    assert.ok(bounds.min.x>=-.43&&bounds.max.x<=.43&&bounds.min.z>=-.43&&bounds.max.z<=.43);
+    assert.ok(bounds.max.y>1.1&&bounds.max.y<1.25,'a real chair silhouette remains above the table edge');
+    assert.ok(bounds.min.y>=.05);
+  }
+  disposeObject(all);kit.dispose();
+});
+
 test('curved shared tables preserve the existing footprint, surface height and bounded geometry', t => {
   canvasDocument(t);
   const kit=new SceneKit(),all=new THREE.Group();

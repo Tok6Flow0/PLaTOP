@@ -265,16 +265,19 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
 
   const aisleX = index === 5 ? 1.9225 : 2.15;
   const tableX = isFoyer ? -0.55 : index===3 ? -.25 : index===5 ? -.22 : 0;
-  const tableZ = isFoyer ? 0.7 : index < 3 ? -0.95 : 0.1;
+  const tableZ = isFoyer ? 0.3 : index < 3 ? -0.95 : 0.1;
   const tableWidth = isFoyer ? 3.15 : index===3 ? 3.05 : index === 5 ? 2.65 : 2.75;
   const tableDepth = index===3 ? 1.6 : 1.4;
   const sideSeating = index < 2;
   table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3?'capsule':index===1||isFoyer?'soft':'rect');
-  if(index===3){
-    // An empty guest chair makes this a furnished conversation corner. Its
-    // back clears the real table, and the front cross-aisle clears the chair.
-    const guest=chair(interior,kit,.95,tableZ+.72,'#96704e',Math.PI);guest.name='Empty guest chair';
-    blockers.push({bounds:[.59,tableZ+.36,1.31,tableZ+1.08]});
+  if(index===3||index===5){
+    // Angled empty guest seats expose their cushion and legs instead of a
+    // cabinet-like straight back. Their full rotated footprints are obstacles;
+    // the front crossing moves with the furniture, not through its legs.
+    const guestX=index===3?.95:-.95,guestZ=tableZ+.72;
+    const guest=chair(interior,kit,guestX,guestZ,palette.rug,Math.PI+(index===3?.55:-.55));
+    guest.name='Empty guest chair';guest.scale.set(.90,.92,.80);
+    blockers.push({bounds:[guestX-.43,guestZ-.43,guestX+.43,guestZ+.43]});
   }
   if(index<2||isFoyer||index===5){
     // A visible empty seat is furniture, not simulated work. Its actual
@@ -282,14 +285,14 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     const spare=new THREE.Group();spare.name='Empty spare stool';
     // Lower-room side doors need the full front cross aisle. Their stools
     // stay under the table; the upper rooms have space for an exposed seat.
-    const tucked=isFoyer||index===5;
-    const spareX=tableX+(index===0?-.18:index===1?.12:0),spareZ=tableZ+(tucked?.41:1.16),spareRadius=tucked?.28:.34;
+    const tucked=index===5;
+    const spareX=tableX+(index===0?-.18:index===1?.12:0),spareZ=tableZ+(isFoyer?.80:tucked?.41:1.16),spareRadius=tucked?.28:.34;
     spare.position.set(spareX,0,spareZ);spare.scale.set(tucked?.8:.9,.92,tucked?.8:.9);interior.add(spare);
     stool(spare,kit,0,0,palette.rug);
     blockers.push({bounds:[spareX-spareRadius,spareZ-spareRadius,spareX+spareRadius,spareZ+spareRadius]});
   }
   blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - tableDepth/2, tableX + tableWidth / 2, tableZ + tableDepth/2] });
-  const seats: NavigationPoint[] = isFoyer ? [[-1.15, -0.7], [0.25, -0.8], [1.85, 0.1]]
+  const seats: NavigationPoint[] = isFoyer ? [[-1.15, -1.1], [0.25, -1.2], [1.85, 0.1]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
     : team.members.length === 2 ? [[-0.8, index === 5 ? -1.7 : -1.5], [0.8, index === 5 ? -1.7 : -1.5]]
       : team.members.length === 4 ? [[-0.8, -1.5], [0.8, -1.5], [-0.8, 1.5], [0.8, 1.5]]
@@ -343,7 +346,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   blockers.push({ bounds: [-3.2, frontPlantZ - 0.6, -2.0, frontPlantZ + 0.6] },
     { bounds: index===5 ? [2.10,frontPlantZ-.44,3.16,frontPlantZ+.44] : [2.24, frontPlantZ - 0.39, 3.02, frontPlantZ + 0.39] });
   const midPlant: NavigationPoint = isFoyer ? [-1.85, -2.8] : [-2.53, sideSeating ? -2.2 - halfGain - rearExtension : lowerRoom ? 1.1 : -0.85];
-  plant(interior, kit, ...midPlant, 0.54, sideSeating ? 1.48 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
+  plant(interior, kit, ...midPlant, 0.54, sideSeating ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
   // In the two side-standing rooms this pot is physically supported by the
   // existing shelf and fits its already-blocked envelope, not the walking lane.
   if (!sideSeating) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
@@ -375,7 +378,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   tidyStaticMeshes(interior);
   walls.forEach(({ root: wallRoot }) => tidyStaticMeshes(wallRoot));
   const door: NavigationPoint = index < 3 ? [0, 3.65] : isFoyer ? [doorX, backZ] : [index === 3 ? 3 : -3, sideDoorZ];
-  const frontCross = index===3 ? 1.95 : isFoyer || lowerRoom ? tableZ + 1.47 : Math.max(...desks.map(desk => desk.egress[1]), tableZ + (index<2?2.5:2.1));
+  const frontCross = index===3||index===5 ? 2.0 : isFoyer ? 2.19 : lowerRoom ? tableZ + 1.47 : Math.max(...desks.map(desk => desk.egress[1]), tableZ + (index<2?2.5:2.1));
   const rearCross = index === 2 ? backZ + 1.8 : Math.min(...desks.map(desk => desk.egress[1]), tableZ - 2.1);
   // Interaction stops face real props and share the certified walking aisles.
   const cabinetStop: NavigationPoint = isFoyer ? [1.5, -3.4] : index === 5 ? [1.7, 1.8]
@@ -389,7 +392,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   };
   const navigation: RoomNavigation = { floorY: OFFICE_FLOOR_Y,
     bounds: [-2.9, index < 3 ? backZ + 0.12 : backZ - 1.4, 2.9, index < 3 ? 4.9 : 4.25],
-    blockers, door, lounge: [index===3?-.25:0, isFoyer ? 2.5 : index < 3 ? 2.1 : index===3?1.95:1.7], task: [aisleX, tableZ], interactions,
+    blockers, door, lounge: [index===3?-.25:0, isFoyer ? 2.5 : index < 3 ? 2.1 : index===3||index===5?2.0:1.7], task: [aisleX, tableZ], interactions,
     waypoints: [door, [doorX, backZ + 0.7], [2, backZ + 0.9], [aisleX, backZ + 1.05], [aisleX, rearCross], [aisleX, tableZ - 1.5], [aisleX, tableZ],
       [0, rearCross], ...(!lowerRoom && !isFoyer ? [[-1.15, tableZ - 1.5], [-1.15, rearCross], [1.15, tableZ - 1.5], [1.15, rearCross]] as NavigationPoint[] : []),
       ...(lowerRoom ? [[index === 3 ? 2.15 : -2.15, sideDoorZ], [index === 3 ? 2.15 : -2.15, tableZ - 1.5]] as NavigationPoint[] : []),
