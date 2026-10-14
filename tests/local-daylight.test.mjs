@@ -36,6 +36,15 @@ test('the complete day is finite, continuous, periodic, and darker at night',()=
   assert.ok(daylightAtHour(12).sunIntensity/daylightAtHour(12).ambient>5,'daylight keeps a directional key rather than uniform fill');
   assert.ok(daylightAtHour(6).sunPosition[0]<0 && daylightAtHour(17.75).sunPosition[0]>0);
 });
+test('noon shapes materials with a warmer key and restrained fill without changing shadow direction or night',()=>{
+  const noon=daylightAtHour(12),night=daylightAtHour(23);
+  assert.deepEqual(Array.from(noon.sunPosition),[-12,25,18]);
+  assert.ok(noon.sunIntensity/noon.ambient>=8);
+  assert.ok(noon.reflection<=.22,'environment reflection does not wash out the directional gradients');
+  const red=parseInt(noon.sun.slice(1,3),16),blue=parseInt(noon.sun.slice(5,7),16);
+  assert.ok(red-blue>=40&&red-blue<=60,'warm daylight, not an orange filter');
+  assert.equal(night.sunIntensity,.32);assert.equal(night.ambient,.20);assert.equal(night.reflection,.17);
+});
 const hook=compile(await readFile(new URL('../src/useLocalDaylight.ts',import.meta.url),'utf8'));
 function client(){
   const listeners=new Map(),timers=new Map();let id=0,value,cleanup,now=new Date(2026,9,13,12,0,15,250);

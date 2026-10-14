@@ -1289,3 +1289,21 @@ is reported. The matching laptop/notebook/mug columns remain rather regular.
 Campus stays 7.0 / 7.5. The reviewer prioritizes daylight form and material
 hierarchy with this layout locked, at the same camera/exposure, rejecting
 broad dark shadow bands. Production remains the smoke-tested pass 124.
+
+Pass 126 strengthens and warms the noon key while reducing ambient and
+environment fill, without changing light direction, exposure, camera or
+geometry. A new regression test guards that balance and unchanged night
+values. All 349 tests and the production build pass. Campus and Wayfinders
+close each submit 59.9994 fps; CPU mean/p95 are 1.59/2.40 ms and 1.91/3.20 ms.
+Draw and triangle counts match 125 (116/384,372 and 145/2,311,345).
+
+The independent reviewer retains the modest improvement: wood, cream shells
+and cape have clearer gradients without blown highlights or lost details.
+Existing shaded floor regions deepen but do not become the intrusive bands
+of rejected pass 110. Night remains visually unchanged. Scores stay room
+7.5 craft / 8.0 fidelity and campus 7.0 / 7.5. Further fill reduction is not
+recommended. The next priority is coherent Wayfinders cabinets with real
+side/back construction, fewer larger compartments, recessed contents and
+varied book groupings, preserving their footprint and accepted desk layout.
+Matched images and fixed ten-second timings are in surface-pass-126.
+Production remains accepted pass 124; pass 125 remote CI succeeded.

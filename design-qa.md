@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-125 suite passes **348 tests** and the production build passes. Its
+The pass-126 suite passes **349 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -109,6 +109,11 @@ route. All 32 navigation checks pass. Fixed camera samples remain about 60
 submitted fps. The reviewer retains the cluster at 7.5 craft / 8.0 fidelity;
 campus remains 7.0 / 7.5. Its next priority is daylight form and material
 hierarchy with this layout locked, not further furniture nudging.
+Pass 126's warmer noon key and reduced fill are retained as a modest
+improvement at unchanged scores, without altered camera/exposure/direction.
+Both fixed camera workloads submit 59.9994 fps; night is unchanged. The
+reviewer prioritizes coherent cabinet construction and varied recessed storage
+over further lighting adjustments. Production remains accepted pass 124.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
