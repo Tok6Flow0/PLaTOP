@@ -6,7 +6,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood' | 'paperEchoChestL' | 'paperEchoChestR' | 'paperEchoRestWing';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -473,6 +473,22 @@ function paperOwlWing():THREE.BufferGeometry {
 /** Two mountain-fold vertices carry one long crease down the curved breast.
  * The boundary turns back at the flank and tapers over the feet; a single
  * high fan apex left a broad, straight apron instead of a folded volume. */
+function paperEchoChest():THREE.BufferGeometry {
+  // One uninterrupted mountain crease runs from shoulder to hem. Each side
+  // is a single plane clipped to the tapered outline, not an apex triangle
+  // fan. Its rear follows that same crease at the thickness of paper stock.
+  const ridgeX=(y:number)=>THREE.MathUtils.lerp(-.075,-.16,(y+.50)/.72);
+  const ridgeZ=(y:number)=>THREE.MathUtils.lerp(.24,.06,(y+.50)/.72);
+  const point=(x:number,y:number,slope:number):Tuple=>[x,y,ridgeZ(y)+slope*(x-ridgeX(y))];
+  const front:Tuple[]=[point(-.30,.22,.80),point(-.39,-.10,.80),point(-.20,-.50,.80),
+    point(-.075,-.50,0),point(.02,-.50,-.70),point(.02,.22,-.70),point(-.16,.22,0)];
+  const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x,y,z-.008] as Tuple)];
+  const faces:number[][]=[[0,1,2,3,6],[6,3,4,5]];
+  faces.push(...faces.map(face=>face.map(i=>i+front.length).reverse()));
+  for(let i=0;i<front.length;i++){const j=(i+1)%front.length;faces.push([j,i,i+front.length,j+front.length]);}
+  return polyhedron(vertices,faces,faces.map((_,i)=>i<2?'#dfc7a2':i<4?'#d2b890':'#c1a277'),true);
+}
+
 function paperOwlChest():THREE.BufferGeometry {
   const outline:Tuple[]=[[-.012,.24,.035],[-.38,.14,.04],[-.42,-.08,.07],[-.33,-.34,.08],[-.205,-.50,.08],[.03,-.475,.155],[.025,-.20,.24],[.015,.04,.125]];
   const ridgeTop:Tuple=[-.18,-.045,.245],ridgeBottom:Tuple=[-.085,-.455,.245];
@@ -914,6 +930,10 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     // belly zigzag. The two thin sheets overlap above the closed inner body.
     case 'paperChestL': return paperOwlChest();
     case 'paperChestR': return reflect(paperOwlChest());
+    case 'paperEchoChestL': return paperEchoChest();
+    case 'paperEchoChestR': return reflect(paperEchoChest());
+    case 'paperEchoRestWing': return foldedSheet([[-.025,.02,.035],[-.095,-.13,.12],[-.025,-.34,.26],[.14,-.40,.27],[.175,-.24,.26],[.09,-.075,.15]],[.03,-.23,.285],
+      ['#dbc29a','#d8bf97','#d5b991','#cdb089','#dfc69f','#e5ceaa']);
     case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.205,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperEchoHood': return paperOwlHead(false,true);

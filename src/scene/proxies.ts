@@ -378,23 +378,23 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     warmth.name='Lantern surface warmth';warmth.position.set(0,support?0:.10,support?.20:.03);
     head.add(warmth);data.warmth=warmth;
   } else if (kind === 'owl') {
-    const navy = id === 'email-owl', feathers = navy ? '#233149' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
+    const navy = id === 'email-owl', echo=id==='reflection-echo', feathers = navy ? '#233149' : id === 'reflection-quill' ? '#c5a67d' : '#d7bb8d';
     body.position.y = navy?.49:.41; data.bodyY = body.position.y; head.position.y = navy?.91:.81; data.headY = head.position.y;
     // The facial shield overlaps the breast, like the original owl. Keeping
     // both volumes on one vertical axis lets the chest cut its heart-shaped
     // chin into a straight horizontal edge.
     head.position.z=navy?.13:.025;
-    sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, 0], [.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
+    sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, echo?-.055:0], echo?[.49,.74,.70]:[.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
     const headShell=sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
     if(!navy){
       sculpt(head,id==='reflection-echo'?'paperEchoHood':'paperQuillHood','#ffffff',[0,0,0],[.78,.65,.42],undefined,'paper');
-      sculpt(body,'paperChestL','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
+      sculpt(body,echo?'paperEchoChestL':'paperChestL','#ffffff',[0,0,0],echo?[.63,.78,.62]:[.70,.70,.62],undefined,'paper');
       // The mirrored chest sheets overlap at their centre seam. Give the
       // under-fold its own depth instead of letting both faces coincide;
       // the upper sheet now exposes a thin edge and a local overlap shadow.
-      sculpt(body,'paperChestR','#ffffff',[0,0,-.010],[.70,.70,.62],undefined,'paper');
-      sculpt(body,'paperBackL','#ffffff',[0,0,0],[.70,.70,.36],undefined,'paper');
-      sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],[.70,.66,.36],[0,0,-.065],'paper');
+      sculpt(body,echo?'paperEchoChestR':'paperChestR','#ffffff',[0,0,-.010],echo?[.63,.78,.62]:[.70,.70,.62],undefined,'paper');
+      sculpt(body,'paperBackL','#ffffff',[0,0,0],echo?[.56,.74,.36]:[.70,.70,.36],undefined,'paper');
+      sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],echo?[.56,.70,.36]:[.70,.66,.36],[0,0,-.065],'paper');
       for(const [index,form] of ['paperCrownBackL','paperCrownBackR'].entries()){
         const returnSheet=sculpt(head,form as CharacterForm,'#ffffff',[0,index?-.008:0,index?-.002:0],[.78,.65,.42],undefined,'paper');
         fitCharacterRelief(returnSheet,headShell,.003,Infinity,-1);
@@ -414,11 +414,11 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       }
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.184],[sign*.205+.006,.038,.182],[sign*.230+.006,.050,.181]],.006,'ink');
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * (sign<0?.115:.135), .255, .030], sign<0?[1.02,1.10,1.30]:[1.06,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * (navy?.300:.315), .12, navy?.110:-.025]);
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * (navy?.300:echo&&sign<0?.245:.315), .12, navy?.110:-.025]);
       if(navy)wing.scale.x=1.10;
       if(navy) sculpt(wing,'featherCore','#283b54',[sign*.015,-.10,0],[.19,.54,.245],[0,0,sign*.23],'feather');
       else if(sign>0)sculpt(wing,'paperHoldingWing','#ffffff',[0,0,0],[1,1,id==='reflection-quill'?.52:1],undefined,'paper');
-      else sculpt(wing,'paperOwlWingL','#ffffff',[0,0,0],[1,1,1],undefined,'paper');
+      else sculpt(wing,echo?'paperEchoRestWing':'paperOwlWingL','#ffffff',[0,0,0],[1,1,1],undefined,'paper');
       if (navy) {
         sculpt(wing, sign < 0 ? 'featherFanL' : 'featherFanR', '#283b54', [0, -.035, 0], [1, 1, 1], undefined, 'plumage');
         sculpt(wing, sign < 0 ? 'featherFanR' : 'featherFanL', '#283b54', [0, -.035, -.024], [1, 1, 1], [0,Math.PI,0], 'plumage');
@@ -455,14 +455,15 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       }
     }
     else {
-      body.scale.set(1.06,.90,1.06);
+      body.scale.set(echo?1:1.06,echo?1:.90,1.06);
       // A fuller paper breast must not enlarge the held lens/pencil or their
       // certified swept radius. Keep those props in their original frame.
-      const propFrame=new THREE.Vector3(1,.86/.90,.85/1.06);
+      const propFrame=new THREE.Vector3(echo?1.06:1,.86/(echo?1:.90),.85/1.06);
       for(const part of body.children)if(!part.name.startsWith('paper')&&!part.name.startsWith('wing_')){
         part.position.multiply(propFrame);part.scale.multiply(propFrame);
+        if(echo)part.position.y-=.045;
       }
-      body.position.y-=.025;data.bodyY=body.position.y;
+      body.position.y+=echo?.020:-.025;data.bodyY=body.position.y;
       body.rotation.z=id==='reflection-echo'?-.055:.06;
       // A complete folded volume must still read from a side-on office window.
       // Front-only silhouettes are not a substitute for an embodied model.

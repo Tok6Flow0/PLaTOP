@@ -582,7 +582,7 @@ test('folded paper chest sheets sit in front of their closed inner body',()=>{
   }
   for(const member of members.filter(member=>['reflection-echo','reflection-quill'].includes(member.id))){
     const model=makeProxy(member,kit),body=model.userData.personality.body;
-    const shell=model.getObjectByName('paperBody'),sheets=['paperChestL','paperChestR'].map(name=>model.getObjectByName(name));
+    const shell=model.getObjectByName('paperBody'),sheets=(member.id==='reflection-echo'?['paperEchoChestL','paperEchoChestR']:['paperChestL','paperChestR']).map(name=>model.getObjectByName(name));
     const restore=refineCharacterModel(model);model.updateMatrixWorld(true);let checked=0;
     for(let x=-.20;x<=.20;x+=.04)for(let y=-.29;y<=.06;y+=.05){
       ray.set(body.localToWorld(new THREE.Vector3(x,y,1)),new THREE.Vector3(0,0,-1).transformDirection(body.matrixWorld));
@@ -601,7 +601,7 @@ test('paper owl resting wings are broad diagonal sheets that overlap the actual 
   assert.ok(size.x/size.y>.5&&size.y<.51,'broad diagonal fold replaces a lengthened hanging tab');
   assert.ok(wing.boundingBox.max.y<.05,'the upper root tucks below the cheek instead of forming a raised collar');
   for(const id of ['reflection-echo','reflection-quill']){
-    const model=makeProxy(members.find(c=>c.id===id),kit),sheet=model.getObjectByName('paperOwlWingL'),chest=model.getObjectByName('paperChestL');
+    const model=makeProxy(members.find(c=>c.id===id),kit),sheet=model.getObjectByName(id==='reflection-echo'?'paperEchoRestWing':'paperOwlWingL'),chest=model.getObjectByName(id==='reflection-echo'?'paperEchoChestL':'paperChestL');
     model.updateMatrixWorld(true);const paper=new THREE.Box3().setFromObject(sheet),breast=new THREE.Box3().setFromObject(chest);
     assert.ok(paper.intersectsBox(breast),'resting sheet overlaps the breast rather than sitting beside it');
     assert.ok(paper.max.y>breast.max.y-.05,'wing root joins at shoulder height');
@@ -622,6 +622,35 @@ test('paper owl breast fold quads remain coplanar rather than becoming small tri
     }
   }
   kit.dispose();
+});
+
+test('Echo has two continuous planes per chest sheet and thin tapered resting-wing tissue',()=>{
+  const kit=new SceneKit(),ray=new THREE.Raycaster();
+  for(const form of ['paperEchoChestL','paperEchoChestR']){
+    const geometry=characterGeometry(kit,form),p=geometry.attributes.position,n=geometry.attributes.normal;
+    const forwardNormals=new Set();
+    for(let i=0;i<n.count;i++)if(n.getZ(i)>.3)forwardNormals.add([n.getX(i),n.getY(i),n.getZ(i)].map(value=>value.toFixed(4)).join(','));
+    assert.equal(forwardNormals.size,2,'long shared planes replace the old short fan patches');
+    const material=new THREE.MeshBasicMaterial(),mesh=new THREE.Mesh(geometry,material);let covered=0;
+    for(let x=-.35;x<=.35;x+=.035)for(let y=-.45;y<.15;y+=.06){
+      ray.set(new THREE.Vector3(x,y,1),new THREE.Vector3(0,0,-1));const front=ray.intersectObject(mesh)[0];
+      ray.set(new THREE.Vector3(x,y,-1),new THREE.Vector3(0,0,1));const back=ray.intersectObject(mesh)[0];
+      assert.equal(!!front,!!back,'the stock closes on both sides');
+      if(front){assert.ok(Math.abs(front.point.z-back.point.z-.008)<1e-5);covered++;}
+    }
+    assert.ok(covered>35);material.dispose();
+    geometry.computeBoundingBox();assert.ok(geometry.boundingBox.max.y-geometry.boundingBox.min.y>.70);
+    assert.ok(p.count<150,'fold construction remains inexpensive before close refinement');
+  }
+  const echo=makeProxy(members.find(c=>c.id==='reflection-echo'),kit),quill=makeProxy(members.find(c=>c.id==='reflection-quill'),kit);
+  echo.updateMatrixWorld(true);quill.updateMatrixWorld(true);
+  const torso=new THREE.Box3().setFromObject(echo.getObjectByName('paperEchoChestL')).union(new THREE.Box3().setFromObject(echo.getObjectByName('paperEchoChestR'))).getSize(new THREE.Vector3());
+  assert.ok(torso.y>torso.x,'the chest reads as descending sheets rather than a squat solid');
+  assert.ok(quill.getObjectByName('paperChestL')&&!quill.getObjectByName('paperEchoChestL'),'the prototype does not silently redesign Quill');
+  const wing=characterGeometry(kit,'paperEchoRestWing'),points=wing.attributes.position;
+  const paired=new Map();for(let i=0;i<points.count;i++){const key=[points.getX(i),points.getY(i)].map(v=>v.toFixed(5)).join(',');const zs=paired.get(key)||new Set();zs.add(points.getZ(i).toFixed(5));paired.set(key,zs);}
+  for(const zs of paired.values()){assert.equal(zs.size,2);const depths=[...zs].map(Number).sort((a,b)=>a-b);assert.ok(Math.abs(depths[1]-depths[0]-.010)<2e-5);}
+  disposeObject(echo);disposeObject(quill);kit.dispose();
 });
 
 test('Scout toe caps follow the cream foot surface rather than floating as flat discs',()=>{
@@ -1473,7 +1502,7 @@ test('paper chest sheets have a shallow ordered overlap rather than coincident c
   const kit=new SceneKit(),ray=new THREE.Raycaster();
   for(const id of ['reflection-echo','reflection-quill']){
     const model=makeProxy(members.find(c=>c.id===id),kit);model.updateMatrixWorld(true);
-    const over=model.getObjectByName('paperChestL'),under=model.getObjectByName('paperChestR');let checked=0;
+    const over=model.getObjectByName(id==='reflection-echo'?'paperEchoChestL':'paperChestL'),under=model.getObjectByName(id==='reflection-echo'?'paperEchoChestR':'paperChestR');let checked=0;
     for(let y=-.39;y<.05;y+=.02){
       const point=over.localToWorld(new THREE.Vector3(0,y,0));
       ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
@@ -1592,7 +1621,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'intake-compass':['wayfinderBody','tuft','circuit-bib'],
     'support-beacon':['embracingBody','lanternCap','lanternHandle'],
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
-    'reflection-echo':['paperBody','paperEchoHead','paperOwlWingL','paperHoldingWing','paperCrownBackL','paperCrownBackR','ring'],
+    'reflection-echo':['paperBody','paperEchoHead','paperEchoRestWing','paperHoldingWing','paperCrownBackL','paperCrownBackR','ring'],
     'reflection-quill':['paperBody','paperWing','paperHoldingWing','quill-pencil'],
     'email-owl':['owlHead','owlBody','owlBeak','featherFanL','featherFanR','breastFeathers'],
     'email-swift':['paper-bird-expression','swiftBody','swiftWingL','swiftWingR','swiftTail'],

@@ -19,7 +19,15 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-145 suite passes **367 tests** and the production build passes.
+The pass-146 suite passes **368 tests** and the production build passes.
+Echo's longer folded torso is retained at **7.0 craft / 6.5 fidelity**;
+the Reflection ensemble is **6.5 / 6.5**. The shoulder/wing relationship and
+shallow side profile still need work before the design extends to Quill.
+Campus/Reflection close samples submit55.70/58.51fps; CPU mean/p95 costs
+are1.75/2.80 and1.71/2.80ms. Frame-pacing variability is not hidden by these
+low submission costs. This checkpoint does not establish the requested A.
+
+The pass-145 suite passed **367 tests** and the production build passed.
 The reviewer retains two fuller Beacon plants at room **8.0 craft / 7.5
 fidelity**, campus **7.5 / 7.5**. A fresh character-only assessment is lower:
 ensemble about **7.0 craft / 6.5 fidelity**, with Reflection **6.5 / 6.0**.

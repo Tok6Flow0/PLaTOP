@@ -1820,3 +1820,32 @@ plates and Swift's smooth breast. The next bounded prototype reconstructs
 one Reflection owl torso/resting wing as coordinated descending sheets,
 preserving its head, expression, accessory and neutral state. Neither145
 nor that assessment establishes the requested A. Production remains143.
+
+Pass145 was pushed as17be38950bc7086c15f929c1445f6f3a95ed6ec1;
+remote readback matches and CI38618500578 succeeded.
+
+Pass146 prototypes only Echo. Its narrower, taller chest uses two continuous
+planes per half-sheet, .008-thick matching backs, an ordered central overlap
+and a tapered .010-thick resting wing. The existing head/expression remains;
+the magnifier keeps its size and approximately its preceding world placement.
+The first upper crease crossed the lower face; receding it into the shoulder
+corrected this before review. Quill is unchanged. All368 tests and build pass,
+including new sheet-plane/thickness checks, existing facial occlusion,
+all-character100x density and navigation/gesture bounds.
+
+The reviewer retains146 as a working baseline: Echo7.0 craft/6.5 fidelity,
+Reflection ensemble6.5/6.5. The torso is less squat and its descending folds
+are clearer, but the resting wing still reads as a separate shoulder mass
+and hanging flap; parallel chest panels slightly resemble a pleated robe.
+The side-on room view remains shallow/cutout-like. Without matched145 room
+images, this is a current limitation, not an established146 regression.
+The next correction is one oblique shoulder/wing sheet returning around the
+body depth, before propagation to Quill. No A or reference match is claimed.
+
+Evidence146 contains day/night portraits, quarter/rear, fixed-hour office
+windows and campus views. Campus submits55.70 fps, CPU mean/p95 1.75/2.80ms,
+135 draws/431,782 triangles. Reflection close submits58.51 fps,
+1.71/2.80ms,135 draws/874,855 triangles. Both have lower command-submission
+cost than145's campus samples but retain variable frame pacing; neither
+proves GPU completion or a locked60fps. No synthetic activity is used.
+Production remains143 pending a later accepted bundle.
