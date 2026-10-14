@@ -317,13 +317,13 @@ function feather(): THREE.BufferGeometry {
   return smoothDeformedSurface(polyhedron(points,faces));
 }
 
-/** Curved flight feathers use a lengthwise rachis, rather than a pyramid's
- * single central apex. Four rounded sections keep the tip slender while
- * spending only four more triangles than the small breast vanes. */
+/** Broad rounded vanes keep their width almost to the tip. The final short
+ * section closes the contour without the long spear-shaped blade that made
+ * the layered wing look like hanging armour. Triangle count is unchanged. */
 function flightFeather():THREE.BufferGeometry {
   const points:Tuple[]=[[0,.5,0]],faces:number[][]=[];
-  for(const t of [.18,.40,.64,.85])for(const side of [-1,0,1]){
-    const arch=Math.sin(Math.PI*t),width=.46*Math.pow(arch,.78)*(1-.36*t);
+  for(const t of [.16,.40,.70,.95])for(const side of [-1,0,1]){
+    const arch=Math.sin(Math.PI*t),width=.46*Math.pow(arch,.45)*(1-.24*t);
     points.push([side*width,.5-1.12*t,.065*arch+.070*arch*(1-side*side)+.04*t*t]);
   }
   points.push([0,-.62,.04]);
@@ -396,7 +396,7 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return foldedSheet([[-.025,.18,.11],[.025,-.04,.09],[.02,-.40,.10],[-.18,-.30,.22],[-.16,.01,.28]],[-.055,-.12,.24],
+  return foldedSheet([[-.035,.18,.08],[.045,-.08,.11],[-.13,-.31,.21],[-.27,-.24,.27],[-.18,.035,.24]],[-.115,-.09,.31],
     ['#dbc29a','#d8bf97','#cdb089','#dfc69f','#e5ceaa']);
 }
 
@@ -427,21 +427,24 @@ function foldedSheet(outline:Tuple[],ridge:Tuple,tones:string[]):THREE.BufferGeo
 /** Folded volumes close into a tapered back, not an extruded cardboard slab. */
 function paperOwlHead(quill=false): THREE.BufferGeometry {
   const outline:Array<[number,number]>=quill?
-    [[-.41,-.26],[-.30,-.45],[.22,-.45],[.47,-.13],[.45,.24],[.54,.51],[.19,.41],[-.08,.43],[-.48,.53],[-.44,.14]]:
-    [[-.44,-.22],[-.27,-.43],[.25,-.44],[.47,-.10],[.42,.28],[.23,.48],[-.23,.44],[-.47,.14]];
-  const cheek:Array<[number,number]>=[[.012,.02],[.045,.25],[.16,.36],[.29,.32],[.415,.14],[.39,-.06],[.24,-.30],[.014,-.405]];
+    [[-.41,-.20],[-.28,-.30],[-.01,-.44],[.28,-.30],[.47,-.10],[.45,.24],[.54,.51],[.19,.41],[-.08,.43],[-.48,.53],[-.44,.14]]:
+    [[-.44,-.19],[-.28,-.30],[.015,-.44],[.29,-.30],[.47,-.08],[.42,.28],[.23,.48],[-.23,.44],[-.47,.14]];
+  const cheek:Array<[number,number]>=[[.012,.02],[.045,.25],[.16,.36],[.29,.32],[.415,.14],[.39,-.06],[.24,-.26],[.014,-.405]];
   const holes=[cheek.map(([x,y])=>new THREE.Vector2(-x,y)),cheek.map(([x,y])=>new THREE.Vector2(x,y))];
   const outer=outline.map(([x,y])=>new THREE.Vector2(x,y));
   const points=[...outer,...holes.flat()];
-  const vertices:Tuple[]=points.map((p,i)=>[p.x,p.y,i<outline.length?.30+(.4-Math.abs(p.x))*.12:.45-.10*Math.abs(p.x)]);
+  const faceDepth=(x:number,y:number,outer=false)=>(outer?.30+(.4-Math.abs(x))*.12:.45-.10*Math.abs(x))-.20*THREE.MathUtils.smoothstep(-y,.06,.44);
+  // The heart's lower folds turn back into the breast. A constant-depth
+  // face plane made a projecting mask above an unnecessarily dark neck gap.
+  const vertices:Tuple[]=points.map((p,i)=>[p.x,p.y,faceDepth(p.x,p.y,i<outline.length)]);
   const faces=THREE.ShapeUtils.triangulateShape(outer,holes),colors:string[]=faces.map(()=>quill?'#cfb18a':'#c7aa83');
   for(let side=0;side<2;side++){
     const center=vertices.length;vertices.push([side?.18:-.18,-.015,.46]);
     for(let i=0;i<cheek.length;i++){const a=outline.length+side*cheek.length+i,b=outline.length+side*cheek.length+(i+1)%cheek.length;faces.push([a,b,center]);colors.push('#edd6b0');}
   }
-  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.96,y*.93,.05-Math.abs(x)*.10] as Tuple));
-  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.72,y*.76,-.25] as Tuple));
-  const rearCenter=vertices.length;vertices.push([-.035,.03,-.33]);
+  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.92,y*.89,.07-Math.abs(x)*.10] as Tuple));
+  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.72,y*.76,-.23] as Tuple));
+  const rearCenter=vertices.length;vertices.push([-.035,.03,-.30]);
   for(let i=0;i<outline.length;i++){
     const j=(i+1)%outline.length;faces.push([i,shoulder+i,shoulder+j],[i,shoulder+j,j],[shoulder+i,back+i,back+j],[shoulder+i,back+j,shoulder+j],[back+j,back+i,rearCenter]);
     colors.push('#c7ad8a','#d0b591','#c1a582','#c8b18c','#ba9e7a');
@@ -453,7 +456,7 @@ function paperOwlBody(): THREE.BufferGeometry {
   // Diagonal valley/mountain folds replace stacked hexagonal box sections.
   // A projecting breast ridge folds into the lower centre seam; the back
   // converges into the same shoulder and foot vertices, with no extruded wall.
-  const vertices:Tuple[]=[[0,.48,.15],[-.38,.32,.07],[.36,.31,.08],[-.49,-.03,.02],[.46,-.08,.03],[-.29,-.50,.06],[.28,-.50,.07],[-.035,.18,.23],[.07,-.26,.16],[0,-.50,.08],[0,.30,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
+  const vertices:Tuple[]=[[0,.28,.035],[-.38,.15,.04],[.36,.15,.04],[-.49,-.03,.02],[.46,-.08,.03],[-.29,-.50,.06],[.28,-.50,.07],[-.035,-.08,.10],[.07,-.26,.23],[0,-.50,.08],[0,.22,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
   const faces=[[0,1,7],[0,7,2],[1,3,7],[7,3,8],[7,8,4],[7,4,2],[3,5,8],[8,5,9],[8,9,6],[8,6,4],[0,10,1],[0,2,10],[1,10,13],[1,13,3],[2,14,10],[2,4,14],[10,11,13],[10,14,11],[3,13,5],[4,6,14],[13,11,12],[13,12,5],[14,12,11],[14,6,12],[5,12,9],[9,12,6]];
   return polyhedron(vertices,faces,['#dfc79e','#ead7b3','#d7bc91','#c4a477','#dbc198','#cbb085','#bfa078','#d0b189','#bfa077','#d7ba8f','#d5bc94','#ccb28a','#c2a67e','#d6ba91','#d8bf98','#c9ac83','#bda077','#ceb28b','#ccb18a','#d7bc94','#c4a680','#cbb18b','#b89b73','#c6aa82','#bda17a','#ccb28a']);
 }
@@ -611,7 +614,14 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
     }
     geometry.setAttribute('color',new THREE.Float32BufferAttribute(colours,3));
   }
-  return breast?geometry:smoothDeformedSurface(geometry);
+  if(!breast){
+    smoothDeformedSurface(geometry);
+    // The independently fitted breast keeps exact edges. The free wing fans
+    // can use their continuous normals to round the authored vane contours
+    // at the dense tier instead of merely subdividing polygonal outlines.
+    geometry.userData.characterCurvature=.28;
+  }
+  return geometry;
 }
 
 function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
@@ -674,8 +684,8 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     }
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return paperOwlBody();
-    case 'paperChestL': return foldedSheet([[-.015,.46,.20],[-.37,.30,.10],[-.30,-.50,.11],[-.12,-.42,.24]],[-.17,-.03,.27],['#e0c8a3','#d1b38c','#d5b994','#e5cda7']);
-    case 'paperChestR': return foldedSheet([[.02,.46,.20],[.37,.31,.10],[.28,-.50,.11],[.10,-.43,.24]],[.08,-.01,.29],['#ead3ad','#dac09a','#ccb089','#dfc49d']);
+    case 'paperChestL': return foldedSheet([[-.035,.18,.045],[-.38,.10,.05],[-.44,-.06,.10],[-.28,-.48,.10],[.14,-.45,.14]],[-.10,-.28,.275],['#dec59f','#d8bd95','#d0b28a','#d9be99','#e1c8a3']);
+    case 'paperChestR': return foldedSheet([[.02,.18,.045],[.37,.10,.05],[.43,-.08,.10],[.27,-.48,.10],[-.03,-.37,.22]],[.14,-.26,.275],['#e3cba6','#d9bd96','#d0b18a','#d8bb96','#dfc59f']);
     case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.28,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
@@ -764,13 +774,13 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
     const grain=finish==='paper'?237-29*fibre-13*pore-8*noise
       :finish==='brass'?249-4*Math.sin(y*1.17+x*.007)-3*noise
       :finish==='cloth'?238-13*(Math.sin(x*Math.PI/4)**2+Math.sin(y*Math.PI/4)**2)-15*pore-6*noise
-      :finish==='feather'?239-10*barbs-19*pore-9*noise-16*noiseAt(x/19,y/17)
+      :finish==='feather'?250-16*barbs-28*pore-7*noise-28*noiseAt(x/19,y/17)-22*fibre
       :finish==='glaze'?247-13*pore-6*noise+2*broad:244-29*pore-10*noise+3*broad;
     data.set([grain,grain,grain,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.wrapS=texture.wrapT=THREE.RepeatWrapping;
   texture.userData.platopCharacterGrain=true;
-  texture.repeat.set(2,2);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
+  texture.repeat.setScalar(finish==='feather'?1:2);texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;
   texture.generateMipmaps=true;texture.needsUpdate=true;owner.grains.set(finish,texture);return texture;
 }
 
@@ -811,7 +821,12 @@ function plumageGrain(kit:SceneKit):THREE.DataTexture {
     const u=(x+.5)/size-.5,v=(y+.5)/size;
     const seed=((Math.imul(x+17,374761393)^Math.imul(y+29,668265263))>>>0)%101/100;
     const barb=Math.pow(Math.max(0,Math.sin(v*193+Math.abs(u)*117+Math.sin(v*41+u*19)*3+Math.sin(u*83+v*61)*1.3)),10);
-    const quill=Math.exp(-(u*u)/.00010),tone=242-23*barb*(.4+.6*Math.abs(u)*2)-18*seed+6*quill;
+    const quill=Math.exp(-(u*u)/.00010);
+    // Two lower-frequency fibres remain visible after portrait/campus
+    // downsampling. Fine barbs alone averaged into a uniform smooth plate.
+    const fibre=.5+.5*Math.sin(v*83+Math.abs(u)*49+Math.sin(v*23+u*17)*2);
+    const mottling=.5+.5*Math.sin(u*37+Math.sin(v*31)*1.3)*Math.sin(v*47-u*11);
+    const tone=250-29*barb*(.4+.6*Math.abs(u)*2)-12*seed-21*fibre-16*mottling+4*quill;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;

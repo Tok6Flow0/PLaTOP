@@ -218,6 +218,11 @@ test('woven rugs have real rounded corners and retain pile height and bounded fo
   const bounds = new THREE.Box3().setFromObject(root);
   assert.ok(bounds.min.x >= -2.2751 && bounds.max.x <= 2.2751 && bounds.min.z >= -2.1001 && bounds.max.z <= 2.1001);
   assert.ok(bounds.min.y >= 0.0934 && Math.abs(bounds.max.y - 0.13) < 1e-6);
+  const weave=root.children.find(mesh=>mesh.material.map),pile=root.children.find(mesh=>!mesh.material.map);
+  const pileTop=new THREE.Box3().setFromObject(pile).max.y;
+  assert.ok(weave.position.y-pileTop>=.007,'real separation prevents distant rug z-fighting');
+  assert.equal(weave.receiveShadow,true,'the repair retains real furniture shadows');
+  assert.equal(weave.material.polygonOffset,true,'the decorative weave has stable depth ordering');
   const ray = new THREE.Raycaster(new THREE.Vector3(2.24, 2, 2.06), new THREE.Vector3(0, -1, 0));
   assert.equal(ray.intersectObject(root, true).length, 0, 'the pill corner is geometry rather than painted transparency');
   ray.ray.origin.set(0, 2, 0);

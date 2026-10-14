@@ -10,7 +10,11 @@ export function surfaceData(geometry: THREE.BufferGeometry): SurfaceData {
   }
   // Fitted insets, paper creases and closed thin sheets keep their exact
   // authored edges. Inflating those planes independently breaks their fit.
-  const curvature = geometry.userData.characterFitted || geometry.type === 'BufferGeometry' ? 0 : .5;
+  const sculptedCurvature=geometry.userData.characterCurvature;
+  const curvature = geometry.userData.characterFitted ? 0
+    : typeof sculptedCurvature==='number'&&Number.isFinite(sculptedCurvature)
+      ? THREE.MathUtils.clamp(sculptedCurvature,0,.5)
+      : geometry.type === 'BufferGeometry' ? 0 : .5;
   return { attributes, curvature, ellipsoid: geometry.userData.characterEllipsoid, index: geometry.index ? Uint32Array.from(geometry.index.array) : Uint32Array.from({ length: geometry.attributes.position.count }, (_, i) => i) };
 }
 

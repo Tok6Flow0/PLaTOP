@@ -153,9 +153,9 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       data.head=expression;data.headY=.70;data.bodyY=body.position.y;
     } else {
       if (leader) { body.position.y = .70; data.bodyY = .70; head.position.y = 1.30; data.headY = 1.30; }
-      if (id === 'bridge-scout') {body.position.y=.40;data.bodyY=.40;head.position.y=.84;data.headY=.84;}
+      if (id === 'bridge-scout') {body.position.y=.45;data.bodyY=.45;head.position.y=.89;data.headY=.89;head.scale.set(.86,.92,.92);}
       if (wayfinder) {body.position.y=id==='intake-jarvis'?.535:.49;data.bodyY=body.position.y;head.position.y=id==='intake-jarvis'?1.02:.95;data.headY=head.position.y;}
-      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.04 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .58 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, 'glaze');
+      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.04 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, 'glaze');
       if(leader) sculpt(body,'merchantBase','#bb673a',[0,-.58,0],[.73,.24,.56],undefined,'glaze');
       if(leader)sculpt(body,'neckBand','#9d542f',[0,.29,0],[.52,.036,.43],undefined,'glaze');
       if(id==='bridge-scout')sculpt(body,'neckBand','#274b45',[0,.14,0],[.44,.036,.34],undefined,'glaze');
@@ -352,7 +352,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       }
       if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * .18, .255, .045], sign<0?[.80,1.50,1.30]:[.90,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
-      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * .315, .12, -.025]);
+      const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * (navy?.300:.315), .12, navy?.075:-.025]);
+      if(navy)wing.scale.x=1.10;
       if(navy) sculpt(wing,'featherCore','#283b54',[sign*.015,-.10,0],[.19,.54,.245],[0,0,sign*.23],'feather');
       else if(sign>0)sculpt(wing,'paperHoldingWing','#ffffff',[0,0,0],[1,1,id==='reflection-quill'?.52:1],undefined,'paper');
       else sculpt(wing,'paperOwlWingL','#ffffff',[0,0,0],[1,1,1],undefined,'paper');
@@ -386,14 +387,19 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(body, '#835d31', [[-.083, .130, .403], [0, .065, .403], [.083, .130, .403]], .005, 'clay');
     }
     else {
-      body.scale.set(1.06,.86,.85);
+      body.scale.set(1.10,.90,1.06);
+      // A fuller paper breast must not enlarge the held lens/pencil or their
+      // certified swept radius. Keep those props in their original frame.
+      const propFrame=new THREE.Vector3(1.06/1.10,.86/.90,.85/1.06);
+      for(const part of body.children)if(!part.name.startsWith('paper')&&!part.name.startsWith('wing_')){
+        part.position.multiply(propFrame);part.scale.multiply(propFrame);
+      }
       body.position.y-=.025;data.bodyY=body.position.y;
       body.rotation.z=id==='reflection-echo'?-.055:.06;
-      body.getObjectByName(id==='reflection-echo'?'paperChestL':'paperChestR')!.rotation.z=id==='reflection-echo'?-.075:.065;
       // A complete folded volume must still read from a side-on office window.
       // Front-only silhouettes are not a substitute for an embodied model.
-      head.scale.set(.93,.93,.95);
-      head.position.y=.675;data.headY=.675;
+      head.scale.set(.85,.91,.92);
+      head.position.set(0,.640,.005);data.headY=.640;
       data.wings.forEach(wing=>{wing.scale.z=.72;});
     }
   } else {
@@ -425,9 +431,10 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     const axis=new THREE.Vector3(0,0,1);for(const part of arm.children){part.position.applyAxisAngle(axis,2.70);part.rotation.z+=2.70;}
     for(const [i,foot]of data.feet.entries()){
       foot.position.x=(i?1:-1)*.20;
-      const toe=foot.children[0];toe.scale.set(.30,.28,.32);
-      sculpt(foot,'bean','#315d58',[0,0,.164],[.235,.215,.025],undefined,'glaze');
-      foot.position.y=.14;
+      const toe=foot.children[0];toe.scale.set(.27,.30,.36);
+      sculpt(foot,'bean','#315d58',[0,0,.173],[.195,.235,.025],undefined,'glaze');
+      foot.rotation.set(0,(i?1:-1)*.25,(i?1:-1)*-.13);
+      foot.updateWorldMatrix(true,true);foot.position.y-=new THREE.Box3().setFromObject(foot).min.y/group.scale.y;
     }
   }
   if(wayfinder)head.rotation.z=id==='intake-beacon'?-.095:id==='intake-relay'?.045:id==='intake-compass'?.11:-.025;

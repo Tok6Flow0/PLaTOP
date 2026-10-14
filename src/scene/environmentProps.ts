@@ -103,7 +103,7 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
   // The rounded bound stays inside the original rectangle and the bevel retains
   // the certified pile height. A soft woven edge reads better than a paint chip.
   const pile = new THREE.ExtrudeGeometry(outline(width - 0.024, depth - 0.024, radius),
-    { depth: 0.027, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 12 });
+    { depth: 0.021, bevelEnabled: true, bevelSize: 0.012, bevelThickness: 0.004, bevelSegments: 2, curveSegments: 12 });
   const edgeColor = `#${new THREE.Color(color).multiplyScalar(0.86).getHexString()}`;
   const base = new THREE.Mesh(pile, kit.material(edgeColor, 'fabric')); base.rotation.x = -Math.PI / 2;
   base.position.set(x,.0975,z); base.receiveShadow = true; parent.add(base); surface(base,'rug');
@@ -134,6 +134,11 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
   for (let i=0;i<points.count;i++) uv.setXY(i,points.getX(i)/(width-.11)+.5,points.getY(i)/(depth-.11)+.5);
   (weave.material as THREE.MeshStandardMaterial).roughness = 0.98;
   (weave.material as THREE.MeshStandardMaterial).envMapIntensity = 0.2;
+  // The pile and weave used to differ by only 0.0015 world units. At the
+  // campus camera that rounds to the same depth values and makes rectangular
+  // z-fighting patches. Keep the certified 0.13 top with a real gap beneath it.
+  const weaveMaterial=weave.material as THREE.MeshStandardMaterial;
+  weaveMaterial.polygonOffset=true;weaveMaterial.polygonOffsetFactor=-1;weaveMaterial.polygonOffsetUnits=-1;
 }
 export function sign(parent: THREE.Object3D, kit: SceneKit, text: string, x: number, y: number, z: number, width: number, horizontal = false, background = '#34423b', foreground = '#faf4e8'): void {
   if (!horizontal) kit.mesh(parent, 'roundedBox', '#26362f', [x, y, z], [width + 0.07, 0.73, 0.15]);
@@ -331,12 +336,12 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
   const vertex = (t: number, across: number): Point => {
-    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.5 : 0.6) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.25 : 0.19);
+    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.72 : 0.78) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.21 : 0.16);
     const bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.2 : broad ? 0.26 : 0.34);
     const length = herb ? 0.5 : broad ? 0.78 : spear ? 0.93 : 0.87;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
     return [width * across + Math.sin(Math.PI * t) * Math.sin(t * 2.1) * 0.012,
-      t * length + 0.012 * cup - (spear ? 0 : .075 * t ** 3), bend - 0.021 * cup];
+      t * length + 0.020 * cup - (spear ? 0 : herb ? .10 : .16) * t ** 3, bend - (spear?.021:.038) * cup];
   };
   // Spend the same 56 triangles along the silhouette: fifteen longitudinal
   // sections remove the polygonal paddle edge, while three ribs keep a cup.
@@ -437,16 +442,36 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       const trunk = new THREE.Mesh(new THREE.TubeGeometry(curve, 8, 0.014, 5, false), kit.material('#627346'));
       trunk.castShadow = trunk.receiveShadow = true; canopy.add(trunk);
     }
-    for (let i = 0; i < count; i++) {
+    if(kind==='leaf'||kind==='broad'){
+      // Three continuous boughs carry offset leaf pairs and an apical leaf.
+      // Reuse the same 21/17 stem and leaf budgets instead of arranging every
+      // leaf as an identical spoke around a straight pole.
+      const sizes=kind==='leaf'?[7,7,7]:[6,6,5];let index=0;
+      for(let branch=0;branch<3;branch++){
+        const angle=branch*2.399+.31;
+        const from=new THREE.Vector3(.008,.48+branch*.095,0);
+        const to=new THREE.Vector3(Math.sin(angle)*.22,1.00+branch*.16,Math.cos(angle)*.22);
+        stem(from,to,.012);
+        for(let local=0;local<sizes[branch];local++,index++){
+          const apical=local===sizes[branch]-1,t=.22+.78*(local/(sizes[branch]-1));
+          const root=from.clone().lerp(to,t);
+          const bearing=angle+(apical?.10:(local%2?-1:1)*(1.0+.12*(local%3)));
+          const reach=apical?0:.055+.020*(local%3);
+          const point=root.clone().add(new THREE.Vector3(Math.sin(bearing)*reach,.018,Math.cos(bearing)*reach));
+          if(!apical)stem(root,point,.008);
+          const scale=(kind==='broad'?.89:.77)-.16*t+.025*Math.sin(index*2.3);
+          addLeaf(index,[point.x,point.y,point.z],[apical?.48:1.00+.18*(local%3),bearing,.12*Math.sin(index*2.1)],scale);
+        }
+      }
+    }else for (let i = 0; i < count; i++) {
       const angle = i * 2.399;
-      const origin = kind === 'spear' ? 0.405 : kind === 'herb' ? 0.405 + i % 3 * 0.045 : 0.43 + i % (kind === 'leaf' ? 7 : 5) * (kind === 'broad' ? 0.17 : 0.125)+.025*Math.sin(i*3.7);
-      const reach = kind === 'spear' ? 0.045 : kind === 'herb' ? 0.07 : kind === 'leaf' ? 0.17 : 0.09;
+      const origin = kind === 'spear' ? 0.405 : 0.405 + i % 3 * 0.045;
+      const reach = kind === 'spear' ? 0.045 : 0.07;
       const point: Point = [Math.sin(angle) * reach, origin, Math.cos(angle) * reach];
-      const branchRoot = kind === 'spear' || kind === 'herb' ? new THREE.Vector3(0, 0.385, 0)
-        : curve.getPoint(THREE.MathUtils.clamp((origin - 0.385) / (trunkHeight - 0.385), 0, 1));
+      const branchRoot = new THREE.Vector3(0, 0.385, 0);
       stem(branchRoot, new THREE.Vector3(...point));
-      const scale = kind === 'herb' ? 0.62 + i % 4 * 0.105 : kind === 'spear' ? 0.68 + i % 4 * 0.15 : kind === 'leaf' ? 0.58 + i % 4 * 0.10 : 0.7 + i % 4 * 0.13;
-      addLeaf(i, point, [kind === 'herb' ? -0.18 : kind === 'leaf' ? 0.72 + i % 3 * 0.24 : kind==='broad'?.80+i%3*.18:i % 2 * 0.08, angle+.10*Math.sin(i*1.9), (i % 3 - 1) * 0.16], scale);
+      const scale = kind === 'herb' ? 0.62 + i % 4 * 0.105 : 0.68 + i % 4 * 0.15;
+      addLeaf(i, point, [kind === 'herb' ? -0.18 : i % 2 * 0.08, angle+.10*Math.sin(i*1.9), (i % 3 - 1) * 0.16], scale);
     }
   }
   // Keep every actual leaf vertex within its existing navigation envelope;

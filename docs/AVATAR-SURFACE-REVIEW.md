@@ -31,6 +31,8 @@ not asked for a desired score or instructed to approve.
 | 25 | Portraits 8.5/10 — B+; campus 8.0/10 — B | Regular feather plates, paper neck wedges, overly glossy Beacon glass, repeated furnishings and stiff foliage |
 | 27 | Portraits 8.4/10 — B+; campus 8.1/10 — B | Regressed exposed wing supports/roots, tall shiny owl toes, broad feather plates, foliage and furnishing repetition |
 | 31 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Wing regression corrected; pointed vanes, smooth felt, thick paper folds, sparse seating and stiff foliage remain |
+| 33 | Portraits 8.5/10 — B+; campus 8.0/10 — B | Branching foliage added, but paddle-like leaves, projecting paper faces and rectangular rug patches regress the scene |
+| 35 | Portraits 8.5/10 — B+; campus 8.1/10 — B | Rug patches corrected and fuller owl wings; paper jaw/chest joins, regular feather rows, bird breast/crown transition and furnishing variety remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -152,6 +154,22 @@ supports and shortens the owl's toes. No rejected pass is described as accepted.
 
 ## Performance observations
 
+Pass 36 is the tested correction of pass 35, not a new independent approval.
+All 287 tests and the production build pass. The deeper leaf bend in pass 35
+failed a shared-normal check, and its rug-material access failed TypeScript;
+both were corrected before regenerating the shipped portraits. Rug weave now
+clears its pile physically and uses polygon offset, retaining shadow reception.
+First- and third-person mist, exit and restored orbit controls were checked on
+the isolated compiled build. Its local dense worker completed requests without
+observed console errors. No live bridge or chat was changed.
+
+Pass 39 has 288 passing tests and a passing production build. Its folded owls
+have broader diagonal resting wings and a fuller, tapered breast. The first
+internal attempt (37) enlarged a held prop beyond its movement envelope and
+occluded the chin; these were corrected, not accepted. A new ray test prevents
+the breast from cutting across the lower facial shield. Independent acceptance
+is still pending for this checkpoint; no A/reference-match claim is made.
+
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
 Unchanged source was read from `271831b` into a temporary isolated checkout.
@@ -185,6 +203,8 @@ and is not treated as close-up evidence.
 | Pass 25 campus | 51.20 | 2.19 / 4.00 ms | 101 / 341,251 | 0 |
 | Pass 27 campus | 55.11 | 1.68 / 2.90 ms | 107 / 342,315 | 0 |
 | Pass 31 campus | 55.71 | 2.02 / 2.90 ms | 108 / 341,711 | 0 |
+| Pass 36 campus | 55.90 | 1.92 / 2.60 ms | 108 / 341,723 | 0 |
+| Pass 39 campus | 56.50 | 2.03 / 3.00 ms | 108 / 341,739 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -193,6 +213,8 @@ and is not treated as close-up evidence.
 | Pass 25 full-face close | 54.20 | 2.07 / 4.00 ms | 132 / 2,381,349 | 3 |
 | Pass 27 full-face close | 56.10 | 1.74 / 2.70 ms | 133 / 2,347,917 | 3 |
 | Pass 31 full-face close | 52.30 | 1.82 / 3.20 ms | 133 / 2,346,793 | 3 |
+| Pass 36 full-face close | 52.40 | 2.08 / 3.60 ms | 133 / 2,346,805 | 3 |
+| Pass 39 full-face close | 54.40 | 2.26 / 3.70 ms | 133 / 2,346,821 | 3 |
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

@@ -84,6 +84,25 @@ test('owl toes stay squat and forward-facing rather than standing gold beans',()
   disposeObject(model);kit.dispose();
 });
 
+test('dense wing fans round their free contours without widening the motor envelope',()=>{
+  const kit=new SceneKit();
+  for(const form of ['featherFanL','featherFanR']){
+    const coarse=characterGeometry(kit,form),data=surfaceData(coarse);
+    assert.equal(data.curvature,.28);
+    const dense=surfaceGeometry(refineCharacterSurface(data,'plumage'));
+    coarse.computeBoundingBox();dense.computeBoundingBox();
+    for(const axis of ['x','y','z']){
+      assert.ok(dense.boundingBox.min[axis]>=coarse.boundingBox.min[axis]-.006,`${form} lower ${axis} contour is bounded`);
+      assert.ok(dense.boundingBox.max[axis]<=coarse.boundingBox.max[axis]+.006,`${form} upper ${axis} contour is bounded`);
+    }
+    assert.equal(dense.index.count,coarse.attributes.position.count*100);
+    dense.dispose();
+  }
+  assert.equal(surfaceData(characterGeometry(kit,'breastFeathers')).curvature,0,'fitted breast layers are never independently inflated');
+  assert.equal(surfaceData(characterGeometry(kit,'paperEchoHead')).curvature,0,'origami folds stay authored');
+  kit.dispose();
+});
+
 test('lower wing silhouettes do not expose their rounded inner supports',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit),ray=new THREE.Raycaster();
   for(const mesh of meshes(model).filter(mesh=>mesh.name==='featherCore')){
@@ -616,6 +635,23 @@ test('folded owl heads and bodies retain real side-on volume in office windows',
     for(const name of ['paperBody',id==='reflection-echo'?'paperEchoHead':'paperQuillHead']){
       const size=new THREE.Box3().setFromObject(model.getObjectByName(name)).getSize(new THREE.Vector3());
       assert.ok(size.z/size.x>.30,`${id} ${name} is a folded volume, not a front-facing wafer`);
+    }
+  }
+  disposeObject(all);kit.dispose();
+});
+
+test('paper owl breast folds do not cut a horizontal edge across the lower facial shield',()=>{
+  const kit=new SceneKit(),all=new THREE.Group(),ray=new THREE.Raycaster();
+  for(const id of ['reflection-echo','reflection-quill']){
+    const model=makeProxy(members.find(member=>member.id===id),kit);all.add(model);model.updateMatrixWorld(true);
+    const face=model.getObjectByName(id==='reflection-echo'?'paperEchoHead':'paperQuillHead');
+    for(const x of [-.06,0,.06]){
+      const origin=new THREE.Vector3(x,-.31,2).applyMatrix4(face.matrixWorld);
+      const direction=new THREE.Vector3(0,0,-1).transformDirection(face.matrixWorld);
+      ray.set(origin,direction);
+      const shield=ray.intersectObject(face)[0];assert.ok(shield,`${id} lower face exists`);
+      const first=ray.intersectObject(model,true)[0];
+      assert.equal(first.object,face,`${id} lower face remains in front of its folded breast`);
     }
   }
   disposeObject(all);kit.dispose();
