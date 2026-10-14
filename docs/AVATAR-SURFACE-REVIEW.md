@@ -95,6 +95,8 @@ not asked for a desired score or instructed to approve.
 | 100 (fresh actual-scene contact review) | Campus craft 7.0 / fidelity 7.5; close craft approximately 7.5; retained | Short-range close AO replaces dirty pot-shadow clouds with compact contacts and improves books/mug grounding without losing owl folds. Campus lighting change is not confidently substantial; room-scale key-light shaping remains the priority |
 | 101 (fresh corrected-noon review) | Campus craft 7.0 / fidelity 7.5; retained | Slightly stronger depth beneath desks and around plants, readable faces and tabletop objects; night unchanged. Do not lower fill again: shape the key-light direction and soft cast-shadow transitions |
 | 102 (fresh key-light review) | Campus craft 7.0 / fidelity 7.5; narrowly retained | Slightly warmer/better-lit furniture and rugs, compact contacts retained, no clipping. Do not widen the featureless wall shadow further. Hold lighting and address the dense parallel tabletop grain and checker-like textile pattern |
+| 103 (fresh wood/textile review) | Campus craft 7.0 / fidelity 7.5; mixed, rug revision required | Quieter broken wood grain retained; fine fibres disappear at campus scale, leaving rugs too smooth and featureless |
+| 104 (fresh textile correction review) | Campus craft 7.0 / fidelity 7.5; retained | Irregular tuft groups recover textile variation without 102's checker pattern; wood stays quieter and no lighting regression is seen. Room staging and furniture-character integration are the larger remaining gap |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -843,3 +845,20 @@ close sample is recorded, not replaced by the prior faster one. GPU completion
 and worst-case minute-change shadow cost remain unmeasured. The independent
 review narrowly retains 102 but does not raise its grade; material scale is
 the next priority. Its actual captures remain in the pass-102 evidence folder.
+
+Pass 103 passes 329 tests/build but its rug result is not accepted. Campus
+submits 50.80 fps (2.27 ms mean / 4.10 ms p95 CPU), Reflection close 51.30 fps
+(2.20 / 4.00 ms), with 102's resource counts. The rejected smooth-rug evidence
+is retained separately; its quieter wood is carried into 104.
+
+Pass 104 passes 329 tests/build. Irregular tuft groups use the same 512-pixel
+rug texture, now shared with a shallow bump response; a bounded dry sheen adds
+fragment shader work without another draw, texture, light or frame pass.
+Campus submits 55.80 fps (1.79 ms mean / 2.50 ms p95 CPU, 112 draws, 371,968
+triangles); Reflection close 55.20 fps (1.94 / 2.70 ms, 125 draws, 861,909
+triangles, three dense avatars). These same-machine samples are not GPU
+completion or worst-case guarantees. Actual 1536 × 1024 day/night campus and
+close-room evidence is saved under surface-pass-104. The reviewer retains the
+revision at campus craft 7.0 / fidelity 7.5; this is not a fresh full-character
+grade or A-level acceptance. The next priority is one room's coherent furniture
+grouping, preserving neutral agents and genuine-action-only behavior.

@@ -337,3 +337,36 @@ test('woven rugs have real rounded corners and retain pile height and bounded fo
   assert.ok(ray.intersectObject(root, true).length > 0);
   disposeObject(root); kit.dispose();
 });
+
+test('wood and textile detailing stays within the existing baked texture budget and avoids a coarse weave grid', t => {
+  const prior=globalThis.document,paths=[];let current;
+  const context=new Proxy({}, {get:(_,key)=>{
+    if(String(key).startsWith('create'))return()=>({addColorStop(){}});
+    if(key==='beginPath')return()=>{current=[];paths.push(current)};
+    if(key==='moveTo'||key==='lineTo')return(x,y)=>current.push([x,y]);
+    return()=>{};
+  }});
+  globalThis.document={createElement:()=>({width:0,height:0,getContext:()=>context})};
+  t.after(()=>{globalThis.document=prior});
+  const kit=new SceneKit(),root=new THREE.Group();
+  rug(root,kit,'#8b9779',0,0,4.55,4.2);
+  const fibres=paths.filter(path=>path.length===2);
+  assert.equal(fibres.length,13500);
+  assert.ok(fibres.every(([a,b])=>Math.hypot(a[0]-b[0],a[1]-b[1])<3),'tufts remain sub-three-pixel details');
+  assert.ok(new Set(fibres.slice(0,100).map(path=>path[0][0]%4)).size>95,'tufts do not occupy a repeated four-pixel grid');
+  const weave=root.children.find(mesh=>mesh.material.map);
+  assert.equal(weave.material.isMeshPhysicalMaterial,true);
+  assert.equal(weave.material.bumpMap,weave.material.map,'pile height reuses the existing woven field');
+  assert.ok(weave.material.sheen>0&&weave.material.sheen<.3&&weave.material.bumpScale<.025);
+  assert.equal(weave.material.transmission,0);assert.equal(weave.material.transparent,false);
+  assert.equal(weave.material.map.image.width,512);assert.equal(weave.material.map.image.height,512);
+  paths.length=0;table(root,kit,0,0,3,1.4);
+  const growth=paths.filter(path=>path.length===25);
+  assert.equal(growth.length,155);
+  assert.ok(growth.some(path=>Math.max(...path.map(point=>point[1]))-Math.min(...path.map(point=>point[1]))>15),'wood fibres flow around knot fields instead of parallel straight grooves');
+  assert.ok(growth.flat().flat().every(Number.isFinite));
+  const maps=new Set();root.traverse(mesh=>{if(mesh.isMesh&&mesh.material.map)maps.add(mesh.material.map)});
+  assert.equal(maps.size,2,'one rug map and one table map, no extra texture layers');
+  assert.ok([...maps].every(map=>map.image.width<=768&&map.image.height<=512));
+  disposeObject(root);kit.dispose();
+});

@@ -19,13 +19,15 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-102 suite passes **328 tests** and the production build passes. Its
+The pass-104 suite passes **329 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
 campus remains 7.0 craft / 7.5 fidelity. Pass 101 fixes and tests exact-noon
 lighting initialization; pass 102's key-light adjustment is narrowly retained
-with the same score. Wood and textile pattern scale are now the review priority. The user's
+with the same score. Pass 104 retains quieter wood and irregular textile pile,
+correcting pass 103's overly smooth rugs. Campus remains 7.0 / 7.5; one-room
+furniture grouping is now the review priority. The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check

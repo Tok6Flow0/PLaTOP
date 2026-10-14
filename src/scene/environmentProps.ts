@@ -109,18 +109,27 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
   base.position.set(x,.0975,z); base.receiveShadow = true; parent.add(base); surface(base,'rug');
   const texture = canvasTexture(512, 512, (context) => {
     context.fillStyle = color; context.fillRect(0, 0, 512, 512);
-    // Alternating short warp/weft stitches survive downsampling without the
-    // bright regular grid that made the previous rug look like a flat panel.
-    for (let row = 0; row < 128; row++) for (let column = 0; column < 128; column++) {
-      const horizontal = (row + column) % 2 === 0;
-      const variation = (row * 29 + column * 17) % 7;
-      context.fillStyle = variation < 3 ? 'rgba(255,237,200,.12)' : 'rgba(61,48,31,.085)';
-      const px = column * 4, py = row * 4;
-      context.fillRect(px + (horizontal ? 0.1 : 1.15), py + (horizontal ? 1.15 : 0.1), horizontal ? 3.8 : 1.7, horizontal ? 1.7 : 3.8);
+    // Fine tufts have slight direction and length variation, not a large
+    // alternating checker. The same mipmapped texture becomes quiet fabric
+    // at campus scale and small fibres beside a nearby character.
+    let seed=3917;
+    const random=()=>{seed=(Math.imul(seed,1664525)+1013904223)>>>0;return seed/4294967296;};
+    // Slightly grouped pile survives the campus view without rebuilding the
+    // alternating grid. Each soft, irregular tuft contains the finer fibres.
+    for(let tuft=0;tuft<950;tuft++){
+      const px=random()*512,py=random()*512,radius=2.5+random()*4;
+      const nap=context.createRadialGradient(px,py,0,px,py,radius);
+      nap.addColorStop(0,tuft%3?'rgba(255,239,204,.10)':'rgba(48,40,28,.08)');
+      nap.addColorStop(1,'rgba(110,96,72,0)');context.fillStyle=nap;
+      context.beginPath();context.ellipse(px,py,radius,radius*(.55+random()*.35),random()*.4,0,Math.PI*2);context.fill();
     }
-    for (let i = 0; i < 2000; i++) {
-      context.fillStyle = i % 3 ? 'rgba(255,242,211,.055)' : 'rgba(55,48,34,.055)';
-      context.fillRect((i * 193) % 512, (i * 83) % 512, 1.3, 2.3);
+    for(let i=0;i<13500;i++){
+      const px=random()*512,py=random()*512,length=.8+random()*2.1;
+      const horizontal=random()<.28,drift=(random()-.5)*.8;
+      context.strokeStyle=i%3?'rgba(255,240,208,.075)':'rgba(53,45,31,.060)';
+      context.lineWidth=.45+random()*.50;
+      context.beginPath();context.moveTo(px,py);
+      context.lineTo(px+(horizontal?length:drift),py+(horizontal?drift:length));context.stroke();
     }
     const edgeShade = context.createRadialGradient(256, 190, 40, 256, 256, 345);
     edgeShade.addColorStop(0, 'rgba(255,238,195,.035)'); edgeShade.addColorStop(0.55, 'rgba(64,54,34,0)'); edgeShade.addColorStop(1, 'rgba(64,54,34,.13)');
@@ -132,6 +141,14 @@ export function rug(parent: THREE.Object3D, kit: SceneKit, color: string, x: num
   weave.geometry = new THREE.ShapeGeometry(outline(width - .11, depth - .11, radius - .055), 12);
   const points = weave.geometry.getAttribute('position'), uv = weave.geometry.getAttribute('uv');
   for (let i=0;i<points.count;i++) uv.setXY(i,points.getX(i)/(width-.11)+.5,points.getY(i)/(depth-.11)+.5);
+  // The rounded textile top already has its own draw. Reuse its colour map
+  // as a shallow pile-height field and add a dry grazing response; no extra
+  // geometry, texture allocation, light or screen-space pass is introduced.
+  const flatMaterial=weave.material as THREE.MeshStandardMaterial;
+  const textile=new THREE.MeshPhysicalMaterial({map:texture,bumpMap:texture,bumpScale:.018,
+    side:THREE.DoubleSide,sheen:.22,sheenRoughness:.90,
+    sheenColor:new THREE.Color(color).lerp(new THREE.Color('#e9dec8'),.30)});
+  weave.material=textile;flatMaterial.dispose();
   (weave.material as THREE.MeshStandardMaterial).roughness = 0.98;
   (weave.material as THREE.MeshStandardMaterial).envMapIntensity = 0.2;
   // The pile and weave used to differ by only 0.0015 world units. At the
@@ -211,10 +228,29 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       cloud.addColorStop(1,'rgba(130,108,80,0)');context.fillStyle=cloud;
       context.fillRect(cx-r,cy-r,r*2,r*2);
     }
-    for (let i = 0; i < 230; i++) {
-      const y=random()*384,start=random()*240-80,length=210+random()*650,bend=2+random()*9;
-      context.strokeStyle = i % 3 ? 'rgba(76,57,39,.17)' : 'rgba(243,223,186,.18)'; context.lineWidth = .35+random()*.65;
-      context.beginPath(); context.moveTo(start,y);context.bezierCurveTo(start+length*.27,y+bend,start+length*.65,y-bend*.6,start+length,y+random()*3);context.stroke();
+    // Growth fibres flow around a few small knots. Shared flow gives coherent
+    // timber structure; broken lengths and restrained contrast avoid a dense
+    // bank of parallel grooves across the whole table.
+    const knots=[[218,112,1],[590,278,-1]];
+    for(let i=0;i<155;i++){
+      const base=random()*384,start=random()*340-100,length=120+random()*590;
+      const drift=random()*5,phase=random()*.45;
+      context.strokeStyle=i%3?'rgba(76,57,39,.105)':'rgba(243,223,186,.12)';
+      context.lineWidth=.30+random()*.50;context.beginPath();
+      for(let step=0;step<=24;step++){
+        const px=start+length*step/24;
+        let py=base+4*Math.sin(px*.007+phase)+drift*step/24;
+        for(const [kx,ky,direction] of knots){
+          const dy=base-ky;
+          py+=direction*24*Math.exp(-(((px-kx)/130)**2))*Math.tanh(dy/13)*Math.exp(-Math.abs(dy)/64);
+        }
+        if(step===0)context.moveTo(px,py);else context.lineTo(px,py);
+      }
+      context.stroke();
+    }
+    for(const [kx,ky] of knots){
+      context.strokeStyle='rgba(76,57,39,.085)';context.lineWidth=.7;
+      context.beginPath();context.ellipse(kx,ky,6,1.8,-.04,0,Math.PI*2);context.stroke();
     }
   });
   const top = texturedPlane(parent, grain, [x, 0.82, z], width - 0.16, depth - 0.14, true);
