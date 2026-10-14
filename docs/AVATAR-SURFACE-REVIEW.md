@@ -94,6 +94,7 @@ not asked for a desired score or instructed to approve.
 | 99 (fresh Reflection structural-metal review) | Craft 7.5 / fidelity 7.5; retained over 98 | Dark roof/frame/base separate from luminous panes and polished fittings without a paper-owl regression. The roof still partly reads as brown material; prioritize localized soft paper-overlap shadows, not more tiny metal adjustments |
 | 100 (fresh actual-scene contact review) | Campus craft 7.0 / fidelity 7.5; close craft approximately 7.5; retained | Short-range close AO replaces dirty pot-shadow clouds with compact contacts and improves books/mug grounding without losing owl folds. Campus lighting change is not confidently substantial; room-scale key-light shaping remains the priority |
 | 101 (fresh corrected-noon review) | Campus craft 7.0 / fidelity 7.5; retained | Slightly stronger depth beneath desks and around plants, readable faces and tabletop objects; night unchanged. Do not lower fill again: shape the key-light direction and soft cast-shadow transitions |
+| 102 (fresh key-light review) | Campus craft 7.0 / fidelity 7.5; narrowly retained | Slightly warmer/better-lit furniture and rugs, compact contacts retained, no clipping. Do not widen the featureless wall shadow further. Hold lighting and address the dense parallel tabletop grain and checker-like textile pattern |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -832,3 +833,13 @@ Campus submits 55.30 fps (1.95 ms mean / 3.10 ms p95 CPU), Reflection close
 limitations. Independent actual-image review retains the corrected noon result
 without raising its score. Current repository noon/night screenshots are now
 the matched 1536 × 1024 pass-101 captures. Portrait models remain pass 99.
+
+Pass 102 passes 328 tests/build. The existing noon key moves forward with a
+smooth third-axis day interpolation and slightly stronger direct illumination;
+the shadow blur widens without changing the 2048 map or twelve blur samples.
+Campus submits 55.20 fps (2.12 ms mean / 3.50 ms p95 CPU), Reflection close
+49.79 fps (2.34 / 4.20 ms), with pass 101's sampled resource counts. The lower
+close sample is recorded, not replaced by the prior faster one. GPU completion
+and worst-case minute-change shadow cost remain unmeasured. The independent
+review narrowly retains 102 but does not raise its grade; material scale is
+the next priority. Its actual captures remain in the pass-102 evidence folder.

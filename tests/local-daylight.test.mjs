@@ -29,6 +29,7 @@ test('the complete day is finite, continuous, periodic, and darker at night',()=
     }
     for(const color of [a.sky,a.ground,a.sun,...a.backdrop])assert.match(color,/^#[0-9a-f]{6}$/);
     assert.ok(a.sunPosition.every(Number.isFinite));
+    assert.ok(a.sunPosition.every((coordinate,index)=>Math.abs(coordinate-b.sunPosition[index])<1),'key direction changes smoothly through the day');
   }
   assert.ok(daylightAtHour(23).sunIntensity<daylightAtHour(12).sunIntensity*.2);
   assert.ok(daylightAtHour(23).ambient<daylightAtHour(12).ambient*.5);

@@ -144,7 +144,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
   sunlight.shadow.mapSize.set(2048, 2048);
   sunlight.shadow.bias = -0.0004;
   sunlight.shadow.normalBias = 0.025;
-  sunlight.shadow.radius = 14;
+  sunlight.shadow.radius = 20;
   sunlight.shadow.blurSamples = 12;
   sunlight.shadow.camera.near = 1;
   sunlight.shadow.camera.far = 80;
