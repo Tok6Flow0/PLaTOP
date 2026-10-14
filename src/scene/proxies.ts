@@ -41,7 +41,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     characterStroke(kit, parent, color, points, radius, finish);
   const eyes = (parent: THREE.Object3D, separation: number, y: number, z: number, closed = false, color = ink, size = 1) => {
     [-1, 1].forEach(sign => {
-      const eye = closed ? characterEyeArc(kit, parent, color, [sign * separation, y, z], .043 * size, .026 * size)
+      const eye = closed ? characterEyeArc(kit, parent, color, [sign * separation, y, z], .043 * size, .026 * size, wayfinder?'warmInk':'ink')
         : sculpt(parent, 'detail', color, [sign * separation, y, z], [.061 * size, .082 * size, .025 * size], undefined, 'ink');
       data.eyes.push(eye);
       if (!closed) data.highlights.push(sculpt(parent, 'detail', '#fff8df', [sign * separation - .010 * size, y + .020 * size, z + .014 * size], [.015 * size, .019 * size, .007], undefined, 'glaze'));
@@ -57,7 +57,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const limbs = (color: string, extremity: string, compact = false, robed = false) => {
     [-1, 1].forEach(sign => {
       if(!robed){
-        const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (compact ? .30 : .32), .16, 0]);
+        const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (compact ? .30 : .32), leader ? .26 : .16, 0]);
         sculpt(arm, 'limb', color, [sign * .003, -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * -.13]);
         sculpt(arm, 'bean', id==='bridge-scout'?color:extremity, [0, -.29, .025], [.18, .18, .20]); data.arms.push(arm);
       }
@@ -87,6 +87,15 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       stroke(body, '#bda783', [[-.323, -.32, .235], [-.328, .08, .235], [-.312, .62, .235]], .005, 'clay');
       const facePanel=sculpt(head,'bowedCover','#e6d7b9',[0,-.021,.263],[.48,.31,.011],undefined,'paper');
       fitCharacterRelief(facePanel,cover,.002,.006);
+      const faceOutline:Array<[number,number,number]>=[];
+      for(let cornerIndex=0;cornerIndex<4;cornerIndex++)for(let step=0;step<3;step++){
+        const angle=cornerIndex*Math.PI/2+step*Math.PI/4;
+        const cx=cornerIndex===0||cornerIndex===3?.177:-.177,cy=cornerIndex<2?.075:-.117;
+        faceOutline.push([cx+Math.cos(angle)*.045,cy+Math.sin(angle)*.045,.272]);
+      }
+      faceOutline.push([...faceOutline[0]]);
+      const border=stroke(head,'#beaa89',faceOutline,.0022,'paper');border.name='keeper-face-border';
+      fitCharacterRelief(border,facePanel,.001,.002);
       eyes(head, .112, .018, .276, true, ink, 1.12);
       data.eyes.forEach(eye=>fitCharacterRelief(eye,facePanel,.002,.006));
       const corner=sculpt(head, 'pageCorner', '#fff4da', [.22, .10, .261], [.18, .19, .075], [0, 0, -.12], 'paper');
@@ -152,12 +161,15 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       expression.rotation.z=id==='hr-lens'?-.08:id==='hr-relay'?.09:-.01;
       data.head=expression;data.headY=.70;data.bodyY=body.position.y;
     } else {
-      if (leader) { body.position.y = .70; data.bodyY = .70; head.position.y = 1.30; data.headY = 1.30; }
+      // Jarvis's reference is a tall tapered ceramic body under a compact
+      // rounded helmet. Keep the base on its original floor contact while
+      // correcting the silhouette, rather than stretching the whole avatar.
+      if (leader) { body.position.y = .84; data.bodyY = .84; head.position.y = 1.48; data.headY = 1.48; head.scale.set(.84,.80,.86); }
       if (id === 'bridge-scout') {body.position.y=.45;data.bodyY=.45;head.position.y=.89;data.headY=.89;head.scale.set(.86,.92,.92);}
       if (wayfinder) {body.position.y=id==='intake-jarvis'?.535:.49;data.bodyY=body.position.y;head.position.y=id==='intake-jarvis'?1.02:.95;data.headY=head.position.y;}
-      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.04 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, wayfinder?'clay':'glaze');
-      if(leader) sculpt(body,'merchantBase','#bb673a',[0,-.58,0],[.73,.24,.56],undefined,'glaze');
-      if(leader)sculpt(body,'neckBand','#9d542f',[0,.29,0],[.52,.036,.43],undefined,'glaze');
+      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.32 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, wayfinder?'clay':'glaze');
+      if(leader) sculpt(body,'merchantBase','#bb673a',[0,-.72,0],[.73,.24,.56],undefined,'glaze');
+      if(leader)sculpt(body,'neckBand','#9d542f',[0,.38,0],[.52,.036,.43],undefined,'glaze');
       if(id==='bridge-scout')sculpt(body,'neckBand','#274b45',[0,.14,0],[.44,.036,.34],undefined,'glaze');
       if(wayfinder)sculpt(body,'neckBand','#b1a58e',[0,.22,0],[.55,.026,.40],undefined,'clay');
       sculpt(body, 'limb', wayfinder ? '#b6aa8c' : bodyColor, [0, .35, 0], [.18, .15, .18]);
@@ -178,7 +190,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         sculpt(head, 'paperWing', '#d4a05f', [0, .485, -.01], [.13, .24, .13], [0, 0, -.24], 'brass');
         sculpt(head, 'limb', '#527669', [0, .395, 0], [.04, .13, .04], undefined, 'brass');
       } else {
-        if (id === 'intake-compass') [-1, 1].forEach(sign => data.eyes.push(characterEyeArc(kit, head, '#ffe0a0', [sign * .121, .048, .365], .044, -.026)));
+        if (id === 'intake-compass') [-1, 1].forEach(sign => data.eyes.push(characterEyeArc(kit, head, '#ffe0a0', [sign * .121, .048, .365], .044, -.026,'warmInk')));
         else eyes(head, .121, .030, .365, true, wayfinder ? '#ffe0a0' : '#493a2d', leader?1.25:1);
         if(!wayfinder && !leader) characterSmile(kit, head, '#735131', .046, .023, [0, -.068, .365]);
         if (wayfinder) {
@@ -234,6 +246,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
           stroke(body, '#e0bb7a', [[-.085, .11, .29], [-.045, .16, .29], [0, .17, .29], [.045, .16, .29], [.085, .11, .29]], .010);
           stroke(body,'#e0bb7a',[[-.113,.103,.293],[.113,.103,.293]],.007);
           const outline=stroke(body, '#854124', [[-.23,.23,.25],[-.27,-.11,.23],[-.20,-.35,.20],[-.07,-.43,.18],[.07,-.43,.18],[.20,-.35,.20],[.27,-.11,.23],[.23,.23,.25]], .005, 'clay');
+          outline.scale.y=1.32/1.04;
           fitCharacterRelief(outline,body.children[0] as THREE.Mesh,.003,.010);
           sculpt(head, 'limb', '#aa7442', [0, .394, 0], [.04, .14, .04], undefined, 'brass');
           sculpt(head, 'detail', '#d89a48', [0, .495, 0], [.112, .134, .112], undefined, 'brass');
@@ -264,7 +277,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,id==='intake-compass'?.036:.012);
       }
     }
-    group.scale.setScalar(leader ? 1.06 : id === 'bridge-scout' ? 1.03 : id === 'bridge-keeper' ? .97 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : id==='hr-lens'?.93:id==='hr-relay'?.92:hr ? .99 : 1.10);
+    group.scale.setScalar(leader ? 1.02 : id === 'bridge-scout' ? .93 : id === 'bridge-keeper' ? .97 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : id==='hr-lens'?.93:id==='hr-relay'?.92:hr ? .99 : 1.10);
     if(id==='bridge-keeper')group.scale.x*=.92;
     if(id==='hr-lens'||id==='hr-relay')group.scale.x*=1.07;
   } else if (kind === 'lantern') {

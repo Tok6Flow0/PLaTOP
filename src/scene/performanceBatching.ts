@@ -400,17 +400,20 @@ export class SceneBatches {
 
   private materialKey(material: OpaqueMaterial, surfaceFactors = false, staticMap = false): string | null {
     const standard = (material as THREE.MeshStandardMaterial).isMeshStandardMaterial;
+    const pbr = standard ? material as THREE.MeshStandardMaterial : undefined;
+    // Eye ink is an immutable source finish. Activity-controlled lanterns
+    // retain independent uniforms and must never use this batching path.
+    const staticEmission = pbr?.userData.characterFinish === 'warmInk';
     const bump = standard ? (material as THREE.MeshStandardMaterial).bumpMap : null;
     // A shared immutable local character grain has ordinary UV semantics and
     // survives palette cloning. Arbitrary authored maps remain on their safe path.
     const sharedGrain = bump instanceof THREE.DataTexture && bump.userData.platopCharacterGrain === true;
     const grainColour = sharedGrain && material.map === bump;
-    if (material.transparent || material.opacity !== 1 || (standard && (material as THREE.MeshStandardMaterial).emissive.getHex() !== 0)
+    if (material.transparent || material.opacity !== 1 || (pbr && pbr.emissive.getHex() !== 0 && !staticEmission)
       || Object.entries(material).some(([name, value]) => name.endsWith('Map') && value && !(sharedGrain && name === 'bumpMap'))
       || (!staticMap && ((material.map && !grainColour) || material.alphaTest)) || material.clippingPlanes?.length
       || material.onBeforeCompile !== THREE.Material.prototype.onBeforeCompile
       || (material.type !== 'MeshStandardMaterial' && material.type !== 'MeshBasicMaterial')) return null;
-    const pbr = standard ? material as THREE.MeshStandardMaterial : undefined;
     return [material.type, surfaceFactors ? undefined : pbr?.roughness, surfaceFactors ? undefined : pbr?.metalness, material.side, material.shadowSide,
       pbr?.flatShading, material.vertexColors, material.fog, material.toneMapped, material.depthTest,
       material.depthWrite, material.depthFunc, material.colorWrite, material.polygonOffset, material.polygonOffsetFactor,
@@ -421,7 +424,8 @@ export class SceneBatches {
       material.blendEquationAlpha, material.blendColor.toArray().join(','), material.blendAlpha, pbr?.envMapIntensity,
       material.stencilWrite, material.stencilWriteMask, material.stencilFunc, material.stencilRef,
       material.stencilFuncMask, material.stencilFail, material.stencilZFail, material.stencilZPass,
-      sharedGrain ? bump.uuid : undefined, sharedGrain ? pbr?.bumpScale : undefined, grainColour].join(':');
+      sharedGrain ? bump.uuid : undefined, sharedGrain ? pbr?.bumpScale : undefined, grainColour,
+      staticEmission ? pbr?.emissive.toArray().join(',') : undefined, staticEmission ? pbr?.emissiveIntensity : undefined].join(':');
   }
 
   private unusedAttribute(name: string, material: OpaqueMaterial): boolean {

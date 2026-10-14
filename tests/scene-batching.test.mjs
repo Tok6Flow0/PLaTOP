@@ -798,6 +798,27 @@ test('unlit opaque colors use transform palettes while emissive and transparent 
   assert.ok(sources.every(mesh => mesh.layers.mask === 1));
 });
 
+test('immutable warm eye ink shares emission while activity-controlled glows stay independent', t => {
+  const {sources,batches,scene}=multiFixture(t);
+  for(const mesh of sources){
+    mesh.material.userData.characterFinish='warmInk';
+    mesh.material.emissive.set('#ffc675');mesh.material.emissiveIntensity=.65;
+  }
+  batches.rebuild();
+  const rendered=scene.getObjectByName('Shared character draws');
+  assert.equal(rendered.children.length,1);
+  assert.ok(rendered.children[0].material.emissive.equals(sources[0].material.emissive));
+  assert.equal(rendered.children[0].material.emissiveIntensity,.65);
+  sources[1].material.emissiveIntensity=.4;batches.rebuild();
+  assert.equal(rendered.children.length,0,'different emission strengths are not merged');
+  sources[1].material.emissiveIntensity=.65;sources[1].material.emissive.set('#aaccee');batches.rebuild();
+  assert.equal(rendered.children.length,0,'different emission colours are not merged');
+  for(const mesh of sources){mesh.material.userData.characterFinish='amber';mesh.material.emissive.set('#ffc675');}
+  batches.rebuild();
+  assert.equal(rendered.children.length,0,'lantern activity still owns its emission');
+  assert.ok(sources.every(mesh=>mesh.layers.mask===1));
+});
+
 test('opaque batches preserve distinct depth, blending, coverage and shader material states', t => {
   const { sources, batches, scene } = multiFixture(t);
   const first = sources[0].material;

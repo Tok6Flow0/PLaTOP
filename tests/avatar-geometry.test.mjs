@@ -281,6 +281,20 @@ test('Scout keeps a magnifier and compass, rather than the generic cream belly p
   disposeObject(model);kit.dispose();
 });
 
+test('Bridge silhouettes retain a tall Jarvis torso and the smaller Scout from their portrait',()=>{
+  const kit=new SceneKit(),models=['bridge-jarvis','bridge-scout'].map(id=>makeProxy(members.find(member=>member.id===id),kit));
+  const [jarvis,scout]=models;models.forEach(model=>model.updateMatrixWorld(true));
+  const torso=new THREE.Box3().setFromObject(jarvis.getObjectByName('merchantTorso')).getSize(new THREE.Vector3());
+  const helmet=new THREE.Box3().setFromObject(jarvis.getObjectByName('helmet')).getSize(new THREE.Vector3());
+  assert.ok(torso.y/helmet.y>1.6&&torso.y/helmet.y<1.9,'the body is distinctly taller than the helmet');
+  const height=model=>new THREE.Box3().setFromObject(model).getSize(new THREE.Vector3()).y;
+  const relativeHeight=height(scout)/height(jarvis);
+  assert.ok(relativeHeight>.64&&relativeHeight<.74,`Scout stays a smaller companion, not a second leader-sized figure (${relativeHeight})`);
+  const base=new THREE.Box3().setFromObject(jarvis.getObjectByName('merchantBase'));
+  assert.ok(Math.abs(base.min.y)<.02,'the base retains floor contact');
+  models.forEach(disposeObject);kit.dispose();
+});
+
 test('Wayfinder ivory shells and dark faces keep their source matte finishes',()=>{
   const kit=new SceneKit();
   for(const member of members.filter(member=>member.id.startsWith('intake-'))){
@@ -289,6 +303,12 @@ test('Wayfinder ivory shells and dark faces keep their source matte finishes',()
       const mesh=model.getObjectByName(name);assert.ok(mesh);assert.equal(mesh.material.userData.characterFinish,'clay');assert.ok(mesh.material.roughness>=.7);
     }
     assert.equal(model.getObjectByName('rounded-visor').material.userData.characterFinish,'cloth');
+    for(const eye of model.userData.personality.eyes){
+      assert.equal(eye.material.userData.characterFinish,'warmInk');
+      assert.ok(eye.material.emissiveIntensity>0&&eye.material.emissiveIntensity<1);
+      assert.ok(eye.material.emissive.r>eye.material.emissive.g&&eye.material.emissive.g>eye.material.emissive.b);
+      assert.equal(eye.material.transparent,false);
+    }
     disposeObject(model);
   }
   kit.dispose();
@@ -373,6 +393,10 @@ test('Keeper has separate thin covers around a recessed page block and a bound s
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);
   const front=model.getObjectByName('front-cover'),back=model.getObjectByName('back-cover'),pages=model.getObjectByName('page-block');
   assert.ok(front&&back&&pages&&model.getObjectByName('book-spine'));
+  const border=model.getObjectByName('keeper-face-border');
+  assert.ok(border&&border.geometry.userData.characterFitted,'the face border follows the bowed cover, not a floating rectangle');
+  assert.equal(border.material.userData.characterFinish,'paper');
+  assert.equal(border.material.transparent,false);
   assert.ok(front.scale.z<pages.scale.z*.15&&back.scale.z<pages.scale.z*.15,'covers are thin, not solid padded book volumes');
   assert.ok(front.position.z>pages.position.z&&back.position.z<pages.position.z,'leaves sit between the two covers');
   assert.ok(front.scale.x>pages.scale.x&&back.scale.y>pages.scale.y,'pages are recessed inside the cover edge');

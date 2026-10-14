@@ -42,6 +42,8 @@ not asked for a desired score or instructed to approve.
 | 49 (Reflection and Email only) | Modest construction improvements; no new full-set grade | Cleaner broad chest folds and slightly improved bird neck; thick paper edges and lower-right rear feather overlaps remain |
 | 50 (Email only) | Clearer bird cheek/throat continuity; no new full-set grade | Eyes stay visible and no new clipping seen; rounded crown and stiff large wing plane still differ from source |
 | 52 (Reflection only) | Small edge-construction improvement; no new full-set grade | Thinner free wings and quieter lower jaw retained; broad solid-looking masses and a blade-like wing tip still differ from source |
+| 53 | Portraits 8.5/10 — B+; campus 8.2/10 — B; lighting 8.3/10 | Branch attachment improves; repeated horizontal leaf tiers, sparse furnishings, solid-looking paper faces and regular feather overlaps remain |
+| 55 (Merchant only) | 8.6/10 — B+; craft 8.5 / fidelity 8.7 / all-angle 8.5 | Better Jarvis/Scout hierarchy; existing dark seam remnants, rigid Keeper silhouette, glossy shoulders and short simplified arms remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -237,6 +239,23 @@ Lantern Desk characters with zero pending requests, 123 draws and 829,340
 submitted triangles. No console warning/error was observed. This close-up
 runtime check uses the device clock and is not a matched performance sample.
 
+Pass 53 corrects botanical rotation order so each leaf's pitch follows its own
+branch. The full independent review found a net foliage improvement, but asked
+for varied pitch, spacing and curvature instead of horizontal oval tiers.
+Pass 54 adds warm, static Wayfinder eye ink and Keeper's fitted face border.
+Only that immutable eye finish may share emissive batches; variable lantern
+glows remain independent, and different emissive colors/intensities never merge.
+All 296 tests and the production build pass after this optimization.
+The wide view drops from 117 to 110 draw calls; no browser warning/error was
+observed in the isolated close-view check. This is a draw-count reduction, not
+a claim of increased frame rate.
+
+Pass 55 corrects Jarvis's torso-to-helmet ratio and Scout's smaller companion
+scale without widening the motor envelope. It retains the original standing
+height limit and floor contact. All 297 tests and the production build pass.
+An initial full-suite run overlapped portrait generation and correctly rejected
+the previous manifest; the complete rerun after generation passed.
+
 Same-machine isolated camera-only workload, no bridge or agent activity, 1000 ×
 800 CSS canvas, 1500 × 1200 backing pixels, two-second warmup and ten-second sample.
 Unchanged source was read from `271831b` into a temporary isolated checkout.
@@ -280,6 +299,10 @@ and is not treated as close-up evidence.
 | Pass 49 campus | 49.40 | 2.05 / 3.30 ms | 109 / 352,219 | 0 |
 | Pass 50 campus | 58.40 | 1.86 / 2.70 ms | 109 / 352,219 | 0 |
 | Pass 52 campus | 57.10 | 2.01 / 3.50 ms | 109 / 352,219 | 0 |
+| Pass 53 campus | 53.40 | 2.22 / 4.00 ms | 109 / 352,219 | 0 |
+| Pass 54 campus, before eye batching | 52.50 | 2.45 / 4.30 ms | 117 / 352,427 | 0 |
+| Pass 54 campus, after eye batching | 52.40 | 2.38 / 4.20 ms | 110 / 352,427 | 0 |
+| Pass 55 campus | 53.10 | 1.94 / 3.50 ms | 110 / 352,427 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -295,6 +318,9 @@ and is not treated as close-up evidence.
 | Pass 43 full-face close | 54.80 | 1.73 / 2.90 ms | 133 / 2,356,965 | 3 |
 | Pass 46 full-face close | 53.60 | 2.09 / 3.60 ms | 133 / 2,387,397 | 3 |
 | Pass 49 full-face close | 56.00 | 1.81 / 3.20 ms | 134 / 2,387,397 | 3 |
+| Pass 53 full-face close | 50.90 | 2.01 / 3.80 ms | 134 / 2,387,397 | 3 |
+| Pass 54 full-face close, before eye batching | 50.10 | 2.36 / 4.30 ms | 135 / 2,407,557 | 3 |
+| Pass 55 full-face close | 52.30 | 2.00 / 3.80 ms | 135 / 2,379,397 | 3 |
 
 The development-only close-room selector translates this same camera by the
 actual room-grid offsets, without changing any avatar. Additional material
@@ -314,6 +340,9 @@ Pass 50 Dispatch submitted 56.10 fps / 1.94 ms mean / 3.20 ms p95, with two
 dense avatars, 108 draws and 1,668,194 triangles.
 Pass 52 Lantern Desk submitted 57.50 fps / 1.88 ms mean / 3.50 ms p95, with
 three dense avatars, 122 draws and 810,080 triangles.
+Pass 54 Wayfinders submitted 51.49 fps / 2.35 ms mean / 4.20 ms p95 before eye
+batching (139 draws), and 53.21 fps / 2.18 ms / 4.00 ms afterward (138 draws).
+Both submitted 2,381,660 triangles with three dense avatars.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

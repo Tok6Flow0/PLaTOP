@@ -6,7 +6,7 @@ Current result: the stricter character-level reference pass is implemented and f
 
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md): the latest
-independent result is **8.5/10 B+ for portraits and 8.1/10 B for the campus**, not
+independent full-set result is **8.5/10 B+ for portraits and 8.2/10 B for the campus**, not
 the requested A. The original sections below describe the earlier checkpoint.
 
 All sixteen procedural characters now have exactly 100× authored triangles in
@@ -16,9 +16,9 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The current suite passes **286 tests** and the production build passes. The
-existing bundle-size warning remains. Matched full-face camera checks measured
-52.30 submitted scene fps with three dense avatars versus 45.29 baseline; these
+The pass-55 suite passes **297 tests** and the production build passes. The
+existing bundle-size warning remains. Pass 49's matched full-face camera check
+measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
 claim. Mobile header mask icons were repaired without removing their labels.
 
@@ -28,9 +28,13 @@ review acknowledged the clearer neutral orientations, heart-shaped owl face,
 bowed book covers, visible seating and localized lantern warmth. Pass 27 adds
 rounded tables and softer lantern highlights, but its review caught exposed wing
 supports and roots. Pass 31 corrects those, shortens the owl's toes, adds fine leaf
-veins and varies tabletop furnishings. Its independent review confirms the
-construction repair but still finds overly pointed feather layers, smooth felt,
-thick paper folds and insufficient furnishing/botanical richness. Its matched
+veins and varies tabletop furnishings. Passes 47–52 add matte Wayfinder finishes,
+continuous bird cheek planes and thinner exposed paper folds. Targeted reviews
+confirm local improvements. The full pass-53 review gives portraits **8.5/10**,
+campus **8.2/10** and lighting **8.3/10**. Pass 55's targeted Merchant review
+gives **8.6/10**, retaining the taller torso and smaller Scout. Remaining gaps
+include thick-looking paper masses, rear feather overlaps and insufficient
+furnishing/botanical richness. Pass 55's matched
 [noon](docs/images/surface-campus-noon.jpg) and
 [night](docs/images/surface-campus-night.jpg) captures supersede the older campus
 evidence below.

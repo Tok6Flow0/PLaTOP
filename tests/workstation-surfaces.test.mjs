@@ -176,6 +176,12 @@ test('diverse connected plants keep actual vertices inside their certified floor
       if (!object.isMesh) return;
       triangles += (object.geometry.index?.count ?? object.geometry.getAttribute('position').count) / 3;
       if(object.name==='Cupped botanical leaf'){
+        if(kind==='leaf'||kind==='broad'){
+          const aim=new THREE.Vector3(0,1,0).applyEuler(object.rotation);
+          const bearing=new THREE.Vector3(Math.sin(object.rotation.y),0,Math.cos(object.rotation.y));
+          aim.y=0;aim.normalize();
+          assert.ok(aim.dot(bearing)>.94,'leaf pitch follows its own branch azimuth, not a shared world axis');
+        }
         assert.equal(object.material.map?.userData.botanicalGrain,true,'fine veins supplement a real curved leaf');
         assert.equal(object.material.bumpMap,object.material.map);
         assert.equal(object.material.transparent,false,'leaves do not use alpha-cutout cards');

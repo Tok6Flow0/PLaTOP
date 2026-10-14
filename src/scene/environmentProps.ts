@@ -442,7 +442,10 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
   };
   const addLeaf = (index: number, position: Point, rotation: Point, scale: number) => {
     const leaf = new THREE.Mesh(geometry, materials[index % materials.length]); leaf.name = 'Cupped botanical leaf';
-    leaf.position.set(...position); leaf.rotation.set(...rotation); leaf.scale.set(scale * (0.9 + index % 3 * 0.06), scale, scale);
+    // Pitch around the branch's local axis before applying its azimuth.
+    // XYZ tilted every bough toward the same world direction, producing
+    // flat, paddle-like crowns even when the stems branched radially.
+    leaf.position.set(...position); leaf.rotation.set(...rotation, 'YXZ'); leaf.scale.set(scale * (0.9 + index % 3 * 0.06), scale, scale);
     leaf.castShadow = leaf.receiveShadow = true; canopy.add(leaf);
   };
   if (kind === 'ivy') {
