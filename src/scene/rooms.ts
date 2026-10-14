@@ -278,7 +278,35 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const tableWidth = isFoyer ? 3.15 : index===3 ? 3.05 : index===1?2.5:index === 5 ? 2.65 : 2.75;
   const tableDepth = index===3||index===1 ? 1.6 : 1.4;
   const sideSeating = index < 2;
-  table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer?'soft':'rect');
+  // Paired Wayfinder desks are real independently oriented furniture groups.
+  // Their screens, papers and asset anchor use the same transform as the wood;
+  // the walking map includes the entire rotated tabletop, not a smaller proxy.
+  const pairedDesks = index===2 ? [
+    { x:-.8,z:-.95,width:1.04,depth:1.4,angle:-.10,screenZ:-.32 },
+    { x:.8,z:-.65,width:1.04,depth:1.1,angle:.16,screenZ:-.20 },
+  ].map((layout,i)=>{
+    const group=new THREE.Group();group.name=`Wayfinders paired desk ${i+1}`;
+    group.position.set(layout.x,0,layout.z);group.rotation.y=layout.angle;interior.add(group);
+    table(group,kit,0,0,layout.width,layout.depth,'soft');
+    const halfX=(layout.width*Math.abs(Math.cos(layout.angle))+layout.depth*Math.abs(Math.sin(layout.angle)))/2;
+    const halfZ=(layout.width*Math.abs(Math.sin(layout.angle))+layout.depth*Math.abs(Math.cos(layout.angle)))/2;
+    const bounds:NavigationBounds=[layout.x-halfX,layout.z-halfZ,layout.x+halfX,layout.z+halfZ];
+    blockers.push({bounds});group.userData.workstationBounds=bounds;
+    const point=(x:number,z:number):NavigationPoint=>[
+      layout.x+x*Math.cos(layout.angle)+z*Math.sin(layout.angle),
+      layout.z-x*Math.sin(layout.angle)+z*Math.cos(layout.angle),
+    ];
+    const props=i===0?new THREE.Group():group;
+    if(i===0){
+      props.name='Wayfinders starter desktop';props.position.copy(group.position);props.rotation.copy(group.rotation);
+      root.add(props);defaultSlotProps.desk=props;
+    }
+    paper(props,kit,-.12,i===0?.30:.25,i===0?.10:-.08);
+    mug(props,kit,.31,i===0?.34:.28,i===0?'#b7c0a4':'#a0aa8d');
+    if(i===0)tidyStaticMeshes(props);
+    return {...layout,group,point};
+  }) : [];
+  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer?'soft':'rect');
   if(index===3||index===5){
     // Angled empty guest seats expose their cushion and legs instead of a
     // cabinet-like straight back. Their full rotated footprints are obstacles;
@@ -300,12 +328,12 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     stool(spare,kit,0,0,palette.rug);
     blockers.push({bounds:[spareX-spareRadius,spareZ-spareRadius,spareX+spareRadius,spareZ+spareRadius]});
   }
-  blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - tableDepth/2, tableX + tableWidth / 2, tableZ + tableDepth/2] });
+  if(index!==2)blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - tableDepth/2, tableX + tableWidth / 2, tableZ + tableDepth/2] });
   const seats: NavigationPoint[] = isFoyer ? [[-1.15, -1.1], [0.25, -1.2], [1.85, 0.1]]
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
     : team.members.length === 2 ? [[-0.8, index === 5 ? -1.7 : -1.5], [0.8, index === 5 ? -1.7 : -1.5]]
-      : team.members.length === 4 ? [[-0.8, -1.5], [0.8, -1.5], [-0.8, 1.5], [0.8, 1.5]]
+      : team.members.length === 4 ? [[-0.8, -1.5], [0.8, -1.3], [-0.8, 1.5], [0.8, 1.6]]
         : [[-0.8, 1.5], [0, -1.5], [0.8, 1.5]];
   const desks: DeskNavigation[] = seats.map(([x, side], memberIndex) => {
     const z = isFoyer ? side : tableZ + side;
@@ -317,11 +345,13 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       : north ? (x === 0 ? 0 : -Math.sign(x) * 0.28) : -Math.sign(x) * 0.65;
     const screenZ = tableZ + (north ? -0.32 : 0.23);
     const character = team.members[memberIndex];
+    const paired=pairedDesks[memberIndex%2];
     // Shared paper-covered tables, not one screen for every resident. The
     // work stop still belongs to every member, regardless of the prop there.
     const hasComputer = index === 3 || index === 5 && memberIndex === 0
       || index === 2 && memberIndex < 2 || index < 2 && memberIndex === 1;
-    const computer = !hasComputer ? undefined : index === 3 ? monitor(interior, kit, -0.92, screenZ, Math.PI - 0.56)
+    const computer = !hasComputer ? undefined : paired ? laptop(paired.group,kit,0,paired.screenZ,'#5b6257',Math.PI)
+      : index === 3 ? monitor(interior, kit, -0.92, screenZ, Math.PI - 0.56)
       : laptop(interior, kit, x, screenZ, index === 5 ? '#334143' : '#5b6257', north ? Math.PI : 0);
     // Keep Beacon's expression visible beside the screen from the campus and
     // window viewpoints. The smaller workstation remains grounded at the
@@ -331,29 +361,35 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // Fixed side chairs would close the full-clearance path between the desk
     // and wall. These two standing places therefore have no pretend seat.
     if (!isFoyer && !standingSide && index !== 5 && character.kind !== 'lantern' && character.kind !== 'swift') {
-      const seat = chair(interior, kit, x, z, isFoyer ? '#a9855f' : palette.rug, facing);
-      seat.userData.workstation = memberIndex;
+      if(paired&&!north){
+        const seat=new THREE.Group();seat.name='Paired desk stool';seat.position.set(x,0,z);interior.add(seat);
+        stool(seat,kit,0,0,palette.rug);seat.userData.workstation=memberIndex;
+      }else{
+        const seat = chair(interior, kit, x, z, isFoyer ? '#a9855f' : palette.rug, paired?paired.angle:facing);
+        seat.userData.workstation = memberIndex;
+      }
       blockers.push({ bounds: [x - 0.36, z - 0.36, x + 0.36, z + 0.36], deskIndex: memberIndex });
     }
-    const workFacing=index===3&&computer?Math.atan2(computer.position.x-x,screenZ-z):facing;
-    return { position: [x, z], screen: [computer?.position.x ?? x, screenZ], facing:workFacing,
+    const screen:NavigationPoint=paired?paired.point(0,north?paired.screenZ:.25):[computer?.position.x ?? x,screenZ];
+    const workFacing=paired||index===3&&computer?Math.atan2(screen[0]-x,screen[1]-z):facing;
+    return { position: [x, z], screen, facing:workFacing,
       egress: isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
-        : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? -1.15 : 1.2)],
+        : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? -1.15 : paired&&memberIndex===3?1.15:1.2)],
       ...(isFoyer || standingSide || index === 5 ? { seatHeight: OFFICE_FLOOR_Y } : character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
   });
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
   // These are neutral arrival silhouettes, not work poses. Keep the real desk
   // facing on the navigation anchor so an agent's chosen work turns to its task.
-  const actorFacing = desks.map((desk,i) => index===3?0:isFoyer && i===2 ? -.42
+  const actorFacing = desks.map((desk,i) => index===3?0:index===2?-Math.sign(desk.position[0])*(i<2?.28:.65):isFoyer && i===2 ? -.42
     : sideSeating && i!==1 ? (i===0?.32:-.38) : desk.facing);
   const paperX = Math.min(1, tableWidth / 2 - 0.32), mugX = Math.min(1.12, tableWidth / 2 - 0.27);
   // Distinct default tabletop layouts leave the same physical work stops free.
   // North laptops need their full keyboard footprint, with papers forward of it.
-  if(index!==5)paper(interior, kit, tableX - paperX, tableZ + (index===2?.34:.06),index===1?-.14:.08);
+  if(index!==5&&index!==2)paper(interior, kit, tableX - paperX, tableZ + .06,index===1?-.14:.08);
   if(index===0||index===1||isFoyer)notebook(interior,kit,tableX+paperX,tableZ+.08,index===0?'#536e65':isFoyer?'#6a674e':'#9a7855',index===1?.10:-.13);
-  else paper(interior, kit, tableX + paperX, tableZ + (index===2||index===5?.34:.04), -0.2);
-  mug(interior, kit, tableX + mugX, tableZ - 0.48, index === 4 ? '#647c50' : '#a0aa8d');
-  if(index<3)mug(interior, kit, tableX - mugX, tableZ - 0.48,index===0?'#c4b28c':'#b7c0a4');
+  else if(index!==2)paper(interior, kit, tableX + paperX, tableZ + (index===5?.34:.04), -0.2);
+  if(index!==2)mug(interior, kit, tableX + mugX, tableZ - 0.48, index === 4 ? '#647c50' : '#a0aa8d');
+  if(index<2)mug(interior, kit, tableX - mugX, tableZ - 0.48,index===0?'#c4b28c':'#b7c0a4');
   if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - 1.0, 0.825 + i * 0.057, tableZ - 0.4], [0.44, 0.055, 0.32], [0, -0.12, 0]));
   plant(interior, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad');
   if(index===5)parcelStack(interior,kit,2.63,frontPlantZ);
@@ -426,7 +462,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       ...(index === 5 ? [[0.8, -1.36], [aisleX, -1.36]] as NavigationPoint[] : []),
       [aisleX, frontCross], [0, frontCross], [0, index < 3 ? 4.7875 : 4.0], ...(isFoyer ? [[1.4, -2.03], [aisleX, -2.03]] as NavigationPoint[] : []), ...desks.map(desk => desk.egress)], desks };
   const assetSlots: Room['assetSlots'] = {
-    desk: { position: [tableX, 0.84, tableZ + 0.3] },
+    desk: pairedDesks.length ? {position:[pairedDesks[0].point(0,.25)[0],.84,pairedDesks[0].point(0,.25)[1]],rotation:[0,pairedDesks[0].angle,0]}
+      : { position: [tableX, 0.84, tableZ + 0.3] },
     shelf: { position: shelfAsset },
     // The foyer has a low parapet, not an imaginary full-height wall.
     wall: { position: [-2.85, isFoyer ? 0.5 : 2.1, 1.7], rotation: [0, Math.PI / 2, 0] },

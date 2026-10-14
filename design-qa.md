@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-107 suite passes **331 tests** and the production build passes. Its
+The pass-108 suite passes **332 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -31,8 +31,10 @@ with a tighter rug and agent-replaceable low shelf. Beacon is 7.5 / 7.5;
 campus remains 7.0 / 7.5. Pass 106 clears Beacon's face by moving, angling and
 reducing the monitor without moving or posing the character. Pass 107 retains
 Clear Path's tighter desk/rug grouping at 7.5 / 7.5; its full-size navigation
-checks pass after correcting the deeper table's rear approach. Wayfinders'
-repeated shared-desk composition is the next review priority. The user's
+checks pass after correcting the deeper table's rear approach. Pass 108's
+Wayfinders paired desks are a mixed prototype: the reviewer retains the
+staggered direction but rejects their narrow, thick-rimmed proportions at
+7.0 / 7.0. Broader usable tabletops and a real central aisle are next. The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check

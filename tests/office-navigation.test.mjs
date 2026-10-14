@@ -84,11 +84,51 @@ test('Beacon starter reading nook fits the existing reserved floor slot and leav
     'only an agent-chosen work interaction turns toward the actual monitor');
   assert.deepEqual(room.root.userData.rugSurface.bounds,[-2.05,-1.625,2.05,1.725]);
   assert.equal(Object.keys(room.defaultSlotProps).length,1);
-  for(const [id,other] of rooms)if(id!=='support')assert.equal(Object.keys(other.defaultSlotProps).length,0);
+  for(const [id,other] of rooms)if(id!=='support'&&id!=='intake')assert.equal(Object.keys(other.defaultSlotProps).length,0);
   const resources=new THREE.Group();for(const other of rooms.values()){
     other.root.traverse(object=>{if(object.userData.staticSources)resources.add(object.userData.staticSources);});resources.add(other.root);
   }
   disposeObject(resources);kit.dispose();
+});
+test('Wayfinder paired desks carry their real screens, blockers and replaceable desktop anchor', async t => {
+  const {rooms,kit,disposeObject}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  const room=rooms.get('intake');room.root.updateMatrixWorld(true);
+  const stations=[1,2].map(i=>room.root.getObjectByName(`Wayfinders paired desk ${i}`));
+  assert.ok(stations.every(Boolean));
+  assert.notEqual(stations[0].position.z,stations[1].position.z);
+  assert.notEqual(stations[0].rotation.y,stations[1].rotation.y);
+  for(const [i,station] of stations.entries()){
+    const bounds=station.userData.workstationBounds;
+    assert.ok(room.navigation.blockers.some(blocker=>blocker.bounds===bounds));
+    const screen=station.getObjectByName('Workstation laptop');
+    const point=screen.getWorldPosition(new THREE.Vector3()).sub(room.center);
+    const desk=room.navigation.desks[i];
+    assert.ok(Math.abs(desk.screen[0]-point.x)<1e-10&&Math.abs(desk.screen[1]-point.z)<1e-10);
+    assert.ok(Math.abs(desk.facing-Math.atan2(point.x-desk.position[0],point.z-desk.position[1]))<1e-10);
+    // A visible tabletop plane is not retired into a colour batch. Every
+    // corner must remain inside the actual rotated navigation envelope.
+    station.traverse(mesh=>{
+      if(!mesh.isMesh||mesh.geometry.type!=='PlaneGeometry'||!mesh.material.map)return;
+      const box=new THREE.Box3().setFromObject(mesh);
+      assert.ok(box.min.x-room.center.x>=bounds[0]-1e-6&&box.max.x-room.center.x<=bounds[2]+1e-6);
+      assert.ok(box.min.z-room.center.z>=bounds[1]-1e-6&&box.max.z-room.center.z<=bounds[3]+1e-6);
+    });
+  }
+  const slot=room.assetSlots.desk,station=stations[0];
+  assert.deepEqual(slot.rotation,[0,station.rotation.y,0]);
+  // The entire permitted .75-wide/deep recipe stays above its desk, including
+  // rotations already bounded by the asset renderer before slot scaling.
+  for(const x of [-.375,.375])for(const z of [-.375,.375]){
+    const local=new THREE.Vector3(x,0,z).applyAxisAngle(new THREE.Vector3(0,1,0),slot.rotation[1]);
+    local.add(new THREE.Vector3(...slot.position)).add(room.center);station.worldToLocal(local);
+    assert.ok(Math.abs(local.x)<=.52+1e-10&&Math.abs(local.z)<=.7+1e-10);
+  }
+  const {roomVisibilityRoots}=await loadScene('scene/rooms.ts');
+  assert.ok(roomVisibilityRoots(room).includes(room.defaultSlotProps.desk));
+  assert.equal(room.defaultSlotProps.desk.parent,room.root);
+  assert.deepEqual(room.actorFacing,[.28,-.28,.65,-.65],'neutral arrival orientations are not work gestures');
+  assert.ok(room.navigation.desks.slice(2).every(desk=>Math.abs(desk.facing)>3),'chosen work faces the real paired desk');
 });
 function run(motor, limit = 4000) { for (let index = 0; index < limit && motor.pending; index++) motor.update(1 / 30); assert.equal(motor.pending, false); }
 

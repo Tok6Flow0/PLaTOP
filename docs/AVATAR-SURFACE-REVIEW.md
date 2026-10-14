@@ -100,6 +100,7 @@ not asked for a desired score or instructed to approve.
 | 105 (fresh Beacon staging review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Tighter rug and low reading shelf improve grouping at campus scale and night without crowding. Do not repeat this exact template everywhere; the monitor partially hiding Beacon's face is the next focal-point problem |
 | 106 (fresh Beacon focal-point review) | Beacon craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Smaller angled screen exposes the full face and both eyes, including at campus scale and night. Its near-edge-on window angle is acceptable; stop adjusting it and address Clear Path's separated desk group and broad foreground rug |
 | 107 (fresh Clear Path grouping review) | Clear Path craft 7.5 / fidelity 7.5; campus 7.0 / 7.5; retained | Shorter rug, deeper rounded desk and closer side residents improve cohesion without hiding faces. The group remains symmetric and the front apron is visibly faceted close up; next priority is distinct staggered Wayfinders workstations, not more tiny Clear Path positioning changes |
+| 108 (fresh Wayfinders paired-desk prototype) | Wayfinders craft 7.0 / fidelity 7.0; campus 7.0 / 7.5; mixed, proportions not accepted | Stagger creates depth and keeps all four faces readable, but thick narrow desks resemble laptop trays. Broaden usable surfaces and slim their construction while preserving a real central walking aisle |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -915,3 +916,19 @@ Actual noon/night campus, full close and window-view captures are saved under
 surface-pass-107. The independent reviewer retains the grouping improvement
 without increasing the grade. Shipped portrait models remain pass 104, and
 the separately smoke-tested production checkpoint remains pass 106.
+
+Pass 108 passes 332 tests/build but its furniture proportions are not accepted.
+Two staggered desks carry their actual screens and paper/mug groups; south
+residents have low stools, and neutral facings stay unchanged. The desk recipe
+anchor follows a real tabletop and its full bounded footprint is tested.
+Starter desktop props yield to an agent-authored desk recipe, without hiding
+the desk or screen. Full route and body-clearance checks pass unchanged.
+
+Campus initially submits 49.20 fps (1.96 ms mean / 3.50 ms p95 CPU), then
+56.50 fps (1.93 / 2.60 ms) on an unchanged repeat. Both samples are retained.
+Wayfinders close submits 50.30 fps (1.86 / 3.40 ms) with three dense avatars.
+Campus has 113 draws / 376,512 triangles, close 144 draws / 2,330,597 triangles.
+One additional 768 × 384 tabletop map replaces one of the removed chair pairs'
+geometry costs; no light or frame pass is added. Variable submission timings
+do not establish unchanged GPU cost. Pass-108 captures are prototype evidence,
+not a finished visual result; production remains the accepted pass 106.
