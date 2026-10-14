@@ -31,15 +31,15 @@ export function surfaceGeometry(data: SurfaceData): THREE.BufferGeometry {
  * caller owns these material clones; source materials/textures stay untouched. */
 function closeMaterial(source:THREE.MeshStandardMaterial,cache:Map<THREE.Material,THREE.MeshStandardMaterial>):THREE.MeshStandardMaterial {
   const finish=source.userData.characterFinish;
-  if(source.type!=='MeshStandardMaterial'||!['feather','plumage','facialFeather','cloth','glaze'].includes(finish)||source.transparent)return source;
+  if(source.type!=='MeshStandardMaterial'||!['feather','plumage','facialFeather','cloth','glaze','lanternGlass'].includes(finish)||source.transparent)return source;
   let material=cache.get(source);if(material)return material;
   const physical=new THREE.MeshPhysicalMaterial();
   THREE.MeshStandardMaterial.prototype.copy.call(physical,source);
   // Three's runtime exposes these stock defines, though its current material
   // declarations omit the field. Standard.copy resets the physical define.
   Object.assign(physical,{defines:{STANDARD:'',PHYSICAL:''}});
-  if(finish==='glaze'){
-    physical.clearcoat=.25;physical.clearcoatRoughness=.30;
+  if(finish==='glaze'||finish==='lanternGlass'){
+    physical.clearcoat=finish==='lanternGlass'?.16:.25;physical.clearcoatRoughness=finish==='lanternGlass'?.18:.30;
   }else{
     physical.sheen=finish==='facialFeather'?.22:.42;
     physical.sheenColor.copy(source.color).lerp(new THREE.Color('#eee8df'),.20);
@@ -181,6 +181,12 @@ export class CharacterDetail {
   /** After batch sync has updated the original animation matrices. */
   sync(): void {
     for (const [actor, resident] of this.residents) if (resident.ready) {
+      // Optical clones keep the existing agent-driven emission state. Detail
+      // must not freeze Lumen's awake/sleeping glow at its creation value.
+      for(const [source,material] of resident.materials){
+        const original=source as THREE.MeshStandardMaterial;
+        material.emissive.copy(original.emissive);material.emissiveIntensity=original.emissiveIntensity;
+      }
       for (const part of resident.parts) {
         let visible = true, ancestor: THREE.Object3D | null = part.source;
         while (ancestor && ancestor !== actor.root) {

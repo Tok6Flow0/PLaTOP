@@ -177,7 +177,7 @@ test('dense paper normals follow displaced relief while preserving the authored 
 
 test('close materials add bounded fibre or glaze response without mutating or disposing source textures',()=>{
   const kit=new SceneKit(),model=new THREE.Group(),originals=[];
-  for(const finish of ['feather','plumage','facialFeather','cloth','glaze','paper']){
+  for(const finish of ['feather','plumage','facialFeather','cloth','glaze','lanternGlass','paper']){
     const material=characterMaterial(kit,'#345768',finish),geometry=new THREE.SphereGeometry(.1,8,6);
     const mesh=new THREE.Mesh(geometry,material);model.add(mesh);originals.push({mesh,material,geometry,finish});
   }
@@ -190,7 +190,7 @@ test('close materials add bounded fibre or glaze response without mutating or di
     assert.equal(mesh.material.map,material.map);assert.equal(mesh.material.bumpMap,material.bumpMap);
     assert.equal(material.isMeshPhysicalMaterial,undefined);assert.equal(mesh.material.defines.PHYSICAL,'');
     assert.equal(mesh.material.transmission,0);assert.equal(mesh.material.transparent,false);
-    if(finish==='glaze'){assert.equal(mesh.material.clearcoat,.25);assert.equal(mesh.material.clearcoatRoughness,.30);assert.equal(mesh.material.sheen,0);}
+    if(finish==='glaze'||finish==='lanternGlass'){assert.equal(mesh.material.clearcoat,finish==='lanternGlass'?.16:.25);assert.equal(mesh.material.clearcoatRoughness,finish==='lanternGlass'?.18:.30);assert.equal(mesh.material.sheen,0);}
     else {assert.ok(mesh.material.sheen>0&&mesh.material.sheen<=.42);assert.equal(mesh.material.clearcoat,0);}
     const owned=mesh.material;clones.set(owned,0);owned.addEventListener('dispose',()=>clones.set(owned,clones.get(owned)+1));
   }
@@ -229,6 +229,21 @@ test('close-up LOD is bounded, follows existing joints and releases its worker a
   detail.dispose(); assert.equal(terminated, true);
   actors.forEach(actor => { assert.ok(meshes(actor.model).every(mesh => !mesh.userData.characterDetailHidden && mesh.layers.mask === 1)); });
   disposeObject(scene); kit.dispose();
+});
+
+test('Lumen close glass follows the existing emission state rather than inventing or freezing a glow',async()=>{
+  const scene=new THREE.Scene(),kit=new SceneKit(),root=new THREE.Group(),model=makeProxy(members.find(c=>c.id==='reflection-lumen'),kit);root.add(model);scene.add(root);
+  const camera=new THREE.PerspectiveCamera(38,1,.1,100);camera.position.set(0,1,4);camera.lookAt(0,.7,0);camera.updateMatrixWorld(true);
+  const worker={postMessage(message){queueMicrotask(()=>this.onmessage?.({data:{id:message.id,result:refineCharacterSurface(message.source,message.finish,1)}}));},terminate(){}};
+  const detail=new CharacterDetail(scene,[{root,model}],()=>{},()=>worker);detail.select(camera,800);
+  for(let i=0;i<500&&detail.pending;i++)await new Promise(resolve=>setImmediate(resolve));
+  detail.select(camera,800);scene.updateMatrixWorld(true);detail.sync();assert.equal(detail.count,1);
+  const source=model.userData.personality.glow,glass=scene.getObjectByName('hexGlass:close-surface').material;
+  assert.notEqual(glass,source);assert.equal(glass.transmission,0);
+  animateCharacter(model,'sleeping',0,0,false,true);detail.sync();assert.equal(glass.emissiveIntensity,source.emissiveIntensity);
+  const asleep=glass.emissiveIntensity;
+  animateCharacter(model,'active',0,0,false,true);detail.sync();assert.equal(glass.emissiveIntensity,source.emissiveIntensity);assert.ok(glass.emissiveIntensity>asleep);
+  detail.dispose();disposeObject(scene);kit.dispose();
 });
 
 test('worker failure leaves original characters visible and does not retry forever', async () => {
@@ -1152,6 +1167,25 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
   const helmet = characterGeometry(kit, 'helmet'); helmet.computeBoundingBox();
   assert.ok(helmet.boundingBox.min.z > -.45 && helmet.boundingBox.max.z === .5, 'helmet back is subtly flattened while the fitted face stays intact');
   disposeObject(all); kit.dispose();
+});
+
+test('Lumen maps its interior gradient to every glass pane without changing Beacon or adding transmission',()=>{
+  const kit=new SceneKit(),geometry=characterGeometry(kit,'hexGlass'),uv=geometry.attributes.uv;
+  for(let pane=0;pane<6;pane++){
+    const values=Array.from({length:6},(_,i)=>uv.getX(pane*6+i));
+    assert.ok(Math.min(...values)<1e-5&&Math.max(...values)>1-1e-5,'each pane spans the full light field');
+  }
+  const glass=characterMaterial(kit,'#ffe7b1','lanternGlass'),beacon=characterMaterial(kit,'#fff1cc','amber');
+  assert.notEqual(glass.map,beacon.map);assert.equal(glass.map,glass.emissiveMap);
+  assert.equal(glass.transparent,false);assert.equal(glass.roughness,.26);
+  assert.equal(glass.map.image.width,128);assert.equal(glass.map.image.height,128);
+  const data=glass.map.image.data,pixel=(x,y)=>Array.from(data.slice((y*128+x)*4,(y*128+x)*4+4));
+  const centre=pixel(64,58),edge=pixel(2,58);
+  assert.ok(centre[1]-edge[1]>40&&centre[1]-edge[1]<75,'the internal glow stays broad rather than a bright striped core');
+  assert.ok(edge[0]-edge[1]<55,'edge falloff dims every channel instead of becoming saturated orange');
+  assert.ok(centre[2]<160&&centre[0]>centre[1],'the core stays warm rather than neutral white');
+  assert.equal(beacon.emissiveIntensity,.80);assert.equal(beacon.roughness,.38);
+  kit.dispose();
 });
 
 test('paper chest sheets have a shallow ordered overlap rather than coincident centre faces',()=>{

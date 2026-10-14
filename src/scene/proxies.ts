@@ -320,7 +320,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     } else {
       head.position.y = .49; data.headY = .49; body.position.y = .115; data.bodyY = .115;
       sculpt(body, 'hexBase', '#a88449', [0, 0, 0], [.56, .13, .53], undefined, 'brass');
-      const light = sculpt(head, 'hexGlass', '#fff1cc', [0, 0, 0], [.55, .61, .50], undefined, 'amber'); data.glow = light.material;
+      const light = sculpt(head, 'hexGlass', '#ffe7b1', [0, 0, 0], [.55, .61, .50], undefined, 'lanternGlass'); data.glow = light.material;
       // Every corner is framed, including the rear: the same tapered rails
       // sit on the actual six glass edges around the single bounded light.
       for(let corner=0;corner<6;corner++){

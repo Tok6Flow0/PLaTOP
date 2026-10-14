@@ -89,6 +89,8 @@ not asked for a desired score or instructed to approve.
 | 94 (fresh Reflection rear-closure correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 92 | Broad rear closure removes the distracting star and keeps longer temple folds. Stop rearranging small rear panels; establish thin-edge and overlap-shadow hierarchy on visible cheeks, wings and chest |
 | 95 (fresh Reflection chest-overlap review) | Craft 7.5 / fidelity 7.5; retained as a visual tie | Shallow ordered overlap removes coincident centre faces without visible regression, but the change is not confidently distinguishable at supplied image size. Prioritize warm-to-shadow material transitions and recover amber lantern detail |
 | 96 (fresh Reflection interior-light review) | Craft 7.5 / fidelity 7.5; retained lighting improvement | Moving the emitter inside the glass restores amber colour and expression while keeping warm spill. The panel still looks uniformly luminous; improve controlled internal gradient and restrained glass reflection without restoring the white hotspot |
+| 97 (fresh Reflection glass prototype) | Craft 7.0 / fidelity 7.5; revision required | Per-pane gradients create repetitive orange-edged bright bands. Preserve 96's interior emitter, soften the gradient, mute the edges and use broader glow; other sampled teams show no visible regression |
+| 98 (fresh Reflection glass correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 96 | Broad muted glow removes orange bands while preserving readable faces. Stop tuning the gradient; paper overlap depth and flat uniformly gold roof/frame are larger remaining material gaps |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -768,3 +770,20 @@ range remain unchanged. The front no longer receives extreme near-field light
 from its own emitter. Campus submits 56.30 fps (1.75 ms mean / 3.00 ms p95 CPU),
 Reflection close 55.50 fps (1.33 ms / 2.40 ms), retaining 95's resource counts.
 These are submission samples, not proof of identical worst-case GPU timing.
+
+Pass 97's optical prototype passes 325 tests/build, including per-pane UVs,
+bounded glow textures and synchronization of agent-driven emission into the
+close-tier material clone. Campus submits 58.00 fps (1.93 ms mean / 3.00 ms
+p95 CPU), Reflection close 54.40 fps (1.94 ms / 3.20 ms), with 96's draw and
+triangle counts. One shared 128-pixel glow map adds about 0.083 MiB with mipmaps;
+the near glass coat adds shader work, not a light or refraction render pass.
+The reviewer rejects the strongly striped appearance despite functional checks;
+96 remains the retained lighting checkpoint pending correction.
+
+Pass 98 passes 325 tests/build. Broader warm falloff dims all colour channels
+toward the glass edge, avoiding 97's saturated red bands. Each pane retains
+local UVs and the close coat follows the original agent-driven glow state.
+Campus submits 54.40 fps (2.14 ms mean / 3.30 ms p95 CPU), Reflection close
+56.30 fps (1.89 ms / 2.70 ms), with 97's resource counts and the same timing
+limitations. Its source/portrait checkpoint is independently retained, but
+neither the 9/A target nor an unchanged worst-case GPU workload is established.

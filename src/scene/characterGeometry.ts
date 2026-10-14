@@ -7,7 +7,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
-export type CharacterFinish = 'clay' | 'glaze' | 'satinShell' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
+export type CharacterFinish = 'clay' | 'glaze' | 'satinShell' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.46,.08],[.29,.18],[.14,.235],[0,.26]];
@@ -19,6 +19,7 @@ interface CharacterResources {
   material: Map<string, THREE.MeshStandardMaterial>;
   grains?: Map<string, THREE.DataTexture>;
   glow?: THREE.DataTexture;
+  lanternGlow?: THREE.DataTexture;
   facialGrain?: THREE.DataTexture;
   plumageGrain?: THREE.DataTexture;
 }
@@ -941,7 +942,15 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'featherFanL': return featherFan(-1);
     case 'featherFanR': return featherFan(1);
     case 'breastFeathers': return featherFan(1, true);
-    case 'hexGlass': {const source=new THREE.CylinderGeometry(.36,.49,1,6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
+    case 'hexGlass': {
+      const source=new THREE.CylinderGeometry(.36,.49,1,6),g=source.toNonIndexed();source.dispose();
+      // Each glass pane receives the whole interior-light gradient. A single
+      // cylinder wrap sampled only a narrow uniform strip on the front pane.
+      const uv=g.attributes.uv;
+      for(let pane=0;pane<6;pane++)for(let vertex=pane*6;vertex<(pane+1)*6;vertex++)
+        uv.setX(vertex,THREE.MathUtils.clamp(uv.getX(vertex)*6-pane,0,1));
+      g.rotateY(Math.PI/6);g.computeVertexNormals();return g;
+    }
     case 'hexCap': {const source=lathe([[0,-.5],[.45,-.5],[.50,-.42],[.48,-.34],[.12,.43],[.08,.5],[0,.5]],6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
     case 'hexBase': {const source=lathe([[0,-.5],[.43,-.5],[.49,-.30],[.49,.19],[.44,.42],[0,.42]],6),g=source.toNonIndexed();source.dispose();g.rotateY(Math.PI/6);g.computeVertexNormals();return g;}
     case 'fineRing': return new THREE.TorusGeometry(.5, .027, 6, 28);
@@ -997,17 +1006,21 @@ function surfaceGrain(kit: SceneKit, finish: CharacterFinish): THREE.DataTexture
 }
 
 /** Warm frosted glass has a luminous centre and a quiet amber edge. */
-function glassGlow(kit: SceneKit): THREE.DataTexture {
-  const owner=owned(kit);if(owner.glow)return owner.glow;
+function glassGlow(kit: SceneKit,lantern=false): THREE.DataTexture {
+  const owner=owned(kit),key=lantern?'lanternGlow':'glow';if(owner[key])return owner[key];
   const size=128,data=new Uint8Array(size*size*4);
   for(let y=0;y<size;y++)for(let x=0;x<size;x++){
     const dx=(x+.5)/size-.5,dy=(y+.5)/size-.5;
-    const glow=Math.exp(-(dx*dx*5+dy*dy*3.5));
+    const glow=Math.exp(-(dx*dx*5+(dy+(lantern?.10:0))**2*(lantern?7:3.5)));
     const grain=((Math.imul(x+1,374761393)^Math.imul(y+1,668265263))>>>0)%23/255;
-    data.set([255,Math.round(97+147*glow-grain*40),Math.round(18+130*glow)],(y*size+x)*4);
+    // Broad muted amber falloff: the glass is not a bank of orange tubes.
+    // All channels dim toward its edge, rather than retaining saturated red.
+    const diffuse=.18+.82*glow;
+    data.set(lantern?[Math.round(197+58*diffuse),Math.round(139+101*diffuse-grain*25),Math.round(54+94*diffuse),255]
+      :[255,Math.round(97+147*glow-grain*40),Math.round(18+130*glow),255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.colorSpace=THREE.SRGBColorSpace;texture.needsUpdate=true;texture.magFilter=THREE.LinearFilter;
-  texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;owner.glow=texture;return texture;
+  texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;owner[key]=texture;return texture;
 }
 
 /** Fine radial barbs in the owl's facial discs, shared by both eyes. */
@@ -1057,9 +1070,10 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'glass'||finish === 'opticalGlass' ? .08 : finish === 'ink' ? .24 : finish === 'satinShell' ? .54 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      roughness: finish === 'glass'||finish === 'opticalGlass' ? .08 : finish === 'lanternGlass' ? .26 : finish === 'ink' ? .24 : finish === 'satinShell' ? .54 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'brass' ? .62 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
+      ...(finish === 'lanternGlass' ? { emissive: '#ffd487', emissiveIntensity: .65, emissiveMap:glassGlow(kit,true), map:glassGlow(kit,true),envMapIntensity:.75 } : {}),
       // Source Wayfinder eyes are softly luminous strokes, not tiny lamps.
       // Emission adds no light, bloom pass, transparency or animation.
       ...(finish === 'warmInk' ? { emissive: '#ffc675', emissiveIntensity: .65, roughness: .62 } : {}),
