@@ -319,6 +319,29 @@ test('Bridge silhouettes retain a tall Jarvis torso and the smaller Scout from t
   models.forEach(disposeObject);kit.dispose();
 });
 
+test('Jarvis has a convex breast, tapered waist and a fitted badge within his walking envelope',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='bridge-jarvis'),kit);
+  model.updateMatrixWorld(true);
+  const torso=model.getObjectByName('merchantTorso'),badge=model.getObjectByName('merchant-breast-badge');
+  const ray=new THREE.Raycaster();
+  const height=y=>torso.localToWorld(new THREE.Vector3(0,y,0)).y;
+  ray.set(new THREE.Vector3(0,height(0),3),new THREE.Vector3(0,0,-1));
+  const front=ray.intersectObject(torso,false)[0];
+  ray.set(new THREE.Vector3(0,height(0),-3),new THREE.Vector3(0,0,1));
+  const rear=ray.intersectObject(torso,false)[0];
+  assert.ok(front&&rear&&front.point.z+rear.point.z>.035,'breast has actual forward volume instead of a symmetric can');
+  const halfWidth=y=>{
+    ray.set(new THREE.Vector3(3,height(y),0),new THREE.Vector3(-1,0,0));
+    return ray.intersectObject(torso,false)[0].point.x;
+  };
+  assert.ok(halfWidth(-.38)<halfWidth(.10)*.70,'lower housing visibly tapers below the shoulders');
+  const centre=new THREE.Box3().setFromObject(badge).getCenter(new THREE.Vector3());
+  ray.set(new THREE.Vector3(centre.x,centre.y,3),new THREE.Vector3(0,0,-1));
+  const ornament=ray.intersectObject(badge,true)[0],body=ray.intersectObject(torso,false)[0];
+  assert.ok(ornament&&body&&ornament.distance<body.distance,`chest emblem sits in front of the curved breast (${ornament?.distance}, ${body?.distance}; ${centre.toArray()})`);
+  disposeObject(model);kit.dispose();
+});
+
 test('Jarvis chest seam remains continuous above its dense curved torso',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='bridge-jarvis'),kit);
   model.updateMatrixWorld(true);

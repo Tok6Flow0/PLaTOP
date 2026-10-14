@@ -57,7 +57,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const limbs = (color: string, extremity: string, compact = false, robed = false) => {
     [-1, 1].forEach(sign => {
       if(!robed){
-        const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (compact ? .30 : .32), leader ? .26 : .16, 0]);
+        const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (leader ? .375 : compact ? .30 : .32), leader ? .26 : .16, 0]);
         sculpt(arm, 'limb', color, [sign * .003, -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * -.13]);
         sculpt(arm, 'bean', id==='bridge-scout'?color:extremity, [0, -.29, .025], [.18, .18, .20]); data.arms.push(arm);
       }
@@ -242,10 +242,13 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
             });
           }
         } else {
-          sculpt(body,'bean','#b4844a',[0,.125,.273],[.275,.275,.027],undefined,'brass');
-          ring(body, '#e0bb7a', .25, [0, .125, .280]);
-          stroke(body, '#e0bb7a', [[-.085, .11, .29], [-.045, .16, .29], [0, .17, .29], [.045, .16, .29], [.085, .11, .29]], .010);
-          stroke(body,'#e0bb7a',[[-.113,.103,.293],[.113,.103,.293]],.007);
+          // The medallion is rigid brass sitting above the breast, not an
+          // inlay stretched across its curved skin. Preserve its rounded rim.
+          const breastBadge=joint(body,'merchant-breast-badge',[0,0,.052]);
+          sculpt(breastBadge,'bean','#b4844a',[0,.125,.273],[.275,.275,.027],undefined,'brass');
+          ring(breastBadge, '#e0bb7a', .25, [0, .125, .280]);
+          stroke(breastBadge, '#e0bb7a', [[-.085, .11, .29], [-.045, .16, .29], [0, .17, .29], [.045, .16, .29], [.085, .11, .29]], .010);
+          stroke(breastBadge,'#e0bb7a',[[-.113,.103,.293],[.113,.103,.293]],.007);
           const seam=new THREE.CatmullRomCurve3([[-.23,.23,.25],[-.27,-.11,.23],[-.20,-.35,.20],[-.07,-.43,.18],[.07,-.43,.18],[.20,-.35,.20],[.27,-.11,.23],[.23,.23,.25]].map(p=>new THREE.Vector3(...p)));
           const outline=stroke(body, '#924c2c', seam.getPoints(30).map(p=>[p.x,p.y,p.z]), .0038, 'clay');outline.name='merchant-chest-seam';
           outline.scale.y=1.32/1.04;

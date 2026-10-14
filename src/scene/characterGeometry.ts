@@ -65,6 +65,20 @@ function softLathe(profile: Array<[number, number]>, rows=16, columns=24): THREE
   return lathe(points,columns);
 }
 
+/** A breast shell, not a straight tapered can. The front swells between the
+ * shoulder line and waist while the back remains inside the existing housing. */
+function merchantTorso(): THREE.BufferGeometry {
+  const geometry=softLathe([[0,-.50],[.22,-.49],[.27,-.38],[.37,-.16],[.49,.10],[.47,.22],[.25,.28],[0,.31]]);
+  const p=geometry.attributes.position;
+  for(let i=0;i<p.count;i++){
+    const x=p.getX(i),y=p.getY(i),z=p.getZ(i);
+    const front=Math.max(0,z)/Math.max(.001,Math.hypot(x,z));
+    const breast=Math.exp(-(((y+.025)/.26)**2));
+    p.setZ(i,z+.105*breast*front**3);
+  }
+  return smoothDeformedSurface(geometry);
+}
+
 /** A soft, slightly squared helmet, with a continuous crown and cheeks. */
 function helmet(owl = false,boxed=false): THREE.BufferGeometry {
   const geometry = new THREE.SphereGeometry(.5, 32, 20);
@@ -773,7 +787,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritBody': return softLathe([[0, -.50], [.34, -.50], [.47, -.45], [.5, -.30], [.46, -.12], [.37, .12], [.30, .32], [.26, .46], [.16, .55], [0, .58]]);
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
-    case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
+    case 'merchantTorso': return merchantTorso();
     // The lower folded breast descends toward the small feet. Keeping only a
     // short round torso left Swift perched on long exposed wire-like legs.
     case 'swiftBody': return foldedBirdVolume([[-.235,.040,.055,-.025],[-.12,.078,.085,-.006],[-.015,.111,.11,.045],[.10,.125,.117,.082],[.16,.122,.115,.101],[.22,.108,.108,.105],[.27,.082,.080,.095],[.30,.041,.040,.082],[.307,.006,.008,.079]],true);
@@ -1111,6 +1125,7 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
       const hit=ray.intersectObject(shell,false)[0];
       if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}
     }
-    geometry.computeVertexNormals();geometry.userData.characterFitted=true;mesh.geometry=geometry;
+    geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
+    geometry.userData.characterFitted=true;mesh.geometry=geometry;
   });
 }
