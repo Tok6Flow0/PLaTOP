@@ -1392,3 +1392,33 @@ priority is coordinated Merchant desk/rug/chair/resident integration: clear
 Scout's torso, relate side residents to the desk and reduce empty foreground
 rug, preserving identities and neutral poses. Production remains accepted 127.
 Pass 129's exact remote commit and CI were verified; no A is claimed.
+
+Pass 131 fits a low chair beneath Scout's original short body rather than
+raising or reshaping the character. Its back is relocated behind the hips;
+the actual obstacle and rear egress include that extra depth. The shared desk
+becomes a 2.5 x 1.5 soft-cornered surface, with slightly closer side standing
+places and a smaller, rear-centered rug. Neutral facings and Scout's existing
+home/seat height are unchanged. An initial full-size route check caught an
+owl-clearance failure at the rear approach; correcting the physical approach
+and egress resolves it without reducing any body radius. All 352 tests and
+the production build pass. Tests guard cushion/hip fit and unchanged Scout
+home, height and neutral orientation.
+
+The first fixed campus sample submits 58.9012 fps (1.88 ms mean / 3.30 ms p95
+CPU); its unchanged repeat submits 59.9994 fps (1.73/2.70 ms). Both are retained,
+with 117 draws and 383,500 triangles. Merchant close submits 60.0024 fps
+(1.63/3.10 ms; 151 draws, 2,650,189 triangles, three detailed avatars).
+The changed layout alters close-view visible work; these are not identical
+triangle-count workloads. Timings measure CPU-side submissions, not GPU
+completion. Complete matched scenes and both campus results are saved in
+surface-pass-131. Pass 130's exact remote commit and CI succeeded.
+
+The independent reviewer retains the chair correction and tighter grouping:
+Merchant craft remains 7.5 and fidelity rises to 8.0; campus stays 7.0 / 7.5.
+Scout's visible torso band is gone and the three residents read as one group,
+without expression, cabinet or night-readability regressions. The desk's broad
+continuous apron is still too molded-looking. The largest campus-wide gaps
+are flat, under-articulated architectural surfaces and repetitive, sparsely
+layered room silhouettes. The next study is a Merchant back-wall prototype:
+restrained vertical panel rhythm, physical seams and integrated cap/base,
+with characters, furniture and lighting frozen. This is not A-level acceptance.

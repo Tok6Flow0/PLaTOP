@@ -284,11 +284,12 @@ export function parcelStack(parent: THREE.Object3D, kit: SceneKit, x: number, z:
   floorContact(stack,0,.003,0,1.05,.85);
   return stack;
 }
-export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {
+export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0, fit: 'standard'|'low'='standard'): THREE.Group {
   const group = new THREE.Group(); group.position.set(x, 0, z); group.rotation.y = angle; parent.add(group);
   group.name = 'Desk chair';
   stool(group, kit, 0, 0, color);
-  [-0.27, 0.27].forEach((dx) => surface(kit.mesh(group, 'detailCylinder', '#96714c', [dx, 0.79, -0.23], [0.065, 0.55, 0.065], [0.08, 0, 0], 'wood'), 'furniture'));
+  const backSet=fit==='low'?.07:0;
+  [-0.27, 0.27].forEach((dx) => surface(kit.mesh(group, 'detailCylinder', '#96714c', [dx, 0.79, -0.23-backSet], [0.065, 0.55, 0.065], [0.08, 0, 0], 'wood'), 'furniture'));
   const curvedBack = (width: number, height: number, depth: number) => {
     const geometry = new RoundedBoxGeometry(width, height, depth, 3, Math.min(depth * 0.45, 0.06));
     const positions = geometry.getAttribute('position');
@@ -299,9 +300,12 @@ export function chair(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     geometry.computeVertexNormals(); return geometry;
   };
   const frame = surface(new THREE.Mesh(curvedBack(0.7, 0.53, 0.14), kit.material('#98734e', 'wood')), 'furniture');
-  frame.position.set(0, 1.02, -0.25); frame.rotation.x = 0.08; frame.castShadow = frame.receiveShadow = true; group.add(frame);
+  frame.position.set(0, 1.02, -0.25-backSet); frame.rotation.x = 0.08; frame.castShadow = frame.receiveShadow = true; group.add(frame);
   const back = new THREE.Mesh(curvedBack(0.59, 0.42, 0.08), kit.material(color, 'fabric'));
-  back.position.set(0, 1.02, -0.165); back.rotation.x = 0.08; back.castShadow = back.receiveShadow = true; group.add(back);
+  back.position.set(0, 1.02, -0.165-backSet); back.rotation.x = 0.08; back.castShadow = back.receiveShadow = true; group.add(back);
+  // Scout's short chosen body needs a low seat beneath its existing hips, not
+  // a standard cushion crossing its chest. Fit the furniture, not the avatar.
+  if(fit==='low'){group.position.y=.08;group.scale.y=.34;group.name='Low fitted desk chair';}
   return group;
 }
 export function laptop(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, color: string, angle = 0): THREE.Group {

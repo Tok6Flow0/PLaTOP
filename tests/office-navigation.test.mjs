@@ -520,7 +520,7 @@ test('three-member side places use their real floor-height homes beside their sh
   t.after(() => { for (const room of rooms.values()) disposeObject(room.root); kit.dispose(); });
   for (const officeId of ['merchant', 'hr']) {
     const room = rooms.get(officeId), { desks, blockers, floorY } = room.navigation;
-    const width=officeId==='hr'?2.5:2.75,depth=officeId==='hr'?1.6:1.4;
+    const width=2.5,depth=officeId==='hr'?1.6:1.5;
     const table = blockers.find(({ bounds: [x0, z0, x1, z1], deskIndex }) => deskIndex === undefined
       && Math.abs(x1 - x0 - width) < 1e-9 && Math.abs(z1 - z0 - depth) < 1e-9);
     assert.ok(table, `${officeId} blocks its actual shared table dimensions`);
@@ -543,6 +543,13 @@ test('three-member side places use their real floor-height homes beside their sh
     }
     assert.ok(desks[1].position[1] < z0, `${officeId} center resident remains behind the desk`);
     assert.ok(blockers.some(blocker => blocker.deskIndex === 1), `${officeId} center resident retains a real chair`);
+    if(officeId==='merchant'){
+      assert.deepEqual(desks[1].position,[0,-2.45],'Scout keeps its existing physical home');
+      assert.equal(desks[1].seatHeight,.2,'the fitted furniture does not lift the short character');
+      assert.equal(room.actorFacing[1],0,'Scout retains its neutral forward orientation');
+      assert.equal(desks[1].egress[1],-3.74,'rear approach accounts for the real relocated chair back');
+      assert.deepEqual(room.root.userData.rugSurface.bounds,[-2.2,-3,2.2,1]);
+    }
   }
 });
 

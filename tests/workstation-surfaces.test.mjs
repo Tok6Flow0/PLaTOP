@@ -216,6 +216,19 @@ test('angled guest chairs fit the actual lower-room blockers with visible seat p
   disposeObject(all);kit.dispose();
 });
 
+test('Scout furniture fits below the original short torso without lifting or reshaping the character',()=>{
+  const kit=new SceneKit(),root=new THREE.Group(),seat=chair(root,kit,0,-.08,'#966f58',0,'low');
+  root.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(seat);
+  assert.ok(bounds.min.x>=-.36&&bounds.max.x<=.36&&bounds.min.z>=-.48&&bounds.max.z<=.36);
+  assert.ok(bounds.min.y>=.099&&bounds.max.y<.53,'low chair feet stay on the floor and its back clears the torso front');
+  const cushion=seat.children.find(o=>o.geometry?.type==='SphereGeometry');
+  const cushionBounds=new THREE.Box3().setFromObject(cushion);
+  const originalHipBottom=.2+(.45-.005-.5*.68)*.93;
+  assert.ok(cushionBounds.max.y>=originalHipBottom&&cushionBounds.max.y-originalHipBottom<.01,
+    'the cushion meets the unchanged hips within soft-cushion tolerance, instead of cutting across the chest');
+  disposeObject(root);kit.dispose();
+});
+
 test('curved shared tables preserve the existing footprint, surface height and bounded geometry', t => {
   canvasDocument(t);
   const kit=new SceneKit(),all=new THREE.Group();

@@ -85,7 +85,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
-  const rugWidth=index===2?4.0:index===4||index===3?4.1:4.55, rugDepth=index===2?4.4:index===3?3.35:index===1?4.1:4.2, rugZ=index===2?-.8:index===3?.05:index===1?-.65:.35;
+  const rugWidth=index===0?4.4:index===2?4.0:index===4||index===3?4.1:4.55, rugDepth=index===0?4.0:index===2?4.4:index===3?3.35:index===1?4.1:4.2, rugZ=index===0?-1:index===2?-.8:index===3?.05:index===1?-.65:.35;
   root.userData.rugSurface = { bounds: [-rugWidth/2,rugZ-rugDepth/2,rugWidth/2,rugZ+rugDepth/2], height: 0.13 };
   const isFoyer = index === 4;
   const walls: Room['walls'] = [];
@@ -278,8 +278,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const aisleX = index === 5 ? 1.9225 : 2.15;
   const tableX = isFoyer ? -0.55 : index===3 ? -.25 : index===5 ? -.22 : 0;
   const tableZ = isFoyer ? 0.3 : index < 3 ? -0.95 : 0.1;
-  const tableWidth = isFoyer ? 3.15 : index===3 ? 3.05 : index===1?2.5:index === 5 ? 2.65 : 2.75;
-  const tableDepth = index===3||index===1 ? 1.6 : 1.4;
+  const tableWidth = isFoyer ? 3.15 : index===3 ? 3.05 : index<2?2.5:index === 5 ? 2.65 : 2.75;
+  const tableDepth = index===0?1.5:index===3||index===1 ? 1.6 : 1.4;
   const sideSeating = index < 2;
   // Paired Wayfinder desks are real independently oriented furniture groups.
   // Their screens, papers and asset anchor use the same transform as the wood;
@@ -312,7 +312,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if(i===0)tidyStaticMeshes(props);
     return {...layout,group,point};
   }) : [];
-  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer?'soft':'rect');
+  if(index!==2)table(interior, kit, tableX, tableZ, tableWidth, tableDepth,index===3||index===1?'capsule':isFoyer||index===0?'soft':'rect');
   if(index===3||index===5){
     // Angled empty guest seats expose their cushion and legs instead of a
     // cabinet-like straight back. Their full rotated footprints are obstacles;
@@ -336,6 +336,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   }
   if(index!==2)blockers.push({ bounds: [tableX - tableWidth / 2, tableZ - tableDepth/2, tableX + tableWidth / 2, tableZ + tableDepth/2] });
   const seats: NavigationPoint[] = isFoyer ? [[-1.15, -1.1], [0.25, -1.2], [1.85, 0.1]]
+    : index===0 ? [[-1.95,.25],[0,-1.5],[1.95,.10]]
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
     : team.members.length === 2 ? [[-0.8, index === 5 ? -1.7 : -1.5], [0.8, index === 5 ? -1.7 : -1.5]]
@@ -371,17 +372,18 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
         const seat=new THREE.Group();seat.name='Paired desk stool';seat.position.set(x,0,z);interior.add(seat);
         stool(seat,kit,0,0,palette.rug);seat.userData.workstation=memberIndex;
       }else{
-        const seat = chair(interior, kit, x, z, isFoyer ? '#a9855f' : palette.rug, paired?paired.angle:facing);
+        const fittedScout=character.id==='bridge-scout';
+        const seat = chair(interior, kit, x, z-(fittedScout?.08:0), isFoyer ? '#a9855f' : palette.rug, paired?paired.angle:facing,fittedScout?'low':'standard');
         seat.userData.workstation = memberIndex;
       }
-      blockers.push({ bounds: [x - 0.36, z - 0.36, x + 0.36, z + 0.36], deskIndex: memberIndex });
+      blockers.push({ bounds: [x - 0.36, z - (character.id==='bridge-scout'?.48:.36), x + 0.36, z + 0.36], deskIndex: memberIndex });
     }
     const screen:NavigationPoint=paired?paired.point(0,north?paired.screenZ:.25):[computer?.position.x ?? x,screenZ];
     const workFacing=paired||index===3&&computer?Math.atan2(screen[0]-x,screen[1]-z):facing;
     return { position: [x, z], screen, facing:workFacing,
       egress: paired ? [Math.sign(x)*(north?.6:.45),north?-3.6:1.8]
         : isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
-        : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? -1.15 : paired&&memberIndex===3?1.15:1.2)],
+        : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? character.id==='bridge-scout'?-1.29:-1.15 : paired&&memberIndex===3?1.15:1.2)],
       ...(isFoyer || standingSide || index === 5 ? { seatHeight: OFFICE_FLOOR_Y } : character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
   });
   const actorHomes = desks.map(({ position: [x, z] }) => new THREE.Vector3(x, OFFICE_FLOOR_Y, z));
@@ -451,9 +453,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const door: NavigationPoint = index < 3 ? [0, 3.65] : isFoyer ? [doorX, backZ] : [index === 3 ? 3 : -3, sideDoorZ];
   const frontCross = index===3||index===5 ? 2.0 : isFoyer ? 2.19 : lowerRoom ? tableZ + 1.47 : Math.max(...desks.map(desk => desk.egress[1]), tableZ + (index<2?2.5:2.1));
   const rearCross = index === 2 ? backZ + 1.8 : Math.min(...desks.map(desk => desk.egress[1]), tableZ - 2.1);
-  // Clear Path's deeper shared table needs a correspondingly deeper rear
-  // approach, including enough clearance for a visiting paper owl.
-  const rearApproach=tableZ-(index===1?1.65:1.5);
+  // Both deeper shared tables need a correspondingly deeper rear approach,
+  // including enough clearance for a visiting paper owl.
+  const rearApproach=tableZ-(index<2?1.65:1.5);
   // Interaction stops face real props and share the certified walking aisles.
   const cabinetStop: NavigationPoint = isFoyer ? [1.5, -3.4] : index === 5 ? [1.7, 1.8]
     : lowerRoom ? [-0.9, backZ + 1.1] : index === 2 ? [-0.9, backZ + 1.5] : [-1.25, backZ + 1.85];
