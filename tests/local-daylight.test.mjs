@@ -32,6 +32,7 @@ test('the complete day is finite, continuous, periodic, and darker at night',()=
   }
   assert.ok(daylightAtHour(23).sunIntensity<daylightAtHour(12).sunIntensity*.2);
   assert.ok(daylightAtHour(23).ambient<daylightAtHour(12).ambient*.5);
+  assert.ok(daylightAtHour(12).sunIntensity/daylightAtHour(12).ambient>5,'daylight keeps a directional key rather than uniform fill');
   assert.ok(daylightAtHour(6).sunPosition[0]<0 && daylightAtHour(17.75).sunPosition[0]>0);
 });
 const hook=compile(await readFile(new URL('../src/useLocalDaylight.ts',import.meta.url),'utf8'));

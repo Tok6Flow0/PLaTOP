@@ -733,7 +733,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
       batches.sync();
       characterDetail.sync();
       contacts.sync(camera);
-      output.render(camera, !!idleTeamId);
+      output.render(camera, !!idleTeamId, characterDetail.count > 0);
       return;
     }
     const batchStart = performance.now();
@@ -745,7 +745,7 @@ export function createScene(host: HTMLElement, teams: Team[], onSelect: (id: str
     const contactStart = performance.now();
     contacts.sync(camera);
     const renderStart = performance.now();
-    output.render(camera, !!idleTeamId);
+    output.render(camera, !!idleTeamId, characterDetail.count > 0);
     const renderEnd = performance.now();
     stageCurrent![1] = contactStart - batchStart;
     stageCurrent![2] = renderStart - contactStart;

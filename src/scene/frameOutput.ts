@@ -4,7 +4,7 @@ import { FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 
 export interface OcclusionPipeline {
   resize(width: number, height: number): void;
-  render(camera: THREE.Camera): void;
+  render(camera: THREE.Camera, closeSurfaces?: boolean): void;
   dispose(): void;
 }
 
@@ -46,6 +46,7 @@ export function makeOcclusionPipeline(renderer: THREE.WebGLRenderer, scene: THRE
   const quad = new FullScreenQuad(material);
   const previousColour = new THREE.Color();
   let disposed = false;
+  let closeProfile = false;
   return {
     resize(width, height) {
       const scale = Math.min(1, 1600 / Math.max(width, height));
@@ -54,7 +55,16 @@ export function makeOcclusionPipeline(renderer: THREE.WebGLRenderer, scene: THRE
       // Half-resolution, eight-sample contact shading is capped even on Retina.
       ao.setSize(Math.max(1, Math.ceil(w / 2)), Math.max(1, Math.ceil(h / 2)));
     },
-    render(view) {
+    render(view, closeSurfaces = false) {
+      if (closeProfile !== closeSurfaces) {
+        closeProfile = closeSurfaces;
+        // Campus-scale AO reaches across an entire paper face. Near surfaces
+        // need short contact shading instead, with a tighter denoising kernel.
+        // Reuse the same targets, eight samples and one colour/depth draw.
+        ao.updateGtaoMaterial({ radius: closeSurfaces ? .22 : 1.05,
+          thickness: closeSurfaces ? .16 : .7, scale: closeSurfaces ? 2 : 1.6 });
+        ao.updatePdMaterial({ radius: closeSurfaces ? 2 : 4 });
+      }
       const previousTarget = renderer.getRenderTarget();
       const previousClear = renderer.autoClear;
       renderer.getClearColor(previousColour);
@@ -200,7 +210,7 @@ export class FrameOutput {
     this.scene.background = texture;
   }
 
-  render(camera: THREE.Camera, idle: boolean): void {
+  render(camera: THREE.Camera, idle: boolean, closeSurfaces = false): void {
     this.resize();
     this.updateBackground(idle);
     this.renderer.info.reset();
@@ -213,7 +223,7 @@ export class FrameOutput {
       catch { this.releasePipeline(); }
     }
     if (this.pipeline) {
-      try { this.pipeline.render(camera); return; }
+      try { this.pipeline.render(camera, closeSurfaces); return; }
       catch { this.releasePipeline(); }
     }
     this.renderer.render(this.scene, camera);

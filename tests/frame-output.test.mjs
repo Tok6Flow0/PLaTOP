@@ -88,6 +88,14 @@ test('contact allocation failure falls back once without changing the background
   assert.equal(scene.background.colorSpace, THREE.SRGBColorSpace);
 });
 
+test('near surfaces select localized contact shading through the existing pipeline', t => {
+  const profiles=[];
+  const pipeline={resize(){},render:(_camera,close)=>profiles.push(close),dispose(){}};
+  const {output,camera,dispose}=fixture(t,{pipelineFactory:()=>pipeline});
+  output.render(camera,false);output.render(camera,false,true);output.render(camera,true,true);output.render(camera,false,false);
+  assert.deepEqual(profiles,[false,true,true,false]);dispose();
+});
+
 test('lazy GPU draw or resize failure releases shading once and latches direct output', t => {
   for (const failure of ['render', 'resize']) {
     let creates = 0, disposals = 0;

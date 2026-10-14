@@ -92,6 +92,7 @@ not asked for a desired score or instructed to approve.
 | 97 (fresh Reflection glass prototype) | Craft 7.0 / fidelity 7.5; revision required | Per-pane gradients create repetitive orange-edged bright bands. Preserve 96's interior emitter, soften the gradient, mute the edges and use broader glow; other sampled teams show no visible regression |
 | 98 (fresh Reflection glass correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 96 | Broad muted glow removes orange bands while preserving readable faces. Stop tuning the gradient; paper overlap depth and flat uniformly gold roof/frame are larger remaining material gaps |
 | 99 (fresh Reflection structural-metal review) | Craft 7.5 / fidelity 7.5; retained over 98 | Dark roof/frame/base separate from luminous panes and polished fittings without a paper-owl regression. The roof still partly reads as brown material; prioritize localized soft paper-overlap shadows, not more tiny metal adjustments |
+| 100 (fresh actual-scene contact review) | Campus craft 7.0 / fidelity 7.5; close craft approximately 7.5; retained | Short-range close AO replaces dirty pot-shadow clouds with compact contacts and improves books/mug grounding without losing owl folds. Campus lighting change is not confidently substantial; room-scale key-light shaping remains the priority |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -807,3 +808,17 @@ avatars, 125 draws and 861,909 submitted triangles. Both samples are retained;
 the repeat does not erase the lower sample or establish equal GPU workload.
 Pass 99 noon/night campus captures are actual 1536 × 1024 views, not a new
 campus grade. The independent character result remains 7.5 / 7.5.
+
+Pass 100 passes 327 tests/build. Close detailed surfaces switch the existing
+eight-sample AO to a 0.22-unit radius with a smaller denoising kernel, retaining
+the same targets, draw count and fallback. No new frame pass is allocated.
+Campus submits 52.30 fps (1.75 ms mean / 3.00 ms p95 CPU); Reflection close
+52.60 fps (1.74 / 2.80 ms), with pass 99's sampled draw/triangle counts.
+These remain submission samples, not GPU-completion measurements.
+Actual noon/night/close captures are in the pass-100 evidence directory.
+Inspection then found a pre-existing exact-noon initialization mismatch:
+the scene's recorded hour began at noon before the noon light profile was
+applied, so the first exact-noon update was skipped. The pass-100 noon image
+therefore does not establish its intended new daylight balance. The reviewer
+retains the independently visible close-AO cleanup; the initialization fix and
+fresh daylight comparison must follow separately.
