@@ -417,6 +417,17 @@ test('Swift carries diagonal cheek planes into the breast without hiding its eye
 
 test('folded paper chest sheets sit in front of their closed inner body',()=>{
   const kit=new SceneKit(),ray=new THREE.Raycaster();
+  for(const form of ['paperChestL','paperChestR']){
+    const p=characterGeometry(kit,form).attributes.position;let ridgeTop=-Infinity,ridgeBottom=Infinity,baseWidth=0,shoulderWidth=0;
+    for(let i=0;i<p.count;i++){
+      if(p.getZ(i)>.242){ridgeTop=Math.max(ridgeTop,p.getY(i));ridgeBottom=Math.min(ridgeBottom,p.getY(i));}
+      if(p.getY(i)<-.46)baseWidth=Math.max(baseWidth,Math.abs(p.getX(i)));
+      if(p.getY(i)>.10)shoulderWidth=Math.max(shoulderWidth,Math.abs(p.getX(i)));
+    }
+    assert.ok(ridgeTop>-.06&&ridgeTop<0,'the crease joins the breast below the face');
+    assert.ok(ridgeTop-ridgeBottom>.28,'a continuous long ridge replaces the single-apex belly fan');
+    assert.ok(baseWidth<shoulderWidth*.6,'the sheet turns into a tapered lower body rather than a straight apron');
+  }
   for(const member of members.filter(member=>['reflection-echo','reflection-quill'].includes(member.id))){
     const model=makeProxy(member,kit),body=model.userData.personality.body;
     const shell=model.getObjectByName('paperBody'),sheets=['paperChestL','paperChestR'].map(name=>model.getObjectByName(name));
@@ -916,7 +927,7 @@ test('paper owl breast folds do not cut a horizontal edge across the lower facia
       ray.set(origin,direction);
       const shield=ray.intersectObject(face)[0];assert.ok(shield,`${id} lower face exists`);
       const first=ray.intersectObject(model,true)[0];
-      assert.equal(first.object,face,`${id} lower face remains in front of its folded breast`);
+      assert.ok(first?.object===face,`${id} lower face remains in front of its folded breast; first hit ${first?.object.name}`);
     }
   }
   disposeObject(all);kit.dispose();

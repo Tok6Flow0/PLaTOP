@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-65 suite passes **304 tests** and the production build passes. The
+The pass-67 suite passes **304 tests** and the production build passes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
@@ -52,6 +52,12 @@ passes or lights. The fresh campus reviewer keeps craft **7.0/10** and fidelity
 earn another half point. Its noon campus, close Dispatch and night campus samples
 submit 51.70, 50.40 and 52.30 scene fps respectively; these are variable samples,
 not GPU-completion or locked-frame-rate claims.
+
+Pass 67 wraps and tapers the paper owls' chest sheets after the independent
+review rejected pass 66's flat-apron silhouette. The reviewer retains 67 over
+65 but leaves Reflection at **7.0 craft / 7.5 fidelity**. Campus and Reflection
+close camera samples submit 54.20 and 51.91 fps. The next visible gap is weak
+warm lantern spill on neighboring folds, not insufficient triangle count.
 
 ## Earlier checkpoint evidence
 

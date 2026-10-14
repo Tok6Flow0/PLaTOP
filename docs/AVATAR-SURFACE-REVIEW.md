@@ -55,6 +55,8 @@ not asked for a desired score or instructed to approve.
 | 63 (Dispatch prototype) | 8.4/10 — B+; rejected coverage regression | Narrower fold shows more breast, but missing-looking teal backing and a culled lower triangle prevent acceptance |
 | 64 (Dispatch continuity review) | 8.5/10 — B+; narrowly preferred over 61 | Closed backing restores a visible continuous surface; smaller wing bulk helps, but the stepped central fold remains unlike the source |
 | 65 (fresh Reflection and Swift review) | Each craft 7.0 / fidelity 7.5; subtle surface improvement, unchanged tier | Drier paper grain, but solid-looking volumes and short belly facets remain; longer overlapping chest/wing sheets are the priority |
+| 66 (Reflection prototype) | Craft 6.5 / fidelity 7.0; rejected silhouette regression | Long creases remove the belly zigzag, but flat apron panels and detached wing tabs make the owls rectangular |
+| 67 (fresh Reflection review) | Craft 7.0 / fidelity 7.5; retained over 65, unchanged quality tier | Wrapped and tapered chest restores volume, with closer wings; triangular patchwork, solid thickness and weak lantern spill remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -63,6 +65,14 @@ approval.
 The requested A-level acceptance remains open. Increased mesh density and passing
 tests do not substitute for this visual judgment. The earlier avatar/daylight
 ledger is a separate historical series.
+
+Pass 67: 304 tests and the production build pass. Two long breast ridges and
+paper-thin matching backs replace the rejected flat-apron prototype. The inner
+body and rear sheets taper with the visible breast; resting wings tuck closer
+to the flank. Actual dense-mesh rays verify that the inner body remains behind
+the sheets and the lower face is not covered. The fresh reviewer prefers 67
+over 65 and 66, but keeps craft 7.0 / fidelity 7.5. Localized lantern illumination
+is its next priority; this is not an A-level acceptance.
 
 The fresh pass-60 reviewer was not shown prior scores, target scores or ledgers.
 It viewed the campus concept, all six chosen identity portraits, two campus
@@ -409,6 +419,8 @@ and is not treated as close-up evidence.
 | Pass 62 campus | 51.70 | 1.64 / 2.50 ms | 110 / 354,087 | 0 |
 | Pass 64 campus | 55.10 | 1.48 / 2.10 ms | 110 / 354,091 | 0 |
 | Pass 65 campus | 56.10 | 1.40 / 2.00 ms | 110 / 354,091 | 0 |
+| Pass 66 campus (rejected shape) | 52.60 | 2.18 / 4.50 ms | 110 / 354,107 | 0 |
+| Pass 67 campus | 54.20 | 2.08 / 4.10 ms | 110 / 354,155 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -479,6 +491,11 @@ p95 and 50.40 close fps / 1.16 ms / 1.90 ms, retaining 93/329,483 and 46/303,944
 draws/triangles respectively. Pass 65's matching close sample is 49.90 fps with
 three dense avatars: comparable submitted cadence, but higher CPU submission
 cost (1.57 vs 1.16 ms mean), not a speed increase or proof of equal GPU cost.
+Pass 66 Lantern Desk submitted 52.10 fps / 2.00 ms mean / 3.80 ms p95, with
+three dense avatars, 123 draws and 814,168 triangles. Pass 67 submitted 51.91
+fps / 2.21 ms / 4.10 ms, retaining 123 draws with 818,968 triangles. Both are
+uninterrupted camera-only samples at the same fixed viewport; the rejected
+shape's timing is retained rather than omitted. No agent activity was injected.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

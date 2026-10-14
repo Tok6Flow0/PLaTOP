@@ -422,8 +422,32 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return foldedSheet([[-.035,.09,.035],[.025,-.12,.09],[-.105,-.42,.20],[-.15,-.30,.22],[-.10,-.015,.14]],[-.075,-.20,.18],
+  return foldedSheet([[-.035,.09,.035],[.025,-.055,.095],[0,-.42,.18],[-.10,-.34,.22],[-.10,-.015,.14]],[-.045,-.17,.20],
     ['#dbc29a','#d8bf97','#cdb089','#dfc69f','#e5ceaa']);
+}
+
+/** Two mountain-fold vertices carry one long crease down the curved breast.
+ * The boundary turns back at the flank and tapers over the feet; a single
+ * high fan apex left a broad, straight apron instead of a folded volume. */
+function paperOwlChest():THREE.BufferGeometry {
+  const outline:Tuple[]=[[-.012,.24,.035],[-.38,.14,.04],[-.42,-.08,.07],[-.33,-.34,.08],[-.205,-.50,.08],[.03,-.475,.155],[.025,-.20,.24],[.015,.04,.125]];
+  const front:Tuple[]=[...outline,[-.18,-.045,.245],[-.11,-.34,.245]];
+  const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x,y,z-.010] as Tuple)];
+  const faces:number[][]=[[0,1,8],[1,2,8],[2,3,9,8],[3,4,9],[4,5,9],[5,6,9],[6,7,8,9],[7,0,8]];
+  // Orient against the sheet plane, not a convex-solid centroid: the flank
+  // turns and concave inner edge must still face the camera on both sides.
+  for(const face of faces){
+    const [a,b,c]=face.map(i=>vertices[i]);
+    if((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0)face.reverse();
+  }
+  const tones=['#dec59f','#d8bd95','#d0b28a','#d9be99','#e1c8a3','#dbc09b','#dcc29d','#e3cba6'];
+  faces.push(...faces.map(face=>face.map(i=>i+front.length).reverse()));
+  tones.push(...Array(8).fill('#cbb18d'));
+  for(let i=0;i<outline.length;i++){
+    const j=(i+1)%outline.length;
+    faces.push([j,i,i+front.length,j+front.length]);tones.push('#c2a37a');
+  }
+  return polyhedron(vertices,faces,tones.map(tone=>'#'+new THREE.Color(tone).lerp(new THREE.Color('#dfc7a2'),.65).getHexString()),true);
 }
 
 /** A folded sheet has two matching creased surfaces and a paper-thin edge.
@@ -491,7 +515,7 @@ function paperOwlBody(): THREE.BufferGeometry {
   // converges into the same shoulder and foot vertices, with no extruded wall.
   // The visible chest is carried by the two overlapping paper sheets. Keep
   // this closed inner volume behind them instead of piercing their folds.
-  const vertices:Tuple[]=[[0,.28,.035],[-.38,.15,.04],[.36,.15,.04],[-.49,-.03,.02],[.46,-.08,.03],[-.29,-.50,.06],[.28,-.50,.07],[-.035,-.08,.07],[.07,-.26,.12],[0,-.50,.08],[0,.22,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
+  const vertices:Tuple[]=[[0,.28,.035],[-.38,.15,.04],[.36,.15,.04],[-.49,-.03,.02],[.46,-.08,.03],[-.205,-.50,.06],[.205,-.50,.07],[-.035,-.08,.07],[.07,-.26,.12],[0,-.50,.08],[0,.22,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
   const faces=[[0,1,7],[0,7,2],[1,3,7],[7,3,8],[7,8,4],[7,4,2],[3,5,8],[8,5,9],[8,9,6],[8,6,4],[0,10,1],[0,2,10],[1,10,13],[1,13,3],[2,14,10],[2,4,14],[10,11,13],[10,14,11],[3,13,5],[4,6,14],[13,11,12],[13,12,5],[14,12,11],[14,6,12],[5,12,9],[9,12,6]];
   return polyhedron(vertices,faces,faces.map((_,index)=>index<10?'#dec49e':'#ceb38b'));
 }
@@ -721,9 +745,11 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     }
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
     case 'paperBody': return paperOwlBody();
-    case 'paperChestL': return foldedSheet([[-.035,.18,.045],[-.38,.10,.05],[-.44,-.06,.10],[-.28,-.48,.10],[.14,-.45,.14]],[-.10,-.28,.275],['#dec59f','#d8bd95','#d0b28a','#d9be99','#e1c8a3']);
-    case 'paperChestR': return foldedSheet([[.02,.18,.045],[.37,.10,.05],[.43,-.08,.10],[.27,-.48,.10],[-.03,-.37,.22]],[.14,-.26,.275],['#e3cba6','#d9bd96','#d0b18a','#d8bb96','#dfc59f']);
-    case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.28,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
+    // Long shoulder-to-base creases replace the former short horizontal
+    // belly zigzag. The two thin sheets overlap above the closed inner body.
+    case 'paperChestL': return paperOwlChest();
+    case 'paperChestR': return reflect(paperOwlChest());
+    case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.205,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
     case 'paperEarR': return foldedSheet([[.16,.32,.30],[.28,.41,.24],[.54,.51,.16],[.45,.29,.43]],[.30,.33,.46],['#d1b38b','#e3c79d','#c9a980','#dec299']);
