@@ -1466,3 +1466,22 @@ Window, close zoom to invitation, third/first-person mist, exit and reset all
 pass. The empty local bridge connects with all teams Awaiting update; console
 warnings/errors are absent. This verifies the isolated preview, not private
 live-chat adoption or native packaging.
+
+Pass 134 extends accepted painted joinery to all five enclosed offices; the
+open foyer remains open. Geometry, actors, furniture, light settings and
+Merchant's accepted wall profile are otherwise frozen. A new architecture
+test checks nine semantic wall boards per enclosed office, none in the foyer,
+and the accepted shadow treatment. All 354 tests/build pass. Campus submits
+59.9934 fps (1.65/2.30 ms CPU; 122 draws, 388,660 triangles), Merchant close
+60.0048 fps (1.77/3.00 ms; 153 draws, 2,652,253 triangles, three dense avatars).
+Matched green/navy day/night windows and campus images are in surface-pass-134,
+with freshly captured pre-extension windows in 133. Pass 133 remote CI succeeded.
+
+The independent reviewer retains all four extensions: Clear Path 7.0 craft /
+7.5 fidelity, Wayfinders 8.0 / 8.0, Beacon 7.5 / 7.5 and Dispatch 7.0 / 7.5.
+These are whole-room judgments, not wall-component grades. Campus remains
+7.0 / 7.5. Seams are continuous and appropriately subdued, trim is coherent,
+night separation persists, and no significant occlusion or lighting regression
+is visible. The next priority is the exposed flooring: narrower staggered
+modules, softly readable joints, restrained warm variation and coherent grain,
+with lighting and furniture frozen. Production remains accepted 133; no A is claimed.

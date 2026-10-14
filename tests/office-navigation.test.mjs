@@ -99,6 +99,19 @@ test('joined room cabinets have continuous sides and recessed supported contents
   }
 });
 
+test('all five enclosed offices share painted joinery while the open foyer remains open',async t=>{
+  const {rooms,kit,disposeObject}=await realLayout();
+  t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
+  for(const [id,room] of rooms){
+    const panels=[];for(const wall of room.walls)wall.root.userData.staticSources?.traverse(o=>{
+      if(o.name==='Painted wall board')panels.push(o);
+    });
+    assert.equal(panels.length,id==='reflection'?0:9,`${id} respects its actual architecture`);
+    assert.ok(panels.every(p=>p.userData.roomSurface==='wall'&&!p.castShadow&&p.receiveShadow),
+      'green/navy panels preserve wall styling and the accepted shadow treatment');
+  }
+});
+
 test('Beacon starter reading nook fits the existing reserved floor slot and leaves neutral homes unchanged', async () => {
   const {rooms,kit,disposeObject}=await realLayout();
   const room=rooms.get('support'),nook=room.defaultSlotProps.floor;

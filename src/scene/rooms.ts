@@ -145,12 +145,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     if (back) {
       for (const [left, right] of slices) {
         const span = right - left;
-        if(index===0)paneledWallFinish(section,kit,palette.wall,(left+right)/2,z,span);
-        else{
-          const finish = beveledBlock(section, kit, palette.wall, [(left + right) / 2, 1.91, z + 0.105], [Math.max(0.05, span - 0.18), 3.55, 0.055], 0.02);
-          finish.userData.roomSurface = 'wall';
-          beveledBlock(section, kit, '#d4c4ab', [(left + right) / 2, 0.22, z + 0.14], [Math.max(0.05, span - 0.12), 0.2, 0.065], 0.02);
-        }
+        paneledWallFinish(section,kit,palette.wall,(left+right)/2,z,span);
       }
       beveledBlock(section, kit, '#eee5d6', [x, 3.92, z], [width + 0.06, 0.12, depth + 0.045]);
     } else {

@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-133 suite passes **353 tests** and the production build passes. Its
+The pass-134 suite passes **354 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -151,6 +151,11 @@ The reviewer approves cautious extension to darker walls, then prioritizes
 floor/architectural material identity. Accepted 133 now serves the isolated
 preview: window, close zoom, both mist views, exit/reset and an empty connected
 bridge pass, with all teams Awaiting update and no console warnings/errors.
+Pass 134 extends the accepted joinery to the other four enclosed offices.
+The reviewer retains each darker finish with no significant regression;
+campus remains 7.0 / 7.5. Fixed camera samples stay about 60 fps. The next
+study targets uniform checkerboard-like exposed flooring, holding lighting
+and furniture fixed. Production remains accepted 133.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The
