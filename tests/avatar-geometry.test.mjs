@@ -335,6 +335,20 @@ test('Wayfinder ivory shells and dark faces keep their source matte finishes',()
   kit.dispose();
 });
 
+test('Swift swept wing folds retain closed front and rear coverage',()=>{
+  const kit=new SceneKit(),material=new THREE.MeshBasicMaterial(),ray=new THREE.Raycaster();
+  for(const form of ['swiftWingL','swiftWingR']){
+    const mesh=new THREE.Mesh(characterGeometry(kit,form),material);mesh.updateMatrixWorld(true);let covered=0;
+    for(let y=-.29;y<=.26;y+=.011)for(let z=-.47;z<=.075;z+=.011){
+      ray.set(new THREE.Vector3(1,y,z),new THREE.Vector3(-1,0,0));const front=ray.intersectObject(mesh,false).length>0;
+      ray.set(new THREE.Vector3(-1,y,z),new THREE.Vector3(1,0,0));const rear=ray.intersectObject(mesh,false).length>0;
+      assert.equal(front,rear,`${form} has no culled holes at ${y},${z}`);if(front)covered++;
+    }
+    assert.ok(covered>700,'both swept folds retain substantial closed paper surfaces');
+  }
+  material.dispose();kit.dispose();
+});
+
 test('Swift has a continuous low folded breast above small grounded feet',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-swift'),kit);
   const body=model.getObjectByName('swiftBody');model.updateMatrixWorld(true);

@@ -406,11 +406,18 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
 }
 
 function swiftWing(): THREE.BufferGeometry {
-  const boundary:Tuple[]=[[0,.045,.075],[.035,.25,-.46],[.045,-.045,-.21],[.055,-.35,-.39],[.06,-.24,.055]];
-  const vertices:Tuple[]=[...boundary,[.09,.015,-.085],...boundary.map(([x,y,z])=>[x-.006,y,z] as Tuple)];
-  const faces:number[][]=[[0,5,1],[1,5,2],[2,5,3],[3,5,4],[4,5,0],[6,7,8],[6,8,10],[8,9,10]];
+  // The long fold begins at the breast and narrows toward two swept tips.
+  // A broad squared-off lower lobe read as an attached paddle, rather than
+  // the slender overlapping paper folds in Swift's chosen portrait.
+  const boundary:Tuple[]=[[0,.045,.075],[.035,.27,-.48],[.045,.005,-.22],[.045,-.30,-.40],[.055,-.125,.005]];
+  const front:Tuple[]=[...boundary,[.075,-.025,-.12]];
+  const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x-.006,y,z] as Tuple)];
+  // This concave sheet cannot use the convex-solid centroid winding guess.
+  // Match the same ridge on both sides and join their boundary explicitly.
+  const faces:number[][]=[[0,5,1],[1,5,2],[2,5,3],[3,5,4],[4,5,0]];
+  faces.push(...faces.map(face=>face.map(i=>i+6).reverse()));
   for(let i=0;i<5;i++){const j=(i+1)%5;faces.push([i,j,j+6,i+6]);}
-  return polyhedron(vertices,faces,['#e0b15e','#d5a24e','#b59347','#d7ab59','#e5bc74','#3c6d68','#3c6d68','#3c6d68','#b38948','#47736b','#3b6e65','#c59854','#b68b45']);
+  return polyhedron(vertices,faces,['#e0b15e','#d5a24e','#b59347','#d7ab59','#e5bc74',...Array(5).fill('#3c6d68'),'#b38948','#47736b','#3b6e65','#c59854','#b68b45'],true);
 }
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */

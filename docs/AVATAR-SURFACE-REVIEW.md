@@ -52,6 +52,8 @@ not asked for a desired score or instructed to approve.
 | 60 (fresh full-set reviewer) | Campus craft 7.0 / fidelity 7.5; characters craft 7.5 / fidelity 8.0 | Sparse staging, uniform campus light/materials, simplified primary forms and mixed paper/plastic construction remain conspicuous |
 | 61 (Dispatch continuity review) | 8.5/10 — B+; preferred over 59 and 60 | Tapered underside resolves the blunt peg and shorter legs improve proportions; broad stiff wing and slightly pinched lower keel remain |
 | 62 (fresh campus reviewer) | Campus craft 7.0 / fidelity 7.5; modest improvement, unchanged grade | Better contact depth and warm/cool night separation; uniform materials, sparse staging and broad desk shadows remain |
+| 63 (Dispatch prototype) | 8.4/10 — B+; rejected coverage regression | Narrower fold shows more breast, but missing-looking teal backing and a culled lower triangle prevent acceptance |
+| 64 (Dispatch continuity review) | 8.5/10 — B+; narrowly preferred over 61 | Closed backing restores a visible continuous surface; smaller wing bulk helps, but the stepped central fold remains unlike the source |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -110,6 +112,14 @@ the normal CSP. Its Savor Bridge window reports one detailed avatar, zero
 pending requests and 75 draws / 846,565 triangles; no console warning or error
 was observed. The window's separate 30-fps target is not the camera benchmark.
 The isolated bridge remains empty; no live chat activity was produced.
+
+Pass 64: 302 tests and the production build pass. Swift's swept wing has
+matching creased front/back panels with explicit winding. A new bidirectional
+ray test caught pass 63's culled triangle before acceptance and now covers both
+mirrored wings. The modestly narrower outline preserves standing feet, visible
+eyes and all moving clearances. Four extra authored triangles become 400 extra
+close-tier triangles; the exact 100-times test still holds for all sixteen.
+This is a local repair, not a new full-set acceptance.
 
 - 280 tests pass; production build passes, with the existing large-bundle warning.
 - All sixteen exact 100× counts, finite attributes, source preservation, curvature,
@@ -387,6 +397,7 @@ and is not treated as close-up evidence.
 | Pass 60 campus | 53.60 | 1.61 / 3.00 ms | 110 / 354,087 | 0 |
 | Pass 61 campus | 55.10 | 1.92 / 2.70 ms | 110 / 354,087 | 0 |
 | Pass 62 campus | 51.70 | 1.64 / 2.50 ms | 110 / 354,087 | 0 |
+| Pass 64 campus | 55.10 | 1.48 / 2.10 ms | 110 / 354,091 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -443,6 +454,9 @@ Pass 62 Dispatch submitted 50.40 fps / 2.03 ms mean / 3.40 ms p95, with two
 dense avatars, 109 draws and 1,670,062 triangles. Its fixed-night campus sample
 submitted 52.30 fps / 2.03 ms / 3.50 ms (110 draws, 354,087 triangles, no dense
 avatars). These retain the same sampling limits; no night baseline was measured.
+Pass 64 Dispatch submitted 56.30 fps / 1.62 ms mean / 2.30 ms p95, with two
+dense avatars, 109 draws and 1,670,462 triangles. The failed pass-63 prototype
+was corrected before timing; its rendered comparison remains in the review ledger.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for
