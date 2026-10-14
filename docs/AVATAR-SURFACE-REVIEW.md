@@ -1046,3 +1046,24 @@ the separately smoke-tested pass 113 while this visual study is reviewed.
 The reviewer narrowly retains the non-regressive result at unchanged grades.
 It does not resolve the shell-like reading. Normal-view neckline overlap and
 two legible descending folds remain the required next construction correction.
+
+Pass 115 is a mixed, rejected-cape checkpoint, not a production promotion.
+The complete suite passes 339 tests/build. A development-only static individual
+inspector renders the actual dense models from front, quarter, side and rear
+without a bridge, action API or animation loop. Its separate strict TypeScript
+check passes. This removes group occlusion as a hidden-fit blind spot, but its
+plain studio light is not a matched comparison with the earlier portraits.
+
+The independent reviewer retains the shallower belly-route inlay and rejects
+the new shoulder-wide cape overlay: it reads as an armored capelet with pointed
+ledges. Guide craft/fidelity are 7.0 / 7.0, Intake ensemble 7.5 / 7.5, campus
+7.0 / 7.5. A narrow neck overlap with continuous descending fabric is required.
+The isolated side also reveals the existing floating hat emblem; its geometry
+was unchanged in this pass. No A-level or all-angle acceptance is claimed.
+
+Campus submits 58.70 fps (1.88 ms mean / 2.60 ms p95 CPU, 114 sampled draws,
+384,226 triangles). Wayfinders close submits 57.70 fps (1.90 / 3.30 ms, 139
+draws, 2,240,399 triangles, three dense avatars). These are the same fixed-size
+two-second warm-up and ten-second orbit samples, not GPU-completion measures
+or a locked-rate claim. Actual scene, regenerated group portraits and isolated
+guide views remain under surface-pass-115. Production remains pass 113.

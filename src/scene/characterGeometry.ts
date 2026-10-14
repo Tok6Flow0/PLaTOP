@@ -4,7 +4,7 @@ import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
-  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
+  | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
@@ -280,9 +280,8 @@ export function navigatorCapePoint(t:number,angle:number,inset=0):Tuple {
   // flared shell. Their unequal paths drift from shoulder to hem; valleys
   // remain outside the actual torso instead of cutting into it.
   const lobe=(centre:number,width:number)=>Math.exp(-(((angle-centre)/width)**2));
-  const fold=(.036*lobe(2.35+.55*t,.32)+.025*lobe(3.75-.35*t,.35)
-    +.020*lobe(1.50+.20*t,.28)+.016*lobe(5.10-.30*t,.33))*THREE.MathUtils.smoothstep(t,.04,.42);
-  const drape=.225+.245*THREE.MathUtils.smoothstep(t,0,.63);
+  const fold=(.068*lobe(1.65+.90*t,.52)+.060*lobe(4.75-.75*t,.57))*THREE.MathUtils.smoothstep(t,.04,.36);
+  const drape=.225+.210*THREE.MathUtils.smoothstep(t,0,.63);
   // The lining remains inset even at the silhouette limit. Clamping both
   // layers together would erase their thickness at the outermost pleats.
   return [Math.sin(angle)*(Math.min(.512,Math.max(r*.85+.027,drape)+fold)-inset),y,Math.cos(angle)*(Math.min(.43,Math.max(r*.64+.029,drape*.78)+fold*.80)-inset)];
@@ -307,14 +306,18 @@ function embracingArm():THREE.BufferGeometry {
 }
 
 /** Open-front lined cape follows the shoulders and flares into a rounded hem. */
-function cape(): THREE.BufferGeometry {
-  const vertices: number[] = [], indices: number[] = [], uv:number[]=[], columns = 28, rows = 13;
+function cape(collar=false): THREE.BufferGeometry {
+  // Rebalance the existing cloth budget between the drape and its overlap.
+  // The worker still refines every patch 100x at close range.
+  const vertices: number[] = [], indices: number[] = [], uv:number[]=[], columns = collar?20:24, rows = collar?3:11;
+  const sample=(row:number,column:number,inset:number)=>{
+    const u=row/rows,base=collar?.075+.235*u:u,bound=.035+1.23*Math.sin(base*Math.PI/2);
+    const angle=bound+column/columns*(Math.PI*2-bound*2),t=base+(collar?.025*Math.sin(angle)*u:0);
+    return {point:navigatorCapePoint(t,angle,inset-(collar?.014:0)),uv:[angle/(Math.PI*2),t]};
+  };
   for (let row = 0; row <= rows; row++) {
-    const t = row / rows,bound=.035+1.23*Math.sin(t*Math.PI/2);
     for (let column = 0; column <= columns; column++) {
-      const angle = bound + column / columns * (Math.PI*2-bound*2);
-      vertices.push(...navigatorCapePoint(t,angle));
-      uv.push(angle/(Math.PI*2),t);
+      const value=sample(row,column,0);vertices.push(...value.point);uv.push(...value.uv);
       if (row < rows && column < columns) {
         const a = row * (columns + 1) + column, b = a + 1, c = a + columns + 1, d = c + 1;
         indices.push(a, d, b, a, c, d);
@@ -325,9 +328,7 @@ function cape(): THREE.BufferGeometry {
   // and lapels. Both sides remain visible from the close observer camera.
   const outer=vertices.length/3,front=[...indices];
   for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++){
-    const t=row/rows,bound=.035+1.23*Math.sin(t*Math.PI/2),angle=bound+col/columns*(Math.PI*2-bound*2);
-    vertices.push(...navigatorCapePoint(t,angle,.014));
-    uv.push(angle/(Math.PI*2),t);
+    const value=sample(row,col,collar?.008:.014);vertices.push(...value.point);uv.push(...value.uv);
   }
   for(let i=0;i<front.length;i+=3)indices.push(front[i]+outer,front[i+2]+outer,front[i+1]+outer);
   const join=(a:number,b:number)=>indices.push(a,b,b+outer,a,b+outer,a+outer);
@@ -885,6 +886,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'envelope': return folded([[-.46,-.5],[.46,-.5],[.5,-.44],[.5,.44],[.46,.5],[-.46,.5],[-.5,.44],[-.5,-.44]],.9,.02);
     case 'cloak': return softLathe([[0, -.5], [.36, -.49], [.5, -.39], [.48, -.20], [.34, .12], [.21, .36], [.09, .49], [0, .54]]);
     case 'cape': return cape();
+    case 'capeCollar': return cape(true);
     case 'capePanel': return folded([[-.5, .5], [.5, .20], [.45, -.5], [-.15, -.09]], .08, .018);
     case 'feather': return feather();
     case 'featherCore': {

@@ -210,6 +210,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         if (wayfinder) {
           if(id==='intake-jarvis') {
             sculpt(body, 'cape', '#263b4d', [0, 0, 0], [1,1,1], undefined, 'cloth');
+            sculpt(body,'capeCollar','#263b4d',[0,0,0],[1,1,1],undefined,'cloth').name='cape-collar';
             [-1,1].forEach(sign=>{
               const trim=Array.from({length:9},(_,i)=>{const t=i/8,a=sign*(.035+1.23*Math.sin(t*Math.PI/2));return navigatorCapePoint(t,a,-.005)});
               stroke(body,'#bd985c',trim,.008).name='cape-trim';
@@ -220,7 +221,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
             sculpt(head, 'hoodTip', '#273b4a', [0, .399, -.025], [.29, .31, .23]);
             compass(head, [0, .44, .095], .115);
             compass(body, [0, -.02, .307], .225);
-            stroke(body, '#bea06b', [[.06,-.43,.185],[.03,-.35,.24],[-.09,-.29,.285],[-.07,-.22,.31],[.08,-.19,.315],[.12,-.16,.312]], .014, 'clay');
+            stroke(body, '#bea06b', [[.06,-.43,.185],[.03,-.35,.24],[-.09,-.29,.285],[-.07,-.22,.31],[.08,-.19,.315],[.12,-.16,.312]], .009, 'clay').name='navigator-route-inlay';
           } else if (id === 'intake-beacon') {
             sculpt(head, 'limb', '#b8a07b', [0, .427, 0], [.205, .15, .205], undefined, 'brass');
             sculpt(head, 'limb', '#f0c57e', [0, .542, 0], [.14, .14, .14], undefined, 'amber');
@@ -291,8 +292,11 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         stroke(body,'#c3ad83',[[-.275,.19,.30],[-.255,-.04,.32],[-.15,-.16,.32],[0,-.20,.32],[.15,-.16,.32],[.255,-.04,.32],[.275,.19,.30]],.005,'clay');
       }
       if(wayfinder) for(const ornament of body.children) {
-        if(ornament===body.children[0] || ['cape','cape-trim','wing','arm_l','arm_r','limb','neckBand','circuit-bib','lighthouse-emblem'].includes(ornament.name))continue;
-        fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,id==='intake-compass'?.036:.012);
+        if(ornament===body.children[0] || ['cape','cape-collar','cape-trim','wing','arm_l','arm_r','limb','neckBand','circuit-bib','lighthouse-emblem'].includes(ornament.name))continue;
+        // This is a shallow decorative route, not a rope preserving the old
+        // path's full depth above the newly fitted belly.
+        const route=ornament.name==='navigator-route-inlay';
+        fitCharacterRelief(ornament,body.children[0] as THREE.Mesh,route?.007:id==='intake-compass'?.036:.012,route?.006:Infinity);
       }
     }
     group.scale.setScalar(leader ? 1.02 : id === 'bridge-scout' ? .93 : id === 'bridge-keeper' ? .97 : id === 'intake-jarvis' ? 1.16 : wayfinder ? .90 : id==='hr-lens'?.93:id==='hr-relay'?.92:hr ? .99 : 1.10);

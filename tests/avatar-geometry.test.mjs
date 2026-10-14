@@ -1113,14 +1113,18 @@ test('continuous robed, book, and bird faces remain rigidly attached through age
 });
 
 test('the lined cape is closed and consistently wound at the collar, lapels, and hem',()=>{
-  const kit=new SceneKit(),geometry=characterGeometry(kit,'cape'),edges=new Map();
+  const kit=new SceneKit();
+  for(const form of ['cape','capeCollar']){
+  const geometry=characterGeometry(kit,form),edges=new Map();
   const indices=geometry.index;
   for(let i=0;i<indices.count;i+=3)for(let j=0;j<3;j++){
     const a=indices.getX(i+j),b=indices.getX(i+(j+1)%3),key=[Math.min(a,b),Math.max(a,b)].join(':');
     const edge=edges.get(key)??{count:0,balance:0};edge.count++;edge.balance+=a<b?1:-1;edges.set(key,edge);
   }
   for(const edge of edges.values()){assert.equal(edge.count,2);assert.equal(edge.balance,0);}
-  geometry.dispose();kit.dispose();
+  geometry.dispose();
+  }
+  kit.dispose();
 });
 
 test('the wrapped cape carries continuous cloth coordinates and broad asymmetric rear folds',()=>{
@@ -1156,6 +1160,50 @@ test('the cape lining clears the real torso around the shoulders, sides, and bac
     assert.ok(hit && lining.distanceTo(center)>hit.point.distanceTo(center)+.006,'cloth remains outside the actual torso');
   }
   disposeObject(model);kit.dispose();
+});
+
+test('the separate neckline overlaps the cape without changing its body joint or envelope',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const body=model.userData.personality.body,cape=model.getObjectByName('cape'),collar=model.getObjectByName('cape-collar');
+  assert.equal(collar.parent,body);assert.equal(collar.material,cape.material);
+  model.updateMatrixWorld(true);
+  const p=collar.geometry.attributes.position,probes=[];
+  for(let col=2;col<=18;col+=2){
+    // Probe triangle interiors, not exact shared vertices where floating
+    // point ray/edge ties can miss both adjacent front-facing triangles.
+    const local=new THREE.Vector3(),start=(20+col)*6;
+    for(let corner=0;corner<3;corner++)local.add(new THREE.Vector3().fromBufferAttribute(p,collar.geometry.index.getX(start+corner)));
+    local.multiplyScalar(1/3);
+    const point=collar.localToWorld(local.clone()),center=body.localToWorld(new THREE.Vector3(0,local.y,0));
+    const direction=point.clone().sub(center).normalize();probes.push({center,direction});
+  }
+  const check=()=>{
+    for(const {center,direction} of probes){
+      const ray=new THREE.Raycaster(center.clone().addScaledVector(direction,2),direction.clone().negate());
+      const layer=ray.intersectObject(collar,false)[0],under=ray.intersectObject(cape,false)[0];
+      assert.ok(layer&&under&&under.distance-layer.distance>.001&&under.distance-layer.distance<.05,`neckline is a shallow real overlap above the underlying cloth (layer ${layer?.distance}, under ${under?.distance})`);
+    }
+  };
+  check();const release=refineCharacterModel(model);check();release();
+  disposeObject(model);kit.dispose();
+});
+
+test('the guide route stays visibly inlaid on the dense belly rather than floating as a rope',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
+  const route=model.getObjectByName('navigator-route-inlay'),body=model.getObjectByName('wayfinderBody');
+  model.updateMatrixWorld(true);
+  const p=route.geometry.attributes.position,probes=[];
+  for(let row=1;row<p.count/5-1;row++){
+    const center=new THREE.Vector3();for(let side=0;side<4;side++)center.add(new THREE.Vector3().fromBufferAttribute(p,row*5+side));
+    probes.push(center.multiplyScalar(.25).applyMatrix4(route.matrixWorld));
+  }
+  const release=refineCharacterModel(model);
+  for(const point of probes){
+    const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
+    const mark=ray.intersectObject(route,false)[0],shell=ray.intersectObject(body,false)[0];
+    assert.ok(mark&&shell&&shell.distance-mark.distance>.001&&shell.distance-mark.distance<.025,'route remains visible and close to the real belly');
+  }
+  release();disposeObject(model);kit.dispose();
 });
 
 test('continuous clay surfaces keep matching normals across duplicated UV seams within their authored topology', () => {
