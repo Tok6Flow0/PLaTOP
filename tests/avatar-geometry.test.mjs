@@ -727,19 +727,29 @@ test('upper rear owl feather roots tuck beneath the actual head rather than endi
   disposeObject(model);kit.dispose();
 });
 
-test('shallow owl irises follow their curved facial discs without clipping through them',()=>{
+test('owl eyes sit in sculpted sockets with the iris perimeter tucked beneath the mask',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);
   const point=new THREE.Vector3(),ray=new THREE.Raycaster();
   const irises=meshes(model).filter(mesh=>mesh.name==='owl-iris');assert.equal(irises.length,2);
   for(const iris of irises){
     const disc=model.getObjectByName(`owl-facial-disc:${Math.sign(iris.position.x)}`),p=iris.geometry.attributes.position;
+    let tucked=0,visible=0;
     for(let i=0;i<p.count;i++){
+      if(p.getZ(i)<0)continue;
       point.fromBufferAttribute(p,i).applyMatrix4(iris.matrixWorld);
       ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
       const hit=ray.intersectObject(disc,false)[0];
-      assert.ok(hit&&point.z>hit.point.z+.0005,'every iris vertex clears the actual cream face, including its inward edge');
+      assert.ok(hit,'the mask remains a continuous surface behind the eye');
+      if(point.z>hit.point.z+.0005)visible++;else tucked++;
     }
+    assert.ok(tucked>8&&visible>8,`iris has both an exposed centre and a tucked edge (${visible}/${tucked})`);
+    assert.ok(iris.geometry.type==='SphereGeometry'&&!iris.geometry.userData.characterFitted,'iris retains convex curvature instead of conforming to the bowl');
+  }
+  for(const eye of model.userData.personality.eyes){
+    point.copy(eye.position).applyMatrix4(eye.parent.matrixWorld);
+    ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+    assert.equal(ray.intersectObject(model,true)[0]?.object,eye,'each dark pupil remains visible');
   }
   disposeObject(model);kit.dispose();
 });

@@ -74,6 +74,7 @@ not asked for a desired score or instructed to approve.
 | 83 (fresh Merchant optical review) | Craft 8.0 / fidelity 8.0; retained | Rounder lens fills its frame and preserves the wink/pupil; mild quarter-view gray veil remains; painted shells still read as smooth plastic rather than the reference's fine satin grain |
 | 84 (fresh Merchant satin review) | Craft 8.0 / fidelity 8.0; retained | Reduced plastic-like highlights preserve rounded forms and brass/glass separation; broad shells remain too uniform and slightly rubber-like; hold gloss and add restrained fine surface variation |
 | 85 (fresh Merchant grain and broader character review) | Merchant craft 8.0 / fidelity 8.0; broader set approximately 7.5 / 7.5; retained | Grain reduces rubber-like uniformity without visible regression; avoid stronger mottling. Across the cast, Reflection's rounded triangulated paper and Dispatch's broad flat-looking facial mask are the main construction gaps |
+| 86 (fresh Dispatch face prototype) | Craft 7.5 / fidelity 7.5; mixed, eye revision required | Deeper socket and narrower cheeks improve the mask; thick projecting gold surrounds regress into mounted buttons. Keep mask shaping, seat thinner eyes deeper, then join the notched heart tip |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -660,3 +661,12 @@ The isolated server served `index-B5VlfhFI.js`; its responsive window, eleven-st
 close zoom invitation, third/first-person mist modes, exit and reset were checked
 in the browser without console warnings/errors. This is built-app evidence, not
 native-package installation or proof of genuine agent work.
+
+Pass 86 passes 317 tests and the production build. Geometry checks now require
+the continuous cream socket to cover part of the iris perimeter while leaving
+each pupil visible; the convex eye is no longer warped onto the cream surface.
+Campus submits 53.70 fps (1.79 ms mean / 3.00 ms p95 CPU, 110 draws, 371,724
+triangles); Dispatch close submits 52.40 fps (2.21 ms / 4.10 ms, 111 draws,
+1,552,423 triangles, two dense avatars). The visual reviewer rejects the
+projecting eye surrounds despite these tests: 86 is a corrective checkpoint,
+not the accepted replacement, and the isolated production server remains at 85.

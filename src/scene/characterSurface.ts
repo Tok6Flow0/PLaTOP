@@ -6,7 +6,7 @@ export const CHARACTER_SURFACE_FREQUENCY = 10;
 export const OWL_SOCKET_RADIUS = [.108, .125] as const;
 /** One socket field is shared by the shell, fitted face and worker surface. */
 export function owlEyeRecess(x: number, y: number): number {
-  return .086 * Math.exp(-(((Math.abs(x) - .13) / OWL_SOCKET_RADIUS[0]) ** 2 + ((y - .002) / OWL_SOCKET_RADIUS[1]) ** 2) * 1.15);
+  return .145 * Math.exp(-(((Math.abs(x) - .13) / OWL_SOCKET_RADIUS[0]) ** 2 + ((y - .002) / OWL_SOCKET_RADIUS[1]) ** 2) * 1.15);
 }
 /** Warm recessed fibres, evaluated on the same field at both mesh tiers. */
 export function owlFaceTint(x:number,y:number):[number,number,number] {

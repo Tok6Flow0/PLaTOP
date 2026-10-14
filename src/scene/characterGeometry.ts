@@ -1062,8 +1062,8 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
     if(owlSign){
       const disc=new THREE.Path();disc.moveTo(-.169,.06);
       disc.bezierCurveTo(-.14,.16,-.09,.27,.035,.252);
-      disc.bezierCurveTo(.12,.24,.18,.15,.183,.045);
-      disc.bezierCurveTo(.188,-.10,.08,-.155,-.169,-.245);
+      disc.bezierCurveTo(.12,.24,.163,.15,.166,.045);
+      disc.bezierCurveTo(.170,-.10,.08,-.155,-.169,-.245);
       disc.bezierCurveTo(-.169,-.15,-.169,-.03,-.169,.06);
       boundary.length=0;disc.getSpacedPoints(31).forEach(p=>boundary.push([p.x*owlSign,p.y]));
     }
