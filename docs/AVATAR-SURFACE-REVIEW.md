@@ -1979,3 +1979,33 @@ or zero regression. Draws remain135 campus/133 close; triangles431,820/
 878,655. All original, baseline and repeat files, plus full visual evidence,
 are retained in surface-pass-153. Timing measures CPU-side submissions,
 not completed-GPU work.
+
+Pass153 was pushed as4132399de7b92c2af24fb8df4534455b5026d512;
+remote readback matches and CI38627952621 succeeded. Its independent visual
+verdict remains revise, and the retained production preview is still148.
+
+Pass154 tapers Echo's rear/hip toward the descending chest folds and lowers
+the resting wing's forward stand-off. The new geometric ray check samples
+the actual exposed wing edge against the breast; it does not assert visual
+success. All370 tests and the production build pass. Campus submits59.9996fps
+(CPU mean/p95 2.13/3.90ms;135 draws;431,820 triangles), Reflection close
+60.0036fps (1.93/3.60ms;133 draws;878,655 triangles;3 dense residents).
+The earlier152/153 variability remains relevant; these samples do not prove
+locked60fps, completed-GPU timing or zero performance regression.
+
+Independent verdict: retain154 as the working baseline over153 and148.
+Echo7.0 craft/6.5 fidelity, Reflection6.5/6.5, campus7.5/7.5. The true side
+shows reduced rear bulk and substantially less separate-apron impression;
+ordinary front/quarter folds remain legible. No conspicuous new hole,
+accessory collision or night regression is visible. The next substantial
+correction is the heavy rear-under-crown projection and head-to-neck return.
+The rear body is still plain and paper tonal variation too quiet. This is a
+retained local improvement, not the requested A or an exact reference match.
+Full portraits, side/quarter inspectors, day/night room and campus captures,
+and both unchanged benchmark outputs are saved in surface-pass-154.
+
+The isolated production preview now serves retained154, index-CgKmJ2MP.js.
+Window view, close-zoom invitation, third/first-person mist, exit and reset
+pass; all six teams remain Awaiting update with an empty connected bridge.
+Console warnings/errors are empty. This smoke is not live-agent adoption or
+native installation evidence. Production screenshots are saved with154.

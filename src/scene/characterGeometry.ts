@@ -475,7 +475,7 @@ function paperEchoRestWing():THREE.BufferGeometry {
   // and diagonally across the flank. The old XY sheet hung beside the torso;
   // its root did not return around the body's depth at all.
   const front:Tuple[]=[[.015,.075,-.17],[-.075,.035,-.025],[-.10,-.16,.11],
-    [.30,-.44,.25],[.13,-.035,.23],[-.035,.015,.145]];
+    [.30,-.44,.23],[.13,-.035,.09],[-.035,.015,.10]];
   const panels=[[3,1,0],[3,2,1],[3,0,5],[3,5,4]];
   return closedPaperPanels(front,panels);
 }
@@ -666,8 +666,8 @@ function paperOwlHead(quill=false,hoodOnly=false): THREE.BufferGeometry {
 function paperEchoBody(side?:'left'|'right'):THREE.BufferGeometry {
   const vertices:Tuple[]=[
     [0,.23,.06],[-.22,.20,.08],[-.31,.11,-.04],[-.25,.17,-.17],[-.015,.23,-.21],[.25,.13,-.17],[.30,.12,-.04],[.22,.18,.08],
-    [.035,-.12,.29],[-.27,-.20,.20],[-.40,-.12,-.025],[-.28,-.18,-.28],[-.025,-.06,-.35],[.29,-.20,-.27],[.40,-.15,-.035],[.29,-.22,.18],
-    [-.02,-.50,.18],[-.21,-.50,.13],[-.24,-.45,-.02],[-.18,-.50,-.13],[.025,-.48,-.20],[.18,-.50,-.13],[.24,-.46,-.02],[.21,-.50,.13],
+    [.035,-.12,.29],[-.27,-.20,.20],[-.40,-.12,-.025],[-.28,-.18,-.16],[-.025,-.06,-.20],[.29,-.20,-.16],[.40,-.15,-.035],[.29,-.22,.18],
+    [-.02,-.50,.18],[-.21,-.50,.13],[-.24,-.45,-.02],[-.18,-.50,-.07],[.025,-.48,-.10],[.18,-.50,-.07],[.24,-.46,-.02],[.21,-.50,.13],
   ];
   // A long asymmetric mountain fold descends from the left cheek to the
   // opposite hem. Both breast planes continue to the flank instead of

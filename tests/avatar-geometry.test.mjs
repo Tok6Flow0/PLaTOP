@@ -624,6 +624,24 @@ test('paper owl breast fold quads remain coplanar rather than becoming small tri
   kit.dispose();
 });
 
+test('Echo exposed resting-wing edge follows the real breast at paper-scale clearance',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='reflection-echo'),kit);
+  model.updateMatrixWorld(true);
+  const wing=model.getObjectByName('paperEchoRestWing'),p=wing.geometry.attributes.position;
+  const tip=new THREE.Vector3().fromBufferAttribute(p,9),upper=new THREE.Vector3().fromBufferAttribute(p,11);
+  const sheets=['paperEchoChestL','paperEchoChestR'].map(name=>model.getObjectByName(name));
+  const direction=new THREE.Vector3(0,0,1).transformDirection(model.userData.personality.body.matrixWorld),ray=new THREE.Raycaster();
+  let checked=0;
+  for(const t of [.4,.5,.6,.7,.8,.9]){
+    const point=wing.localToWorld(upper.clone().lerp(tip,t));
+    ray.set(point.clone().addScaledVector(direction,2),direction.clone().negate());
+    const hit=ray.intersectObjects(sheets,false)[0];
+    if(hit){const gap=hit.distance-2;assert.ok(gap>.001&&gap<.025,`resting edge lies just over the breast, not apart from it: ${t},${gap}`);checked++;}
+  }
+  assert.ok(checked>=5,'the visible lower edge is attached over the real chest');
+  disposeObject(model);kit.dispose();
+});
+
 test('Echo has connected oblique wrapping sheets and thin tapered resting-wing tissue',()=>{
   const kit=new SceneKit();
   for(const form of ['paperEchoChestL','paperEchoChestR']){
@@ -637,7 +655,7 @@ test('Echo has connected oblique wrapping sheets and thin tapered resting-wing t
     const unique=[...points.values()];
     for(const point of unique){const nearest=Math.min(...unique.filter(other=>other!==point).map(other=>other.distanceTo(point)));assert.ok(Math.abs(nearest-.008)<2e-5,'paper has constant normal-offset thickness');}
     geometry.computeBoundingBox();const size=geometry.boundingBox.getSize(new THREE.Vector3());
-    assert.ok(size.y>.70&&size.z>.60,'each sheet carries the breast all the way around the back');
+    assert.ok(size.y>.70&&size.z>.46,'each sheet carries the breast around the enclosed, tapered back');
     assert.ok(Array.from({length:n.count},(_,i)=>n.getZ(i)).some(z=>z<-.5));
     assert.ok(p.count<250,'broad construction folds stay inexpensive before close refinement');
   }
@@ -655,7 +673,7 @@ test('Echo has connected oblique wrapping sheets and thin tapered resting-wing t
   assert.ok([...edges.values()].every(count=>count===2),'the returning sheet has closed manifold edges');
   const unique=[...vertices.values()];assert.equal(unique.length,12,'six fold corners have matching backs, including the broad lower flank');
   for(const v of unique){const nearest=Math.min(...unique.filter(other=>other!==v).map(other=>other.distanceTo(v)));assert.ok(Math.abs(nearest-.008)<2e-5,'rear follows the stock normal, not a flat XY extrusion');}
-  wing.computeBoundingBox();assert.ok(wing.boundingBox.min.z<-.16&&wing.boundingBox.max.z>.23,'one sheet returns from behind the cheek to the front flank');
+  wing.computeBoundingBox();assert.ok(wing.boundingBox.min.z<-.16&&wing.boundingBox.max.z>=.229,'one sheet returns from behind the cheek to the front flank');
   const tip=unique.filter(v=>v.y<-.38);assert.equal(tip.length,2,'one pointed tip and its paper-thin rear replace a flat-ended lower strip');
   assert.ok(Math.min(...tip.map(v=>v.x))>.23,'the visible tip crosses the flank diagonally toward the torso centre');
   const normals=wing.attributes.normal,outer=new THREE.Vector3().fromBufferAttribute(normals,0);
@@ -1604,7 +1622,9 @@ test('Echo shaped sections turn around crown, neck and back without changing the
   model.updateMatrixWorld(true);
   assert.deepEqual(p.head.position.toArray(),[0,.650,.005]);
   assert.deepEqual(p.head.scale.toArray(),[.89,.93,.92]);
-  for(const [name,ratio] of [['paperEchoHead',.52],['paperEchoBody',.60]]){
+  // The body's former >.60 requirement preserved an over-bulging rear. A
+  // tapered paper enclosure still has substantial depth at >.50 width.
+  for(const [name,ratio] of [['paperEchoHead',.52],['paperEchoBody',.50]]){
     const size=new THREE.Box3().setFromObject(model.getObjectByName(name)).getSize(new THREE.Vector3());
     assert.ok(size.z/size.x>ratio,'shaped sections enclose depth without flattening the front face frame');
   }

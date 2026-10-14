@@ -4,14 +4,15 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
-The branch also contains the pass153 paper-owl volume prototype. Its369 tests
-and build pass. The independent reviewer retains the head and front-fold
-changes within the prototype but requests further side-silhouette revision
-overall (Echo/Reflection6.5 craft,6.5 fidelity). Matched timing samples vary
-around57–60fps in both the frozen152 baseline and153 candidate; see the full
-ledger rather than inferring locked60fps. The last retained preview is148;
-the prototype is not presented as reference-matched. Rejected149 and
-revision-requested150/151 outcomes are retained in the review ledger.
+The independent reviewer retains pass154 over153 and148 as the new working
+baseline: Echo7.0 craft/6.5 fidelity, Reflection6.5/6.5, campus7.5/7.5.
+Its370 tests and build pass. The tapered rear/hip and closer wing fold reduce
+the separate-apron impression without sacrificing enclosed depth. The next
+major mismatch is the heavy rear-under-crown and head-to-neck silhouette.
+Both154 timing samples submit approximately60fps; earlier matched152/153
+samples varied around57–60fps and remain in the ledger. This is neither
+reference-matched nor A-level acceptance. Rejected/revision-requested studies
+are preserved, and timing is CPU-side submission rather than GPU completion.
 
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
