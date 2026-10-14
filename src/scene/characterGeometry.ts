@@ -3,11 +3,11 @@ import type { SceneKit } from './primitives';
 import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface';
 
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
-  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
+  | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
-export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass';
+export type CharacterFinish = 'clay' | 'glaze' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
 const wayfinderProfile: Array<[number,number]>=[[0,-.5],[.22,-.48],[.42,-.37],[.51,-.10],[.46,.08],[.29,.18],[.14,.235],[0,.26]];
@@ -751,6 +751,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'bean': return new THREE.SphereGeometry(.5, 16, 10);
     case 'fittedSole': return new THREE.SphereGeometry(.5, 20, 12);
     case 'detail': return new THREE.SphereGeometry(.5, 12, 6);
+    case 'opticDome': return new THREE.SphereGeometry(.5,16,8,0,Math.PI*2,0,Math.PI/2).rotateX(Math.PI/2);
     case 'beak': return lathe([[0, -.5], [.32, -.46], [.5, -.30], [.47, -.05], [.32, .20], [.12, .43], [0, .5]], 16);
     case 'owlBeak': {
       // A narrow horn with a rounded root and a tapered point. Its ridge is
@@ -993,7 +994,7 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      roughness: finish === 'glass'||finish === 'opticalGlass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
       metalness: finish === 'brass' ? .62 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
       // Source Wayfinder eyes are softly luminous strokes, not tiny lamps.
@@ -1001,7 +1002,10 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
       ...(finish === 'warmInk' ? { emissive: '#ffc675', emissiveIntensity: .65, roughness: .62 } : {}),
     });
     material.userData.characterFinish = finish;
-    if(finish==='glass'){material.transparent=true;material.opacity=.16;material.depthWrite=false;material.envMapIntensity=1.2;}
+    if(finish==='glass'||finish==='opticalGlass'){
+      material.transparent=true;material.opacity=finish==='opticalGlass'?.045:.16;
+      material.depthWrite=false;material.envMapIntensity=1.2;
+    }
     if (finish === 'ink') material.envMapIntensity = .65;
     if (['clay','glaze','paper','feather','facialFeather','plumage','brass','cloth'].includes(finish)) {
       // Ceramic and brass need a broad reflected softbox to describe their

@@ -188,9 +188,13 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         // One generously sized magnifier is Scout's face, not a tiny monocle
         // pasted onto the same visor worn by every other character.
         ring(head, '#bd9756', .31, [-.123, .016, .359]);
-        sculpt(head, 'detail', '#456f6c', [-.123, .016, .362], [.204, .228, .043], undefined, 'glaze');
-        const eye = sculpt(head, 'detail', '#163638', [-.125, .024, .386], [.131, .156, .032], undefined, 'ink'); data.eyes.push(eye);
-        data.highlights.push(sculpt(head, 'detail', '#fff3d3', [-.151, .061, .405], [.036, .046, .010], undefined, 'glaze'));
+        sculpt(head, 'detail', '#536f67', [-.123, .016, .362], [.248, .266, .052], undefined, 'glaze');
+        const eye = sculpt(head, 'detail', '#193331', [-.125, .024, .390], [.158, .180, .043], undefined, 'ink'); data.eyes.push(eye);
+        data.highlights.push(sculpt(head, 'detail', '#fff3d3', [-.151, .061, .413], [.038, .046, .010], undefined, 'glaze'));
+        // Convex optical cover sits over the iris; a single inexpensive alpha
+        // surface preserves the dark pupil, with no refraction render pass.
+        const lens=sculpt(head,'opticDome','#e7f1ed',[-.123,.016,.383],[.268,.286,.118],undefined,'opticalGlass');
+        lens.name='magnifier-glass';lens.castShadow=lens.receiveShadow=false;
         data.eyes.push(characterEyeArc(kit, head, '#294843', [.119, .017, .362], .044, .029));
         stroke(head, '#bd9756', [[-.212, -.076, .350], [-.27, -.16, .281]], .020);
         compass(body, [0, -.025, .265], .26);

@@ -305,6 +305,32 @@ test('Scout keeps a magnifier and compass, rather than the generic cream belly p
   disposeObject(model);kit.dispose();
 });
 
+test('Scout magnifier has a convex optical surface enclosing the visible pupil and highlight',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='bridge-scout'),kit);
+  const head=model.userData.personality.head;head.rotation.set(0,0,0);model.updateMatrixWorld(true);
+  const lens=model.getObjectByName('magnifier-glass'),eye=model.userData.personality.eyes[0];
+  assert.ok(lens&&lens.geometry.type==='SphereGeometry');
+  assert.equal(lens.material.depthWrite,false);assert.equal(lens.castShadow,false);
+  assert.equal(lens.material.opacity,.045,'optical layer preserves the dark pupil');
+  assert.equal(characterMaterial(kit,'#e7f1ed','glass').opacity,.16,'the existing held magnifier keeps its finish');
+  assert.equal(lens.material.transmission,undefined,'no additional scene-refraction pass');
+  const bounds=new THREE.Box3().setFromObject(lens),size=bounds.getSize(new THREE.Vector3());
+  assert.ok(size.z>.04&&size.z<.065,'dome has real curved depth but remains inside the magnifier frame');
+  const ray=new THREE.Raycaster();let checked=0;
+  for(const feature of [eye,model.userData.personality.highlights[0]]){
+    const p=feature.geometry.attributes.position;
+    for(let i=0;i<p.count;i++){
+      if(p.getZ(i)<0)continue;
+      const point=new THREE.Vector3().fromBufferAttribute(p,i).applyMatrix4(feature.matrixWorld);
+      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+      const glass=ray.intersectObject(lens,false)[0];
+      assert.ok(glass&&glass.point.z>point.z+.005,'visible pupil and highlight do not cut through the lens');checked++;
+    }
+  }
+  assert.ok(checked>70);
+  disposeObject(model);kit.dispose();
+});
+
 test('Bridge silhouettes retain a tall Jarvis torso and the smaller Scout from their portrait',()=>{
   const kit=new SceneKit(),models=['bridge-jarvis','bridge-scout'].map(id=>makeProxy(members.find(member=>member.id===id),kit));
   const [jarvis,scout]=models;models.forEach(model=>model.updateMatrixWorld(true));
