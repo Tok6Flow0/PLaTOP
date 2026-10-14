@@ -502,7 +502,7 @@ test('folded paper chest sheets sit in front of their closed inner body',()=>{
       if(p.getY(i)>.10)shoulderWidth=Math.max(shoulderWidth,Math.abs(p.getX(i)));
     }
     assert.ok(ridgeTop>-.06&&ridgeTop<0,'the crease joins the breast below the face');
-    assert.ok(ridgeTop-ridgeBottom>.28,'a continuous long ridge replaces the single-apex belly fan');
+    assert.ok(ridgeTop-ridgeBottom>.40,'a continuous long ridge reaches the tapered lower body');
     assert.ok(baseWidth<shoulderWidth*.6,'the sheet turns into a tapered lower body rather than a straight apron');
   }
   for(const member of members.filter(member=>['reflection-echo','reflection-quill'].includes(member.id))){
@@ -515,6 +515,20 @@ test('folded paper chest sheets sit in front of their closed inner body',()=>{
       if(paper&&core){assert.ok(paper.distance<core.distance-.001,`${member.id} inner body does not pierce the chest at ${x},${y}`);checked++;}
     }
     assert.ok(checked>40);restore();disposeObject(model);
+  }
+  kit.dispose();
+});
+
+test('paper owl breast fold quads remain coplanar rather than becoming small triangular patches',()=>{
+  const kit=new SceneKit();
+  for(const form of ['paperChestL','paperChestR']){
+    const geometry=characterGeometry(kit,form),n=geometry.attributes.normal;
+    // Front faces 2 and 6 each contain two triangles. Check their actual
+    // shared planes; a centroid crop could silently omit one triangle.
+    for(const [a,b] of [[6,9],[21,24]]){
+      const first=new THREE.Vector3().fromBufferAttribute(n,a),second=new THREE.Vector3().fromBufferAttribute(n,b);
+      assert.ok(first.z>.2&&first.distanceTo(second)<1e-5,'both broad halves retain shared planar normals across their internal triangulation');
+    }
   }
   kit.dispose();
 });

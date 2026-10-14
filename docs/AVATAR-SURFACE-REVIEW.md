@@ -76,6 +76,8 @@ not asked for a desired score or instructed to approve.
 | 85 (fresh Merchant grain and broader character review) | Merchant craft 8.0 / fidelity 8.0; broader set approximately 7.5 / 7.5; retained | Grain reduces rubber-like uniformity without visible regression; avoid stronger mottling. Across the cast, Reflection's rounded triangulated paper and Dispatch's broad flat-looking facial mask are the main construction gaps |
 | 86 (fresh Dispatch face prototype) | Craft 7.5 / fidelity 7.5; mixed, eye revision required | Deeper socket and narrower cheeks improve the mask; thick projecting gold surrounds regress into mounted buttons. Keep mask shaping, seat thinner eyes deeper, then join the notched heart tip |
 | 87 (fresh Dispatch eye correction) | Craft 7.5 / fidelity 7.5; retained over 85 and 86 | Thinner seated eyes and joined heart tip improve construction; the lower gold crescent still appears mounted. Refine cream socket overlap without adding general darkness |
+| 88 (fresh Dispatch brow prototype) | Craft 7.0 / fidelity 7.0; rejected, restored 87 | Broad raised brows make the cream mask look pinched and worried. Any future overlap must be localized immediately around the eye, preserving the open expression |
+| 89 (fresh Reflection fold review) | Craft 7.5 / fidelity 7.5; retained | Longer coplanar chest folds remove belly patchwork without flattening the body. Narrow hanging outer wings remain the largest gap: the source uses broader overlapping diagonal sheets |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -679,3 +681,14 @@ p95 CPU); Dispatch close submits 55.11 fps (1.88 ms / 3.60 ms), with 86's draw
 and triangle counts. These are fixed-workload submission samples, not equal
 worst-case GPU cost. The reviewer retains this correction but not an A-level
 match; the isolated production server remains at 85 pending further refinement.
+
+Pass 88's sculpted brow prototype passed 318 tests/build but was rejected on
+appearance; its source was restored to 87 before the next submission. Campus
+submitted 56.30 fps (1.76 ms mean / 2.90 ms p95 CPU), Dispatch close 54.80 fps
+(1.59 ms / 2.80 ms), with 87's counts. Passing tests did not overrule the review.
+Pass 89 passes 318 tests/build. Paper chest quads are genuinely coplanar and the
+mountain folds reach the tapered lower body. Dense ray tests preserve coverage
+over the inner volume. Campus submits 55.70 fps (1.87 ms / 3.50 ms, 110 draws,
+371,724 triangles); Reflection close 53.20 fps (1.65 ms / 3.30 ms, 123 draws,
+838,489 triangles, three dense avatars). No new light, texture or render pass
+is added. These remain timing samples, not a worst-case performance guarantee.

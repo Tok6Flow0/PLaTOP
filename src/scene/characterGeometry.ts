@@ -455,7 +455,19 @@ function paperOwlWing():THREE.BufferGeometry {
  * high fan apex left a broad, straight apron instead of a folded volume. */
 function paperOwlChest():THREE.BufferGeometry {
   const outline:Tuple[]=[[-.012,.24,.035],[-.38,.14,.04],[-.42,-.08,.07],[-.33,-.34,.08],[-.205,-.50,.08],[.03,-.475,.155],[.025,-.20,.24],[.015,.04,.125]];
-  const front:Tuple[]=[...outline,[-.18,-.045,.245],[-.11,-.34,.245]];
+  const ridgeTop:Tuple=[-.18,-.045,.245],ridgeBottom:Tuple=[-.085,-.455,.245];
+  // Each side of the long mountain fold is a single paper plane. Previously
+  // non-planar quads broke into short triangular lighting patches across the
+  // belly, despite sharing a colour. Project their intermediate corners onto
+  // the authored plane while retaining the tapered, wrapped silhouette.
+  const planeDepth=(point:Tuple,anchor:Tuple)=>{
+    const a=new THREE.Vector3(...ridgeTop),b=new THREE.Vector3(...ridgeBottom),c=new THREE.Vector3(...anchor);
+    const normal=b.sub(a).cross(c.sub(a));
+    return ridgeTop[2]-(normal.x*(point[0]-ridgeTop[0])+normal.y*(point[1]-ridgeTop[1]))/normal.z;
+  };
+  outline[3][2]=planeDepth(outline[3],outline[2]);
+  outline[6][2]=planeDepth(outline[6],outline[7]);
+  const front:Tuple[]=[...outline,ridgeTop,ridgeBottom];
   const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x,y,z-.010] as Tuple)];
   const faces:number[][]=[[0,1,8],[1,2,8],[2,3,9,8],[3,4,9],[4,5,9],[5,6,9],[6,7,8,9],[7,0,8]];
   // Orient against the sheet plane, not a convex-solid centroid: the flank
