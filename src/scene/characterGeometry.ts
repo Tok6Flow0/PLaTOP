@@ -449,7 +449,7 @@ function paperOwlWing():THREE.BufferGeometry {
   // A broad diagonal sheet wraps inward over the flank. The shoulder root
   // remains buried in the body; the lower tip rests across the breast instead
   // of hanging beside it as a narrow vertical tab.
-  return foldedSheet([[0,.11,.065],[.045,-.015,.115],[-.14,-.34,.30],[-.245,-.385,.34],[-.225,-.125,.34],[-.115,.025,.18]],[-.09,-.14,.36],
+  return foldedSheet([[0,.045,.025],[.045,-.075,.095],[-.14,-.34,.30],[-.245,-.385,.34],[-.225,-.125,.29],[-.115,-.035,.14]],[-.09,-.18,.30],
     ['#dbc29a','#d8bf97','#d5b991','#cdb089','#dfc69f','#e5ceaa']);
 }
 

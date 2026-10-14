@@ -79,6 +79,7 @@ not asked for a desired score or instructed to approve.
 | 88 (fresh Dispatch brow prototype) | Craft 7.0 / fidelity 7.0; rejected, restored 87 | Broad raised brows make the cream mask look pinched and worried. Any future overlap must be localized immediately around the eye, preserving the open expression |
 | 89 (fresh Reflection fold review) | Craft 7.5 / fidelity 7.5; retained | Longer coplanar chest folds remove belly patchwork without flattening the body. Narrow hanging outer wings remain the largest gap: the source uses broader overlapping diagonal sheets |
 | 90 (fresh Reflection wing review) | Craft 7.5 / fidelity 7.5; retained | Broader diagonal wings improve shoulder/body integration without obvious clipping. Bright raised roots still resemble collars and the quarter-view edge reads wedge-thick; tuck roots behind the cheek and preserve the broader fold |
+| 91 (fresh Reflection shoulder review) | Craft 7.5 / fidelity 7.5; narrowly retained | Lower roots clear the cheeks and reduce the collar effect without losing the broad fold. Stop lowering them; the thick polyhedral head and weak distinction between outer paper hood and facial panels are now the larger gap |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -701,3 +702,9 @@ actual body overlap and all moving motor envelopes. Campus submits 55.60 fps
 The two additional wing boundary points add eight overview triangles and 800
 close triangles; no extra material draw, light or texture is added. The reviewer
 retains the construction change, not an A-level reference match.
+
+Pass 91 passes 319 tests/build. Lower wing roots and reduced forward bulge
+preserve the same geometry count, body overlap and walking clearance. Campus
+submits 54.50 fps (1.76 ms mean / 3.40 ms p95 CPU), Reflection close 54.80 fps
+(1.76 ms / 3.10 ms), with 90's counts. These are same-machine samples rather
+than GPU-completion measurements. The independent score remains 7.5 / 7.5.

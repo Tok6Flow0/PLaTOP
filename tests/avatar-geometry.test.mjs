@@ -524,6 +524,7 @@ test('paper owl resting wings are broad diagonal sheets that overlap the actual 
   const wing=characterGeometry(kit,'paperOwlWingL');wing.computeBoundingBox();
   const size=wing.boundingBox.getSize(new THREE.Vector3());
   assert.ok(size.x/size.y>.5&&size.y<.51,'broad diagonal fold replaces a lengthened hanging tab');
+  assert.ok(wing.boundingBox.max.y<.05,'the upper root tucks below the cheek instead of forming a raised collar');
   for(const id of ['reflection-echo','reflection-quill']){
     const model=makeProxy(members.find(c=>c.id===id),kit),sheet=model.getObjectByName('paperOwlWingL'),chest=model.getObjectByName('paperChestL');
     model.updateMatrixWorld(true);const paper=new THREE.Box3().setFromObject(sheet),breast=new THREE.Box3().setFromObject(chest);
