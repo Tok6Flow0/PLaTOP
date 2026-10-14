@@ -231,6 +231,21 @@ test('curved shared tables preserve the existing footprint, surface height and b
   disposeObject(all);kit.dispose();
 });
 
+test('slim paired desks keep the supported surface height with finer bounded curved edges',t=>{
+  canvasDocument(t);
+  const kit=new SceneKit(),root=new THREE.Group();table(root,kit,0,0,1.6,1.6,'soft',.12);root.updateMatrixWorld(true);
+  const slab=root.children.find(object=>object.geometry?.type==='ExtrudeGeometry');
+  assert.equal(slab.geometry.parameters.options.curveSegments,24);
+  const bounds=new THREE.Box3().setFromObject(slab);
+  assert.ok(Math.abs(bounds.min.y-.68)<1e-6&&Math.abs(bounds.max.y-.8)<1e-6,'a thinner apron does not lower or float the tabletop');
+  assert.ok(Math.abs(new THREE.Box3().setFromObject(root).max.y-.82)<1e-6);
+  let triangles=0,textures=0;
+  root.traverse(object=>{if(object.isMesh){triangles+=(object.geometry.index?.count??object.geometry.attributes.position.count)/3;
+    if(object.material.map)textures++;assert.ok(!object.isLight);}});
+  assert.ok(triangles<4000);assert.equal(textures,1,'the finer edge shares the existing single tabletop texture');
+  disposeObject(root);kit.dispose();
+});
+
 test('diverse connected plants keep actual vertices inside their certified floor envelopes and release owned meshes once', () => {
   const kit = new SceneKit(), resources = new THREE.Group(), owned = new Set();
   for (const [kind, bound] of [['leaf', 0.5], ['broad', 0.57], ['spear', 0.28], ['herb', 0.48], ['ivy', 0.5]]) {

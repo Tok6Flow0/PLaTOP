@@ -91,7 +91,7 @@ test('Beacon starter reading nook fits the existing reserved floor slot and leav
   disposeObject(resources);kit.dispose();
 });
 test('Wayfinder paired desks carry their real screens, blockers and replaceable desktop anchor', async t => {
-  const {rooms,kit,disposeObject}=await realLayout();
+  const {rooms,kit,disposeObject,navigator}=await realLayout();
   t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
   const room=rooms.get('intake');room.root.updateMatrixWorld(true);
   const stations=[1,2].map(i=>room.root.getObjectByName(`Wayfinders paired desk ${i}`));
@@ -99,6 +99,7 @@ test('Wayfinder paired desks carry their real screens, blockers and replaceable 
   assert.notEqual(stations[0].position.z,stations[1].position.z);
   assert.notEqual(stations[0].rotation.y,stations[1].rotation.y);
   for(const [i,station] of stations.entries()){
+    assert.ok(station.userData.workstationSurface.width>=1.6&&station.userData.workstationSurface.depth>=1.4);
     const bounds=station.userData.workstationBounds;
     assert.ok(room.navigation.blockers.some(blocker=>blocker.bounds===bounds));
     const screen=station.getObjectByName('Workstation laptop');
@@ -122,11 +123,16 @@ test('Wayfinder paired desks carry their real screens, blockers and replaceable 
   for(const x of [-.375,.375])for(const z of [-.375,.375]){
     const local=new THREE.Vector3(x,0,z).applyAxisAngle(new THREE.Vector3(0,1,0),slot.rotation[1]);
     local.add(new THREE.Vector3(...slot.position)).add(room.center);station.worldToLocal(local);
-    assert.ok(Math.abs(local.x)<=.52+1e-10&&Math.abs(local.z)<=.7+1e-10);
+    assert.ok(Math.abs(local.x)<=station.userData.workstationSurface.width/2+1e-10&&Math.abs(local.z)<=station.userData.workstationSurface.depth/2+1e-10);
   }
   const {roomVisibilityRoots}=await loadScene('scene/rooms.ts');
   assert.ok(roomVisibilityRoots(room).includes(room.defaultSlotProps.desk));
+  assert.ok(roomVisibilityRoots(room).includes(room.defaultSlotProps.floor));
   assert.equal(room.defaultSlotProps.desk.parent,room.root);
+  assert.deepEqual(room.assetSlots.floor.position,[-2.15,.1,2.8]);
+  const world=([x,z])=>[x+room.center.x,z+room.center.z];
+  assert.equal(navigator.segmentClear(world([0,1.8]),world([0,-3.6]),.7),true,
+    'the actual central aisle accommodates a visiting owl, not just the local smaller residents');
   assert.deepEqual(room.actorFacing,[.28,-.28,.65,-.65],'neutral arrival orientations are not work gestures');
   assert.ok(room.navigation.desks.slice(2).every(desk=>Math.abs(desk.facing)>3),'chosen work faces the real paired desk');
 });

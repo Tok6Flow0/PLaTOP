@@ -282,12 +282,13 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   // Their screens, papers and asset anchor use the same transform as the wood;
   // the walking map includes the entire rotated tabletop, not a smaller proxy.
   const pairedDesks = index===2 ? [
-    { x:-.8,z:-.95,width:1.04,depth:1.4,angle:-.10,screenZ:-.32 },
-    { x:.8,z:-.65,width:1.04,depth:1.1,angle:.16,screenZ:-.20 },
+    { x:-1.63,z:-.95,width:1.6,depth:1.6,angle:-.045,screenZ:-.32 },
+    { x:1.63,z:-.65,width:1.6,depth:1.4,angle:.045,screenZ:-.20 },
   ].map((layout,i)=>{
     const group=new THREE.Group();group.name=`Wayfinders paired desk ${i+1}`;
     group.position.set(layout.x,0,layout.z);group.rotation.y=layout.angle;interior.add(group);
-    table(group,kit,0,0,layout.width,layout.depth,'soft');
+    table(group,kit,0,0,layout.width,layout.depth,'soft',.12);
+    group.userData.workstationSurface={width:layout.width,depth:layout.depth};
     const halfX=(layout.width*Math.abs(Math.cos(layout.angle))+layout.depth*Math.abs(Math.sin(layout.angle)))/2;
     const halfZ=(layout.width*Math.abs(Math.sin(layout.angle))+layout.depth*Math.abs(Math.cos(layout.angle)))/2;
     const bounds:NavigationBounds=[layout.x-halfX,layout.z-halfZ,layout.x+halfX,layout.z+halfZ];
@@ -333,7 +334,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
     : team.members.length === 2 ? [[-0.8, index === 5 ? -1.7 : -1.5], [0.8, index === 5 ? -1.7 : -1.5]]
-      : team.members.length === 4 ? [[-0.8, -1.5], [0.8, -1.3], [-0.8, 1.5], [0.8, 1.6]]
+      : team.members.length === 4 ? [[-1.63, -1.5], [1.63, -1.3], [-1.63, 1.5], [1.63, 1.75]]
         : [[-0.8, 1.5], [0, -1.5], [0.8, 1.5]];
   const desks: DeskNavigation[] = seats.map(([x, side], memberIndex) => {
     const z = isFoyer ? side : tableZ + side;
@@ -373,7 +374,8 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     const screen:NavigationPoint=paired?paired.point(0,north?paired.screenZ:.25):[computer?.position.x ?? x,screenZ];
     const workFacing=paired||index===3&&computer?Math.atan2(screen[0]-x,screen[1]-z):facing;
     return { position: [x, z], screen, facing:workFacing,
-      egress: isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
+      egress: paired ? [Math.sign(x)*(north?.6:.45),north?-3.6:1.8]
+        : isFoyer ? memberIndex === 2 ? [aisleX, z] : [x, memberIndex === 0 ? -1.8 : -1.9]
         : standingSide ? [x, tableZ - 1.5] : lowerRoom && north ? [index === 5 ? -aisleX : aisleX, z] : [x, z + (north ? -1.15 : paired&&memberIndex===3?1.15:1.2)],
       ...(isFoyer || standingSide || index === 5 ? { seatHeight: OFFICE_FLOOR_Y } : character.kind === 'lantern' ? {} : { seatHeight: character.kind === 'robot' ? 0.2 : character.kind === 'owl' ? 0.45 : OFFICE_FLOOR_Y }) };
   });
@@ -391,16 +393,20 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   if(index!==2)mug(interior, kit, tableX + mugX, tableZ - 0.48, index === 4 ? '#647c50' : '#a0aa8d');
   if(index<2)mug(interior, kit, tableX - mugX, tableZ - 0.48,index===0?'#c4b28c':'#b7c0a4');
   if (isFoyer) ['#7a8a65', '#e0cfaa', '#bda57c'].forEach((color, i) => kit.mesh(interior, 'roundedBox', color, [tableX - 1.0, 0.825 + i * 0.057, tableZ - 0.4], [0.44, 0.055, 0.32], [0, -0.12, 0]));
-  plant(interior, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad');
+  const frontPlantParent=index===2?new THREE.Group():interior;
+  if(index===2){frontPlantParent.name='Wayfinders starter floor plant';root.add(frontPlantParent);defaultSlotProps.floor=frontPlantParent;}
+  plant(frontPlantParent, kit, -2.6, frontPlantZ, 1.0, 0.1, index % 2 ? '#c3b38d' : '#b7a280', 'broad');
+  if(index===2)tidyStaticMeshes(frontPlantParent);
   if(index===5)parcelStack(interior,kit,2.63,frontPlantZ);
   else plant(interior, kit, 2.63, frontPlantZ, 1.18, 0.1, '#c5b998', 'spear');
   blockers.push({ bounds: [-3.2, frontPlantZ - 0.6, -2.0, frontPlantZ + 0.6] },
     { bounds: index===5 ? [2.10,frontPlantZ-.44,3.16,frontPlantZ+.44] : [2.24, frontPlantZ - 0.39, 3.02, frontPlantZ + 0.39] });
-  const midPlant: NavigationPoint = isFoyer ? [-1.85, -2.8] : [-2.53, sideSeating ? -2.2 - halfGain - rearExtension : lowerRoom ? 1.1 : -0.85];
-  plant(interior, kit, ...midPlant, 0.54, sideSeating ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
+  const shelfPlant=sideSeating||index===2;
+  const midPlant: NavigationPoint = isFoyer ? [-1.85, -2.8] : [-2.53, shelfPlant ? -2.2 - halfGain - rearExtension : lowerRoom ? 1.1 : -0.85];
+  plant(interior, kit, ...midPlant, 0.54, shelfPlant ? shelfAsset[1]-.01 : 0.1, '#bc976e', index % 2 ? 'leaf' : 'herb');
   // In the two side-standing rooms this pot is physically supported by the
   // existing shelf and fits its already-blocked envelope, not the walking lane.
-  if (!sideSeating) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
+  if (!shelfPlant) blockers.push({ bounds: [midPlant[0] - 0.27, midPlant[1] - 0.27, midPlant[0] + 0.27, midPlant[1] + 0.27] });
   if (index >= 3 && index !== 4) {
     lamp(interior, kit, -2.12, -0.38, index);
     blockers.push({ bounds: [-2.52, -0.78, -1.72, 0.02] });
@@ -430,7 +436,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   lamp(decorations.lamp, kit, 1.5, frontPlantZ - 0.05, index + 7);
   blockers.push({ bounds: [-2.6, frontPlantZ - 0.65, -1.8, frontPlantZ + 0.15], decoration: 'plant' },
     { bounds: [1.1, frontPlantZ - 0.45, 1.9, frontPlantZ + 0.35], decoration: 'lamp' },
-    { bounds: isFoyer ? [-0.675, -4.225, 0.675, -2.875] : [-2.825, 0.325, -1.475, 1.675] });
+    { bounds: isFoyer ? [-0.675, -4.225, 0.675, -2.875] : index===2?[-2.825,2.125,-1.475,3.475]:[-2.825, 0.325, -1.475, 1.675] });
   kit.mesh(decorations.art, 'roundedBox', '#b4946e', [-2.5, 1.43, -1.05], [0.075, 0.83, 0.76]);
   kit.mesh(decorations.art, 'box', '#f0e5ce', [-2.451, 1.43, -1.05], [0.01, 0.67, 0.59]);
   kit.mesh(decorations.art, 'sphere', '#8fa17e', [-2.43, 1.46, -1.12], [0.015, 0.29, 0.28]);
@@ -455,9 +461,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   };
   const navigation: RoomNavigation = { floorY: OFFICE_FLOOR_Y,
     bounds: [-2.9, index < 3 ? backZ + 0.12 : backZ - 1.4, 2.9, index < 3 ? 4.9 : 4.25],
-    blockers, door, lounge: [index===3?-.25:0, isFoyer ? 2.5 : index < 3 ? 2.1 : index===3||index===5?2.0:1.7], task: [aisleX, tableZ], interactions,
+    blockers, door, lounge: [index===3?-.25:0, isFoyer ? 2.5 : index < 3 ? 2.1 : index===3||index===5?2.0:1.7], task: [index===2?0:aisleX, tableZ], interactions,
     waypoints: [door, [doorX, backZ + 0.7], [2, backZ + 0.9], [aisleX, backZ + 1.05], [aisleX, rearCross], [aisleX, rearApproach], [aisleX, tableZ],
-      [0, rearCross], ...(!lowerRoom && !isFoyer ? [[-1.15, rearApproach], [-1.15, rearCross], [1.15, rearApproach], [1.15, rearCross]] as NavigationPoint[] : []),
+      [0, rearCross], ...(index===2?[[0,tableZ],[0,rearApproach]] as NavigationPoint[]:[]), ...(!lowerRoom && !isFoyer ? [[-1.15, rearApproach], [-1.15, rearCross], [1.15, rearApproach], [1.15, rearCross]] as NavigationPoint[] : []),
       ...(lowerRoom ? [[index === 3 ? 2.15 : -2.15, sideDoorZ], [index === 3 ? 2.15 : -2.15, tableZ - 1.5]] as NavigationPoint[] : []),
       ...(index === 5 ? [[0.8, -1.36], [aisleX, -1.36]] as NavigationPoint[] : []),
       [aisleX, frontCross], [0, frontCross], [0, index < 3 ? 4.7875 : 4.0], ...(isFoyer ? [[1.4, -2.03], [aisleX, -2.03]] as NavigationPoint[] : []), ...desks.map(desk => desk.egress)], desks };
@@ -467,7 +473,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     shelf: { position: shelfAsset },
     // The foyer has a low parapet, not an imaginary full-height wall.
     wall: { position: [-2.85, isFoyer ? 0.5 : 2.1, 1.7], rotation: [0, Math.PI / 2, 0] },
-    floor: { position: isFoyer ? [0, OFFICE_FLOOR_Y, -3.55] : [-2.15, OFFICE_FLOOR_Y, 1.0] },
+    floor: { position: isFoyer ? [0, OFFICE_FLOOR_Y, -3.55] : [-2.15, OFFICE_FLOOR_Y, index===2?2.8:1.0] },
     festive: { position: [0, 3.5, backZ + 0.4] },
   };
   return { root, center, outline, decorations, actorHomes, actorFacing, navigation, assetSlots, defaultSlotProps, walls };

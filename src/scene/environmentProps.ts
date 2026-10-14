@@ -188,7 +188,7 @@ export function board(parent: THREE.Object3D, kit: SceneKit, lines: string[], sy
   kit.mesh(parent, 'box', '#d9c9ac', [x, y - 0.85, z + 0.08], [2.65, 0.065, 0.16]);
   kit.mesh(parent, 'cylinder', '#748575', [x + 0.68, y - 0.81, z + 0.09], [0.045, 0.39, 0.045], [0, 0, Math.PI / 2]);
 }
-export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number, style: 'rect'|'soft'|'capsule'='rect'): void {
+export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: number, width: number, depth: number, style: 'rect'|'soft'|'capsule'='rect', apronHeight=.2): void {
   const corner=style==='capsule'?depth/2-.025:style==='soft'?.34:.09;
   const shapedSlab=(color:string,y:number,w:number,h:number,d:number,r:number)=>{
     if(style==='rect')return beveledBlock(parent,kit,color,[x,y,z],[w,h,d],Math.min(r,.09));
@@ -197,11 +197,11 @@ export function table(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
     shape.lineTo(a,b-radius);shape.quadraticCurveTo(a,b,a-radius,b);
     shape.lineTo(-a+radius,b);shape.quadraticCurveTo(-a,b,-a,b-radius);
     shape.lineTo(-a,-b+radius);shape.quadraticCurveTo(-a,-b,-a+radius,-b);
-    const geometry=new THREE.ExtrudeGeometry(shape,{depth:h-2*bevel,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2,curveSegments:8,steps:1});
+    const geometry=new THREE.ExtrudeGeometry(shape,{depth:h-2*bevel,bevelEnabled:true,bevelThickness:bevel,bevelSize:bevel,bevelSegments:2,curveSegments:24,steps:1});
     geometry.rotateX(-Math.PI/2);geometry.translate(0,-h/2+bevel,0);
     const mesh=new THREE.Mesh(geometry,kit.material(color,'wood'));mesh.position.set(x,y,z);mesh.castShadow=mesh.receiveShadow=true;parent.add(mesh);return mesh;
   };
-  const slab = surface(shapedSlab('#9e754d',.7,width,.2,depth,corner), 'furniture');
+  const slab = surface(shapedSlab('#9e754d',.8-apronHeight/2,width,apronHeight,depth,corner), 'furniture');
   slab.material = kit.material('#9e754d', 'wood');
   const crown = surface(shapedSlab('#b38a5c',.804,width-.07,.025,depth-.07,Math.max(.02,corner-.035)), 'furniture');
   crown.material = kit.material('#b38a5c', 'wood');
