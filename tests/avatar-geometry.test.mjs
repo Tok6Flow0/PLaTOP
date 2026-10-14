@@ -570,15 +570,11 @@ test('Swift carries diagonal cheek planes into the breast without hiding its eye
 test('folded paper chest sheets sit in front of their closed inner body',()=>{
   const kit=new SceneKit(),ray=new THREE.Raycaster();
   for(const form of ['paperChestL','paperChestR']){
-    const p=characterGeometry(kit,form).attributes.position;let ridgeTop=-Infinity,ridgeBottom=Infinity,baseWidth=0,shoulderWidth=0;
-    for(let i=0;i<p.count;i++){
-      if(p.getZ(i)>.242){ridgeTop=Math.max(ridgeTop,p.getY(i));ridgeBottom=Math.min(ridgeBottom,p.getY(i));}
-      if(p.getY(i)<-.46)baseWidth=Math.max(baseWidth,Math.abs(p.getX(i)));
-      if(p.getY(i)>.10)shoulderWidth=Math.max(shoulderWidth,Math.abs(p.getX(i)));
-    }
-    assert.ok(ridgeTop>-.06&&ridgeTop<0,'the crease joins the breast below the face');
-    assert.ok(ridgeTop-ridgeBottom>.40,'a continuous long ridge reaches the tapered lower body');
-    assert.ok(baseWidth<shoulderWidth*.6,'the sheet turns into a tapered lower body rather than a straight apron');
+    const geometry=characterGeometry(kit,form),[top,bottom]=geometry.userData.paperRidge;
+    assert.ok(top[1]-bottom[1]>.75&&bottom[0]-top[0]>.20,'the main mountain fold descends obliquely from neck to hem');
+    assert.equal(geometry.userData.paperThickness,.008);
+    geometry.computeBoundingBox();const size=geometry.boundingBox.getSize(new THREE.Vector3());
+    assert.ok(size.y>.75&&size.z>.4,'the stock wraps around a real back rather than a flat apron');
   }
   for(const member of members.filter(member=>['reflection-echo','reflection-quill'].includes(member.id))){
     const model=makeProxy(member,kit),body=model.userData.personality.body;
@@ -601,10 +597,10 @@ test('paper owl resting wings are broad diagonal sheets that overlap the actual 
   assert.ok(size.x/size.y>.5&&size.y<.51,'broad diagonal fold replaces a lengthened hanging tab');
   assert.ok(wing.boundingBox.max.y<.05,'the upper root tucks below the cheek instead of forming a raised collar');
   for(const id of ['reflection-echo','reflection-quill']){
-    const model=makeProxy(members.find(c=>c.id===id),kit),sheet=model.getObjectByName(id==='reflection-echo'?'paperEchoRestWing':'paperOwlWingL'),chest=model.getObjectByName(id==='reflection-echo'?'paperEchoChestL':'paperChestL');
+    const model=makeProxy(members.find(c=>c.id===id),kit),sheet=model.getObjectByName(id==='reflection-echo'?'paperEchoRestWing':'paperQuillRestWing'),chest=model.getObjectByName(id==='reflection-echo'?'paperEchoChestL':'paperChestL');
     model.updateMatrixWorld(true);const paper=new THREE.Box3().setFromObject(sheet),breast=new THREE.Box3().setFromObject(chest);
     assert.ok(paper.intersectsBox(breast),'resting sheet overlaps the breast rather than sitting beside it');
-    assert.ok(paper.max.y>breast.max.y-.05,'wing root joins at shoulder height');
+    assert.ok(paper.max.y>breast.max.y-.12,'wing root joins the visible shoulder beneath the cheek');
     disposeObject(model);
   }
   kit.dispose();
@@ -614,9 +610,9 @@ test('paper owl breast fold quads remain coplanar rather than becoming small tri
   const kit=new SceneKit();
   for(const form of ['paperChestL','paperChestR']){
     const geometry=characterGeometry(kit,form),n=geometry.attributes.normal;
-    // Front faces 2 and 6 each contain two triangles. Check their actual
-    // shared planes; a centroid crop could silently omit one triangle.
-    for(const [a,b] of [[6,9],[21,24]]){
+    // Quill's wrapping stocks have one long front plane per side; their
+    // neck-to-mid and mid-to-hem quads share the same deliberate normal.
+    for(const [a,b] of form==='paperChestL'?[[0,3],[0,24],[24,27]]:[[18,21],[18,42],[42,45]]){
       const first=new THREE.Vector3().fromBufferAttribute(n,a),second=new THREE.Vector3().fromBufferAttribute(n,b);
       assert.ok(first.z>.2&&first.distanceTo(second)<1e-5,'both broad halves retain shared planar normals across their internal triangulation');
     }
@@ -1008,7 +1004,7 @@ test('visible breast feather planes stay outside the curved owl body',()=>{
 
 test('paper wings and lapels have matching creased backs and closed thin edges',()=>{
   const kit=new SceneKit();
-  for(const form of ['paperOwlWingR','paperChestL','paperChestR','paperBrow']){
+  for(const form of ['paperOwlWingR','paperBrow']){
     const geometry=characterGeometry(kit,form),p=geometry.attributes.position,columns=new Map(),edges=new Map();
     const key=i=>[p.getX(i),p.getY(i),p.getZ(i)].map(v=>Math.round(v*1e6)).join(':');
     for(let i=0;i<p.count;i++){
@@ -1545,15 +1541,42 @@ test('Quill chest sheets have a shallow ordered overlap rather than coincident c
   for(const id of ['reflection-quill']){
     const model=makeProxy(members.find(c=>c.id===id),kit);model.updateMatrixWorld(true);
     const over=model.getObjectByName(id==='reflection-echo'?'paperEchoChestL':'paperChestL'),under=model.getObjectByName(id==='reflection-echo'?'paperEchoChestR':'paperChestR');let checked=0;
-    for(let y=-.39;y<.05;y+=.02){
-      const point=over.localToWorld(new THREE.Vector3(0,y,0));
-      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+    for(let y=-.45;y<.19;y+=.02){
+      const x=.09-(y+.50)*(.21/.78)+.010,point=over.localToWorld(new THREE.Vector3(x,y,1));
+      ray.set(point,new THREE.Vector3(0,0,-1).transformDirection(over.matrixWorld));
       const top=ray.intersectObject(over,false)[0],bottom=ray.intersectObject(under,false)[0];
-      if(top&&bottom){const gap=top.point.z-bottom.point.z;assert.ok(gap>.003&&gap<.015,'one thin stock of paper overlaps the other without a deep air gap');checked++;}
+      if(top&&bottom){const gap=bottom.distance-top.distance;assert.ok(gap>.003&&gap<.025,`one thin stock of paper overlaps along the diagonal seam without a deep air gap: ${gap}`);checked++;}
     }
     assert.ok(checked>=15,'the ordering persists down the visible breast seam');disposeObject(model);
   }
   kit.dispose();
+});
+
+test('Quill jacket and diagonal wings are closed thin stocks around a taller tapered torso',()=>{
+  const kit=new SceneKit();
+  for(const form of ['paperChestL','paperChestR','paperQuillRestWing','paperQuillHoldingWing']){
+    const geometry=characterGeometry(kit,form),p=geometry.attributes.position,edges=new Map(),points=new Map();
+    for(let i=0;i<p.count;i+=3){
+      const triangle=[0,1,2].map(j=>{const v=new THREE.Vector3().fromBufferAttribute(p,i+j),key=v.toArray().map(x=>x.toFixed(5)).join(',');points.set(key,v);return key;});
+      for(let j=0;j<3;j++){
+        const a=triangle[j],b=triangle[(j+1)%3],key=[a,b].sort().join('|'),edge=edges.get(key)||{count:0,balance:0};
+        edge.count++;edge.balance+=a<b?1:-1;edges.set(key,edge);
+      }
+    }
+    assert.ok([...edges.values()].every(edge=>edge.count===2&&edge.balance===0),`${form} is a closed consistently wound sheet`);
+    const unique=[...points.values()];
+    for(const v of unique){const nearest=Math.min(...unique.filter(other=>other!==v).map(other=>other.distanceTo(v)));assert.ok(Math.abs(nearest-.008)<2e-5,`${form} has paper-scale normal thickness`);}
+  }
+  const model=makeProxy(members.find(c=>c.id==='reflection-quill'),kit);model.updateMatrixWorld(true);
+  const chest=new THREE.Box3().setFromObject(model.getObjectByName('paperChestL')).union(new THREE.Box3().setFromObject(model.getObjectByName('paperChestR'))),size=chest.getSize(new THREE.Vector3());
+  assert.ok(size.y/size.x>1.03&&size.y/size.x<1.25,'longer descending folds replace the squat broad belly');
+  assert.equal(model.getObjectByName('paperBody').geometry.userData.paperConstruction,'quill-oblique-jacket');
+  assert.ok(!model.getObjectByName('paperBackL')&&!model.getObjectByName('paperBackR'),'the jacket itself carries the rear, without attached back plates');
+  assert.deepEqual(model.userData.personality.head.position.toArray(),[0,.650,.005],'chosen smiling face frame is unchanged');
+  assert.deepEqual(model.userData.personality.head.scale.toArray(),[.89,.93,.92]);
+  const wing=new THREE.Box3().setFromObject(model.getObjectByName('paperQuillHoldingWing')).getSize(new THREE.Vector3());
+  assert.ok(wing.x/wing.y>.9,'the holding wing is a broad descending diagonal, not an upright flap');
+  disposeObject(model);kit.dispose();
 });
 
 test('paper temples retain their deliberate fold construction and rear overlaps follow the actual head',()=>{
@@ -1752,7 +1775,7 @@ test('avatars preserve the distinct original portrait identities and opaque ligh
     'support-beacon':['embracingBody','lanternCap','lanternHandle'],
     'reflection-lumen':['hexGlass','hexCap','fineRing'],
     'reflection-echo':['paperEchoBody','paperEchoHead','paperEchoRestWing','paperHoldingWing','paperCrownBackL','paperCrownBackR','ring'],
-    'reflection-quill':['paperBody','paperWing','paperHoldingWing','quill-pencil'],
+    'reflection-quill':['paperBody','paperWing','paperQuillHoldingWing','quill-pencil'],
     'email-owl':['owlHead','owlBody','owlBeak','featherFanL','featherFanR','breastFeathers'],
     'email-swift':['paper-bird-expression','swiftBody','swiftWingL','swiftWingR','swiftTail'],
   };

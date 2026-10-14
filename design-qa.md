@@ -4,6 +4,12 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
+Pass161 is revision-requested, not promoted. Quill6.5/6.5, Reflection6.5/6.5,
+campus7.5/7.5: its slimmer torso is better, but the writing wing reads as an
+oversized sail and side construction remains divided.377 tests/build pass;
+campus/close submit60.003/60.00fps. The next study must bend a compact wing
+around the flank and pencil. Production remains the retained160 composition.
+
 Pass160 is retained for the shallower Reflection table and closer Quill home.
 Room7/7, campus7.5/7.5, character cast7/6.5: not A/reference matched.376 tests
 and build pass; actual support and full-size navigation checks pass. Both

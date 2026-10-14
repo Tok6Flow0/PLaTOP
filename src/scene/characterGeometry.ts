@@ -5,7 +5,7 @@ import { owlEyeRecess, owlFaceTint, OWL_SOCKET_RADIUS } from './characterSurface
 export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 'lanternHousing' | 'lanternBezel' | 'owlBody' | 'owlHead' | 'wing' | 'tuft' | 'embracingBody' | 'embracingArmL' | 'embracingArmR'
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capeCollar' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'hoodInset' | 'routeInlay' | 'scroll'
-  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
+  | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperQuillRestWing' | 'paperQuillHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
   | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassRim' | 'compassDial' | 'compassClasp' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood' | 'paperEchoChestL' | 'paperEchoChestR' | 'paperEchoRestWing' | 'paperEchoBody' | 'paperEchoBackL' | 'paperEchoBackR' | 'paperEchoCrownBackL' | 'paperEchoCrownBackR';
 export type CharacterFinish = 'clay' | 'satinClay' | 'glaze' | 'satinShell' | 'ink' | 'visorGlass' | 'warmInk' | 'brass' | 'agedBrass' | 'amber' | 'lanternGlass' | 'paper' | 'paperFiber' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
@@ -503,39 +503,6 @@ function closedPaperPanels(front:Tuple[],panels:number[][]):THREE.BufferGeometry
   return geometry;
 }
 
-function paperOwlChest():THREE.BufferGeometry {
-  const outline:Tuple[]=[[-.012,.24,.035],[-.38,.14,.04],[-.42,-.08,.07],[-.33,-.34,.08],[-.205,-.50,.08],[.03,-.475,.155],[.025,-.20,.24],[.015,.04,.125]];
-  const ridgeTop:Tuple=[-.18,-.045,.245],ridgeBottom:Tuple=[-.085,-.455,.245];
-  // Each side of the long mountain fold is a single paper plane. Previously
-  // non-planar quads broke into short triangular lighting patches across the
-  // belly, despite sharing a colour. Project their intermediate corners onto
-  // the authored plane while retaining the tapered, wrapped silhouette.
-  const planeDepth=(point:Tuple,anchor:Tuple)=>{
-    const a=new THREE.Vector3(...ridgeTop),b=new THREE.Vector3(...ridgeBottom),c=new THREE.Vector3(...anchor);
-    const normal=b.sub(a).cross(c.sub(a));
-    return ridgeTop[2]-(normal.x*(point[0]-ridgeTop[0])+normal.y*(point[1]-ridgeTop[1]))/normal.z;
-  };
-  outline[3][2]=planeDepth(outline[3],outline[2]);
-  outline[6][2]=planeDepth(outline[6],outline[7]);
-  const front:Tuple[]=[...outline,ridgeTop,ridgeBottom];
-  const vertices:Tuple[]=[...front,...front.map(([x,y,z])=>[x,y,z-.010] as Tuple)];
-  const faces:number[][]=[[0,1,8],[1,2,8],[2,3,9,8],[3,4,9],[4,5,9],[5,6,9],[6,7,8,9],[7,0,8]];
-  // Orient against the sheet plane, not a convex-solid centroid: the flank
-  // turns and concave inner edge must still face the camera on both sides.
-  for(const face of faces){
-    const [a,b,c]=face.map(i=>vertices[i]);
-    if((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0)face.reverse();
-  }
-  const tones=['#dec59f','#d8bd95','#d0b28a','#d9be99','#e1c8a3','#dbc09b','#dcc29d','#e3cba6'];
-  faces.push(...faces.map(face=>face.map(i=>i+front.length).reverse()));
-  tones.push(...Array(8).fill('#cbb18d'));
-  for(let i=0;i<outline.length;i++){
-    const j=(i+1)%outline.length;
-    faces.push([j,i,i+front.length,j+front.length]);tones.push('#c2a37a');
-  }
-  return polyhedron(vertices,faces,tones.map(tone=>'#'+new THREE.Color(tone).lerp(new THREE.Color('#dfc7a2'),.65).getHexString()),true);
-}
-
 /** A folded sheet has two matching creased surfaces and a paper-thin edge.
  * Its rear is not the flat cap of an extruded polygon. Explicit winding is
  * important: concave folds cannot use a solid's centroid to orient faces. */
@@ -757,15 +724,67 @@ function paperEchoBody(side?:'left'|'right'):THREE.BufferGeometry {
   geometry.userData.paperConstruction='oblique-wrapped';return geometry;
 }
 
-function paperOwlBody(): THREE.BufferGeometry {
-  // Diagonal valley/mountain folds replace stacked hexagonal box sections.
-  // A projecting breast ridge folds into the lower centre seam; the back
-  // converges into the same shoulder and foot vertices, with no extruded wall.
-  // The visible chest is carried by the two overlapping paper sheets. Keep
-  // this closed inner volume behind them instead of piercing their folds.
-  const vertices:Tuple[]=[[0,.28,.035],[-.38,.15,.04],[.36,.15,.04],[-.49,-.03,.02],[.46,-.08,.03],[-.205,-.50,.06],[.205,-.50,.07],[-.035,-.08,.07],[.07,-.26,.12],[0,-.50,.08],[0,.22,-.10],[0,-.05,-.22],[0,-.5,-.10],[-.33,0,-.10],[.30,0,-.10]];
-  const faces=[[0,1,7],[0,7,2],[1,3,7],[7,3,8],[7,8,4],[7,4,2],[3,5,8],[8,5,9],[8,9,6],[8,6,4],[0,10,1],[0,2,10],[1,10,13],[1,13,3],[2,14,10],[2,4,14],[10,11,13],[10,14,11],[3,13,5],[4,6,14],[13,11,12],[13,12,5],[14,12,11],[14,6,12],[5,12,9],[9,12,6]];
-  return polyhedron(vertices,faces,faces.map((_,index)=>index<10?'#dec49e':'#ceb38b'));
+/** Quill's tall asymmetric jacket is two thin stocks around one enclosed
+ * volume, not a broad faceted belly with separate breast/back ornaments. */
+function paperQuillBody(side?:'left'|'right'):THREE.BufferGeometry {
+  const vertices:Tuple[]=[
+    [-.12,.28,.10],[-.29,.20,.03],[-.28,.16,-.045],[-.18,.23,-.12],[0,.25,-.14],[.19,.20,-.12],[.29,.12,-.045],[.29,.18,.03],
+    [-.015,-.16,.24],[-.35,-.12,.05],[-.36,-.15,-.035],[-.25,-.18,-.17],[.025,-.08,-.20],[.26,-.15,-.17],[.36,-.20,-.035],[.32,-.20,.05],
+    [.09,-.50,.18],[-.19,-.48,.08],[-.22,-.46,-.025],[-.15,-.49,-.085],[.025,-.50,-.12],[.16,-.48,-.085],[.21,-.46,-.025],[.19,-.50,.08],
+  ];
+  const ridgeX=(y:number)=>.09-(y+.50)*(.21/.78);
+  const ridgeZ=(y:number)=>.27-(y+.50)*(.17/.78);
+  for(const i of [0,8,16]){vertices[i][0]=ridgeX(vertices[i][1]);vertices[i][2]=ridgeZ(vertices[i][1]);}
+  // Long oblique chest planes continue all the way to the hem. Their
+  // triangulation is invisible; only the deliberately authored fold reads.
+  for(const i of [1,9,17,7,15,23]){
+    const [x,y]=vertices[i];vertices[i][2]=ridgeZ(y)+(i%8===1?.38:-.34)*(x-ridgeX(y));
+  }
+  const faces:number[][]=[];
+  for(let row=0;row<2;row++)for(let col=0;col<8;col++){
+    const a=row*8+col,b=row*8+(col+1)%8,c=a+8,d=b+8;
+    faces.push([a,c,d],[a,d,b]);
+  }
+  const center=new THREE.Vector3(0,-.12,-.03),normals=vertices.map(()=>new THREE.Vector3());
+  for(const face of faces){
+    const [a,b,c]=face.map(i=>new THREE.Vector3(...vertices[i]));
+    const normal=b.clone().sub(a).cross(c.clone().sub(a)).normalize();
+    if(normal.dot(a.clone().add(b).add(c).multiplyScalar(1/3).sub(center))<0){face.reverse();normal.negate();}
+    face.forEach(i=>normals[i].add(normal));
+  }
+  if(side){
+    const selected=faces.filter((_,i)=>side==='left'?Math.floor(i/2)%8<4:Math.floor(i/2)%8>=4);
+    const ids=[...new Set(selected.flat())],map=new Map(ids.map((id,i)=>[id,i]));
+    const front=ids.map(i=>{
+      const p=new THREE.Vector3(...vertices[i]).addScaledVector(normals[i].normalize(),.012);
+      const col=i%8;
+      if(side==='left'&&(col===0||col===1)){
+        p.set(vertices[i][0]+(col===0?.020:0),vertices[i][1],0);
+        p.z=ridgeZ(p.y)+.38*(p.x-ridgeX(p.y))+.020;
+      }else if(side==='right'&&(col===0||col===7)){
+        p.set(vertices[i][0],vertices[i][1],ridgeZ(vertices[i][1])-.34*(vertices[i][0]-ridgeX(vertices[i][1]))+.012);
+      }
+      return p.toArray() as Tuple;
+    });
+    const geometry=closedPaperPanels(front,selected.map(face=>face.map(i=>map.get(i)!)));
+    geometry.userData.paperWrap=side;geometry.userData.paperRidge=[vertices[0],vertices[16]];
+    return geometry;
+  }
+  faces.push([0,7,6,5,4,3,2,1],[16,17,18,19,20,21,22,23]);
+  const geometry=polyhedron(vertices,faces,faces.map(()=>'#d7bc95'));
+  geometry.userData.paperConstruction='quill-oblique-jacket';return geometry;
+}
+
+function paperQuillWing(holding:boolean):THREE.BufferGeometry {
+  // A broad diagonal return goes around each shoulder. The outer wrist
+  // folds down across the pencil; it is not an upright collar tab.
+  const front:Tuple[]=holding
+    ?[[-.03,.025,.025],[.10,-.12,.15],[.24,-.35,.25],[-.04,-.28,.34],[-.17,-.10,.20],[.085,-.19,.30]]
+    :[[.03,.04,.005],[-.04,-.06,.07],[.07,-.39,.25],[.24,-.40,.28],[.14,-.03,.15],[.055,-.17,.23]];
+  return closedPaperPanels(front,[[0,1,5],[1,2,5],[2,3,5],[3,4,5],[4,0,5]].map(face=>{
+    const [a,b,c]=face.map(i=>front[i]);
+    return (b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0?face.reverse():face;
+  }));
 }
 
 function reflect(geometry: THREE.BufferGeometry): THREE.BufferGeometry {
@@ -1056,12 +1075,14 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
       return smoothDeformedSurface(geometry);
     }
     case 'toe': return new THREE.SphereGeometry(.5, 8, 6);
-    case 'paperBody': return paperOwlBody();
+    case 'paperBody': return paperQuillBody();
     case 'paperEchoBody': return paperEchoBody();
     // Long shoulder-to-base creases replace the former short horizontal
     // belly zigzag. The two thin sheets overlap above the closed inner body.
-    case 'paperChestL': return paperOwlChest();
-    case 'paperChestR': return reflect(paperOwlChest());
+    case 'paperChestL': return paperQuillBody('left');
+    case 'paperChestR': return paperQuillBody('right');
+    case 'paperQuillRestWing': return paperQuillWing(false);
+    case 'paperQuillHoldingWing': return paperQuillWing(true);
     case 'paperEchoChestL': return paperEchoBody('left');
     case 'paperEchoChestR': return paperEchoBody('right');
     case 'paperEchoRestWing': return paperEchoRestWing();

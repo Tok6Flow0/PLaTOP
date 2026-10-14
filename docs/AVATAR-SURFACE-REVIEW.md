@@ -2166,3 +2166,36 @@ authored character topology. Short CPU-side samples do not prove GPU timing
 or locked60. Full suite376/build pass; the expanded physical support check
 also passes. Saved day/night room/campus and timings are in surface-pass-160;
 its copied portraits are unchanged159 output, not new160 character evidence.
+
+Retained160 was pushed as208d33a2d995eedd0a4f527005b953febcba8f15;
+remote readback matches and CI38637976832 succeeded. Its exact production
+bundle passes room-window, deep-zoom invitation, third/first-person mist,
+exit and reset checks with all six teams Awaiting update and no console
+warnings/errors. This remains an isolated empty-bridge preview.
+
+Pass161 reconstructs Quill's complete torso as a narrower, taller enclosed
+paper jacket with two .008-thick wrapping stocks and a descending oblique
+overlap. Two broad diagonal wings replace the upright holding flap and
+separate hanging resting wing. Smiling face, ears, pencil identity, materials,
+lights, room homes and all other avatars are preserved. The early chest
+crossed the lower facial shield; the jacket/shoulders were moved back before
+the final evidence. All377 tests/build pass, including actual face clearance,
+thin-sheet winding/manifold closure, planar chest normals, overlap clearance,
+real torso depth, 100x density and full-size furnished-room navigation.
+
+161 campus/Reflection close submit60.003/60.00fps, CPU mean/p95 2.18/4.20ms
+and2.50/4.30ms. Campus137 draws/431,846 triangles; close134/904,409. Compared
+with160, close has two fewer draws and1,400 more triangles; campus adds14
+triangles. These short CPU-side submission samples do not prove completed
+GPU timing or locked60. Final portrait, quarter/side/rear-quarter, day/night
+room/campus and timing evidence is saved in surface-pass-161.
+
+Independent verdict: revise161, retain160 for production. Quill6.5/6.5,
+Reflection6.5/6.5, campus7.5/7.5. The narrower longer chest is a useful
+direction and no new face/furniture collision is visible, but the writing
+wing becomes an oversized triangular sail. Side views still divide thin
+front sheets from a bulky rear core; the long straight hem can read as a
+paper robe. The thin mask-like head is an existing limitation exposed by
+inspection, not established as a161 regression. Next: a compact bent overlap
+that turns around the flank and returns toward the pencil, preserving the
+improved proportions rather than merely shortening the triangle tip.
