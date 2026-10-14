@@ -371,6 +371,14 @@ function foldedBirdVolume(rings:Array<[number,number,number,number]>,softCrown=f
     const a=i/columns*Math.PI*2;
     const fold=softCrown&&y<.23?.025*Math.sin(a+.7)*Math.sin(Math.max(0,(y+.20)/.43)*Math.PI):0;
     let px=Math.sin(a)*rx,py=y+fold,pz=Math.cos(a)*rz+z;
+    if(softCrown&&py<.04){
+      // The underside folds upward toward the tail. A horizontal bottom ring
+      // made the longer breast an extruded peg; a narrow front keel and a
+      // higher, broader rear close it as a folded wedge instead.
+      const lower=THREE.MathUtils.smoothstep(.04-py,0,.275);
+      py+=.15*lower*THREE.MathUtils.smoothstep(-pz,-.02,.08);
+      px*=1-.78*THREE.MathUtils.smoothstep(-py,.10,.24);
+    }
     if(softCrown&&py<.26){
       // Carry the same diagonal paper planes from cheek through throat.
       // Horizontal elliptical sections alone left a round cap above the
@@ -733,7 +741,9 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'spiritHood': return spiritHood();
     case 'spiritRelayHood': return spiritHood(true);
     case 'merchantTorso': return softLathe([[0, -.50], [.25, -.49], [.32, -.38], [.40, -.16], [.49, .10], [.47, .22], [.25, .28], [0, .31]]);
-    case 'swiftBody': return foldedBirdVolume([[-.12,.032,.05,-.025],[-.035,.075,.087,.005],[.04,.111,.11,.052],[.10,.125,.117,.082],[.16,.122,.115,.101],[.22,.108,.108,.105],[.27,.082,.080,.095],[.30,.041,.040,.082],[.307,.006,.008,.079]],true);
+    // The lower folded breast descends toward the small feet. Keeping only a
+    // short round torso left Swift perched on long exposed wire-like legs.
+    case 'swiftBody': return foldedBirdVolume([[-.235,.040,.055,-.025],[-.12,.078,.085,-.006],[-.015,.111,.11,.045],[.10,.125,.117,.082],[.16,.122,.115,.101],[.22,.108,.108,.105],[.27,.082,.080,.095],[.30,.041,.040,.082],[.307,.006,.008,.079]],true);
     case 'swiftHead': return swiftHead();
     case 'swiftTail': return polyhedron([[.025,.11,.04],[.025,.04,-.15],[.025,-.19,-.40],[.025,-.11,-.02],[.062,-.02,-.12],[-.006,.11,.04],[-.006,.04,-.15],[-.006,-.19,-.40],[-.006,-.11,-.02]],[[0,4,1],[1,4,2],[2,4,3],[3,4,0],[5,6,7,8],[0,1,6,5],[1,2,7,6],[2,3,8,7],[3,0,5,8]],['#dcb366','#d7ab5c','#c59c4c','#e3bd73','#386a65','#c99c4f','#386a65','#35615d','#a5813e']);
     case 'swiftWingL': return reflect(makeGeometry('swiftWingR'));
@@ -830,11 +840,11 @@ function facialGrain(kit:SceneKit):THREE.DataTexture {
     const barbs=Math.pow(Math.max(0,Math.sin(a*97+r*113+Math.sin(r*43+a*13)*4)),8);
     // Broad, softly broken fibre bundles survive downsampling. Their smaller
     // barbs still provide the close surface; neither is a raised crack mesh.
-    const bundle=(.5+.5*Math.sin(a*43+r*14+Math.sin(a*7+r*19)*.9))**2;
-    const broken=.55+.45*Math.sin(r*37+a*9)**2;
+    const bundle=(.5+.5*Math.sin(a*43+r*23+Math.sin(a*11+r*71)*2.7+Math.sin(a*29-r*57)*1.3))**2;
+    const broken=(.5+.5*Math.sin(r*89+Math.sin(a*29)*3))**2;
     const middle=(.5+.5*Math.sin(a*71+r*53+Math.sin(r*23)*2))**4;
     const outer=THREE.MathUtils.smoothstep(r,.07,.25);
-    const tone=246-26*bundle*broken*outer-12*middle*outer-10*barbs*outer-12*seed;
+    const tone=246-17*bundle*broken*outer-12*middle*outer-10*barbs*outer-12*seed;
     data.set([tone,tone,tone,255],(y*size+x)*4);
   }
   const texture=new THREE.DataTexture(data,size,size);texture.userData.platopCharacterGrain=true;texture.magFilter=THREE.LinearFilter;texture.minFilter=THREE.LinearMipmapLinearFilter;texture.generateMipmaps=true;texture.needsUpdate=true;owner.facialGrain=texture;return texture;

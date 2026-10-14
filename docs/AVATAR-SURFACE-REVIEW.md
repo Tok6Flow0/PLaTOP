@@ -48,6 +48,9 @@ not asked for a desired score or instructed to approve.
 | 57 (foliage/materials) | Merchant 8.6/10 — B+; campus approximately 8.2/10 — B | Horizontal leaf tiers substantially reduced; quieter ceramic highlights retained; sparse seating, rigid book/paper forms and simplified facial disks remain |
 | 58 (campus furniture) | Campus 8.2/10 — B; craft 8.3 / fidelity 8.1; lighting 8.3 | Wider tables improve room scale; guest chair reads too rectangular and right-hand storage is concealed; floor/material depth remains limited |
 | 59 (Dispatch only) | 8.5/10 — B+; mixed modest improvement | Tuft roots join more plausibly; eye-centred facial fibres avoid cracking but look too regularly radial; Swift's long wire-like legs and short breast are the largest silhouette gap |
+| 60 (Dispatch continuity review) | 8.4/10 — B+; rejected lower-body prototype | Quieter facial fibres improve; shorter exposed legs help but the extended breast ends as a blunt projecting block |
+| 60 (fresh full-set reviewer) | Campus craft 7.0 / fidelity 7.5; characters craft 7.5 / fidelity 8.0 | Sparse staging, uniform campus light/materials, simplified primary forms and mixed paper/plastic construction remain conspicuous |
+| 61 (Dispatch continuity review) | 8.5/10 — B+; preferred over 59 and 60 | Tapered underside resolves the blunt peg and shorter legs improve proportions; broad stiff wing and slightly pinched lower keel remain |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -56,6 +59,14 @@ approval.
 The requested A-level acceptance remains open. Increased mesh density and passing
 tests do not substitute for this visual judgment. The earlier avatar/daylight
 ledger is a separate historical series.
+
+The fresh pass-60 reviewer was not shown prior scores, target scores or ledgers.
+It viewed the campus concept, all six chosen identity portraits, two campus
+captures and all six front/night/quarter/rear render sets. Its per-team
+craft/fidelity scores were Merchant 7.5/8.0, HR 7.5/8.0, Intake 7.5/8.0,
+Support 8.0/8.5, Reflection 7.0/7.5 and Email 7.0/7.5. These stricter judgments
+are retained alongside the continuity reviewer, not replaced by the more
+favourable older grades. Neither reviewer establishes an accepted match.
 
 ## Verification through surface pass 17
 
@@ -76,6 +87,15 @@ existing character envelope. The reviewer recommends keeping the tuft join but
 breaking the long coherent facial rays into shorter irregular fibre groups.
 Swift's breast/leg proportions, integrated wing folds and the owl's facial depth
 remain open. This is not a new full-set or campus acceptance.
+
+Passes 60–61: 301 tests and the production build pass. Pass 60's lower-breast
+prototype was rejected after review; pass 61 tapers it to a narrow front keel
+with the underside rising toward the tail. Standing feet, certified movement
+envelopes and the earlier continuous cheek/eye construction remain tested.
+The facial texture now uses shorter irregular fibre groups rather than coherent
+sunburst rays. The reviewer prefers 61 over 59 and 60, but flags the broad wing
+plate as the largest remaining Swift mismatch. The stricter fresh full-set
+scores above remain current; a targeted correction does not replace them.
 
 - 280 tests pass; production build passes, with the existing large-bundle warning.
 - All sixteen exact 100× counts, finite attributes, source preservation, curvature,
@@ -350,6 +370,8 @@ and is not treated as close-up evidence.
 | Pass 57 campus | 53.80 | 1.74 / 3.90 ms | 110 / 352,795 | 0 |
 | Pass 58 campus | 53.70 | 2.21 / 3.90 ms | 110 / 354,087 | 0 |
 | Pass 59 campus | 51.80 | 2.31 / 4.00 ms | 110 / 354,087 | 0 |
+| Pass 60 campus | 53.60 | 1.61 / 3.00 ms | 110 / 354,087 | 0 |
+| Pass 61 campus | 55.10 | 1.92 / 2.70 ms | 110 / 354,087 | 0 |
 | Baseline full-face close | 45.29 | 2.61 / 3.40 ms | 46 / 303,944 | 0 |
 | Pass 14 full-face close | 50.99 | 2.50 / 4.10 ms | 147 / 2,413,677 | 3 |
 | Pass 17 full-face close | 48.99 | 2.54 / 4.20 ms | 147 / 2,417,249 | 3 |
@@ -399,6 +421,9 @@ not a matched baseline comparison.
 Pass 59 Dispatch submitted 50.10 fps / 2.30 ms mean / 4.20 ms p95, with two
 dense avatars, 109 draws and 1,670,062 triangles. It remains a variable
 same-machine sample rather than proof of unchanged worst-case GPU cost.
+Pass 60 Dispatch submitted 51.60 fps / 2.17 ms mean / 4.00 ms p95; pass 61
+submitted 51.80 fps / 1.94 ms / 3.20 ms. Both used two dense avatars, 109 draws
+and 1,670,062 triangles. The rejected 60 shape still has its measured evidence.
 
 These samples remain in the earlier performance range, but do not prove a speed
 increase or an unchanged worst case. The dense tier is deliberately not used for

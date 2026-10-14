@@ -429,7 +429,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       data.highlights.push(sculpt(head, 'detail', '#fff2d4', [sign*.112,.056,.101], [.006,.013,.013], undefined, 'glaze'));
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * .085, .018, .03]);
       [-1,0,1].forEach(toe=>sculpt(foot,'toe','#967140',[toe*.02,0,.02],[.025,.036,.15],[0,toe*.24,0],'brass'));
-      stroke(foot,'#957446',[[0,.16,-.04],[0,.075,-.07],[0,.008,0]],.009,'brass'); data.feet.push(foot);
+      const leg=stroke(foot,'#957446',[[-sign*.04,.13,-.02],[-sign*.02,.045,-.03],[0,.008,0]],.009,'brass');leg.name='swift-leg'; data.feet.push(foot);
     });
     sculpt(head,'paperBeak','#a57d40',[0,.048,.153],[.60,.45,.38],[-.20,0,0],'paper');
     sculpt(body,'swiftTail','#ffffff',[0,-.105,-.03],[.74,.78,.86],undefined,'paper');

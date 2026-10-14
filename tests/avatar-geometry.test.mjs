@@ -335,6 +335,23 @@ test('Wayfinder ivory shells and dark faces keep their source matte finishes',()
   kit.dispose();
 });
 
+test('Swift has a continuous low folded breast above small grounded feet',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-swift'),kit);
+  const body=model.getObjectByName('swiftBody');model.updateMatrixWorld(true);
+  const bodyBounds=new THREE.Box3().setFromObject(body),allBounds=new THREE.Box3().setFromObject(model);
+  assert.ok(bodyBounds.min.y>.035&&bodyBounds.min.y<.080,'the breast ends just above the toes, not atop long wire legs');
+  assert.ok(bodyBounds.max.y>.55,'the existing crown height and cheek construction are preserved');
+  assert.ok(Math.abs(allBounds.min.y)<.005,'the authored feet remain on the floor');
+  const p=body.geometry.attributes.position;
+  assert.ok([...Array(p.count).keys()].filter(i=>p.getY(i)<-.10).length>40,'the lower breast is a closed mesh volume, not a flat patch');
+  for(const foot of model.userData.personality.feet){
+    const leg=foot.getObjectByName('swift-leg');assert.ok(leg);
+    const bounds=new THREE.Box3().setFromObject(leg);
+    assert.ok(bounds.max.y>bodyBounds.min.y+.05&&bounds.max.y<.155,'upper legs overlap the descending breast vertically');
+  }
+  disposeObject(model);kit.dispose();
+});
+
 test('Swift carries diagonal cheek planes into the breast without hiding its eyes',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='email-swift'),kit);
   const body=model.getObjectByName('swiftBody'),positions=body.geometry.attributes.position;

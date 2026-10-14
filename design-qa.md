@@ -5,9 +5,12 @@ Current result: the stricter character-level reference pass is implemented and f
 ## Current surface refinement checkpoint
 
 The October 13 surface series supersedes the older captures and counts below.
-See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md): the latest
-independent full-set result is **8.5/10 B+ for portraits and 8.2/10 B for the campus**, not
-the requested A. The original sections below describe the earlier checkpoint.
+See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
+pass-60 reviewer, without prior scores, gave **7.5/10 character craft, 8.0/10
+character fidelity, 7.0/10 campus craft and 7.5/10 campus fidelity**. The continuity
+reviewer's earlier full-set result was 8.5/10 for portraits and 8.2/10 for campus.
+Both judgments remain recorded; neither meets the requested A. The original
+sections below describe earlier checkpoints.
 
 All sixteen procedural characters now have exactly 100× authored triangles in
 their worker-built close-up tier, with at most three resident detailed avatars.
@@ -16,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-59 suite passes **300 tests** and the production build passes. The
+The pass-61 suite passes **301 tests** and the production build passes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate
