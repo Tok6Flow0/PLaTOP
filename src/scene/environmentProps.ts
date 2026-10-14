@@ -15,6 +15,29 @@ export function beveledBlock(parent: THREE.Object3D, kit: SceneKit, color: strin
   const mesh = new THREE.Mesh(new RoundedBoxGeometry(size[0], size[1], size[2], 2, Math.min(radius, ...size.map((dimension) => dimension * 0.46))), kit.material(color));
   mesh.position.set(...position); mesh.castShadow = mesh.receiveShadow = true; parent.add(mesh); return mesh;
 }
+/** Shallow painted joinery, within the existing wall/trim envelope. */
+export function paneledWallFinish(parent:THREE.Object3D,kit:SceneKit,color:string,x:number,z:number,width:number):THREE.Group {
+  const group=new THREE.Group();group.name='Painted back-wall joinery';group.position.set(x,0,z);parent.add(group);
+  const span=width-.18,base=new THREE.Color(color);
+  const paint=(factor:number)=>`#${base.clone().multiplyScalar(factor).getHexString()}`;
+  const backing=surface(beveledBlock(group,kit,paint(.92),[0,1.99,.098],[span,3.58,.04],.006),'wall');
+  backing.name='Recessed wall joint backing';
+  const weights=[1.02,.98,1.04,.96,1.01,1,.97,1.03,.99],total=weights.reduce((sum,n)=>sum+n,0);
+  const tones=[.987,1.018,.998,.977,1.009,.994,1.022,.984,1.004];
+  let left=-span/2;
+  weights.forEach((weight,index)=>{
+    const pitch=span*weight/total,shade=paint(tones[index]);
+    const board=surface(beveledBlock(group,kit,shade,[left+pitch/2,2.03,.11],[pitch-.010,3.46,.04],.006),'wall');
+    board.name='Painted wall board';board.material=kit.material(shade,'wood');
+    left+=pitch;
+  });
+  // A stepped skirting return and a fine upper rail connect the boards to
+  // the existing cream architecture; joints stay recessed, not black lines.
+  beveledBlock(group,kit,'#d4c4ab',[0,.22,.14],[width-.12,.20,.065],.016).name='Wall skirting';
+  beveledBlock(group,kit,'#e0cfb5',[0,.345,.132],[width-.12,.05,.075],.010).name='Skirting return';
+  beveledBlock(group,kit,'#e0cfb5',[0,3.815,.116],[width-.12,.11,.065],.012).name='Upper wall rail';
+  return group;
+}
 function canvasTexture(width: number, height: number, paint: (context: CanvasRenderingContext2D) => void): THREE.CanvasTexture {
   const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
   const context = canvas.getContext('2d'); if (context) paint(context);

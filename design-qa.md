@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-131 suite passes **352 tests** and the production build passes. Its
+The pass-132 suite passes **353 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -137,6 +137,14 @@ campus 7.0 / 7.5. Both matched camera samples submit 59.9994 fps. The next
 priority is Merchant workstation integration: an existing chair band obscures
 Scout's lower torso, side residents feel detached and the foreground rug is
 oversized. This needs inspection without assuming an intersection from pixels.
+Pass 131 retains a fitted low Scout chair and tighter Merchant grouping:
+room 7.5 craft / 8.0 fidelity, campus 7.0 / 7.5. The first campus sample is
+58.90 fps, its unchanged repeat 60.00, and the close sample 60.00; all are
+recorded. Pass 132's modeled Merchant wall panels are a mixed prototype.
+Their construction gain survives campus scale, but seams look too dark and
+occasionally ragged. The reviewer requires correction before extension or
+production adoption, with unchanged grades. Campus/close samples submit
+60.00/59.90 fps. Production remains accepted 127; no A is claimed.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

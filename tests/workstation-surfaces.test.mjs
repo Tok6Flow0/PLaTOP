@@ -13,7 +13,7 @@ async function moduleUrl(path, imports = {}) {
 }
 const primitives = await moduleUrl('../src/scene/primitives.ts');
 const { SceneKit, disposeObject } = await import(primitives);
-const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, parcelStack, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
+const { laptop, monitor, table, chair, plant, rug, lamp, notebook, shelf, parcelStack, paneledWallFinish, tidyStaticMeshes } = await import(await moduleUrl('../src/scene/environmentProps.ts', { './primitives': primitives }));
 
 function canvasDocument(t) {
   const prior = globalThis.document;
@@ -22,6 +22,31 @@ function canvasDocument(t) {
   globalThis.document = { createElement: () => ({ width: 0, height: 0, getContext: () => context }) };
   t.after(() => { globalThis.document = prior; });
 }
+
+test('painted wall boards have real recessed joints, integrated trim and bounded static geometry',()=>{
+  const kit=new SceneKit(),root=new THREE.Group(),joinery=paneledWallFinish(root,kit,'#b77d59',0,0,6.1);
+  root.updateMatrixWorld(true);const bounds=new THREE.Box3().setFromObject(joinery);
+  assert.ok(bounds.min.x>=-2.991&&bounds.max.x<=2.991);
+  assert.ok(bounds.min.y>=.119&&bounds.max.y<=3.871&&bounds.max.z<=.173,
+    'the wall finish remains inside the existing skirting and cap envelope');
+  const boards=joinery.children.filter(o=>o.name==='Painted wall board');assert.equal(boards.length,9);
+  const backing=new THREE.Box3().setFromObject(joinery.getObjectByName('Recessed wall joint backing'));
+  assert.ok(backing.max.z>.11,'recessed painted backing clears the original masonry face without coplanar flicker');
+  for(const [index,board] of boards.entries()){
+    const box=new THREE.Box3().setFromObject(board);
+    assert.ok(box.max.z-backing.max.z>.010&&box.max.z-backing.max.z<.014,'seams are shallow physical recesses');
+    assert.equal(board.userData.roomSurface,'wall','agent-authored wall finishes keep semantic ownership');
+    if(index){const previous=new THREE.Box3().setFromObject(boards[index-1]);
+      assert.ok(box.min.x-previous.max.x>.009&&box.min.x-previous.max.x<.011,'board joints have actual gaps');}
+  }
+  let triangles=0;root.traverse(o=>{assert.ok(!o.isLight);if(o.isMesh){
+    triangles+=(o.geometry.index?.count??o.geometry.attributes.position.count)/3;
+    assert.equal(o.material.map,null);assert.equal(o.material.transparent,false);
+  }});
+  assert.ok(triangles<5000,'wall articulation stays inexpensive at campus scale');
+  tidyStaticMeshes(root);assert.equal(root.children.filter(o=>o.isMesh).length,2,'joinery merges to two existing surface finishes');
+  const resources=new THREE.Group();resources.add(root,root.userData.staticSources);disposeObject(resources);kit.dispose();
+});
 
 test('paper-wrapped storage is bounded static furniture with a certified walking envelope',()=>{
   const kit=new SceneKit(),root=new THREE.Group(),stack=parcelStack(root,kit,0,0);

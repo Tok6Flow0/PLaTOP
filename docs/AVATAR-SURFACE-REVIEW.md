@@ -1422,3 +1422,23 @@ are flat, under-articulated architectural surfaces and repetitive, sparsely
 layered room silhouettes. The next study is a Merchant back-wall prototype:
 restrained vertical panel rhythm, physical seams and integrated cap/base,
 with characters, furniture and lighting frozen. This is not A-level acceptance.
+
+Pass 132 prototypes Merchant's back-wall joinery with nine broad painted
+boards, shallow physical gaps, recessed painted backing, a stepped skirting
+return and an upper rail. It adds no lights or texture maps; two static
+surface finishes preserve agent wall-colour ownership. All 353 tests and the
+production build pass, including actual joint depth/gap, wall envelope and
+batch-count checks. Campus submits 60.00 fps (1.64/2.60 ms CPU mean/p95;
+118 draws, 386,800 triangles), Merchant close 59.90 fps (1.70/2.80 ms;
+152 draws, 2,653,489 triangles, three dense avatars). Saved comparisons and
+timings are in surface-pass-132. Pass 131 remote CI succeeded.
+
+The independent reviewer retains the architectural direction, spacing and
+framing, but requires seam correction before extension or production adoption.
+The construction gain survives campus scale, with no significant night,
+identity or furniture regression. Several joints read as dark cuts and look
+ragged/broken at some scales, rather than quiet painted-board joins. Merchant
+remains 7.5 craft / 8.0 fidelity and campus 7.0 / 7.5. This is a prototype
+checkpoint, not an accepted finished upgrade. Next: soften the physical joint
+transition and establish a clean highlight/shadow pair without adding panels.
+Production remains accepted pass 127.
