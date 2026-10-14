@@ -29,6 +29,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
   const { id, kind } = character;
   const cream = '#eee4d0', ink = '#19333b', gold = '#bf9654';
   const wayfinder = id.startsWith('intake-'), hr = id.startsWith('hr-'), leader = id === 'bridge-jarvis';
+  const shellFinish:CharacterFinish=leader||id==='bridge-scout'?'satinShell':wayfinder?'clay':'glaze';
   const bodyColor = wayfinder ? '#dfd1b6' : id === 'hr-compass' ? '#e7d8b9' : leader ? '#b85829' : id==='bridge-scout' ? '#315d58' : character.color;
   const body = joint(group, 'body', [0, .57, 0]), head = joint(group, 'head', [0, 1.08, 0]);
   const data: Personality = { kind, body, head, bodyY: .57, headY: 1.08, arms: [], feet: [], eyes: [], highlights: [], wings: [] };
@@ -58,8 +59,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     [-1, 1].forEach(sign => {
       if(!robed){
         const arm = joint(body, sign < 0 ? 'arm_l' : 'arm_r', [sign * (leader ? .375 : compact ? .30 : .32), leader ? .26 : .16, 0]);
-        sculpt(arm, 'limb', color, [sign * .003, -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * -.13]);
-        sculpt(arm, 'bean', id==='bridge-scout'?color:extremity, [0, -.29, .025], [.18, .18, .20]); data.arms.push(arm);
+        sculpt(arm, 'limb', color, [sign * .003, -.13, 0], [compact ? .18 : .205, .37, .22], [0, 0, sign * -.13], shellFinish==='satinShell'?shellFinish:'clay');
+        sculpt(arm, 'bean', id==='bridge-scout'?color:extremity, [0, -.29, .025], [.18, .18, .20],undefined,shellFinish==='satinShell'?shellFinish:'clay'); data.arms.push(arm);
       }
       const foot = joint(group, sign < 0 ? 'foot_l' : 'foot_r', [sign * (leader ? .125 : .15), leader ? .08 : hr || wayfinder ? .055 : .10, .025]);
       sculpt(foot, 'bean', extremity, [0, 0, 0], [leader ? .36 : .24, leader ? .16 : hr || wayfinder ? .11 : .20, leader ? .43 : .32]);
@@ -174,14 +175,14 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       if (leader) { body.position.y = .84; data.bodyY = .84; head.position.y = 1.48; data.headY = 1.48; head.scale.set(.84,.80,.86); }
       if (id === 'bridge-scout') {body.position.y=.45;data.bodyY=.45;head.position.y=.89;data.headY=.89;head.scale.set(.86,.92,.92);}
       if (wayfinder) {body.position.y=id==='intake-jarvis'?.535:.49;data.bodyY=body.position.y;head.position.y=id==='intake-jarvis'?1.02:.95;data.headY=head.position.y;}
-      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.32 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, wayfinder?'clay':'glaze');
-      if(leader) sculpt(body,'merchantBase','#bb673a',[0,-.72,0],[.73,.24,.56],undefined,'glaze');
-      if(leader)sculpt(body,'neckBand','#9d542f',[0,.38,0],[.52,.036,.43],undefined,'glaze');
-      if(id==='bridge-scout')sculpt(body,'neckBand','#274b45',[0,.14,0],[.44,.036,.34],undefined,'glaze');
+      sculpt(body, wayfinder ? 'wayfinderBody' : leader ? 'merchantTorso' : id==='bridge-scout'?'scoutBody':'torso', bodyColor, [0, -.005, 0], [wayfinder ? .85 : leader ? .79 : id==='bridge-scout'?.70:.64, leader ? 1.32 : id === 'intake-jarvis' ? 1.06 : wayfinder ? .96 : id==='bridge-scout' ? .68 : .87, wayfinder ? .64 : leader ? .54 : id==='bridge-scout'?.56:.50], undefined, shellFinish);
+      if(leader) sculpt(body,'merchantBase','#bb673a',[0,-.72,0],[.73,.24,.56],undefined,shellFinish);
+      if(leader)sculpt(body,'neckBand','#9d542f',[0,.38,0],[.52,.036,.43],undefined,shellFinish);
+      if(id==='bridge-scout')sculpt(body,'neckBand','#274b45',[0,.14,0],[.44,.036,.34],undefined,shellFinish);
       if(wayfinder)sculpt(body,'neckBand','#b1a58e',[0,.22,0],[.55,.026,.40],undefined,'clay');
       sculpt(body, 'limb', wayfinder ? '#b6aa8c' : bodyColor, [0, .35, 0], [.18, .15, .18]);
       const headColor = wayfinder ? cream : bodyColor;
-      sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, wayfinder?'clay':'glaze').name='helmet';
+      sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, shellFinish).name='helmet';
       curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, .010, [0, .005, 0], 'clay').name='visor-rim';
       curvedFace(kit, head, wayfinder ? '#273b4a' : '#f2e2bf', .583, .401, .019, [0, .005, 0], wayfinder ? 'cloth' : 'clay').name='rounded-visor';
       if (id === 'bridge-scout') {
@@ -268,8 +269,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         }
       }
       [-1, 1].forEach(sign => {
-        sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], wayfinder?'clay':'glaze');
-        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [leader?.070:.045, leader?.20:.117, leader?.20:.117], undefined, wayfinder?'clay':'glaze');
+        sculpt(head, 'limb', wayfinder ? '#314a58' : '#a85e39', [sign * .425, -.01, 0], [.16, .095, .16], [0, 0, Math.PI / 2], shellFinish);
+        sculpt(head, 'detail', wayfinder ? '#b5a78c' : bodyColor, [sign * .463, -.01, 0], [leader?.070:.045, leader?.20:.117, leader?.20:.117], undefined, shellFinish);
       });
       limbs(bodyColor, wayfinder ? '#e7ddc8' : leader ? bodyColor : '#e2d6b7',false,wayfinder);
       if(wayfinder) [-1,1].forEach(sign=>{

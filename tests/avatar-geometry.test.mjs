@@ -345,6 +345,25 @@ test('Bridge silhouettes retain a tall Jarvis torso and the smaller Scout from t
   models.forEach(disposeObject);kit.dispose();
 });
 
+test('Merchant painted shells keep satin grain without the close-tier clearcoat or extra textures',()=>{
+  const kit=new SceneKit(),grain=characterMaterial(kit,'#ffffff','glaze').bumpMap;
+  for(const id of ['bridge-jarvis','bridge-scout']){
+    const model=makeProxy(members.find(c=>c.id===id),kit);
+    const shell=model.getObjectByName('helmet'),material=shell.material;
+    assert.equal(material.userData.characterFinish,'satinShell');
+    assert.equal(material.roughness,.54);assert.equal(material.envMapIntensity,.80);
+    assert.equal(material.bumpMap,grain);assert.equal(material.roughnessMap,grain);
+    assert.equal(material.bumpScale,.017);assert.equal(material.transparent,false);
+    const restore=refineCharacterModel(model);
+    assert.equal(shell.material,material,'close detail does not put a glossy coat over the painted grain');
+    assert.equal(shell.material.clearcoat,undefined);
+    restore();disposeObject(model);
+  }
+  const keeper=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);
+  assert.equal(meshes(keeper).some(mesh=>mesh.material.userData.characterFinish==='satinShell'),false,'paper identity is unaffected');
+  disposeObject(keeper);kit.dispose();
+});
+
 test('Jarvis has a convex breast, tapered waist and a fitted badge within his walking envelope',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(member=>member.id==='bridge-jarvis'),kit);
   model.updateMatrixWorld(true);

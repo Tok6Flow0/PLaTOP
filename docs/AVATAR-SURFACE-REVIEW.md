@@ -72,6 +72,7 @@ not asked for a desired score or instructed to approve.
 | 80 (fresh Dispatch join review) | Craft 7.5 / fidelity 7.5; retained | Rear roots disappear beneath the head and closer wing overlap reduces separation; no substantial silhouette regression; oversized pouch-like envelope badge remains |
 | 81 (fresh Dispatch and Keeper detail review) | Dispatch 7.5 craft / 7.5 fidelity; Merchant 8.0 / 8.0; retained | Envelope reads smaller and flatter, Keeper corner shares the cover's cream; no visible regression; Swift's rounded head/neck and solid breast remain inconsistent with its planar wings |
 | 83 (fresh Merchant optical review) | Craft 8.0 / fidelity 8.0; retained | Rounder lens fills its frame and preserves the wink/pupil; mild quarter-view gray veil remains; painted shells still read as smooth plastic rather than the reference's fine satin grain |
+| 84 (fresh Merchant satin review) | Craft 8.0 / fidelity 8.0; retained | Reduced plastic-like highlights preserve rounded forms and brass/glass separation; broad shells remain too uniform and slightly rubber-like; hold gloss and add restrained fine surface variation |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -634,3 +635,13 @@ convex surface. Pass 83 passes 316 tests and the production build. Its campus
 sample submits 54.00 fps (1.89 ms / 3.40 ms); Merchant close 54.70 fps (1.91 ms /
 3.70 ms), with the same counts as 82. The new lens adds one draw and 24,000 dense
 triangles compared with 81; it does not use an additional refraction render pass.
+
+Pass 84 passes 317 tests and the production build. Jarvis and Scout's painted
+shells use a separate satin response without the close-tier clearcoat; their
+roughness and bump reuse the existing glaze grain texture. Other identities and
+brass/optical parts retain their materials. Campus submits 54.70 fps (1.83 ms
+mean / 3.50 ms p95 CPU, 111 draws, 371,724 triangles); Merchant close submits
+51.70 fps (2.14 ms / 3.90 ms, 142 draws, 2,529,449 triangles, three dense avatars).
+The distant material split costs two draws; close geometry is unchanged. No
+extra texture or render pass is added, and these measurements do not establish
+an unchanged worst-case GPU workload.
