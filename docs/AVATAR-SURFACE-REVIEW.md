@@ -80,6 +80,7 @@ not asked for a desired score or instructed to approve.
 | 89 (fresh Reflection fold review) | Craft 7.5 / fidelity 7.5; retained | Longer coplanar chest folds remove belly patchwork without flattening the body. Narrow hanging outer wings remain the largest gap: the source uses broader overlapping diagonal sheets |
 | 90 (fresh Reflection wing review) | Craft 7.5 / fidelity 7.5; retained | Broader diagonal wings improve shoulder/body integration without obvious clipping. Bright raised roots still resemble collars and the quarter-view edge reads wedge-thick; tuck roots behind the cheek and preserve the broader fold |
 | 91 (fresh Reflection shoulder review) | Craft 7.5 / fidelity 7.5; narrowly retained | Lower roots clear the cheeks and reduce the collar effect without losing the broad fold. Stop lowering them; the thick polyhedral head and weak distinction between outer paper hood and facial panels are now the larger gap |
+| 92 (fresh Reflection head-wrap review) | Craft 7.5 / fidelity 7.5; modestly retained | Fine facial edges and broad panels improve separation and preserve expressions. Side/rear still reads as a solid mass, with a slightly shield-like double cheek edge. Next correction should use long brow/temple folds, not another projecting rim |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -708,3 +709,20 @@ preserve the same geometry count, body overlap and walking clearance. Campus
 submits 54.50 fps (1.76 ms mean / 3.40 ms p95 CPU), Reflection close 54.80 fps
 (1.76 ms / 3.10 ms), with 90's counts. These are same-machine samples rather
 than GPU-completion measurements. The independent score remains 7.5 / 7.5.
+
+Pass 92 passes 321 tests/build. The hood is a closed 0.010-unit folded sheet,
+with front/rear coverage and open eye-window ray checks. Each lighter cheek has
+two coplanar surfaces rather than an apex fan. Expressions move with the same
+head joint; no new action, identity or observer authority is introduced.
+Campus submits 55.20 fps (1.58 ms mean / 2.30 ms p95 CPU, 110 draws, 371,988
+triangles); Reflection close 56.90 fps (1.64 ms / 2.20 ms, 125 draws, 864,889
+triangles, three dense avatars). The wrap adds two close-view draws and 25,600
+triangles relative to 91; there is no new texture, light or rendering pass.
+These variable samples do not establish equal worst-case GPU or startup cost.
+
+The isolated production server serves `index-ClnaTyvZ.js`. Its Reflection window,
+eleven-step zoom invitation, third/first-person mist, exit and reset were checked
+without console warnings/errors. No live agent events were sent. This proves a
+local built-app checkpoint, not native-host adoption. The repository's current
+noon/night campus images now show pass 92 at 1536 × 1024; the campus was not
+independently rescored in this character-focused submission.

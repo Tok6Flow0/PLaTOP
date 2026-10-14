@@ -6,7 +6,7 @@ export type CharacterForm = 'torso' | 'scoutBody' | 'helmet' | 'bridgeHelmet' | 
   | 'lanternGlass' | 'lanternCap' | 'lanternBase' | 'lanternHandle' | 'sphere' | 'bean' | 'fittedSole' | 'detail' | 'opticDome' | 'limb' | 'ankle' | 'beak' | 'owlBeak' | 'ring' | 'heart' | 'neckBand'
   | 'book' | 'keeperPages' | 'bowedCover' | 'keeperCover' | 'keeperFrontCover' | 'keeperTurnedCorner' | 'envelope' | 'cloak' | 'cape' | 'capePanel' | 'feather' | 'featherCore' | 'toe' | 'paperBody' | 'paperChestL' | 'paperChestR' | 'paperBackL' | 'paperBackR' | 'paperBrow' | 'paperEarL' | 'paperEarR' | 'paperEchoHead' | 'paperQuillHead' | 'paperWing' | 'paperTail' | 'paperDisc' | 'paperDiscL' | 'pageFold' | 'hoodTip' | 'scroll'
   | 'spiritBody' | 'spiritHood' | 'spiritRelayHood' | 'merchantTorso' | 'swiftBody' | 'swiftHead' | 'swiftTail' | 'swiftWingL' | 'swiftWingR' | 'paperOwlWingL' | 'paperOwlWingR' | 'paperHoldingWing' | 'paperCrownBackL' | 'paperCrownBackR' | 'wayfinderBody'
-  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl';
+  | 'owlBrowL' | 'owlBrowR' | 'featherFanL' | 'featherFanR' | 'breastFeathers' | 'hexGlass' | 'hexCap' | 'hexBase' | 'fineRing' | 'compassStar' | 'compassNeedle' | 'compassPointer' | 'paperBeak' | 'pageCorner' | 'merchantBase' | 'spiritFigure' | 'spiritLens' | 'spiritRelay' | 'compassCowl' | 'lensCowl' | 'relayCowl' | 'paperEchoHood' | 'paperQuillHood';
 export type CharacterFinish = 'clay' | 'glaze' | 'satinShell' | 'ink' | 'warmInk' | 'brass' | 'amber' | 'paper' | 'feather' | 'facialFeather' | 'plumage' | 'cloth' | 'glass' | 'opticalGlass';
 type Tuple = [number, number, number];
 const torsoProfile: Array<[number, number]> = [[0, -.5], [.32, -.48], [.45, -.37], [.50, -.10], [.49, .16], [.43, .34], [.29, .45], [.14, .49], [0, .5]];
@@ -516,22 +516,56 @@ function foldedSheet(outline:Tuple[],ridge:Tuple,tones:string[]):THREE.BufferGeo
 }
 
 /** Folded volumes close into a tapered back, not an extruded cardboard slab. */
-function paperOwlHead(quill=false): THREE.BufferGeometry {
+function paperOwlHead(quill=false,hoodOnly=false): THREE.BufferGeometry {
   const outline:Array<[number,number]>=quill?
     [[-.41,-.20],[-.28,-.30],[-.01,-.44],[.28,-.30],[.47,-.10],[.45,.24],[.54,.51],[.19,.41],[-.08,.43],[-.48,.53],[-.44,.14]]:
     [[-.44,-.19],[-.28,-.30],[.015,-.44],[.29,-.30],[.47,-.08],[.42,.28],[.23,.48],[-.23,.44],[-.47,.14]];
-  const cheek:Array<[number,number]>=[[.012,.02],[.045,.25],[.16,.36],[.29,.32],[.415,.14],[.39,-.06],[.24,-.26],[.014,-.405]];
+  const cheek:Array<[number,number]>=[];
+  const originalCheek:Array<[number,number]>=[[.012,.02],[.045,.25],[.16,.36],[.29,.32],[.415,.14],[.39,-.06],[.24,-.26],[.014,-.405]];
+  const foldY=-.03;
+  for(let i=0;i<originalCheek.length;i++){
+    const a=originalCheek[i],b=originalCheek[(i+1)%originalCheek.length];cheek.push([...a]);
+    if((a[1]-foldY)*(b[1]-foldY)<0){const t=(foldY-a[1])/(b[1]-a[1]);cheek.push([THREE.MathUtils.lerp(a[0],b[0],t),foldY]);}
+  }
+  if(hoodOnly)for(const point of cheek){point[0]=.20+(point[0]-.20)*.95;point[1]*=.95;}
   const holes=[cheek.map(([x,y])=>new THREE.Vector2(-x,y)),cheek.map(([x,y])=>new THREE.Vector2(x,y))];
   const outer=outline.map(([x,y])=>new THREE.Vector2(x,y));
   const points=[...outer,...holes.flat()];
-  const faceDepth=(x:number,y:number,outer=false)=>(outer?.30+(.4-Math.abs(x))*.12:.45-.10*Math.abs(x))-.20*THREE.MathUtils.smoothstep(-y,.06,.44);
+  const faceDepth=(x:number,y:number,outer=false)=>outer?
+    .30+(.4-Math.abs(x))*.12-.20*THREE.MathUtils.smoothstep(-y,.06,.44):
+    .45-.10*Math.abs(x)+.52*Math.min(0,y-foldY);
   // The heart's lower folds turn back into the breast. A constant-depth
   // face plane made a projecting mask above an unnecessarily dark neck gap.
   const vertices:Tuple[]=points.map((p,i)=>[p.x,p.y,faceDepth(p.x,p.y,i<outline.length)]);
   const faces=THREE.ShapeUtils.triangulateShape(outer,holes),colors:string[]=faces.map(()=>quill?'#cfb18a':'#c7aa83');
+  if(hoodOnly){
+    // A separate closed paper wrap overlaps the lighter face by five percent.
+    // Its back follows the same folds, leaving a real thin edge rather than
+    // an extruded face-shaped slab or a painted bevel.
+    for(const point of vertices)point[2]+=.016;
+    const count=vertices.length,front=faces.map(face=>[...face]);
+    for(const face of front){const [a,b,c]=face.map(i=>vertices[i]);if((b[0]-a[0])*(c[1]-a[1])-(b[1]-a[1])*(c[0]-a[0])<0)face.reverse();}
+    vertices.push(...vertices.map(([x,y,z])=>[x,y,z-.010] as Tuple));
+    const closed=[...front,...front.map(face=>face.map(i=>i+count).reverse())];
+    let start=0;
+    for(const [index,boundary] of [outer,...holes].entries()){
+      const area=boundary.reduce((sum,p,i)=>{const next=boundary[(i+1)%boundary.length];return sum+p.x*next.y-next.x*p.y;},0);
+      for(let i=0;i<boundary.length;i++){
+        const a=start+i,b=start+(i+1)%boundary.length,edge=[a,a+count,b+count,b];
+        if((index===0&&area<0)||(index>0&&area>0))edge.reverse();closed.push(edge);
+      }
+      start+=boundary.length;
+    }
+    return polyhedron(vertices,closed,closed.map((_,i)=>i<front.length?(quill?'#c9aa81':'#c4a47c'):'#b5966f'),true);
+  }
   for(let side=0;side<2;side++){
-    const center=vertices.length;vertices.push([side?.18:-.18,-.015,.46]);
-    for(let i=0;i<cheek.length;i++){const a=outline.length+side*cheek.length+i,b=outline.length+side*cheek.length+(i+1)%cheek.length;faces.push([a,b,center]);colors.push('#edd6b0');}
+    // Two broad planes turn at the lower cheek. Coplanar triangulation is
+    // invisible; the old centre fan made each face look like a carved gem.
+    for(const upper of [true,false]){
+      const ids=cheek.flatMap((point,i)=>(upper?point[1]>=foldY:point[1]<=foldY)?[outline.length+side*cheek.length+i]:[]);
+      const panel=ids.map(i=>new THREE.Vector2(vertices[i][0],vertices[i][1]));
+      for(const triangle of THREE.ShapeUtils.triangulateShape(panel,[])){faces.push(triangle.map(i=>ids[i]));colors.push('#edd6b0');}
+    }
   }
   const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[
     x*.92,y*.89,
@@ -850,6 +884,8 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperChestR': return reflect(paperOwlChest());
     case 'paperBackR': return foldedSheet([[-.015,.34,.15],[-.36,.28,.11],[-.47,-.04,.09],[-.205,-.50,.14],[.065,-.32,.23]],[-.21,.015,.25],['#d0b28b','#dec39d','#c5a57c','#dbc09a','#e2c8a3']).rotateY(Math.PI);
     case 'paperBackL': return reflect(makeGeometry('paperBackR'));
+    case 'paperEchoHood': return paperOwlHead(false,true);
+    case 'paperQuillHood': return paperOwlHead(true,true);
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
     case 'paperEarR': return foldedSheet([[.16,.32,.30],[.28,.41,.24],[.54,.51,.16],[.45,.29,.43]],[.30,.33,.46],['#d1b38b','#e3c79d','#c9a980','#dec299']);
     case 'paperEarL': return reflect(makeGeometry('paperEarR'));

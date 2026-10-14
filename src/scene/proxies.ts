@@ -359,6 +359,7 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, 0], [.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
     sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
     if(!navy){
+      sculpt(head,id==='reflection-echo'?'paperEchoHood':'paperQuillHood','#ffffff',[0,0,0],[.78,.65,.42],undefined,'paper');
       sculpt(body,'paperChestL','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
       sculpt(body,'paperChestR','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
       sculpt(body,'paperBackL','#ffffff',[0,0,0],[.70,.70,.36],undefined,'paper');
@@ -372,13 +373,13 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       const facialDisc=navy?curvedFace(kit, head, '#f0e3c6', .365, .43, .013, [sign * .169, -.006, 0], 'facialFeather', [.417, .325, .27],false,undefined,.43,sign):undefined;
       const iris=navy?sculpt(head, 'bean', '#c49b54', [sign * .130, .002, .178], [.141, .155, .018], undefined, 'clay'):undefined;
       if(iris&&facialDisc){iris.name='owl-iris';facialDisc.name=`owl-facial-disc:${sign}`;}
-      if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .210], .047, .028));
+      if (id === 'reflection-quill') data.eyes.push(characterEyeArc(kit, head, '#524334', [sign * .162, .015, .184], .047, .028));
       else {
-        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?.012:.011, navy?.190:.195], [navy ? .100 : .083, navy ? .114 : .098, navy?.030:.024], undefined, 'ink'); data.eyes.push(eye);
-        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - (navy?.016:.012), navy?.039:.043, navy?.204:.208], [navy?.023:.020, navy?.026:.022, .006], undefined, 'glaze');
+        const eye = sculpt(head, 'bean', navy ? '#13252d' : '#302c22', [navy?sign*.130:sign*.162+.006, navy?.012:.011, navy?.190:.188], [navy ? .100 : .083, navy ? .114 : .098, navy?.030:.024], undefined, 'ink'); data.eyes.push(eye);
+        const highlight=sculpt(head, 'detail', '#fff9e7', [sign * (navy?.130:.162) - (navy?.016:.012), navy?.039:.043, navy?.204:.201], [navy?.023:.020, navy?.026:.022, .006], undefined, 'glaze');
         data.highlights.push(highlight);
       }
-      if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.203],[sign*.205+.006,.038,.201],[sign*.230+.006,.050,.192]],.006,'ink');
+      if(id==='reflection-echo')stroke(head,'#56402a',[[sign*.180+.006,.039,.184],[sign*.205+.006,.038,.182],[sign*.230+.006,.050,.181]],.006,'ink');
       if (navy) sculpt(head, sign < 0 ? 'owlBrowL' : 'owlBrowR', '#26394f', [sign * (sign<0?.115:.135), .255, .030], sign<0?[1.02,1.10,1.30]:[1.06,.95,1.40], [0,0,sign<0?-.15:-.08], 'feather');
       const wing = joint(body, sign < 0 ? 'wing_l' : 'wing_r', [sign * (navy?.300:.315), .12, navy?.110:-.025]);
       if(navy)wing.scale.x=1.10;

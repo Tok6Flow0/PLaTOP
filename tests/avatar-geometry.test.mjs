@@ -1149,6 +1149,35 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
   disposeObject(all); kit.dispose();
 });
 
+test('paper hood wraps have closed thin edges and preserve open facial windows',()=>{
+  const kit=new SceneKit(),material=new THREE.MeshBasicMaterial(),ray=new THREE.Raycaster();
+  for(const form of ['paperEchoHood','paperQuillHood']){
+    const mesh=new THREE.Mesh(characterGeometry(kit,form),material);mesh.updateMatrixWorld(true);let covered=0;
+    for(let x=-.50;x<=.50;x+=.02)for(let y=-.44;y<=.50;y+=.02){
+      ray.set(new THREE.Vector3(x,y,2),new THREE.Vector3(0,0,-1));const front=ray.intersectObject(mesh,false)[0];
+      ray.set(new THREE.Vector3(x,y,-2),new THREE.Vector3(0,0,1));const back=ray.intersectObject(mesh,false)[0];
+      assert.equal(!!front,!!back,'both sides of the folded wrap are present');
+      if(front){assert.ok(Math.abs(front.point.z-back.point.z-.010)<1e-5,'back follows the fold at paper thickness, not a flat extrusion');covered++;}
+    }
+    assert.ok(covered>150,'brow and cheek wrap has a substantial connected area');
+    for(const x of [-.20,.20]){ray.set(new THREE.Vector3(x,.05,2),new THREE.Vector3(0,0,-1));assert.equal(ray.intersectObject(mesh,false).length,0,'eye windows remain open');}
+  }
+  material.dispose();kit.dispose();
+});
+
+test('paper facial panels contain two deliberate planes per cheek rather than an apex fan',()=>{
+  const kit=new SceneKit(),cream=new THREE.Color('#edd6b0');
+  for(const form of ['paperEchoHead','paperQuillHead']){
+    const geometry=characterGeometry(kit,form),p=geometry.attributes.position,n=geometry.attributes.normal,c=geometry.attributes.color;
+    const normals=[new Set(),new Set()];
+    for(let i=0;i<p.count;i++)if(Math.abs(c.getX(i)-cream.r)<1e-5&&Math.abs(c.getY(i)-cream.g)<1e-5){
+      normals[p.getX(i)>0?1:0].add([n.getX(i),n.getY(i),n.getZ(i)].map(v=>Math.round(v*1e4)).join(':'));
+    }
+    for(const side of normals)assert.equal(side.size,2,'upper panel and lower return each remain coplanar');
+  }
+  kit.dispose();
+});
+
 test('folded owl heads and bodies retain real side-on volume in office windows',()=>{
   const kit=new SceneKit(),all=new THREE.Group();
   for(const id of ['reflection-echo','reflection-quill']){
@@ -1172,7 +1201,8 @@ test('paper owl breast folds do not cut a horizontal edge across the lower facia
       ray.set(origin,direction);
       const shield=ray.intersectObject(face)[0];assert.ok(shield,`${id} lower face exists`);
       const first=ray.intersectObject(model,true)[0];
-      assert.ok(first?.object===face,`${id} lower face remains in front of its folded breast; first hit ${first?.object.name}`);
+      const hood=model.getObjectByName(id==='reflection-echo'?'paperEchoHood':'paperQuillHood');
+      assert.ok(first?.object===face||first?.object===hood,`${id} lower facial shield and its thin wrap remain in front of the folded breast; first hit ${first?.object.name}`);
     }
   }
   disposeObject(all);kit.dispose();
