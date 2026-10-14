@@ -1154,15 +1154,15 @@ export function characterMesh(kit: SceneKit, parent: THREE.Object3D, form: Chara
 /** Fit an inset to its helmet or pear belly, sharing its curvature and normals. */
 export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string, width: number, height: number,
   offset: number, centre: Tuple = [0, 0, 0], finish: CharacterFinish = 'ink', surfaceRadii: Tuple = [.461, .38, .345], bubble = false,
-  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0,frameOpening?:[number,number],frameRings=7): THREE.Mesh {
+  torsoSurface?: [number, number, number, number], cornerRatio = .43,owlSign=0,frameOpening?:[number,number],frameRings=7,fineBoundary=false): THREE.Mesh {
   const cache = owned(kit).geometry;
-  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}:${frameOpening?.join(':')??''}:${frameRings}`;
+  const key = `face:${width}:${height}:${offset}:${centre.join(':')}:${surfaceRadii.join(':')}:${bubble}:${torsoSurface?.join(':') ?? ''}:${cornerRatio}:${owlSign}:${frameOpening?.join(':')??''}:${frameRings}:${fineBoundary}`;
   let geometry = cache.get(key);
   if (!geometry) {
     // Four continuous arcs give a rounded boundary at close range while using
     // fewer triangles than the old grid's visibly stair-stepped outline.
     const radius = Math.min(width, height) * cornerRatio, boundary: Array<[number, number]> = [];
-    const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]],arcSteps=frameOpening&&frameRings===2?16:8;
+    const corners = [[1, 1], [-1, 1], [-1, -1], [1, -1]],arcSteps=8;
     corners.forEach(([sx, sy], corner) => {
       for (let step = 0; step < arcSteps; step++) {
         const angle = (corner + step / (arcSteps-1)) * Math.PI / 2;
@@ -1171,12 +1171,12 @@ export function curvedFace(kit: SceneKit, parent: THREE.Object3D, color: string,
         boundary.push([x, y]);
       }
     });
-    if(frameOpening&&frameRings===2){
+    if(frameOpening&&fineBoundary){
       // A fine seam must sample the straight spans too. A single wide top
       // chord otherwise sinks through the convex helmet between its ends.
       const sampled:Array<[number,number]>=[];
       boundary.forEach(([x,y],i)=>{
-        const next=boundary[(i+1)%boundary.length],steps=Math.max(1,Math.ceil(Math.hypot(next[0]-x,next[1]-y)/.025));
+        const next=boundary[(i+1)%boundary.length],steps=Math.max(1,Math.ceil(Math.hypot(next[0]-x,next[1]-y)/.040));
         for(let step=0;step<steps;step++)sampled.push([THREE.MathUtils.lerp(x,next[0],step/steps),THREE.MathUtils.lerp(y,next[1],step/steps)]);
       });
       boundary.splice(0,boundary.length,...sampled);
@@ -1330,4 +1330,34 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     geometry.userData.characterFitted=true;mesh.geometry=geometry;
   });
+}
+
+/** The guide's ceramic hood rolls inward to its glass and outward to the
+ * shell. Its separation is actual shallow geometry, not a drawn outline. */
+export function navigatorHoodFrame(kit:SceneKit,parent:THREE.Object3D,helmet:THREE.Mesh,color:string):THREE.Mesh {
+  const frame=curvedFace(kit,parent,color,.735,.575,0,[0,.005,0],'satinClay',undefined,false,undefined,.43,0,[.577,.395],6,true);
+  const sampled=frame.geometry.clone();frame.geometry=sampled;
+  const raw=sampled.attributes.position,columns=(raw.count-1)/6,radial=[0,.06,.28,.56,.82,1];
+  for(let row=0;row<radial.length;row++)for(let col=0;col<columns;col++) {
+    const i=1+row*columns+col,t=row/5;
+    raw.setX(i,raw.getX(i)*THREE.MathUtils.lerp(.577/.735,1,radial[row])/THREE.MathUtils.lerp(.577/.735,1,t));
+    raw.setY(i,.005+(raw.getY(i)-.005)*THREE.MathUtils.lerp(.395/.575,1,radial[row])/THREE.MathUtils.lerp(.395/.575,1,t));
+  }
+  fitCharacterRelief(frame,helmet,.006,0);
+  sampled.dispose();
+  delete frame.geometry.userData.characterEllipsoid;
+  const p=frame.geometry.attributes.position,profile=[.024,.030,.027,.018,.010,0],colours=new Float32Array(p.count*3).fill(1);
+  for(let row=0;row<profile.length;row++)for(let col=0;col<columns;col++){
+    const i=1+row*columns+col;p.setZ(i,p.getZ(i)+profile[row]);
+    // Only the narrow inward return is warm recessed ceramic; the broad
+    // cream face and the outer join remain unpainted.
+    if(row===0)colours.set([.65,.57,.46],i*3);
+  }
+  frame.geometry.setAttribute('color',new THREE.BufferAttribute(colours,3));
+  const materials=owned(kit).material,key=`satinClay:${color}:hood-return`;
+  if(!materials.has(key)){const material=(frame.material as THREE.MeshStandardMaterial).clone();material.vertexColors=true;materials.set(key,material);}
+  frame.material=materials.get(key)!;
+  frame.geometry.computeVertexNormals();frame.geometry.computeBoundingBox();frame.geometry.computeBoundingSphere();
+  frame.geometry.userData.hoodReturnProfile=profile;
+  frame.name='visor-rim';return frame;
 }

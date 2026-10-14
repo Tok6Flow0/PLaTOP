@@ -1222,7 +1222,9 @@ test('the guide hood star is fitted to the actual cone in both surface tiers',()
 test('the guide hood has a fitted single-face inset and an open ceramic surround',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='intake-jarvis'),kit);
   const hood=model.getObjectByName('hoodTip'),inset=model.getObjectByName('navigator-hood-inset');
-  const seam=model.getObjectByName('navigator-hood-seam'),helmet=model.getObjectByName('helmet');
+  const seam=model.getObjectByName('visor-rim'),helmet=model.getObjectByName('helmet');
+  assert.equal(model.getObjectByName('navigator-hood-seam'),undefined,'no drawn seam remains');
+  assert.deepEqual(seam.geometry.userData.hoodReturnProfile,[.024,.030,.027,.018,.010,0]);
   assert.equal(inset.geometry.userData.characterFitted,true);
   assert.equal(inset.material.color.getHexString(),'273b4a');
   assert.equal(hood.material.color.getHexString(),'eee4d0');
@@ -1241,7 +1243,7 @@ test('the guide hood has a fitted single-face inset and an open ceramic surround
     for(const {mesh,point} of probes){
       const ray=new THREE.Raycaster(new THREE.Vector3(point.x,point.y,3),new THREE.Vector3(0,0,-1));
       const detail=ray.intersectObject(mesh,false)[0],shell=ray.intersectObject(mesh===inset?hood:helmet,false)[0];
-      assert.ok(detail&&shell&&shell.distance-detail.distance>0&&shell.distance-detail.distance<.035,`hood layers stay fitted: ${mesh.name} detail ${detail?.distance}, shell ${shell?.distance}`);
+      assert.ok(detail&&shell&&shell.distance-detail.distance>0&&shell.distance-detail.distance<.05,`hood layers stay fitted: ${mesh.name} detail ${detail?.distance}, shell ${shell?.distance}`);
     }
     const centre=seam.parent.localToWorld(new THREE.Vector3(0,.005,0));
     const ray=new THREE.Raycaster(new THREE.Vector3(centre.x,centre.y,3),new THREE.Vector3(0,0,-1));

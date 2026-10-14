@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import type { Activity, Character } from '../types';
 import { SceneKit } from './primitives';
-import { characterMesh, characterMaterial, characterSmile, characterStroke, characterEyeArc, curvedFace, fitCharacterRelief, navigatorCapePoint, type CharacterForm, type CharacterFinish } from './characterGeometry';
+import { characterMesh, characterMaterial, characterSmile, characterStroke, characterEyeArc, curvedFace, fitCharacterRelief, navigatorCapePoint, navigatorHoodFrame, type CharacterForm, type CharacterFinish } from './characterGeometry';
 
 interface Personality {
   kind: Character['kind'];
@@ -185,14 +185,8 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
       sculpt(head, leader?'bridgeHelmet':'helmet', headColor, [0, 0, 0], [.87, .76, .69], undefined, shellFinish).name='helmet';
       // A shallow lip surrounds the glass instead of putting a cloth plaque
       // in front of a lower rim. Both surfaces retain the helmet curvature.
-      curvedFace(kit, head, id==='intake-jarvis'?cream:wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, wayfinder ? .021 : .010, [0, .005, 0], id==='intake-jarvis'?'satinClay':'clay',undefined,false,undefined,.43,0,wayfinder?[.577,.395]:undefined).name='visor-rim';
-      if(id==='intake-jarvis') {
-        // The chosen guide wears a layered ceramic hood. This thin open seam
-        // follows the helmet itself, not a floating flat ring over the face.
-        const seam=curvedFace(kit,head,'#b9aa8e',.735,.575,.006,[0,.005,0],'clay',undefined,false,undefined,.43,0,[.719,.559],2);
-        seam.name='navigator-hood-seam';fitCharacterRelief(seam,head.getObjectByName('helmet') as THREE.Mesh,.006,0);
-        delete seam.geometry.userData.characterEllipsoid;
-      }
+      if(id==='intake-jarvis')navigatorHoodFrame(kit,head,head.getObjectByName('helmet') as THREE.Mesh,cream);
+      else curvedFace(kit, head, wayfinder ? '#b9aa8e' : '#ab7943', .628, .449, wayfinder ? .021 : .010, [0, .005, 0], 'clay',undefined,false,undefined,.43,0,wayfinder?[.577,.395]:undefined).name='visor-rim';
       curvedFace(kit, head, wayfinder ? '#142631' : '#f2e2bf', .583, .401, wayfinder ? .014 : .019, [0, .005, 0], wayfinder ? 'visorGlass' : 'clay').name='rounded-visor';
       if (id === 'bridge-scout') {
         // One generously sized magnifier is Scout's face, not a tiny monocle

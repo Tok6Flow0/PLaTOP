@@ -112,6 +112,7 @@ not asked for a desired score or instructed to approve.
 | 117 (hanging-fold prototype) | Guide craft 7.0 / fidelity 7.5; ensemble/room 7.5 / 7.5; revise before retention | Two descending folds are visibly improved, but an exposed/intersecting round shoulder component interrupts the cloth. Preserve the fold direction while correcting coverage; then prioritize the cream-edged hood point and layered head silhouette |
 | 118 (sleeve coverage correction) | Guide, ensemble and room craft 7.5 / fidelity 7.5; retained over 117 and 116 | Side, quarter and night show a continuous shoulder with the oval gone, retaining stronger folds. Further cape polishing has diminishing value; the layered cream hood/head silhouette remains the next normal-view priority |
 | 119 (cream hood layers, intermediate) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5 | Retain the cream outer point, fitted navy inset/star and lighter surround. Revise the seam: it reads as a drawn tan outline and looks wavy in the actual close scene. A returned cream edge and shallow shadow separation are still needed |
+| 120 (modeled ceramic return) | Guide, ensemble and room 7.5 / 7.5; campus 7.0 / 7.5; retained over 119 | The tan outline is gone, with a credible soft visor edge in quarter/night views and no visible new break. The broad cream band still merges into the helmet at normal portrait size; distinct raised profile separation remains missing |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -1159,3 +1160,20 @@ mean / 2.00 ms p95 CPU, 115 draws, 384,310 triangles); Wayfinders close submits
 60.00 fps (1.73 / 2.70 ms, 140 draws, 2,240,483 triangles, three dense avatars).
 These fixed ten-second samples are not GPU-completion guarantees. Full visual
 and timing evidence is in surface-pass-119. Isolated production remains 116.
+
+Pass 120 replaces the separate tan seam and original lip with one open fitted
+ceramic frame. Six radial samples shape the inward return and outer slope;
+only the narrow inward return has a warm ceramic tint. The guide contains
+897,200 close-up triangles, still inside the existing distant mesh budget.
+All 346 tests and the production build pass on the first full run.
+
+The independent reviewer retains 120 over 119 as cleaner construction, with
+no new hole, exposed join, shoulder breakthrough or expression/glare regression.
+Scores remain unchanged: the broad, nearly flush band merges into the helmet
+in the normal portrait and actual-room view. A visibly raised nested profile,
+not more grain or hidden subdivision, remains the next source-match priority.
+
+Campus submits 60.00 fps (1.60 ms mean / 2.20 ms p95 CPU, 116 sampled draws,
+384,390 triangles). Wayfinders close submits 60.00 fps (1.87 / 3.20 ms,
+141 draws, 2,240,563 triangles, three detailed avatars). Fixed-size evidence is
+under surface-pass-120. No GPU-completion or A-level visual claim is made.
