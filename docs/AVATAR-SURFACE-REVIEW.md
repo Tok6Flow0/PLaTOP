@@ -69,6 +69,7 @@ not asked for a desired score or instructed to approve.
 | 77 (fresh Dispatch face review) | Craft 7.0 / fidelity 7.5; mixed, beak revision required | Eye refinements and matte finish help; broad sharp pyramid-shaped beak is oversized relative to the source, and repeated feathers remain |
 | 78 (fresh Dispatch beak review) | Craft 7.0 / fidelity 7.5; retained over 77 | Narrow matte rounded root improves integration; bulb-to-point taper still feels pin-like, while small repeated feathers and lower-breast dark wedges are the larger gap |
 | 79 (fresh Dispatch feather review) | Craft 7.5 / fidelity 7.5; retained | Continuous beak taper and broader breast groups improve construction; dark flank-to-wing band and angular upper rear feather boundary remain |
+| 80 (fresh Dispatch join review) | Craft 7.5 / fidelity 7.5; retained | Rear roots disappear beneath the head and closer wing overlap reduces separation; no substantial silhouette regression; oversized pouch-like envelope badge remains |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -600,6 +601,12 @@ Campus submits 54.50 fps (1.79 ms mean / 3.50 ms p95 CPU, 108 draws, 371,404
 triangles); Dispatch close submits 54.30 fps (1.96 ms / 3.70 ms, 107 draws,
 1,544,423 triangles, two dense avatars). Reduced geometry does not replace the
 visual review: its craft score rises to 7.5, with remaining joins identified.
+Pass 80 passes 314 tests and the production build. Tests cover hidden rear roots,
+actual feather/body clearance and every motor envelope; an initial 0.00147-unit
+clearance was increased rather than weakening the 0.002 minimum. Campus submits
+50.90 fps (1.81 ms mean / 3.00 ms p95 CPU); Dispatch close submits 52.30 fps
+(1.85 ms / 3.40 ms), retaining 79's draws and triangles. These samples are in
+the earlier same-machine range; they do not establish equal worst-case GPU cost.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
 from the matched table; the uninterrupted rerun above does not hide that caveat.

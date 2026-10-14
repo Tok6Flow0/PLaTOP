@@ -642,6 +642,22 @@ test('broader owl breast groups overlap across the visible front instead of expo
   material.dispose();kit.dispose();
 });
 
+test('upper rear owl feather roots tuck beneath the actual head rather than ending on a flat shoulder edge',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
+  model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);
+  const breast=model.getObjectByName('breastFeathers'),head=model.getObjectByName('owlHead');
+  const p=breast.geometry.attributes.position,point=new THREE.Vector3(),ray=new THREE.Raycaster();let checked=0;
+  for(let i=0;i<p.count;i++){
+    if(p.getY(i)<.400||p.getZ(i)>=0)continue;
+    point.fromBufferAttribute(p,i).applyMatrix4(breast.matrixWorld);
+    ray.set(new THREE.Vector3(point.x,point.y,-2),new THREE.Vector3(0,0,1));
+    const shell=ray.intersectObject(head,false)[0];
+    assert.ok(shell&&shell.point.z<point.z,'the rear head silhouette conceals the feather root');checked++;
+  }
+  assert.ok(checked>10);
+  disposeObject(model);kit.dispose();
+});
+
 test('shallow owl irises follow their curved facial discs without clipping through them',()=>{
   const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='email-owl'),kit);
   model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);
@@ -732,7 +748,7 @@ test('visible breast feather planes stay outside the curved owl body',()=>{
     point.applyMatrix4(plumage.matrixWorld);
     const ray=new THREE.Raycaster(centre.clone().addScaledVector(direction,2),direction.clone().negate());
     const hit=ray.intersectObject(shell,false)[0];
-    assert.ok(hit&&point.distanceTo(centre)>hit.point.distanceTo(centre)+.002,'outward-facing feather triangle clears its supporting body');
+    assert.ok(hit&&point.distanceTo(centre)>hit.point.distanceTo(centre)+.002,`outward-facing feather triangle clears its supporting body at ${point.toArray().map(v=>v.toFixed(4)).join(',')}; clearance ${hit?(point.distanceTo(centre)-hit.point.distanceTo(centre)).toFixed(5):'no body hit'}`);
   }
   shell.geometry.dispose();shell.geometry=coarseShell;
   disposeObject(model);kit.dispose();

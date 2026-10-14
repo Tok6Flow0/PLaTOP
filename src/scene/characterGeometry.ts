@@ -655,7 +655,11 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         // The last row ends above the closed body pole. Projecting through
         // that pole would invert the radius and create long floor spikes.
         const length=(row===breastRows-1?.210:.260+.018*Math.sin(featherIndex*2.17));
-        const py=y+point.y*length+point.x*tilt*.10,normalizedY=py/.83;
+        let py=y+point.y*length+point.x*tilt*.10;
+        // The upper vanes run up the neck beneath the head. Stopping their
+        // broad roots on the rear shoulder exposed a flat cut-paper boundary.
+        if(row===0)py=THREE.MathUtils.lerp(py,.407,THREE.MathUtils.smoothstep(point.y,.12,.5));
+        const normalizedY=py/.83;
         let r=0;while(r<owlContour.length-2&&owlContour[r+1].y<normalizedY)r++;
         const a=owlContour[r],b=owlContour[r+1],radius=a.x+(b.x-a.x)*(normalizedY-a.y)/(b.y-a.y);
         // Angular, not fixed physical width: near the belly pole a fixed
@@ -663,7 +667,8 @@ function featherFan(sign: number, breast = false): THREE.BufferGeometry {
         // Tips overlap the staggered row below, not adjacent equal-depth vanes.
         const width=1.40+.06*Math.sin(featherIndex*1.31)+.05*point.y;
         const theta=angle+point.x*(Math.PI*2/breastColumns)*width+point.y*tilt*.08;
-        const relief=(.006+point.z*.020+(breastRows-1-row)*.0032)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29));
+        const relief=(.006+point.z*.020+(breastRows-1-row)*.0032)*(1-.30*THREE.MathUtils.smoothstep(py,.14,.29))
+          +(row===0?.004*THREE.MathUtils.smoothstep(py,.14,.29):0);
         point.set(Math.sin(theta)*(radius*.70+relief),py,Math.cos(theta)*(radius*.55+relief));
         const slope=(b.x-a.x)/(b.y-a.y);
         normal.set(Math.sin(theta)/.70,-slope/.83,Math.cos(theta)/.55).normalize();
