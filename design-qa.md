@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-129 suite passes **351 tests** and the production build passes. Its
+The pass-130 suite passes **351 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -132,6 +132,11 @@ Merchant close baseline each submit 60.00 fps in their fixed samples. A
 reviewer's possible Clear Path plant change was checked: all default plant
 geometry/transforms are byte-identical across the revision. The next priority
 is Merchant's storage, not another dedicated foliage iteration.
+Pass 130 retains distinct joined Merchant cabinets at room 7.5 / 7.5 and
+campus 7.0 / 7.5. Both matched camera samples submit 59.9994 fps. The next
+priority is Merchant workstation integration: an existing chair band obscures
+Scout's lower torso, side residents feel detached and the foreground rug is
+oversized. This needs inspection without assuming an intersection from pixels.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

@@ -67,18 +67,19 @@ function fixture({ chair = false } = {}) {
   return { navigator, home, motor: new OfficeMotor('actor', 'home', .4, navigator, home) };
 }
 
-test('Wayfinder cabinets have continuous sides and recessed supported contents inside their unchanged footprint',async t=>{
+test('joined room cabinets have continuous sides and recessed supported contents inside their unchanged footprint',async t=>{
   const {SceneKit,disposeObject}=await loadScene('scene/primitives.ts');
   const {storageCabinet}=await loadScene('scene/environmentProps.ts');
   const kit=new SceneKit();t.after(()=>kit.dispose());
-  for(const drawers of [false,true]){
+  for(const profile of ['wayfinder','merchant'])for(const drawers of [false,true]){
     const root=new THREE.Group();t.after(()=>disposeObject(root));
-    assert.equal(storageCabinet(root,kit,drawers),2.38,'top plants retain their existing support height');
+    const expectedTop=profile==='merchant'&&drawers?1.96:2.38;
+    assert.equal(storageCabinet(root,kit,drawers,profile),expectedTop,'top plants retain their existing support height');
     root.updateMatrixWorld(true);
     const bounds=new THREE.Box3().setFromObject(root);
     assert.ok(bounds.min.x>=-.545001&&bounds.max.x<=.545001);
     assert.ok(bounds.min.z>=-.335001&&bounds.max.z<=.415001);
-    assert.ok(bounds.min.y>=.099999&&bounds.max.y<=2.380001);
+    assert.ok(bounds.min.y>=.099999&&bounds.max.y<=expectedTop+.000001);
     const named=name=>{const found=[];root.traverse(o=>{if(o.name===name)found.push(o);});return found;};
     assert.equal(named('Continuous cabinet side').length,2);
     const shelves=named('Inset cabinet shelf');assert.equal(shelves.length,3,'three larger bays replace five tray rows');

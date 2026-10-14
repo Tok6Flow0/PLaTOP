@@ -81,6 +81,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
   const center = new THREE.Vector3((index % 3 - 1) * 6.15, 0, (Math.floor(index / 3) - 0.5) * OFFICE_ROW_SPACING);
   root.position.copy(center);
   const palette = finishes[index];
+  const framedStorage = index===0 || index===2;
   // Public finish references let local agent styles tint the authored room
   // without guessing which green belongs to a plant or changing navigation.
   root.userData.roomPalette = { wall: palette.wall, rug: palette.rug, furniture: '#c59e73' };
@@ -200,9 +201,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     // foliage are compressed with the carcass, so the open rear aisle has no
     // unaccounted-for overhangs or a smaller navigation-only shelf footprint.
     const storageDepth = index === 5 ? 0.4 : 1;
-    const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, storageDepth); (index===2?root:interior).add(leftShelf);
-    const leftTop=index===2?storageCabinet(leftShelf,kit,true):shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,4);
-    if(index===2)leftShelf.name=`${team.id}:cabinet`;
+    const leftShelf = new THREE.Group(); leftShelf.position.set(storageX, 0, storageZ); leftShelf.scale.set(shelfWidth, 1, storageDepth); (framedStorage?root:interior).add(leftShelf);
+    const leftTop=framedStorage?storageCabinet(leftShelf,kit,true,index===0?'merchant':'wayfinder'):shelf(leftShelf, kit, 0, 0, index, index % 2 === 1,1,4);
+    if(framedStorage)leftShelf.name=`${team.id}:cabinet`;
     shelfAsset=[storageX,leftTop+.01,storageZ+.02];
     if (index === 3) {
       const sideShelf = new THREE.Group(); sideShelf.position.set(-2.48, 0, -1.65); sideShelf.rotation.y = Math.PI / 2; interior.add(sideShelf);
@@ -213,7 +214,7 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       blockers.push({ bounds: [-2.9, -2.22, -2.02, -1.08] });
     } else if (!lowerRoom) {
       const rightShelf = new THREE.Group(); rightShelf.position.set(shelfX, 0, shelfZ + 0.01); rightShelf.scale.x = shelfWidth; interior.add(rightShelf);
-      const rightTop=index===2?storageCabinet(rightShelf,kit,false):shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
+      const rightTop=framedStorage?storageCabinet(rightShelf,kit,false,index===0?'merchant':'wayfinder'):shelf(rightShelf, kit, 0, 0, index + 1, false,1,index===1?4:5);
       plant(rightShelf, kit, -0.23, 0.07, 0.61, rightTop, '#b6a17c', 'leaf',index===2);
       plant(rightShelf, kit, 0.01, -0.17, 0.42, rightTop, '#cbb488', 'herb');
       plant(rightShelf, kit, 0.21, 0.1, 0.63, rightTop, '#c7b794', index % 2 ? 'herb' : 'spear');
@@ -224,13 +225,13 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
       // its true front, not through the newly continuous back wall.
       filingCabinet(2.8, 1.8, -Math.PI / 2, false).scale.z = 0.8;
       blockers.push({ bounds: [2.67, 1.25, 2.9, 2.35] });
-    } else if(index!==2)filingCabinet(-shelfX, shelfZ).scale.x = shelfWidth;
+    } else if(!framedStorage)filingCabinet(-shelfX, shelfZ).scale.x = shelfWidth;
     blockers.push({ bounds: index < 3 ? [-2.9, shelfZ - 0.38, -1.94, shelfZ + 0.48]
       : index === 5 ? [1.7, storageZ - 0.38 * storageDepth, 2.83, storageZ + 0.48 * storageDepth] : [-2.83, shelfZ - 0.38, -1.7, shelfZ + 0.48] });
     if (!lowerRoom) blockers.push({ bounds: [1.94, shelfZ - 0.38, 2.9, shelfZ + 0.48] });
     plant(leftShelf, kit, -0.19, 0.1, 0.74, leftTop, '#b5aa8a','leaf',index===2);
     plant(leftShelf, kit, 0.24, 0.12, 0.54, leftTop, '#a88e61', 'ivy');
-    if(index===2)tidyStaticMeshes(leftShelf);
+    if(framedStorage)tidyStaticMeshes(leftShelf);
   }
   if (index % 3 === 0) wall('left', -3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);
   if (index % 3 === 2) wall('right', 3.0, -0.06 - rearExtension / 2, 0.2, 5.7 + depthGain + rearExtension);

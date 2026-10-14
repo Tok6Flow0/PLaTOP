@@ -1372,3 +1372,23 @@ detailed avatars). Evidence includes its pre-change noon/night room views.
 The next priority is Merchant storage with distinct bays/contents, using the
 accepted cabinet construction. Evidence is in surface-pass-129. Production
 remains pass 127, and pass 128 remote CI succeeded. No A is claimed.
+
+Pass 130 applies joined storage construction to Merchant while preserving its
+original footprints and plant support heights. A shorter filing cabinet and
+taller open case have distinct bay spacing and book/box groups. All 33
+navigation checks, 351 full-suite tests and the production build pass.
+Campus submits 59.9994 fps (1.62 ms mean / 2.20 ms p95 CPU; 118 draws,
+381,708 triangles); matched Merchant close submits 59.9994 fps (1.74/2.70 ms;
+144 draws, 2,529,197 triangles, three dense avatars). Full evidence is in
+surface-pass-130, including unchanged Clear Path pre-change room captures.
+
+The independent reviewer retains the cabinetry at Merchant 7.5 craft / 7.5
+fidelity and campus 7.0 / 7.5. It reads as constructed storage with distinct
+roles rather than duplicated Wayfinder assets; night recesses remain readable.
+No new clipping, plant-support or shadow problem is visible. The new close
+view exposes an existing brown chair band across Scout's lower torso, also
+present in 129. Images alone do not certify a mesh intersection. The next
+priority is coordinated Merchant desk/rug/chair/resident integration: clear
+Scout's torso, relate side residents to the desk and reduce empty foreground
+rug, preserving identities and neutral poses. Production remains accepted 127.
+Pass 129's exact remote commit and CI were verified; no A is claimed.
