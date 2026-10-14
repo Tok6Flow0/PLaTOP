@@ -210,7 +210,11 @@ function bowedCover(bow=.65,softLower=false,turnedCorner=false):THREE.BufferGeom
   const shape=new THREE.Shape(),r=.13;
   const lower=softLower?.23:r,edge=softLower?.46:.5;
   shape.moveTo(-edge+lower,-.5);shape.lineTo(edge-lower,-.5);shape.quadraticCurveTo(edge,-.5,edge,-.5+lower);
-  if(turnedCorner){shape.lineTo(.5,.28);shape.lineTo(.28,.5);}
+  if(turnedCorner){
+    // Keep the smaller curled corner's hinge in the authored boundary. The
+    // subdivisions follow the cover's bow, rather than bridging it flat.
+    for(let i=0;i<=8;i++)shape.lineTo(.5-.16*i/8,.34+.16*i/8);
+  }
   else {shape.lineTo(.5,.5-r);shape.quadraticCurveTo(.5,.5,.5-r,.5);}
   shape.lineTo(-.5+r,.5);
   shape.quadraticCurveTo(-.5,.5,-.5,.5-r);shape.lineTo(-edge,-.5+lower);shape.quadraticCurveTo(-edge,-.5,-edge+lower,-.5);
@@ -751,12 +755,43 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'keeperCover': return bowedCover(1.4,true);
     case 'keeperFrontCover': return bowedCover(1.4,true,true);
     case 'keeperTurnedCorner': {
-      // Body-local hinge points coincide with the clipped front cover. The
-      // reverse face curls toward the reader; the original corner is absent.
-      const front:Tuple[]=[[.196,.740,.19448],[.273,.6168,.19448+.0532*Math.cos(.39*Math.PI)**2],[.350,.4936,.19448],[.205,.590,.242]];
-      return polyhedron([...front,...front.map(([x,y,z])=>[x,y,z-.004] as Tuple)],
-        [[0,3,1],[1,3,2],[4,5,7],[5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]],
-        ['#fff2d6','#fff0d3','#e1ceb0','#e1ceb0','#e8d7b8','#e8d7b8','#eddcbe','#e3d0ad'],true);
+      // A thin, compact curled sheet, not a long pointed blade. Both skins
+      // share the cover's curved hinge; the narrow rim has its own normals.
+      const positions:number[]=[],uv:number[]=[],indices:number[]=[],columns=8,rows=4;
+      const point=(t:number,u:number,back=false):Tuple=>{
+        const x=.34+.16*t,y=.5-.16*t,curl=Math.sin(t*Math.PI);
+        return [x*.70-.073*u*curl,.18+y*1.12-.064*u*curl,
+          .19448+.0532*Math.cos(x*Math.PI)*Math.cos(y*Math.PI)+.030*Math.sin(u*Math.PI/2)*curl-(back?.003:0)];
+      };
+      const add=(t:number,u:number,back=false)=>{positions.push(...point(t,u,back));uv.push(t,u);};
+      const layer=(columns+1)*(rows+1);
+      for(const back of [false,true]){
+        const start=positions.length/3;
+        for(let row=0;row<=rows;row++)for(let col=0;col<=columns;col++)add(col/columns,row/rows,back);
+        const triangle=(a:number,b:number,c:number)=>indices.push(...(back?[a,c,b]:[a,b,c]));
+        for(let row=0;row<rows;row++)for(let col=0;col<columns;col++){
+          const a=start+row*(columns+1)+col,b=a+1,c=a+columns+1,d=c+1;
+          if(col>0)triangle(a,c,b);
+          if(col<columns-1)triangle(b,c,d);
+        }
+      }
+      // Duplicate edge vertices keep the broad paper normals continuous.
+      for(const u of [0,1])for(let col=0;col<columns;col++){
+        const start=positions.length/3;
+        add(col/columns,u);add((col+1)/columns,u);add(col/columns,u,true);add((col+1)/columns,u,true);
+        indices.push(...(u===0?[start,start+1,start+2,start+1,start+3,start+2]:[start,start+2,start+1,start+1,start+2,start+3]));
+      }
+      const geometry=new THREE.BufferGeometry();
+      geometry.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+      geometry.setAttribute('uv',new THREE.Float32BufferAttribute(uv,2));
+      geometry.setIndex(indices);geometry.computeVertexNormals();
+      // Collapsed end vertices get the neighboring sheet normal, not zeros.
+      const normals=geometry.attributes.normal;
+      for(const start of [0,layer])for(let row=0;row<=rows;row++)for(const col of [0,columns]){
+        const index=start+row*(columns+1)+col,near=index+(col===0?1:-1);
+        normals.setXYZ(index,normals.getX(near),normals.getY(near),normals.getZ(near));
+      }
+      return geometry;
     }
     case 'envelope': return folded([[-.46,-.5],[.46,-.5],[.5,-.44],[.5,.44],[.46,.5],[-.46,.5],[-.5,.44],[-.5,-.44]],.9,.02);
     case 'cloak': return softLathe([[0, -.5], [.36, -.49], [.5, -.39], [.48, -.20], [.34, .12], [.21, .36], [.09, .49], [0, .54]]);

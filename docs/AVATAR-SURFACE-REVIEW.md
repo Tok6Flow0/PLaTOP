@@ -65,6 +65,7 @@ not asked for a desired score or instructed to approve.
 | 73 (fresh Merchant shape review) | Craft 7.5 / fidelity 8.0; retained | Clearer shoulder separation, forward breast volume and tapered waist; small lower seam kink and Keeper's slab/ball-foot silhouette remain |
 | 74 (fresh Keeper shape review) | Merchant craft 8.0 / fidelity 8.0; retained | Rounded lower cover, following pages and tucked feet improve proportions; upper cover/spine and turned corner remain rigid |
 | 75 (fresh Keeper corner review) | Merchant craft 8.0 / fidelity 8.0; retained | Turned corner joins the cut-away bowed cover without a floating gap; the long sharp flap still needs a shorter, softer curl |
+| 76 (fresh Keeper curl review) | Merchant craft 8.0 / fidelity 8.0; retained | Compact curl removes the blade-like tip and keeps the expression clear; bright wedge-like shading remains, with Scout's optical depth the larger character gap |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -571,6 +572,12 @@ three curved hinge points are checked geometrically. Campus submits 54.01 fps
 (2.06 ms mean / 3.80 ms p95 CPU, 108 draws, 372,524 triangles); Merchant close
 submits 53.10 fps (2.09 ms / 4.00 ms, 141 draws, 2,485,449 triangles, three dense
 avatars). The unchanged review score is retained, not rounded up to acceptance.
+Pass 76 passes 311 tests and the production build after correcting a curl that
+extended below its specified envelope. Campus submits 53.20 fps (2.08 ms mean /
+3.80 ms p95 CPU, 108 draws, 372,852 triangles); Merchant close submits 54.60 fps
+(1.98 ms / 3.50 ms, 141 draws, 2,505,049 triangles, three dense avatars). The
+reviewer retains the compact curl but does not raise the ensemble's score. The
+rear view largely obscures Keeper and is not proof of the hidden attachment.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded
 from the matched table; the uninterrupted rerun above does not hide that caveat.

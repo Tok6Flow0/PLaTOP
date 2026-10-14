@@ -554,11 +554,14 @@ test('Keeper turned corner replaces the upper cover and joins its curved hinge',
   assert.equal(ray.intersectObject(front,false).length,0,'the original unturned corner is really absent');
   assert.ok(ray.intersectObject(back,false).length>0,'back cover still protects the page block');
   const flap=characterGeometry(kit,'keeperTurnedCorner'),p=flap.attributes.position;
-  for(const [x,y,z] of [[.196,.740,.19448],[.273,.6168,.19448+.0532*Math.cos(.39*Math.PI)**2],[.350,.4936,.19448]]){
+  for(const [x,y,z] of [[.238,.740,.19448],[.294,.6504,.19448+.0532*Math.cos(.42*Math.PI)**2],[.350,.5608,.19448]]){
     let nearest=Infinity;
     for(let i=0;i<p.count;i++)nearest=Math.min(nearest,Math.hypot(p.getX(i)-x,p.getY(i)-y,p.getZ(i)-z));
     assert.ok(nearest<1e-6,'the turned sheet shares its actual cover hinge');
   }
+  flap.computeBoundingBox();
+  assert.ok(flap.boundingBox.max.y-flap.boundingBox.min.y<.185,'the turn remains a compact corner above the expression');
+  assert.ok(flap.boundingBox.max.z-flap.boundingBox.min.z<.04,'paper curls gently rather than jutting out as a rigid wedge');
   const model=makeProxy(members.find(c=>c.id==='bridge-keeper'),kit);model.updateMatrixWorld(true);
   const folded=model.getObjectByName('keeperTurnedCorner');
   for(const eye of model.userData.personality.eyes){
