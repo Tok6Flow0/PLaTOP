@@ -61,6 +61,7 @@ not asked for a desired score or instructed to approve.
 | 69 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained modest staging improvement | Taller real shelf tiers balance upper rooms; repeated storage and sparse lower-room desk/seating relationships remain |
 | 70 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained seating improvement | Angled guest chairs and visible foyer stool clarify use; evenly smooth material response and broad empty rug remain |
 | 71 (fresh campus review) | Craft 7.0 / fidelity 7.5; retained subtle material refinement | Stronger tabletop grain and mineral pot finish are safe but small; broad light/shadow shaping remains the larger material-depth gap |
+| 72 (fresh material review) | Merchant 7.5 craft / 8.0 fidelity; Support 8.0 / 8.5; Email 7.0 / 7.5; retained | Clearer ceramic curvature and brass separation, unchanged quality tier; avoid more gloss and improve Jarvis breast/shoulder construction |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -542,8 +543,11 @@ mean / 3.70 ms p95 CPU, 109 draws, 372,303 triangles) and 51.50 Merchant close
 fps (2.21 ms / 4.40 ms, 135 draws, 2,435,449 triangles, three dense avatars).
 The 308-test suite and production build pass. No new texture, light or draw is
 introduced by the finish changes; material variation uses existing vertex colour
-and the existing wood map. These samples do not prove a speed
-increase or an unchanged worst case. The dense tier is deliberately not used for
+and the existing wood map. Pass 72 also passes 308 tests and the production
+build. Its campus sample submits 51.70 fps (2.23 ms mean / 3.90 ms p95 CPU),
+while Merchant close submits 53.50 fps (1.59 ms / 3.00 ms); draw and triangle
+counts match 71. The glaze/brass update uses the existing environment and stock
+material, without extra passes, lights or maps. The dense tier is deliberately not used for
 the distant campus. JavaScript submission time is not GPU completion time.
 An additional pass-25 close run overlapped a production-window change and fell
 to 42.60 scene fps / 47.98 RAF Hz. It is retained in local evidence but excluded

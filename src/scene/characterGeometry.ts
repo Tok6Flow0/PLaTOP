@@ -910,8 +910,8 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
   let material = cache.get(key);
   if (!material) {
     material = new THREE.MeshStandardMaterial({ color,
-      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .50 : finish === 'brass' ? .32 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
-      metalness: finish === 'brass' ? .52 : 0,
+      roughness: finish === 'glass' ? .08 : finish === 'ink' ? .24 : finish === 'glaze' ? .40 : finish === 'brass' ? .29 : finish === 'amber' ? .38 : finish === 'paper'||finish==='cloth' ? .94 : finish === 'feather'||finish==='plumage' ? .88 : .76,
+      metalness: finish === 'brass' ? .62 : 0,
       ...(finish === 'amber' ? { emissive: '#fff3c1', emissiveIntensity: .80, emissiveMap:glassGlow(kit), map:glassGlow(kit) } : {}),
       // Source Wayfinder eyes are softly luminous strokes, not tiny lamps.
       // Emission adds no light, bloom pass, transparency or animation.
@@ -921,7 +921,9 @@ export function characterMaterial(kit: SceneKit, color: string, finish: Characte
     if(finish==='glass'){material.transparent=true;material.opacity=.16;material.depthWrite=false;material.envMapIntensity=1.2;}
     if (finish === 'ink') material.envMapIntensity = .65;
     if (['clay','glaze','paper','feather','facialFeather','plumage','brass','cloth'].includes(finish)) {
-      material.envMapIntensity=finish==='glaze'?.60:.5;
+      // Ceramic and brass need a broad reflected softbox to describe their
+      // curvature. Keep dry clay, paper and fibres at their existing response.
+      material.envMapIntensity=finish==='glaze'?1.15:finish==='brass'?.85:.5;
       material.bumpMap=finish==='facialFeather'?facialGrain(kit):finish==='plumage'?plumageGrain(kit):surfaceGrain(kit,finish);material.bumpScale=finish==='plumage'?.008:finish==='facialFeather'?.012:finish==='glaze'?.009:finish==='brass'?.0015:finish==='paper'?.014:.012;
       material.map=material.bumpMap;
       // The same cellulose field varies its grazing response without an

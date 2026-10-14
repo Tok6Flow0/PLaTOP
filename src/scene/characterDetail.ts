@@ -39,7 +39,7 @@ function closeMaterial(source:THREE.MeshStandardMaterial,cache:Map<THREE.Materia
   // declarations omit the field. Standard.copy resets the physical define.
   Object.assign(physical,{defines:{STANDARD:'',PHYSICAL:''}});
   if(finish==='glaze'){
-    physical.clearcoat=.18;physical.clearcoatRoughness=.42;
+    physical.clearcoat=.25;physical.clearcoatRoughness=.30;
   }else{
     physical.sheen=finish==='facialFeather'?.22:.42;
     physical.sheenColor.copy(source.color).lerp(new THREE.Color('#eee8df'),.20);

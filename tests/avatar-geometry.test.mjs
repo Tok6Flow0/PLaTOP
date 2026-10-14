@@ -190,7 +190,7 @@ test('close materials add bounded fibre or glaze response without mutating or di
     assert.equal(mesh.material.map,material.map);assert.equal(mesh.material.bumpMap,material.bumpMap);
     assert.equal(material.isMeshPhysicalMaterial,undefined);assert.equal(mesh.material.defines.PHYSICAL,'');
     assert.equal(mesh.material.transmission,0);assert.equal(mesh.material.transparent,false);
-    if(finish==='glaze'){assert.equal(mesh.material.clearcoat,.18);assert.equal(mesh.material.sheen,0);}
+    if(finish==='glaze'){assert.equal(mesh.material.clearcoat,.25);assert.equal(mesh.material.clearcoatRoughness,.30);assert.equal(mesh.material.sheen,0);}
     else {assert.ok(mesh.material.sheen>0&&mesh.material.sheen<=.42);assert.equal(mesh.material.clearcoat,0);}
     const owned=mesh.material;clones.set(owned,0);owned.addEventListener('dispose',()=>clones.set(owned,clones.get(owned)+1));
   }
@@ -705,7 +705,8 @@ test('sculpted forms share scene resources, preserve the environment finish, and
   assert.equal(characterGeometry(kit, 'helmet'), originalGeometry);
   assert.notEqual(characterGeometry(otherKit, 'helmet'), originalGeometry, 'independent scenes own independent GPU resources');
   const material = characterMaterial(kit, '#eee4d0', 'glaze');
-  assert.ok(material.roughness>=.48&&material.roughness<.65,'eggshell ceramic retains a softened highlight, not polished plastic or matte paper');
+  assert.ok(material.roughness>=.38&&material.roughness<.48,'satin ceramic retains a broad highlight, not mirror plastic or matte paper');
+  assert.equal(material.envMapIntensity,1.15,'ceramic curvature receives the existing softbox without extra lights');
   assert.equal(characterMaterial(kit, '#eee4d0', 'glaze'), material);
   const before = models.map(model => meshes(model).map(mesh => [mesh.geometry.uuid, mesh.material.uuid]));
   const objects = all.getObjectsByProperty('isObject3D', true).map(object => object.uuid);
