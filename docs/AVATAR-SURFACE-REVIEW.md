@@ -78,6 +78,7 @@ not asked for a desired score or instructed to approve.
 | 87 (fresh Dispatch eye correction) | Craft 7.5 / fidelity 7.5; retained over 85 and 86 | Thinner seated eyes and joined heart tip improve construction; the lower gold crescent still appears mounted. Refine cream socket overlap without adding general darkness |
 | 88 (fresh Dispatch brow prototype) | Craft 7.0 / fidelity 7.0; rejected, restored 87 | Broad raised brows make the cream mask look pinched and worried. Any future overlap must be localized immediately around the eye, preserving the open expression |
 | 89 (fresh Reflection fold review) | Craft 7.5 / fidelity 7.5; retained | Longer coplanar chest folds remove belly patchwork without flattening the body. Narrow hanging outer wings remain the largest gap: the source uses broader overlapping diagonal sheets |
+| 90 (fresh Reflection wing review) | Craft 7.5 / fidelity 7.5; retained | Broader diagonal wings improve shoulder/body integration without obvious clipping. Bright raised roots still resemble collars and the quarter-view edge reads wedge-thick; tuck roots behind the cheek and preserve the broader fold |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -692,3 +693,11 @@ over the inner volume. Campus submits 55.70 fps (1.87 ms / 3.50 ms, 110 draws,
 371,724 triangles); Reflection close 53.20 fps (1.65 ms / 3.30 ms, 123 draws,
 838,489 triangles, three dense avatars). No new light, texture or render pass
 is added. These remain timing samples, not a worst-case performance guarantee.
+
+Pass 90 passes 319 tests/build, including broad diagonal wing proportions,
+actual body overlap and all moving motor envelopes. Campus submits 55.60 fps
+(1.68 ms mean / 3.20 ms p95 CPU, 110 draws, 371,732 triangles); Reflection close
+52.00 fps (1.59 ms / 3.20 ms, 123 draws, 839,289 triangles, three dense avatars).
+The two additional wing boundary points add eight overview triangles and 800
+close triangles; no extra material draw, light or texture is added. The reviewer
+retains the construction change, not an A-level reference match.

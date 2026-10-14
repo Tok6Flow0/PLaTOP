@@ -446,8 +446,11 @@ function swiftWing(): THREE.BufferGeometry {
 
 /** Folded shoulders wrap around the belly and meet a tucked lower wing tip. */
 function paperOwlWing():THREE.BufferGeometry {
-  return foldedSheet([[-.035,.09,.035],[.025,-.055,.095],[0,-.42,.18],[-.10,-.34,.22],[-.10,-.015,.14]],[-.045,-.17,.20],
-    ['#dbc29a','#d8bf97','#cdb089','#dfc69f','#e5ceaa']);
+  // A broad diagonal sheet wraps inward over the flank. The shoulder root
+  // remains buried in the body; the lower tip rests across the breast instead
+  // of hanging beside it as a narrow vertical tab.
+  return foldedSheet([[0,.11,.065],[.045,-.015,.115],[-.14,-.34,.30],[-.245,-.385,.34],[-.225,-.125,.34],[-.115,.025,.18]],[-.09,-.14,.36],
+    ['#dbc29a','#d8bf97','#d5b991','#cdb089','#dfc69f','#e5ceaa']);
 }
 
 /** Two mountain-fold vertices carry one long crease down the curved breast.

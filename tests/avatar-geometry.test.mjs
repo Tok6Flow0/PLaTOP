@@ -519,6 +519,21 @@ test('folded paper chest sheets sit in front of their closed inner body',()=>{
   kit.dispose();
 });
 
+test('paper owl resting wings are broad diagonal sheets that overlap the actual breast',()=>{
+  const kit=new SceneKit();
+  const wing=characterGeometry(kit,'paperOwlWingL');wing.computeBoundingBox();
+  const size=wing.boundingBox.getSize(new THREE.Vector3());
+  assert.ok(size.x/size.y>.5&&size.y<.51,'broad diagonal fold replaces a lengthened hanging tab');
+  for(const id of ['reflection-echo','reflection-quill']){
+    const model=makeProxy(members.find(c=>c.id===id),kit),sheet=model.getObjectByName('paperOwlWingL'),chest=model.getObjectByName('paperChestL');
+    model.updateMatrixWorld(true);const paper=new THREE.Box3().setFromObject(sheet),breast=new THREE.Box3().setFromObject(chest);
+    assert.ok(paper.intersectsBox(breast),'resting sheet overlaps the breast rather than sitting beside it');
+    assert.ok(paper.max.y>breast.max.y-.05,'wing root joins at shoulder height');
+    disposeObject(model);
+  }
+  kit.dispose();
+});
+
 test('paper owl breast fold quads remain coplanar rather than becoming small triangular patches',()=>{
   const kit=new SceneKit();
   for(const form of ['paperChestL','paperChestR']){
