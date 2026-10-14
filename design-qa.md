@@ -14,11 +14,14 @@ samples varied around57–60fps and remain in the ledger. This is neither
 reference-matched nor A-level acceptance. Rejected/revision-requested studies
 are preserved, and timing is CPU-side submission rather than GPU completion.
 
-Pass155 is a revision-requested prototype, not a replacement for154: reducing
-the rear head mass exposes pointed shoulder edges and a fragmented rear.
-All370 tests/build pass, but its camera samples submit57.80/58.61fps, and
-the independent visual grade is Echo6.5/6.5. The next study coordinates the
-head/shoulder join. Production remains154.
+Pass156 is retained over155 and154: it tucks the upper torso and resting-wing
+root into a coherent shoulder and replaces the fragmented rear ornament with
+two supported planar stocks. All372 tests/build pass. Independent grades are
+Echo7.0 craft/6.5 fidelity, Reflection6.5/6.5, campus7.5/7.5. The next study is
+paper material with geometry/lighting frozen. Paired timing: retained154
+60.00/58.11fps;15660.00/59.60fps (campus/Reflection close). These samples do not
+prove completed-GPU work or locked60fps.155 remains a revision-requested
+prototype in the historical ledger, not a visual success.
 
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh

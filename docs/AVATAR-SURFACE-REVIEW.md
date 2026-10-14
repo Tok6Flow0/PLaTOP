@@ -2027,3 +2027,31 @@ The counts are unchanged and previous paired152/153 samples also varied,
 but these155 samples do not establish zero regression or locked60fps.
 Full inspector, portrait, room, campus day/night and timing evidence is
 saved in surface-pass-155. Production remains retained154.
+Prototype155 was pushed asccb241b73dba539495d2b21082a2d2a3eb22ad00;
+remote readback matches and CI38630246920 succeeded. This does not change
+its revision-requested visual verdict.
+
+Pass156 coordinates the upper shoulder and smaller head, embeds the resting
+wing return in the actual torso, and replaces projected rear fan ornaments
+with two supported, thin planar stocks. All372 tests and build pass,
+including closed stocks, actual fitting and a root-inside-shoulder check.
+The initial check caught an unsupported root; it was moved inward/forward
+before final evidence. An old rear-extent assertion preserved the rejected
+collar spike and is replaced by actual attachment plus bounded sheet depth.
+
+Independent verdict: retain156 over155 and154. Echo7.0 craft/6.5 fidelity,
+Reflection6.5/6.5, campus7.5/7.5. The projecting points/notch are no longer
+conspicuous, the rear is simpler, and the room silhouette is lighter than154.
+No obvious new hole, accessory collision or night regression is visible.
+Broad rear surfaces and mechanical breast edges remain; the next high-impact
+study is fine irregular paper fibres with geometry and lighting frozen.
+This is a local construction improvement, not the requested A.
+
+Matched1000×800,1.5DPR samples: frozen154 campus60.00fps CPU mean/p95
+2.70/4.50ms, Reflection close58.11fps 2.45/4.40ms.156 campus60.0006fps
+2.57/4.40ms, Reflection close59.60fps 2.01/3.90ms. Draws remain135/133;
+triangles rise by12 campus and1,200 close to431,832/879,855. The frozen
+commit was served separately and measured in the same browser fixture
+immediately before156. These short CPU-side submission samples show no
+candidate-specific slowdown here, not locked60fps or GPU-completion proof.
+All baseline/candidate timing and full visual evidence is in surface-pass-156.

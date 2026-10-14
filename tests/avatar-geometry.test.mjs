@@ -673,11 +673,13 @@ test('Echo has connected oblique wrapping sheets and thin tapered resting-wing t
   assert.ok([...edges.values()].every(count=>count===2),'the returning sheet has closed manifold edges');
   const unique=[...vertices.values()];assert.equal(unique.length,12,'six fold corners have matching backs, including the broad lower flank');
   for(const v of unique){const nearest=Math.min(...unique.filter(other=>other!==v).map(other=>other.distanceTo(v)));assert.ok(Math.abs(nearest-.008)<2e-5,'rear follows the stock normal, not a flat XY extrusion');}
-  wing.computeBoundingBox();assert.ok(wing.boundingBox.min.z<-.16&&wing.boundingBox.max.z>=.229,'one sheet returns from behind the cheek to the front flank');
+  // Requiring the old -.16 rear corner would preserve the collar spike.
+  // The separate model-space test now proves the upper return is embedded.
+  wing.computeBoundingBox();assert.ok(wing.boundingBox.min.z<.01&&wing.boundingBox.max.z>=.229&&wing.boundingBox.max.z-wing.boundingBox.min.z>.22,'one sheet wraps from the tucked shoulder to the front flank');
   const tip=unique.filter(v=>v.y<-.38);assert.equal(tip.length,2,'one pointed tip and its paper-thin rear replace a flat-ended lower strip');
   assert.ok(Math.min(...tip.map(v=>v.x))>.23,'the visible tip crosses the flank diagonally toward the torso centre');
   const normals=wing.attributes.normal,outer=new THREE.Vector3().fromBufferAttribute(normals,0);
-  assert.ok(outer.dot(new THREE.Vector3(-1,0,-1).normalize())>.65,'rear shoulder fold faces outward and backward despite the diagonal tip slope');
+  assert.ok(outer.z<-.75,'the inward-tucked shoulder return still exposes its outward rear surface');
   disposeObject(echo);disposeObject(quill);kit.dispose();
 });
 
@@ -1570,13 +1572,44 @@ test('paper temples retain their deliberate fold construction and rear overlaps 
       for(let i=0;i<p.count;i++){
         point.fromBufferAttribute(p,i).applyMatrix4(sheet.matrixWorld);
         ray.set(new THREE.Vector3(point.x,point.y,-2),new THREE.Vector3(0,0,1));const hit=ray.intersectObject(shell,false)[0];
-        if(hit){const gap=hit.point.z-point.z;assert.ok(gap>.001&&gap<.055,'rear paper follows the folded core instead of floating behind the old outline');checked++;}
+        if(hit){const gap=hit.point.z-point.z;assert.ok(gap>.001&&gap<.055,`${id} ${name} rear paper follows the folded core at ${i}; gap ${gap}`);checked++;}
       }
       assert.ok(checked>20);
     }
     disposeObject(model);
   }
   kit.dispose();
+});
+
+test('Echo rear stocks are two supported flat sheets, not projected centre fans',()=>{
+  const kit=new SceneKit();
+  for(const form of ['paperEchoCrownBackL','paperEchoCrownBackR']){
+    const geometry=characterGeometry(kit,form),p=geometry.attributes.position,n=geometry.attributes.normal,edges=new Map(),planes=[];
+    assert.equal(geometry.userData.paperRearStock,true);
+    assert.equal(geometry.userData.paperThickness,.008);
+    for(let i=0;i<p.count;i++)if(n.getZ(i)<-.8)planes.push(new THREE.Vector3().fromBufferAttribute(n,i));
+    assert.ok(planes.length>6&&planes.every(normal=>normal.distanceTo(planes[0])<1e-5),'each broad rear surface is one plane, without a centre-fan crease');
+    for(let i=0;i<p.count;i+=3){
+      const points=[0,1,2].map(j=>new THREE.Vector3().fromBufferAttribute(p,i+j).toArray().map(x=>x.toFixed(6)).join(','));
+      for(let j=0;j<3;j++){const key=[points[j],points[(j+1)%3]].sort().join('|');edges.set(key,(edges.get(key)||0)+1);}
+    }
+    assert.ok([...edges.values()].every(count=>count===2),'each overlapping paper stock is closed');
+  }
+  kit.dispose();
+});
+
+test('Echo resting-wing return is embedded in the actual shoulder instead of projecting above it',()=>{
+  const kit=new SceneKit(),model=makeProxy(members.find(c=>c.id==='reflection-echo'),kit);model.updateMatrixWorld(true);
+  const wing=model.getObjectByName('paperEchoRestWing'),body=model.getObjectByName('paperEchoBody');
+  // The third corner of the first authored triangle is the upper return.
+  const root=new THREE.Vector3().fromBufferAttribute(wing.geometry.attributes.position,2).applyMatrix4(wing.matrixWorld);
+  body.worldToLocal(root);
+  const material=new THREE.MeshBasicMaterial({side:THREE.DoubleSide}),surface=new THREE.Mesh(body.geometry,material);surface.updateMatrixWorld(true);
+  const ray=new THREE.Raycaster(new THREE.Vector3(root.x,root.y,2),new THREE.Vector3(0,0,-1));
+  const crossings=ray.intersectObject(surface,false).map(hit=>hit.point.z);
+  assert.ok(crossings.length>=2,`the root has an enclosed shoulder cross-section: ${root.toArray()} vs ${crossings}`);
+  assert.ok(root.z<Math.max(...crossings)&&root.z>Math.min(...crossings),`upper return is buried in shoulder, not a free collar; ${root.toArray()} vs ${crossings}`);
+  material.dispose();disposeObject(model);kit.dispose();
 });
 
 test('paper hood wraps have closed thin edges and preserve open facial windows',()=>{

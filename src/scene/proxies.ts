@@ -398,8 +398,9 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
         sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],[.70,.66,.36],[0,0,-.065],'paper');
       }
       for(const [index,form] of ['paperCrownBackL','paperCrownBackR'].entries()){
-        const returnSheet=sculpt(head,form as CharacterForm,'#ffffff',[0,index?-.008:0,index?-.002:0],[.78,.65,.42],undefined,'paper');
-        fitCharacterRelief(returnSheet,headShell,.003,Infinity,-1);
+        const returnSheet=sculpt(head,(echo?index?'paperEchoCrownBackR':'paperEchoCrownBackL':form) as CharacterForm,'#ffffff',echo?[0,0,0]:[0,index?-.008:0,index?-.002:0],[.78,.65,.42],undefined,'paper');
+        returnSheet.name=form;
+        if(!echo)fitCharacterRelief(returnSheet,headShell,.003,Infinity,-1);
       }
       if(id==='reflection-echo')sculpt(head,'paperBrow','#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
       else for(const ear of ['paperEarL','paperEarR'] as const)sculpt(head,ear,'#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
