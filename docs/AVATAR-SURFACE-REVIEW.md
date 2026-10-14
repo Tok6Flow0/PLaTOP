@@ -11,6 +11,10 @@ and releases dense geometry when it leaves the selected view. No activity,
 movement, identity, bridge payload, or agent permission is added by this tier.
 The same geometry generates all 28 shipped day/night and individual portraits.
 
+The user's October 14 clarification preserves the agent-chosen identities.
+The left-hand campus image is the rendering-quality target, not permission to
+replace the book and folded-paper characters with its ceramic cast.
+
 ## Independent visual ledger
 
 The read-only reviewer received the actual renders, original six identity
@@ -81,6 +85,8 @@ not asked for a desired score or instructed to approve.
 | 90 (fresh Reflection wing review) | Craft 7.5 / fidelity 7.5; retained | Broader diagonal wings improve shoulder/body integration without obvious clipping. Bright raised roots still resemble collars and the quarter-view edge reads wedge-thick; tuck roots behind the cheek and preserve the broader fold |
 | 91 (fresh Reflection shoulder review) | Craft 7.5 / fidelity 7.5; narrowly retained | Lower roots clear the cheeks and reduce the collar effect without losing the broad fold. Stop lowering them; the thick polyhedral head and weak distinction between outer paper hood and facial panels are now the larger gap |
 | 92 (fresh Reflection head-wrap review) | Craft 7.5 / fidelity 7.5; modestly retained | Fine facial edges and broad panels improve separation and preserve expressions. Side/rear still reads as a solid mass, with a slightly shield-like double cheek edge. Next correction should use long brow/temple folds, not another projecting rim |
+| 93 (fresh Reflection temple prototype) | Craft 7.0 / fidelity 7.5; rejected | Longer temple planes improve the quarter view, but the rear converges into a distracting pinched cluster. Keep 92 until the back closes with broad tucked panels |
+| 94 (fresh Reflection rear-closure correction) | Craft 7.5 / fidelity 7.5; narrowly retained over 92 | Broad rear closure removes the distracting star and keeps longer temple folds. Stop rearranging small rear panels; establish thin-edge and overlap-shadow hierarchy on visible cheeks, wings and chest |
 
 Passes not listed were internal corrective iterations, not independent approvals.
 Pass 17 keeps pass 16's visible forms while reducing five-sided botanical stems
@@ -726,3 +732,23 @@ without console warnings/errors. No live agent events were sent. This proves a
 local built-app checkpoint, not native-host adoption. The repository's current
 noon/night campus images now show pass 92 at 1536 × 1024; the campus was not
 independently rescored in this character-focused submission.
+
+Pass 93 passes 322 tests/build but is rejected visually. Its coplanar temple
+returns and fitted rear layers retain identities and geometry counts, yet the
+rear closure is worse than 92. Campus submits 51.50 fps (2.08 ms mean / 3.80 ms
+p95 CPU, 110 draws, 371,988 triangles); Reflection close 51.10 fps (2.42 ms /
+4.00 ms, 125 draws, 864,889 triangles, three dense avatars). These samples do
+not override the independent visual rejection. Its evidence is retained, not
+published as an accepted checkpoint.
+
+Pass 94 passes 322 tests/build. The long temple planes terminate at a planar
+rear closure rather than a shared apex; two shallow fitted overlaps replace
+the pinched rear fan. Tests check coplanar temple triangles, outward rear
+closure normals, fitted overlap depth, all moving clearances and the immutable
+100× baseline. Campus submits 58.70 fps (1.96 ms mean / 2.70 ms p95 CPU,
+110 draws, 371,968 triangles); Reflection close 53.79 fps (1.81 ms / 3.00 ms,
+125 draws, 862,889 triangles, three dense avatars). This removes 20 overview
+and 2,000 close-view triangles relative to 92 without adding textures, lights
+or passes. Submission samples remain variable, not GPU-completion guarantees.
+The isolated production server and campus capture files still show 92; 94 is
+a source/portrait checkpoint, not a new host-installation claim.

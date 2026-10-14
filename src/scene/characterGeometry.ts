@@ -567,17 +567,28 @@ function paperOwlHead(quill=false,hoodOnly=false): THREE.BufferGeometry {
       for(const triangle of THREE.ShapeUtils.triangulateShape(panel,[])){faces.push(triangle.map(i=>ids[i]));colors.push('#edd6b0');}
     }
   }
-  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>[
-    x*.92,y*.89,
-    // A narrow folded return at the exposed jaw; the crown and rear keep
-    // their volume. A thick extrusion here made the face look carved.
-    THREE.MathUtils.lerp(.07-Math.abs(x)*.10,faceDepth(x,y,true)-.018,THREE.MathUtils.smoothstep(-y,.04,.28)),
-  ] as Tuple));
-  const back=vertices.length;vertices.push(...outline.map(([x,y])=>[x*.72,y*.76,-.23] as Tuple));
-  const rearCenter=vertices.length;vertices.push([-.035,.03,-.30]);
+  const apex:Tuple=[-.035,.03,-.65],rearDepth=-.20;
+  const returnPoint=(x:number,y:number,fraction:number):Tuple=>[
+    THREE.MathUtils.lerp(apex[0],x,fraction),THREE.MathUtils.lerp(apex[1],y,fraction),
+    THREE.MathUtils.lerp(apex[2],faceDepth(x,y,true),fraction),
+  ];
+  // Each temple fold is one plane from the outer brow to the rear return.
+  // Independently scaled rings made five little facets per edge and read as
+  // a carved solid. Collinear returns retain the thin lower jaw while making
+  // the internal triangulation invisible across the long folded sheet.
+  const shoulder=vertices.length;vertices.push(...outline.map(([x,y])=>returnPoint(x,y,
+    THREE.MathUtils.lerp(.78,1-.018/(faceDepth(x,y,true)-apex[2]),THREE.MathUtils.smoothstep(-y,.04,.28)))));
+  // Truncate the converging folds at one broad rear panel. Carrying every
+  // temple all the way to a single apex made a pinched star above the neck.
+  const back=vertices.length;vertices.push(...outline.map(([x,y])=>returnPoint(x,y,
+    (rearDepth-apex[2])/(faceDepth(x,y,true)-apex[2]))));
   for(let i=0;i<outline.length;i++){
-    const j=(i+1)%outline.length;faces.push([i,shoulder+i,shoulder+j],[i,shoulder+j,j],[shoulder+i,back+i,back+j],[shoulder+i,back+j,shoulder+j],[back+j,back+i,rearCenter]);
-    colors.push('#c7ad8a','#d0b591','#c1a582','#c8b18c','#ba9e7a');
+    const j=(i+1)%outline.length;faces.push([i,shoulder+i,shoulder+j],[i,shoulder+j,j],[shoulder+i,back+i,back+j],[shoulder+i,back+j,shoulder+j]);
+    colors.push(...Array(4).fill(quill?'#cfb18a':'#c7aa83'));
+  }
+  const rearOutline=vertices.slice(back).map(([x,y])=>new THREE.Vector2(x,y));
+  for(const triangle of THREE.ShapeUtils.triangulateShape(rearOutline,[])){
+    faces.push(triangle.map(i=>back+i));colors.push(quill?'#cfb18a':'#c7aa83');
   }
   return polyhedron(vertices,faces,colors);
 }
@@ -889,7 +900,7 @@ function makeGeometry(form: CharacterForm): THREE.BufferGeometry {
     case 'paperBrow': return foldedSheet([[-.40,.20,.32],[-.23,.445,.335],[.19,.475,.335],[.065,.24,.45]],[-.10,.36,.43],['#c9ac83','#dec29b','#cbb08a','#ddc39c']);
     case 'paperEarR': return foldedSheet([[.16,.32,.30],[.28,.41,.24],[.54,.51,.16],[.45,.29,.43]],[.30,.33,.46],['#d1b38b','#e3c79d','#c9a980','#dec299']);
     case 'paperEarL': return reflect(makeGeometry('paperEarR'));
-    case 'paperCrownBackR': return foldedSheet([[.015,.30,.28],[.31,.20,.27],[.29,-.12,.27],[.12,-.33,.28],[-.025,-.24,.29]],[.16,.025,.38],['#c7ac85','#d7bb94','#c5a67e','#d6ba91','#dfc59e']).rotateY(Math.PI);
+    case 'paperCrownBackR': return foldedSheet([[.015,.23,.2003],[.23,.16,.2046],[.21,-.10,.2042],[.02,-.24,.2004]],[.12,-.005,.2024],Array(4).fill('#d2b68e')).rotateY(Math.PI);
     case 'paperCrownBackL': return reflect(makeGeometry('paperCrownBackR'));
     case 'paperEchoHead': return paperOwlHead();
     case 'paperQuillHead': return paperOwlHead(true);
@@ -1234,7 +1245,7 @@ export function characterEyeArc(kit: SceneKit, parent: THREE.Object3D, color: st
 }
 
 /** Stamp a thin ornamental relief onto a curved shell once, never per frame. */
-export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012,maxRelief=Infinity): void {
+export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,standOff=.012,maxRelief=Infinity,side:1|-1=1): void {
   shell.parent!.updateWorldMatrix(true,true);mark.updateWorldMatrix(true,true);
   const ray=new THREE.Raycaster(),point=new THREE.Vector3(),inverse=new THREE.Matrix4();
   const bounds=new THREE.Box3().setFromObject(mark);
@@ -1245,10 +1256,10 @@ export function fitCharacterRelief(mark: THREE.Object3D, shell: THREE.Mesh,stand
     inverse.copy(mesh.matrixWorld).invert();
     for(let i=0;i<position.count;i++) {
       point.fromBufferAttribute(position,i).applyMatrix4(mesh.matrixWorld);
-      const relief=Math.min(maxRelief,Math.max(0,point.z-bounds.min.z));
-      ray.set(new THREE.Vector3(point.x,point.y,2),new THREE.Vector3(0,0,-1));
+      const relief=Math.min(maxRelief,Math.max(0,side*(point.z-(side===1?bounds.min.z:bounds.max.z))));
+      ray.set(new THREE.Vector3(point.x,point.y,2*side),new THREE.Vector3(0,0,-side));
       const hit=ray.intersectObject(shell,false)[0];
-      if(hit) {point.z=hit.point.z+standOff+relief;point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}
+      if(hit) {point.z=hit.point.z+side*(standOff+relief);point.applyMatrix4(inverse);position.setXYZ(i,point.x,point.y,point.z);}
     }
     geometry.computeVertexNormals();geometry.computeBoundingBox();geometry.computeBoundingSphere();
     geometry.userData.characterFitted=true;mesh.geometry=geometry;

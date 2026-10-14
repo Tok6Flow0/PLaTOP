@@ -19,7 +19,11 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-92 suite passes **321 tests** and the production build passes. The
+The pass-94 suite passes **322 tests** and the production build passes. Its
+independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
+the rear closure correction but not granting A-level acceptance. The user's
+October 14 clarification preserves chosen identities; the campus reference
+sets rendering quality, not replacement character shapes. The
 existing bundle-size warning remains. Pass 49's matched full-face camera check
 measured 56.00 submitted scene fps with three dense avatars versus 45.29 baseline; these
 are variable same-machine samples, not a GPU-completion or locked-frame-rate

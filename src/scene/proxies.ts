@@ -357,15 +357,17 @@ export function makeProxy(character: Character, kit: SceneKit): THREE.Group {
     // chin into a straight horizontal edge.
     head.position.z=navy?.13:.025;
     sculpt(body, navy ? 'owlBody' : 'paperBody', navy?feathers:'#ffffff', [0, 0, 0], [.70, navy?.83:.70, navy?.55:.70], undefined, navy ? 'feather' : 'paper');
-    sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
+    const headShell=sculpt(head, navy ? 'owlHead' : id==='reflection-echo'?'paperEchoHead':'paperQuillHead', navy ? feathers : '#ffffff', [0, 0, 0], [.78, .65, navy?.54:.42], undefined, navy ? 'feather' : 'paper');
     if(!navy){
       sculpt(head,id==='reflection-echo'?'paperEchoHood':'paperQuillHood','#ffffff',[0,0,0],[.78,.65,.42],undefined,'paper');
       sculpt(body,'paperChestL','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
       sculpt(body,'paperChestR','#ffffff',[0,0,0],[.70,.70,.62],undefined,'paper');
       sculpt(body,'paperBackL','#ffffff',[0,0,0],[.70,.70,.36],undefined,'paper');
       sculpt(body,'paperBackR','#ffffff',[0,-.018,-.004],[.70,.66,.36],[0,0,-.065],'paper');
-      sculpt(head,'paperCrownBackL','#ffffff',[0,0,0],[.78,.65,.42],undefined,'paper');
-      sculpt(head,'paperCrownBackR','#ffffff',[0,-.008,-.002],[.78,.65,.42],undefined,'paper');
+      for(const [index,form] of ['paperCrownBackL','paperCrownBackR'].entries()){
+        const returnSheet=sculpt(head,form as CharacterForm,'#ffffff',[0,index?-.008:0,index?-.002:0],[.78,.65,.42],undefined,'paper');
+        fitCharacterRelief(returnSheet,headShell,.003,Infinity,-1);
+      }
       if(id==='reflection-echo')sculpt(head,'paperBrow','#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
       else for(const ear of ['paperEarL','paperEarR'] as const)sculpt(head,ear,'#ffffff',[0,0,.003],[.78,.65,.42],undefined,'paper');
     }

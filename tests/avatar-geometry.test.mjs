@@ -1149,6 +1149,39 @@ test('robot cuffs join feet and only the two lanterns own bounded shadow-free wa
   disposeObject(all); kit.dispose();
 });
 
+test('paper temple folds use long shared planes and rear overlaps follow the actual head',()=>{
+  const kit=new SceneKit();
+  for(const [form,edges] of [['paperEchoHead',9],['paperQuillHead',11]]){
+    const geometry=characterGeometry(kit,form),n=geometry.attributes.normal;
+    for(let edge=0;edge<edges;edge++){
+      const start=n.count-(edges-2)*3-edges*12+edge*12,normal=new THREE.Vector3().fromBufferAttribute(n,start);
+      for(let i=start+1;i<start+12;i++)assert.ok(normal.distanceTo(new THREE.Vector3().fromBufferAttribute(n,i))<1e-5,'four internal triangles form one long temple plane');
+    }
+    const rearStart=n.count-(edges-2)*3;
+    for(let i=rearStart;i<n.count;i++){
+      assert.ok(Math.abs(geometry.attributes.position.getZ(i)+.20)<1e-6,'rear closure is a broad planar panel, not a pinched apex');
+      assert.ok(n.getZ(i)<-.99,'rear closure faces outward');
+    }
+  }
+  const ray=new THREE.Raycaster(),point=new THREE.Vector3();
+  for(const id of ['reflection-echo','reflection-quill']){
+    const model=makeProxy(members.find(c=>c.id===id),kit);model.userData.personality.head.rotation.set(0,0,0);model.updateMatrixWorld(true);
+    const shell=model.getObjectByName(id==='reflection-echo'?'paperEchoHead':'paperQuillHead');
+    for(const name of ['paperCrownBackL','paperCrownBackR']){
+      const sheet=model.getObjectByName(name),p=sheet.geometry.attributes.position;let checked=0;
+      assert.equal(sheet.geometry.userData.characterFitted,true);
+      for(let i=0;i<p.count;i++){
+        point.fromBufferAttribute(p,i).applyMatrix4(sheet.matrixWorld);
+        ray.set(new THREE.Vector3(point.x,point.y,-2),new THREE.Vector3(0,0,1));const hit=ray.intersectObject(shell,false)[0];
+        if(hit){const gap=hit.point.z-point.z;assert.ok(gap>.001&&gap<.055,'rear paper follows the folded core instead of floating behind the old outline');checked++;}
+      }
+      assert.ok(checked>20);
+    }
+    disposeObject(model);
+  }
+  kit.dispose();
+});
+
 test('paper hood wraps have closed thin edges and preserve open facial windows',()=>{
   const kit=new SceneKit(),material=new THREE.MeshBasicMaterial(),ray=new THREE.Raycaster();
   for(const form of ['paperEchoHood','paperQuillHood']){
