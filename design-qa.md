@@ -4,9 +4,12 @@ Current result: the stricter character-level reference pass is implemented and f
 
 ## Current surface refinement checkpoint
 
-The branch also contains the pass152 paper-owl volume prototype. Its369 tests,
-build, campus and close-room timing checks pass, but independent visual
-acceptance is pending. The last retained production preview is pass148;
+The branch also contains the pass153 paper-owl volume prototype. Its369 tests
+and build pass. The independent reviewer retains the head and front-fold
+changes within the prototype but requests further side-silhouette revision
+overall (Echo/Reflection6.5 craft,6.5 fidelity). Matched timing samples vary
+around57–60fps in both the frozen152 baseline and153 candidate; see the full
+ledger rather than inferring locked60fps. The last retained preview is148;
 the prototype is not presented as reference-matched. Rejected149 and
 revision-requested150/151 outcomes are retained in the review ledger.
 

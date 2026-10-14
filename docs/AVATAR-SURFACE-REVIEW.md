@@ -1947,5 +1947,35 @@ submits60.00fps (CPU mean/p95 1.31/2.50ms;135 draws;431,816 triangles),
 Reflection close59.9994fps (2.22/3.90ms;133 draws;878,255 triangles).
 These samples do not establish completed-GPU timing or a visual grade.
 Full day/night room and campus views, full side/quarter inspector captures,
-portraits and benchmarks are saved in surface-pass-152. Independent visual
-review is pending; the accepted production preview remains148.
+portraits and benchmarks are saved in surface-pass-152.
+
+Independent verdict: revise152 overall, retaining its head-enclosure change
+within the prototype. Scores remain Echo/Reflection6.5 craft/6.0 fidelity,
+campus7.5/7.5. The sloping temples and neck are better in side/rear and actual
+room views, with no obvious new holes. The chest/back remain faceted solids;
+the next substantive study is a long asymmetric chest-to-resting-wing overlap
+with a thin exposed edge and lower taper, preserving the enclosed volume.
+Prototype152 was pushed asbb3b75880d704b506c9501b44c108da649991e03 and
+remote readback matched. It is not visual acceptance; production remains148.
+Its remote CI38626086372 also succeeded.
+
+Pass153 replaces the central shield with descending asymmetric breast planes,
+a real left-over-right stock edge and a broader returning wing aligned to
+the lower fold. All369 tests/build pass. Independent review retains these
+front-fold improvements inside the prototype but requests revision overall:
+Echo and Reflection6.5 craft/6.5 fidelity, campus7.5/7.5. Ordinary front and
+quarter portraits now communicate paper more clearly. In side view the long
+front sheet still reads apart from the bulky faceted back; the next change
+must coordinate the visible chest/flank/hip silhouette, not add small seams.
+Production remains148. No A or reference-match claim is made.
+
+Performance153 varied: campus59.50 then57.49fps, Reflection close57.90 then
+59.99fps. Initial CPU mean/p95 costs were2.65/4.40ms and2.34/4.10ms;
+repeat costs2.76/4.70ms and2.45/4.20ms. A frozen152 commit, served separately
+and measured through the same1000×800,1.5DPR fixture between those samples,
+submitted57.10 campus and57.30 close (2.86/4.90ms and2.68/4.50ms).
+The dip is therefore not isolated to153; this is not proof of locked60fps
+or zero regression. Draws remain135 campus/133 close; triangles431,820/
+878,655. All original, baseline and repeat files, plus full visual evidence,
+are retained in surface-pass-153. Timing measures CPU-side submissions,
+not completed-GPU work.

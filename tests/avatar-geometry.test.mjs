@@ -653,7 +653,7 @@ test('Echo has connected oblique wrapping sheets and thin tapered resting-wing t
     for(let j=0;j<3;j++){const key=[triangle[j],triangle[(j+1)%3]].sort().join('|');edges.set(key,(edges.get(key)||0)+1);}
   }
   assert.ok([...edges.values()].every(count=>count===2),'the returning sheet has closed manifold edges');
-  const unique=[...vertices.values()];assert.equal(unique.length,10,'five fold corners have matching backs');
+  const unique=[...vertices.values()];assert.equal(unique.length,12,'six fold corners have matching backs, including the broad lower flank');
   for(const v of unique){const nearest=Math.min(...unique.filter(other=>other!==v).map(other=>other.distanceTo(v)));assert.ok(Math.abs(nearest-.008)<2e-5,'rear follows the stock normal, not a flat XY extrusion');}
   wing.computeBoundingBox();assert.ok(wing.boundingBox.min.z<-.16&&wing.boundingBox.max.z>.23,'one sheet returns from behind the cheek to the front flank');
   const tip=unique.filter(v=>v.y<-.38);assert.equal(tip.length,2,'one pointed tip and its paper-thin rear replace a flat-ended lower strip');
@@ -1626,13 +1626,23 @@ test('Echo shaped sections turn around crown, neck and back without changing the
     // instead; compare corresponding surface corners in actual model space.
     for(let i=0;i<48;i++){
       const point=new THREE.Vector3().fromBufferAttribute(positions,i).applyMatrix4(sheet.matrixWorld);
-      const gap=Math.min(...corePoints.map(core=>point.distanceTo(core)));
-      assert.ok(gap>.007&&gap<.0095,'front wrapping stock follows the shared core at paper-scale clearance');front.push(point);
+      const local=new THREE.Vector3().fromBufferAttribute(positions,i);
+      const overlap=(sheet.geometry.userData.paperOverlapEdge||[]).some(edge=>local.distanceTo(new THREE.Vector3(...edge))<1e-6);
+      if(!overlap){const gap=Math.min(...corePoints.map(core=>point.distanceTo(core)));assert.ok(gap>.007&&gap<.0095,'unshifted wrapping corners follow the shared core at paper-scale clearance');}
+      front.push(point);
     }
     seamPoints.push(front);
   }
   const common=new Set(seamPoints[0].filter(p=>seamPoints[1].some(q=>p.distanceTo(q)<1e-6)).map(p=>p.toArray().map(x=>x.toFixed(5)).join(',')));
-  assert.equal(common.size,6,'both stocks meet exactly at the three front and three rear fold junctions');
+  assert.equal(common.size,4,'stocks meet at the neck and three rear junctions; the visible front seam overlaps');
+  const over=model.getObjectByName('paperEchoChestL'),under=model.getObjectByName('paperEchoChestR'),ray=new THREE.Raycaster();
+  const direction=new THREE.Vector3(0,0,1).transformDirection(over.matrixWorld);
+  for(const edge of over.geometry.userData.paperOverlapEdge){
+    const point=over.localToWorld(new THREE.Vector3(...edge));
+    ray.set(point.clone().add(direction),direction.clone().negate());const hit=ray.intersectObject(under,false)[0];
+    assert.ok(hit,'the exposed front edge lies over the actual under-sheet');
+    assert.ok(hit.distance-1>.003&&hit.distance-1<.025,'the visible overlap has paper-scale depth rather than an air pocket');
+  }
   disposeObject(model);kit.dispose();
 });
 

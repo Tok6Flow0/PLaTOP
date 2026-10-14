@@ -471,12 +471,12 @@ function paperOwlWing():THREE.BufferGeometry {
 }
 
 function paperEchoRestWing():THREE.BufferGeometry {
-  // Three broad folds sweep from behind the cheek, around the outer shoulder,
+  // Broad folds sweep from behind the cheek, around the outer shoulder,
   // and diagonally across the flank. The old XY sheet hung beside the torso;
   // its root did not return around the body's depth at all.
-  const front:Tuple[]=[[.015,.075,-.17],[-.075,.035,-.025],[-.035,.015,.145],
-    [.13,-.035,.23],[.24,-.40,.27]];
-  const panels=[[4,1,0],[4,2,1],[4,3,2]];
+  const front:Tuple[]=[[.015,.075,-.17],[-.075,.035,-.025],[-.10,-.16,.11],
+    [.30,-.44,.25],[.13,-.035,.23],[-.035,.015,.145]];
+  const panels=[[3,1,0],[3,2,1],[3,0,5],[3,5,4]];
   return closedPaperPanels(front,panels);
 }
 
@@ -669,6 +669,15 @@ function paperEchoBody(side?:'left'|'right'):THREE.BufferGeometry {
     [.035,-.12,.29],[-.27,-.20,.20],[-.40,-.12,-.025],[-.28,-.18,-.28],[-.025,-.06,-.35],[.29,-.20,-.27],[.40,-.15,-.035],[.29,-.22,.18],
     [-.02,-.50,.18],[-.21,-.50,.13],[-.24,-.45,-.02],[-.18,-.50,-.13],[.025,-.48,-.20],[.18,-.50,-.13],[.24,-.46,-.02],[.21,-.50,.13],
   ];
+  // A long asymmetric mountain fold descends from the left cheek to the
+  // opposite hem. Both breast planes continue to the flank instead of
+  // meeting at the previous broad diamond/shield in the middle of the chest.
+  const ridgeX=(y:number)=>THREE.MathUtils.lerp(.11,-.14,(y+.50)/.73);
+  const ridgeZ=(y:number)=>THREE.MathUtils.lerp(.27,.12,(y+.50)/.73);
+  for(const i of [0,8,16]){vertices[i][0]=ridgeX(vertices[i][1]);vertices[i][2]=ridgeZ(vertices[i][1]);}
+  for(const i of [1,9,17,7,15,23]){
+    const [x,y]=vertices[i];vertices[i][2]=ridgeZ(y)+(i%8===1?.40:-.35)*(x-ridgeX(y));
+  }
   const faces:number[][]=[];
   for(let row=0;row<2;row++)for(let col=0;col<8;col++){
     const a=row*8+col,b=row*8+(col+1)%8,c=a+8,d=b+8;
@@ -686,9 +695,20 @@ function paperEchoBody(side?:'left'|'right'):THREE.BufferGeometry {
   if(side){
     const selected=faces.filter((_,i)=>side==='left'?Math.floor(i/2)%8<4:Math.floor(i/2)%8>=4);
     const ids=[...new Set(selected.flat())],map=new Map(ids.map((id,i)=>[id,i]));
-    const front=ids.map(i=>new THREE.Vector3(...vertices[i]).addScaledVector(normals[i].normalize(),.012).toArray() as Tuple);
+    const front=ids.map(i=>{
+      const point=new THREE.Vector3(...vertices[i]).addScaledVector(normals[i].normalize(),.012);
+      if(side==='left'&&(i===8||i===16)){
+        // A real exposed edge crosses onto the right under-sheet. It stays
+        // attached to the volume; this is not an extra floating apron.
+        point.x=vertices[i][0]+.028;
+        point.y=vertices[i][1]+(i===16?.012:0);
+        point.z=ridgeZ(point.y)-.35*(point.x-ridgeX(point.y))+.026;
+      }
+      return point.toArray() as Tuple;
+    });
     const geometry=closedPaperPanels(front,selected.map(face=>face.map(i=>map.get(i)!)));
     geometry.userData.paperWrap=side;
+    if(side==='left')geometry.userData.paperOverlapEdge=[front[map.get(8)!],front[map.get(16)!]];
     return geometry;
   }
   faces.push([0,7,6,5,4,3,2,1],[16,17,18,19,20,21,22,23]);
