@@ -477,14 +477,20 @@ export function shelf(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
 }
 export function leafGeometry(spear: boolean, herb: boolean, broad: boolean, variation=0, layered=false): THREE.BufferGeometry {
   const positions: number[] = [], uvs: number[] = [], indices: number[] = [];
+  // Broad floor leaves need a shallow fold and an upward tip; applying the
+  // small cabinet leaf's deeper cup everywhere makes a petal-like rosette.
+  const widthScale = layered ? (broad ? 1.13 : 1.23) : 1;
+  const ridge = layered ? (broad ? .030 : .047) : .020;
+  const droop = layered ? (broad ? .20 : .29) : .16;
+  const cupping = layered ? (broad ? .055 : .092) : .038;
   const vertex = (t: number, across: number): Point => {
-    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.72 : 0.78) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.21 : 0.16)*(layered?1.23:1);
+    const width = Math.pow(Math.sin(Math.PI * t), spear ? 0.68 : herb ? 0.55 : broad ? 0.72 : 0.78) * (spear ? 0.055 : herb ? 0.16 : broad ? 0.21 : 0.16) * widthScale;
     const bend = Math.sin(t * 1.7) * (spear ? 0.14 : herb ? 0.2 : broad ? 0.26 : 0.34);
     const length = herb ? 0.5 : broad ? 0.78 : spear ? 0.93 : 0.87;
     const cup = Math.sin(Math.PI * t) * (1 - across * across);
     return [width * across + Math.sin(Math.PI * t) * (Math.sin(t * 2.1) * 0.012+variation*.022),
-      t * length + (layered?.047:.020) * cup - (spear ? 0 : herb ? .10 : (layered?.29:.16)+variation*.035) * t ** 3,
-      bend*(1+variation*.21) - (spear?.021:layered?.092:.038) * cup + variation*(layered?.065:.035)*across*Math.sin(Math.PI*t)];
+      t * length + ridge * cup - (spear ? 0 : herb ? .10 : droop+variation*.035) * t ** 3,
+      bend*(1+variation*.21) - (spear?.021:cupping) * cup + variation*(layered?.065:.035)*across*Math.sin(Math.PI*t)];
   };
   // Fifteen longitudinal sections keep the blade silhouette smooth. The
   // layered crown uses seven transverse ribs for a visibly rolled leaf;
@@ -611,8 +617,9 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
       const sizes=layered?[7,7,7,7]:kind==='leaf'?[7,7,7]:[6,6,5],phase=x*1.7+z*2.3+size*5.1+base*.7;let index=0;
       for(let branch=0;branch<sizes.length;branch++){
         const angle=branch*2.399+.31+.20*Math.sin(phase+branch);
-        const from=layered?curve.getPoint(.08+branch*.16):new THREE.Vector3(.008,.46+branch*.06+.055*Math.sin(phase+branch*2),0);
-        const to=new THREE.Vector3(Math.sin(angle)*.22,(layered?.85:1.03)+branch*.13+.10*Math.sin(phase*2+branch),Math.cos(angle)*.22);
+        const broadCrown=layered&&kind==='broad';
+        const from=layered?curve.getPoint(.08+branch*(broadCrown?.20:.16)):new THREE.Vector3(.008,.46+branch*.06+.055*Math.sin(phase+branch*2),0);
+        const to=new THREE.Vector3(Math.sin(angle)*.22,(layered?broadCrown?.99:.85:1.03)+branch*(broadCrown?.16:.13)+.10*Math.sin(phase*2+branch),Math.cos(angle)*.22);
         stem(from,to,.012);
         for(let local=0;local<sizes[branch];local++,index++){
           const apical=local===sizes[branch]-1,t=.15+.85*Math.pow(local/(sizes[branch]-1),1+.20*Math.sin(branch+phase));
@@ -622,7 +629,7 @@ export function plant(parent: THREE.Object3D, kit: SceneKit, x: number, z: numbe
           const point=root.clone().add(new THREE.Vector3(Math.sin(bearing)*reach,.018,Math.cos(bearing)*reach));
           if(!apical)stem(root,point,.008);
           const scale=(kind==='broad'?.89:.77)-.16*t+.055*Math.sin(index*2.3+phase);
-          const pitch=apical?.36+.08*Math.sin(phase+branch):(layered?.72:.55)+.25*Math.sin(index*1.7+phase)+.12*(1-t);
+          const pitch=apical?(broadCrown?.22:.36)+.08*Math.sin(phase+branch):(layered?broadCrown?.50:.72:.55)+.25*Math.sin(index*1.7+phase)+.12*(1-t);
           addLeaf(index,[point.x,point.y,point.z],[pitch,bearing,.06*Math.sin(index*2.1+phase)],scale);
         }
       }

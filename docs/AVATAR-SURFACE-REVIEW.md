@@ -1352,3 +1352,23 @@ stays 8.0 / 8.0; campus stays 7.0 / 7.5. This is a prototype checkpoint,
 not a finished retained upgrade. Correct the broad crown's cupping and gaps,
 then address the uneven storage quality in Merchant and Clear Path.
 All images/timings remain in surface-pass-128. Production stays pass 127.
+
+Pass 129 corrects only the layered broad crown: a gentler leaf fold and droop,
+narrower blades, higher spaced branches and upward tips reveal branching gaps.
+The reviewer retains it over both 128 and the flatter 127, leaving the minor
+regular overlap on its left side as secondary. Cabinet crowns remain intact;
+no face/storage obstruction or lighting regression is visible. Room remains
+8.0 / 8.0 and campus 7.0 / 7.5. The reviewer observed a slight Clear Path
+plant silhouette difference in the campus pair. A source-instantiation check
+hashing positions, normals, UVs, colors, indices and world transforms confirms
+all five default plant kinds are byte-identical between 128 and 129. Clear
+Path uses that unchanged default profile; this is not a pixel-match claim.
+
+All 351 tests and the production build pass. Campus and Wayfinders close each
+submit 60.00 fps, with CPU mean/p95 1.52/2.30 ms and 1.82/3.20 ms. Draw/triangle
+counts remain 118/388,948 and 146/2,306,681. A matched Merchant close baseline
+also submits 60.00 fps (1.70/3.00 ms; 143 draws, 2,536,221 triangles, three
+detailed avatars). Evidence includes its pre-change noon/night room views.
+The next priority is Merchant storage with distinct bays/contents, using the
+accepted cabinet construction. Evidence is in surface-pass-129. Production
+remains pass 127, and pass 128 remote CI succeeded. No A is claimed.

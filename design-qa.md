@@ -19,7 +19,7 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-128 suite passes **351 tests** and the production build passes. Its
+The pass-129 suite passes **351 tests** and the production build passes. Its
 independent Reflection review remains **7.5 craft / 7.5 fidelity**, retaining
 the structural-metal separation but not granting A-level acceptance. Pass 100's
 actual-scene review retains localized close contacts at approximately 7.5 craft;
@@ -126,6 +126,12 @@ crown is rejected as overpacked and rubbery. This is a mixed prototype,
 not an accepted production upgrade. Room stays 8.0 / 8.0 and campus 7.0 / 7.5.
 Both fixed camera samples remain about 60 submitted fps. The next correction
 is gentler cupping, branching gaps and upward tips on the broad crown.
+Pass 129 makes that correction and is retained over 128 and 127. Room remains
+8.0 / 8.0; campus remains 7.0 / 7.5. Campus, Wayfinders close and the new
+Merchant close baseline each submit 60.00 fps in their fixed samples. A
+reviewer's possible Clear Path plant change was checked: all default plant
+geometry/transforms are byte-identical across the revision. The next priority
+is Merchant's storage, not another dedicated foliage iteration.
 The user's
 October 14 clarification preserves chosen identities; the campus reference
 sets rendering quality, not replacement character shapes. The

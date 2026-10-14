@@ -319,7 +319,9 @@ test('layered crowns use curved transverse ribs and connected bounded leaves wit
       assert.equal(geometry.index.count/3,168);
       assert.deepEqual([positions.getX(0),positions.getY(0),positions.getZ(0)],[0,0,0],'blade begins exactly at its stem endpoint');
       const left=1+6*7,center=left+3,right=left+6;
-      assert.ok((positions.getZ(left)+positions.getZ(right))/2-positions.getZ(center)>.06,'leaf has real transverse cupping, not just a flat vein texture');
+      const cup=(positions.getZ(left)+positions.getZ(right))/2-positions.getZ(center);
+      assert.ok(cup>(index===0?.06:.04),'leaf has real transverse cupping, not just a flat vein texture');
+      if(index===1)assert.ok(cup<.065,'the broad crown keeps gentler cupping than the small cabinet leaves');
       assert.ok(leaf.material.map===leaf.material.bumpMap&&leaf.material.map.userData.botanicalGrain);
       assert.equal(leaf.material.transparent,false);
     }
