@@ -19,7 +19,10 @@ same model surfaces. Folded paper depth, feather winding, inset eye sockets,
 cape lining, Beacon's handle, rounded face aperture, foliage and wood finishes
 have been refined. No fake activity or observer authority was introduced.
 
-The pass-136 suite passes **356 tests** and the production build passes. The
+The pass-137 suite passes **356 tests** and the production build passes. Its
+corrected Swift placement is retained, with a clearer desk-side pairing and
+no conspicuous new overlap. All three fixed camera samples submit about 60 fps.
+The earlier
 Dispatch prototype's rug, cabinet and planting are retained at **7.5 craft /
 7.5 fidelity**, but Swift's side placement requires revision before the whole
 grouping is accepted. Campus remains 7.0 / 7.5; its camera sample submits

@@ -1543,3 +1543,25 @@ The reviewer also sees lamp-top/whiteboard-edge differences outside this
 pass's source changes; their cause is not established by screenshots. Broader
 furnishing construction and layering remain the campus priority. This is a
 partially retained prototype checkpoint, not an A or production promotion.
+
+Pass 137 moves Swift's real home inward to (1.43, -1.30), keeping its neutral
+rotation, floor height, geometry and pose. Its work-facing anchor remains the
+actual paper. An initial candidate at z=-1.15 failed three navigation checks:
+the planner's conservative expanded-box clearance is stricter than distance
+to a geometric corner. The corrected home clears the full rear edge without
+reducing any body radius or safety margin. All 356 tests/build then pass.
+Campus and Merchant close submit 60.00 fps (CPU mean/p95 1.80/2.70 and
+1.79/2.70 ms respectively); Dispatch close submits 59.9988 fps (1.96/3.30 ms).
+Draws/triangles remain 128/393,952 campus, 154/2,654,177 Merchant and
+119/1,563,371 Dispatch. Matched final views and timings are in surface-pass-137;
+the rejected candidate images were replaced before review. Pass 136 remote
+CI succeeded.
+
+The independent reviewer retains 137: Swift reads as a desk-side partner,
+with its head, folded wing and tail still distinct and no conspicuous new
+overlap. Slightly less mug separation at night remains readable. Dispatch
+stays 7.5 / 7.5; campus stays 7.0 / 7.5. The daylight lamp/board differences
+remain inconsistent across saved images and cannot be attributed to Swift;
+night is substantially stable. Stop tuning its home. Varied furniture
+construction—older stacked-tray shelves and heavy table bands—is the next
+priority. Production remains accepted 133 until the new smoke check.

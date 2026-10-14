@@ -346,7 +346,9 @@ export function makeRoom(team: Team, index: number, kit: SceneKit): Room {
     : index===0 ? [[-1.95,.25],[0,-1.5],[1.95,.10]]
     : index===1 ? [[-1.95,.35],[0,-1.5],[1.95,.35]]
     : sideSeating ? [[-2.08, -0.1], [0, -1.5], [2.08, -0.1]] : team.members.length === 1 ? [[0, -1.5]]
-    : index===5 ? [[-.8,-1.7],[1.8,-.35]]
+    // Swift stands beside the rear short-end corner, not detached at the rug
+    // edge. This is its real home; its full .6-radius body clears the table.
+    : index===5 ? [[-.8,-1.7],[1.43,-1.4]]
     : team.members.length === 2 ? [[-0.8, -1.5], [0.8, -1.5]]
       : team.members.length === 4 ? [[-.70, -1.5], [.70, -1.23], [-.70, 1.5], [.70, 1.63]]
         : [[-0.8, 1.5], [0, -1.5], [0.8, 1.5]];

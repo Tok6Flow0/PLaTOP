@@ -117,7 +117,7 @@ test('Dispatch groups its real work corner without a pose or a fictitious smalle
   t.after(()=>{for(const room of rooms.values())disposeObject(room.root);kit.dispose();});
   const room=rooms.get('email');room.root.updateMatrixWorld(true);
   assert.deepEqual(room.root.userData.rugSurface.bounds,[-1.95,-1.725,1.95,1.725]);
-  for(const [i,expected]of [[-.8,.1,-1.6],[1.8,.1,-.25]].entries()){
+  for(const [i,expected]of [[-.8,.1,-1.6],[1.43,.1,-1.3]].entries()){
     assert.ok(room.actorHomes[i].distanceTo(new THREE.Vector3(...expected))<1e-9);
   }
   assert.equal(room.actorFacing[1],-.42,'Swift has a neutral arrival orientation, not a work pose');
@@ -138,6 +138,7 @@ test('Dispatch groups its real work corner without a pose or a fictitious smalle
   assert.deepEqual(natural.getWorldScale(new THREE.Vector3()).toArray(),[1,1,1],'plants are not flattened with the shallow cabinet');
   const swift=navigator.desk('email-swift');
   assert.equal(navigator.pointClear(swift.position,.6),true);
+  assert.ok(-.6-room.navigation.desks[1].position[1]>.635,'the real home clears the rear edge by its full body radius plus safety margin');
   for(const team of teams)for(const place of ['door','task','lounge','whiteboard','cabinet']){
     const target=navigator.anchor(team.id,place);if(!target)continue;
     assert.ok(navigator.route(swift.position,target.position,.6),'Swift retains routes from its actual side position');
