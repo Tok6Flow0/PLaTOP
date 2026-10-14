@@ -2009,3 +2009,21 @@ Window view, close-zoom invitation, third/first-person mist, exit and reset
 pass; all six teams remain Awaiting update with an empty connected bridge.
 Console warnings/errors are empty. This smoke is not live-agent adoption or
 native installation evidence. Production screenshots are saved with154.
+Retained154 was pushed asa86c167c5a45003b3f871dd3b62bcc913f5cb117;
+remote readback matches and CI38629369137 succeeded.
+
+Pass155 reduces Echo's hidden head enclosure and slopes its rear sheet
+forward into the shoulder, preserving the face/expression.370 tests and build
+pass. Independent verdict: revise155, keep154 retained. Echo6.5 craft/6.5
+fidelity, Reflection6.5/6.5, campus7.5/7.5. The lower head mass helps, but
+the true side and room expose pointed upper-shoulder edges and a background
+notch; the rear becomes a recessed polygon fan. This is not an accepted
+upgrade. The next change must coordinate the rear head and upper shoulder,
+not restore the thick backing or hide the problem in front-only captures.
+
+Campus155 submits57.80fps (CPU mean/p95 2.82/4.80ms;135 draws;431,820
+triangles); Reflection close58.61fps (2.26/4.10ms;133 draws;878,655 triangles).
+The counts are unchanged and previous paired152/153 samples also varied,
+but these155 samples do not establish zero regression or locked60fps.
+Full inspector, portrait, room, campus day/night and timing evidence is
+saved in surface-pass-155. Production remains retained154.

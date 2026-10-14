@@ -615,11 +615,14 @@ function paperOwlHead(quill=false,hoodOnly=false): THREE.BufferGeometry {
     // The crown returns obliquely into a compact rear and raised neck.
     // Scaling the whole face outline kept vertical temple walls and a low,
     // horizontal chin shelf: a helmet attached behind the facial shield.
-    // These junctions preserve that shield but lift/turn its hidden return.
+    // The rear sheet leans forward as it descends into the shoulder. A deep
+    // vertical closure left a heavy projecting jaw behind the thinner torso.
+    // Keep the face frame, but fold its lower return upward and inward.
     let previous=0;
+    const rearDepth=(y:number)=>-.12-.55*(y+.05);
     const returns:Tuple[][]=[
-      [[-.34,.035,-.09],[-.20,-.035,-.015],[.015,-.11,.045],[.21,-.035,-.01],[.37,.12,-.08],[.33,.30,-.11],[.18,.43,-.08],[-.20,.40,-.14],[-.37,.23,-.14]],
-      [[-.18,-.055,-.48],[-.12,-.08,-.48],[0,-.10,-.48],[.12,-.07,-.48],[.22,.04,-.48],[.18,.21,-.48],[.08,.30,-.48],[-.10,.28,-.48],[-.23,.09,-.48]],
+      [[-.34,.06,-.06],[-.20,-.04,.06],[.015,-.11,.115],[.21,-.035,.065],[.37,.14,-.05],[.33,.30,-.08],[.18,.43,-.07],[-.20,.40,-.11],[-.37,.23,-.10]],
+      ([[-.15,.045],[-.08,-.09],[0,-.14],[.10,-.085],[.19,.10],[.17,.24],[.085,.31],[-.10,.29],[-.205,.16]] as Array<[number,number]>).map(([x,y])=>[x,y,rearDepth(y)]),
     ];
     for(const section of returns){
       const start=vertices.length;

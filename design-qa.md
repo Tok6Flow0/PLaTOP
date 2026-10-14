@@ -14,6 +14,12 @@ samples varied around57–60fps and remain in the ledger. This is neither
 reference-matched nor A-level acceptance. Rejected/revision-requested studies
 are preserved, and timing is CPU-side submission rather than GPU completion.
 
+Pass155 is a revision-requested prototype, not a replacement for154: reducing
+the rear head mass exposes pointed shoulder edges and a fragmented rear.
+All370 tests/build pass, but its camera samples submit57.80/58.61fps, and
+the independent visual grade is Echo6.5/6.5. The next study coordinates the
+head/shoulder join. Production remains154.
+
 The October 13 surface series supersedes the older captures and counts below.
 See [the complete surface review ledger](docs/AVATAR-SURFACE-REVIEW.md). A fresh
 pass-60 reviewer, without prior scores, gave **7.5/10 character craft, 8.0/10

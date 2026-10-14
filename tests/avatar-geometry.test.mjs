@@ -1553,8 +1553,11 @@ test('paper temples retain their deliberate fold construction and rear overlaps 
     }
     const rearStart=n.count-(edges-2)*3;
     for(let i=rearStart;i<n.count;i++){
-      assert.ok(Math.abs(geometry.attributes.position.getZ(i)+(form==='paperEchoHead'?.48:.20))<1e-6,'rear closure is a broad planar panel, not a pinched apex');
-      assert.ok(n.getZ(i)<-.99,'rear closure faces outward');
+      const p=geometry.attributes.position;
+      const rearDepth=form==='paperEchoHead'?-.12-.55*(p.getY(i)+.05):-.20;
+      assert.ok(Math.abs(p.getZ(i)-rearDepth)<1e-6,'rear closure is a broad planar panel, not a pinched apex');
+      assert.ok(n.getZ(i)<-.87,'rear closure faces outward');
+      if(form==='paperEchoHead')assert.ok(n.getY(i)<-.47,'the oblique rear sheet returns forward into the shoulder');
     }
   }
   const ray=new THREE.Raycaster(),point=new THREE.Vector3();
@@ -1624,7 +1627,7 @@ test('Echo shaped sections turn around crown, neck and back without changing the
   assert.deepEqual(p.head.scale.toArray(),[.89,.93,.92]);
   // The body's former >.60 requirement preserved an over-bulging rear. A
   // tapered paper enclosure still has substantial depth at >.50 width.
-  for(const [name,ratio] of [['paperEchoHead',.52],['paperEchoBody',.50]]){
+  for(const [name,ratio] of [['paperEchoHead',.45],['paperEchoBody',.50]]){
     const size=new THREE.Box3().setFromObject(model.getObjectByName(name)).getSize(new THREE.Vector3());
     assert.ok(size.z/size.x>ratio,'shaped sections enclose depth without flattening the front face frame');
   }
@@ -1635,6 +1638,10 @@ test('Echo shaped sections turn around crown, neck and back without changing the
   assert.ok(headNormals.size>8,'temple turns across shaped sections instead of retaining one long slab plane');
   const hp=head.attributes.position;
   for(let i=0;i<hp.count;i++)if(hp.getZ(i)<-.01)assert.ok(hp.getY(i)>-.23,'the hidden head return rises into the neck instead of continuing the low facial chin as a shelf');
+  for(let i=0;i<hp.count;i++)if(hp.getZ(i)<-.15){
+    assert.ok(hp.getZ(i)>-.33,'rear enclosure no longer projects as a deep helmet behind the narrowed torso');
+    assert.ok(hp.getY(i)>0,'only the crown projects rearward; the lower neck returns forward into the shoulder');
+  }
   const shell=model.getObjectByName('paperEchoBody'),corePositions=shell.geometry.attributes.position;
   const corePoints=Array.from({length:corePositions.count},(_,i)=>new THREE.Vector3().fromBufferAttribute(corePositions,i).applyMatrix4(shell.matrixWorld));
   const seamPoints=[];
